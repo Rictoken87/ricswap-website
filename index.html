@@ -147,6 +147,47 @@
     function openForm() { document.getElementById('submitForm').style.display = 'block'; }
     function closeForm() { document.getElementById('submitForm').style.display = 'none'; }
 </script>
+<!-- ACHIEVEMENT & SOULBOUND NFT SECTION -->
+<div class="achievement-section" style="margin-top: 60px; width: 100%; max-width: 1000px;">
+    <h2 style="color: var(--diamond); text-align: center; letter-spacing: 2px;">YOUR TRUST REPUTATION</h2>
+    <p style="text-align: center; color: #888; margin-bottom: 30px;">Soulbound Achievement Medals (Non-Transferable)</p>
+
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 25px; padding: 20px;">
+        
+        <!-- MEDAL 1: THE OBSIDIAN DIAMOND -->
+        <div class="card" style="margin-top: 0; text-align: center; border: 1px solid #333; position: relative; overflow: hidden;">
+            <div class="magma-pulse" style="width: 100px; height: 100px; background: var(--magma); margin: 0 auto 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 30px rgba(255, 77, 0, 0.4);">
+                <span style="font-size: 40px;">💎</span>
+            </div>
+            <h3 style="color: var(--gold); margin-bottom: 5px;">Diamond Tier</h3>
+            <p style="font-size: 12px; color: #666; margin-top: 0;">Milestone: 100% LP Burned</p>
+            <div style="font-size: 10px; color: var(--diamond); border: 1px solid var(--diamond); display: inline-block; padding: 2px 10px; border-radius: 20px;">SOULBOUND</div>
+        </div>
+
+        <!-- MEDAL 2: THE GOLDEN CORE (Locked Example) -->
+        <div class="card" style="margin-top: 0; text-align: center; border: 1px solid #222; opacity: 0.4;">
+            <div style="width: 100px; height: 100px; background: #222; margin: 0 auto 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                <span style="font-size: 40px; filter: grayscale(100%);">🔥</span>
+            </div>
+            <h3 style="color: #444; margin-bottom: 5px;">Golden Core</h3>
+            <p style="font-size: 12px; color: #333; margin-top: 0;">Milestone: 50,000 BONE LP</p>
+            <div style="font-size: 10px; color: #333; border: 1px solid #333; display: inline-block; padding: 2px 10px; border-radius: 20px;">LOCKED</div>
+        </div>
+
+    </div>
+</div>
+
+<style>
+    /* ADD THIS TO YOUR <style> SECTION */
+    @keyframes pulse {
+        0% { transform: scale(1); opacity: 0.8; }
+        50% { transform: scale(1.05); opacity: 1; box-shadow: 0 0 50px rgba(255, 77, 0, 0.6); }
+        100% { transform: scale(1); opacity: 0.8; }
+    }
+    .magma-pulse {
+        animation: pulse 3s infinite ease-in-out;
+    }
+</style>
 
     <div class="hall-of-flame">HALL OF FLAME ● 2026 DEPLOYED</div>
 </body>
