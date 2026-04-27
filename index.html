@@ -123,6 +123,30 @@
         Enter a Shibarium contract address to verify LP Burn status.
     </p>
 </div>
+<!-- SUBMIT BUTTON -->
+<div style="margin-top: 30px;">
+    <button class="btn-connect" style="background: var(--gold); color: black;" onclick="openForm()">SUBMIT PROJECT</button>
+</div>
+
+<!-- SUBMIT FORM POPUP (HIDDEN BY DEFAULT) -->
+<div id="submitForm" style="display:none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #111; border: 2px solid var(--gold); padding: 40px; border-radius: 20px; z-index: 100; width: 90%; max-width: 500px;">
+    <h2 style="color: var(--gold); margin-top: 0;">Onboard Your Project</h2>
+    <p style="font-size: 12px; color: #888;">Complete the security milestone to join the Hall of Flame.</p>
+    
+    <input type="text" placeholder="Project Name" style="width: 100%; padding: 10px; margin-bottom: 15px; background: #222; border: 1px solid #333; color: white;">
+    <input type="text" placeholder="Contract Address (Shibarium)" style="width: 100%; padding: 10px; margin-bottom: 15px; background: #222; border: 1px solid #333; color: white;">
+    <input type="text" placeholder="Target Burn Amount" style="width: 100%; padding: 10px; margin-bottom: 20px; background: #222; border: 1px solid #333; color: white;">
+    
+    <div style="display: flex; justify-content: space-between;">
+        <button onclick="closeForm()" style="background: none; color: white; border: none; cursor: pointer;">CANCEL</button>
+        <button class="btn-connect" style="padding: 10px 20px;">SUBMIT & PAY</button>
+    </div>
+</div>
+
+<script>
+    function openForm() { document.getElementById('submitForm').style.display = 'block'; }
+    function closeForm() { document.getElementById('submitForm').style.display = 'none'; }
+</script>
 
     <div class="hall-of-flame">HALL OF FLAME ● 2026 DEPLOYED</div>
 </body>
