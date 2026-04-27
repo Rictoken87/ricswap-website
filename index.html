@@ -1,19 +1,81 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>RicSwap | 10/10 Secure DEX</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RicSwap | Obsidian Tier DEX</title>
     <style>
-        body { background-color: #0D0D0D; color: #FFD700; font-family: sans-serif; text-align: center; padding-top: 100px; }
-        .btn { background: linear-gradient(#FF4D00, #FF8C00); border: none; padding: 15px 30px; color: white; border-radius: 5px; cursor: pointer; font-weight: bold; }
+        :root {
+            --obsidian: #0D0D0D;
+            --magma: linear-gradient(135deg, #FF4D00 0%, #FF8C00 100%);
+            --diamond: #00E5FF;
+            --gold: #FFD700;
+        }
+        body { 
+            background-color: var(--obsidian); 
+            color: #FFFFFF; 
+            font-family: 'Inter', sans-serif; 
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+        .nav { width: 100%; padding: 20px; display: flex; justify-content: space-between; align-items: center; box-sizing: border-box; }
+        .logo { font-size: 24px; font-weight: 900; color: var(--gold); letter-spacing: 2px; }
+        
+        .hero { text-align: center; margin-top: 10vh; }
+        .hero h1 { font-size: 4rem; margin: 0; background: var(--magma); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        
+        .card { 
+            background: #1A1A1A; 
+            border: 1px solid #333; 
+            border-radius: 15px; 
+            padding: 30px; 
+            margin-top: 50px; 
+            width: 90%; 
+            max-width: 450px; 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+        .btn-connect { 
+            background: var(--magma); 
+            border: none; 
+            padding: 15px 40px; 
+            color: white; 
+            font-size: 18px; 
+            font-weight: bold; 
+            border-radius: 50px; 
+            cursor: pointer; 
+            transition: transform 0.2s;
+            box-shadow: 0 0 20px rgba(255, 77, 0, 0.3);
+        }
+        .btn-connect:hover { transform: scale(1.05); }
+        .vip-status { color: var(--gold); font-size: 14px; margin-top: 20px; font-weight: bold; }
+        .hall-of-flame { margin-top: 50px; color: #666; font-size: 12px; letter-spacing: 1px; }
     </style>
 </head>
 <body>
-    <h1>RICSWAP</h1>
-    <p>The World's First Milestone-Burn DEX</p>
-    <button class="btn">CONNECT WALLET (COMING SOON)</button>
-    <div style="margin-top: 50px;">
-        <p>VIP STATUS: <span style="color: white;">CHECKING...</span></p>
+    <div class="nav">
+        <div class="logo">RICSWAP</div>
+        <button class="btn-connect">CONNECT WALLET</button>
     </div>
+
+    <div class="hero">
+        <h1>UN-RUGGABLE</h1>
+        <p style="color: #888;">100% LP Burn | 10/10 Secure | Shibarium Network</p>
+    </div>
+
+    <div class="card">
+        <div style="font-size: 12px; color: #666; margin-bottom: 10px;">FOUNDER DASHBOARD</div>
+        <h2 style="margin: 0;">Diamond Tier Burn</h2>
+        <div class="vip-status">● VIP FOUNDER: <span style="color: white;">PENDING CONNECT</span></div>
+        <p style="color: #888; font-size: 14px;">Hold 1,000 $RIC for FREE milestone burns.</p>
+        <div style="height: 10px; background: #333; border-radius: 5px; margin-top: 20px; overflow: hidden;">
+            <div style="width: 35%; height: 100%; background: var(--magma);"></div>
+        </div>
+        <div style="font-size: 12px; color: #555; margin-top: 5px;">35% Progress to Burn</div>
+    </div>
+
+    <div class="hall-of-flame">HALL OF FLAME ● 2024 DEPLOYED</div>
 </body>
 </html>
- 
