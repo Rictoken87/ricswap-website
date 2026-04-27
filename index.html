@@ -5,6 +5,110 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>RicSwap | Obsidian Tier DEX</title>
     <style>
+        /* SWAP BOX SPECIFIC STYLES */
+.swap-card {
+    background: #121212;
+    border: 1px solid #222;
+    border-radius: 24px;
+    padding: 20px;
+    width: 100%;
+    max-width: 420px;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.8);
+    margin: 40px auto;
+}
+
+.swap-input-group {
+    background: #1A1A1A;
+    border-radius: 16px;
+    padding: 16px;
+    margin-bottom: 8px;
+    border: 1px solid transparent;
+    transition: border-color 0.2s;
+}
+
+.swap-input-group:hover {
+    border-color: #333;
+}
+
+.swap-label {
+    font-size: 12px;
+    color: #888;
+    margin-bottom: 8px;
+}
+
+.swap-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.swap-input {
+    background: transparent;
+    border: none;
+    color: white;
+    font-size: 24px;
+    width: 60%;
+    outline: none;
+}
+
+.token-selector {
+    background: #2A2A2A;
+    border: 1px solid #444;
+    color: white;
+    padding: 8px 12px;
+    border-radius: 12px;
+    font-weight: bold;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.token-selector:hover {
+    background: #333;
+    border-color: var(--gold);
+}
+
+.swap-arrow-container {
+    display: flex;
+    justify-content: center;
+    margin: -15px 0;
+    position: relative;
+    z-index: 2;
+}
+
+.swap-arrow-button {
+    background: #121212;
+    border: 4px solid #1A1A1A;
+    color: var(--gold);
+    width: 35px;
+    height: 35px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+}
+
+.main-swap-btn {
+    width: 100%;
+    background: var(--magma);
+    border: none;
+    padding: 18px;
+    color: white;
+    font-size: 18px;
+    font-weight: 800;
+    border-radius: 16px;
+    margin-top: 12px;
+    cursor: pointer;
+    box-shadow: 0 0 20px rgba(255, 77, 0, 0.2);
+}
+
+.main-swap-btn:hover {
+    filter: brightness(1.2);
+    transform: translateY(-1px);
+}
+
         :root {
             --obsidian: #0D0D0D;
             --magma: linear-gradient(135deg, #FF4D00 0%, #FF8C00 100%);
@@ -188,6 +292,48 @@
         animation: pulse 3s infinite ease-in-out;
     }
 </style>
+<!-- THE SWAP INTERFACE -->
+<div class="swap-card">
+    <div style="display: flex; justify-content: space-between; margin-bottom: 15px; align-items: center;">
+        <span style="font-weight: bold; letter-spacing: 1px;">SWAP</span>
+        <span style="color: #666; cursor: pointer; font-size: 18px;">⚙️</span>
+    </div>
+
+    <!-- FROM TOKEN -->
+    <div class="swap-input-group">
+        <div class="swap-label">You Pay</div>
+        <div class="swap-row">
+            <input type="number" class="swap-input" placeholder="0.0">
+            <button class="token-selector">
+                <img src="https://cryptologos.cc" width="20"> BONE ⬇
+            </button>
+        </div>
+    </div>
+
+    <!-- SWITCH ARROW -->
+    <div class="swap-arrow-container">
+        <div class="swap-arrow-button">↓</div>
+    </div>
+
+    <!-- TO TOKEN -->
+    <div class="swap-input-group" style="margin-top: 5px;">
+        <div class="swap-label">You Receive</div>
+        <div class="swap-row">
+            <input type="number" class="swap-input" placeholder="0.0">
+            <button class="token-selector" style="background: var(--magma); border: none;">
+                Select Token ⬇
+            </button>
+        </div>
+    </div>
+
+    <!-- PRICE INFO -->
+    <div style="padding: 10px; font-size: 12px; color: #666; display: flex; justify-content: space-between;">
+        <span>Exchange Rate</span>
+        <span>-- BONE per --</span>
+    </div>
+
+    <button class="main-swap-btn">CONNECT WALLET TO SWAP</button>
+</div>
 
     <div class="hall-of-flame">HALL OF FLAME ● 2026 DEPLOYED</div>
 </body>
