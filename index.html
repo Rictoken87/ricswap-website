@@ -6,14 +6,40 @@
     <title>RicSwap | Obsidian Tier DEX</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.15.0/ethers.umd.min.js"></script>
     <style>
-        /* (Your existing styles remain the same - I kept everything) */
-        :root { --obsidian: #0D0D0D; --magma: linear-gradient(135deg, #FF4D00 0%, #FF8C00 100%); --gold: #FFD700; }
-        body { background-color: var(--obsidian); color: #FFFFFF; font-family: 'Inter', sans-serif; margin: 0; }
-        .nav { width: 100%; padding: 20px; display: flex; justify-content: space-between; align-items: center; }
-        .logo { font-size: 24px; font-weight: 900; color: var(--gold); }
-        .btn-connect { background: var(--magma); border: none; padding: 15px 40px; color: white; font-size: 18px; font-weight: bold; border-radius: 50px; cursor: pointer; }
-        .card { background: #1A1A1A; border: 1px solid #333; border-radius: 15px; padding: 30px; margin: 40px auto; width: 90%; max-width: 500px; }
-        .register-card { background: #1A1A1A; border: 2px solid #FFD700; border-radius: 20px; padding: 30px; margin: 40px auto; width: 90%; max-width: 500px; }
+        :root {
+            --obsidian: #0D0D0D;
+            --magma: linear-gradient(135deg, #FF4D00 0%, #FF8C00 100%);
+            --gold: #FFD700;
+            --diamond: #00E5FF;
+        }
+        body {
+            background-color: var(--obsidian);
+            color: #FFFFFF;
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+        .nav {
+            width: 100%; padding: 20px; display: flex; justify-content: space-between; align-items: center; box-sizing: border-box;
+        }
+        .logo { font-size: 24px; font-weight: 900; color: var(--gold); letter-spacing: 2px; }
+        .btn-connect {
+            background: var(--magma); border: none; padding: 15px 40px; color: white;
+            font-size: 18px; font-weight: bold; border-radius: 50px; cursor: pointer;
+        }
+        .card, .register-card {
+            background: #1A1A1A; border: 1px solid #333; border-radius: 15px;
+            padding: 30px; margin: 40px auto; width: 90%; max-width: 500px;
+        }
+        .register-card { border: 2px solid var(--gold); }
+        input {
+            width: 100%; padding: 12px; margin: 8px 0; background: #222; border: 1px solid #444;
+            color: white; border-radius: 12px; font-size: 16px;
+        }
+        button.register-btn {
+            width: 100%; margin-top: 20px; background: var(--gold); color: black;
+            padding: 18px; font-weight: bold; border: none; border-radius: 16px; cursor: pointer;
+        }
     </style>
 </head>
 <body>
@@ -22,41 +48,85 @@
         <button id="connectBtn" class="btn-connect">CONNECT WALLET</button>
     </div>
 
-    <div class="hero" style="text-align:center; margin-top:10vh;">
+    <div style="text-align:center; margin-top:10vh;">
         <h1>UN-RUGGABLE</h1>
         <p style="color:#888;">100% LP Burn • Forced by Smart Contract • Shibarium Network</p>
     </div>
 
-    <!-- NEW: Register Pair Section -->
-    <div class="register-card" id="registerSection">
-        <h2 style="color:#FFD700; text-align:center;">🔥 Register Pair for Hall of Flame</h2>
-        <p style="text-align:center; color:#888;">Get automatic 100% LP burn + Hall of Flame badge</p>
-
-        <input id="lpAddress" type="text" placeholder="LP Token Address (0x...)" style="width:100%; padding:12px; margin:10px 0; background:#222; border:1px solid #444; color:white; border-radius:12px;">
+    <!-- REGISTER PAIR SECTION -->
+    <div class="register-card">
+        <h2 style="color:var(--gold); text-align:center;">🔥 Register Pair for Hall of Flame</h2>
+        <p style="text-align:center; color:#888;">Get automatic 100% LP burn + permanent badge</p>
         
+        <input id="lpAddress" type="text" placeholder="LP Token Address (0x...)">
         <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
-            <input id="targetBalance" type="text" placeholder="Target Burn (e.g. 1000000)" style="padding:12px; background:#222; border:1px solid #444; color:white; border-radius:12px;">
-            <input id="serviceFee" type="text" value="0" placeholder="Service Fee in RIC (0 = free)" style="padding:12px; background:#222; border:1px solid #444; color:white; border-radius:12px;">
+            <input id="targetBalance" type="text" placeholder="Target Burn Amount (e.g. 1000000)">
+            <input id="serviceFee" type="text" value="0" placeholder="Service Fee in RIC (0 = free)">
         </div>
-
-        <button id="registerBtn" style="width:100%; margin-top:20px; background:#FFD700; color:black; padding:18px; font-weight:bold; border:none; border-radius:16px; cursor:pointer;">
-            REGISTER PAIR &amp; AUTO-DEPLOY BURNER
-        </button>
-        <p id="registerStatus" style="text-align:center; margin-top:10px; font-size:14px;"></p>
+        
+        <button id="registerBtn" class="register-btn">REGISTER PAIR & AUTO-DEPLOY BURNER</button>
+        <p id="registerStatus" style="text-align:center; margin-top:15px; font-size:14px; min-height:20px;"></p>
     </div>
 
-    <!-- Your existing Founder Dashboard, Hall of Flame, Swap, etc. stay here -->
+    <!-- Your original Founder Dashboard and other sections can stay below -->
+    <div class="card">
+        <div style="font-size: 12px; color: #666;">FOUNDER DASHBOARD</div>
+        <h2>Diamond Tier Burn</h2>
+        <!-- Add your existing Hall of Flame, VIP status, swap box, etc. here if you want -->
+    </div>
 
     <script>
         let provider, signer, userAddress;
         const FACTORY_ADDRESS = "0x42caD60c2869f7D7e7001418918550F7840f5FCe";
+        const SHIBARIUM_CHAIN_ID = 109;
 
         const connectBtn = document.getElementById("connectBtn");
         const registerBtn = document.getElementById("registerBtn");
         const statusEl = document.getElementById("registerStatus");
 
-        async function connectWallet() { /* same connect code as before - I kept it */ 
-            // ... (your previous connectWallet function)
+        async function connectWallet() {
+            if (typeof window.ethereum === "undefined") {
+                alert("Please install MetaMask!");
+                return;
+            }
+
+            try {
+                await window.ethereum.request({ method: "eth_requestAccounts" });
+                provider = new ethers.BrowserProvider(window.ethereum);
+                signer = await provider.getSigner();
+                userAddress = await signer.getAddress();
+
+                // Switch to Shibarium
+                const network = await provider.getNetwork();
+                if (network.chainId !== BigInt(SHIBARIUM_CHAIN_ID)) {
+                    try {
+                        await window.ethereum.request({
+                            method: "wallet_switchEthereumChain",
+                            params: [{ chainId: "0x6d" }]
+                        });
+                    } catch {
+                        await window.ethereum.request({
+                            method: "wallet_addEthereumChain",
+                            params: [{
+                                chainId: "0x6d",
+                                chainName: "Shibarium",
+                                rpcUrls: ["https://rpc.shibarium.shib.io"],
+                                nativeCurrency: { name: "BONE", symbol: "BONE", decimals: 18 },
+                                blockExplorerUrls: ["https://www.shibariumscan.io"]
+                            }]
+                        });
+                    }
+                }
+
+                const shortAddr = userAddress.slice(0, 6) + "..." + userAddress.slice(-4);
+                connectBtn.textContent = shortAddr;
+                connectBtn.style.background = "linear-gradient(135deg, #00E5FF, #FFD700)";
+
+                console.log("✅ Wallet connected:", userAddress);
+            } catch (error) {
+                console.error(error);
+                alert("Failed to connect wallet");
+            }
         }
 
         async function registerPair() {
@@ -66,50 +136,49 @@
             }
 
             const lpAddress = document.getElementById("lpAddress").value.trim();
-            const target = document.getElementById("targetBalance").value.trim();
-            const fee = document.getElementById("serviceFee").value.trim() || "0";
+            const targetStr = document.getElementById("targetBalance").value.trim();
+            const feeStr = document.getElementById("serviceFee").value.trim() || "0";
 
-            if (!lpAddress || !target) {
-                alert("Please fill LP address and target burn amount");
+            if (!lpAddress || !targetStr) {
+                alert("Please fill in LP address and target burn amount");
                 return;
             }
 
             try {
-                statusEl.innerHTML = "⏳ Registering...";
+                statusEl.textContent = "⏳ Registering on blockchain...";
                 registerBtn.disabled = true;
 
-                const factoryABI = [
-                    "function registerPairAndDeployBurner(address _lpToken, uint256 _targetBalance, uint256 _serviceFee, uint256 _vipThreshold) external returns (address)"
-                ];
-
-                const factory = new ethers.Contract(FACTORY_ADDRESS, factoryABI, signer);
+                const abi = ["function registerPairAndDeployBurner(address _lpToken, uint256 _targetBalance, uint256 _serviceFee, uint256 _vipThreshold) external returns (address)"];
+                const factory = new ethers.Contract(FACTORY_ADDRESS, abi, signer);
 
                 const tx = await factory.registerPairAndDeployBurner(
                     lpAddress,
-                    ethers.parseUnits(target, 18),
-                    ethers.parseUnits(fee, 18),
-                    ethers.parseUnits("1000", 18)   // VIP threshold = 1000 RIC
+                    ethers.parseUnits(targetStr, 18),
+                    ethers.parseUnits(feeStr, 18),
+                    ethers.parseUnits("1000", 18)
                 );
 
                 await tx.wait();
 
-                statusEl.innerHTML = `✅ Success! Burner deployed.<br>Tx: <a href="https://www.shibariumscan.io/tx/${tx.hash}" target="_blank">${tx.hash.substring(0,10)}...</a>`;
-                console.log("Burner registered:", tx.hash);
+                statusEl.innerHTML = `✅ Success! Burner deployed.<br>Tx: <a href="https://www.shibariumscan.io/tx/${tx.hash}" target="_blank" style="color:#00E5FF;">View on Shibariumscan</a>`;
             } catch (err) {
                 console.error(err);
-                statusEl.innerHTML = "❌ Error: " + err.message;
+                statusEl.textContent = "❌ " + (err.message || "Transaction failed");
             } finally {
                 registerBtn.disabled = false;
             }
         }
 
-        // Event listeners
         connectBtn.addEventListener("click", connectWallet);
         registerBtn.addEventListener("click", registerPair);
 
-        // Auto connect if already connected
+        // Auto-connect if already connected
         window.addEventListener("load", () => {
-            if (typeof window.ethereum !== "undefined") connectWallet();
+            if (typeof window.ethereum !== "undefined") {
+                window.ethereum.request({ method: "eth_accounts" }).then(accounts => {
+                    if (accounts.length > 0) connectWallet();
+                });
+            }
         });
     </script>
 </body>
