@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>RicSwap | Swap</title>
-    <script src="https://cdn.ethers.io/lib/ethers-6.13.0.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.13.0/umd/ethers.min.js"></script>
     <style>
         :root { --obsidian: #080808; --card-bg: #121212; --magma: linear-gradient(135deg, #ff4d00 0%, #ff8c00 100%); }
         body { background: var(--obsidian); color: white; font-family: system-ui, sans-serif; margin: 0; padding: 0; }
@@ -41,6 +41,12 @@
     </div>
 
     <script>
+        // Safety check - make sure ethers loaded
+        if (typeof ethers === "undefined") {
+            alert("❌ ethers.js failed to load. Please refresh the page or disable any ad-blocker.");
+            console.error("ethers is not defined - CDN failed to load");
+        }
+
         const ROUTER_ADDRESS = "0x21c38fA2c2EA3D835CCd41733E35636E75022A53";
         const WBONE = "0xC76F4c819D820369Fb2d7C1531aB3Bb18e6fE8d8";
         const RIC = "0x12C94d3A30daa09f81Ea6c037004E6e99A4A3dfc";
@@ -83,14 +89,13 @@
         }
 
         async function connectWallet() {
-            if (!window.ethereum) {
-                return alert("Please install MetaMask or another wallet");
-            }
+            if (!window.ethereum) return alert("Please install MetaMask or another wallet");
+
             try {
                 connectBtn.disabled = true;
                 connectBtn.textContent = "CONNECTING...";
 
-                await switchToShibarium(); // Auto switch to Shibarium
+                await switchToShibarium();
 
                 provider = new ethers.BrowserProvider(window.ethereum);
                 signer = await provider.getSigner();
@@ -118,7 +123,6 @@
                 const router = new ethers.Contract(ROUTER_ADDRESS, ROUTER_ABI, activeProvider);
                 const path = [WBONE, RIC];
                 const amountInWei = ethers.parseEther(amountIn);
-
                 const amounts = await router.getAmountsOut(amountInWei, path);
                 toAmountInput.value = ethers.formatEther(amounts[1]);
             } catch (e) {
@@ -137,9 +141,8 @@
                 const router = new ethers.Contract(ROUTER_ADDRESS, ROUTER_ABI, signer);
                 const amountInWei = ethers.parseEther(fromAmountInput.value);
                 const path = [WBONE, RIC];
-
                 const amountsOut = await router.getAmountsOut(amountInWei, path);
-                const amountOutMin = (amountsOut[1] * 995n) / 1000n; // 0.5% slippage
+                const amountOutMin = (amountsOut[1] * 995n) / 1000n;
                 const deadline = Math.floor(Date.now() / 1000) + 1200;
 
                 const tx = await router.swapExactBONEForTokens(
@@ -151,7 +154,7 @@
                 );
 
                 await tx.wait();
-                alert("✅ Swap Successful! Transaction confirmed.");
+                alert("✅ Swap Successful!");
                 fromAmountInput.value = "";
                 toAmountInput.value = "";
             } catch (e) {
@@ -163,7 +166,6 @@
             }
         }
 
-        // Event listeners
         fromAmountInput.addEventListener("input", updateQuote);
         swapBtn.addEventListener("click", executeSwap);
         connectBtn.addEventListener("click", connectWallet);
