@@ -6,14 +6,75 @@
     <title>RicSwap | Swap</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.13.0/umd/ethers.min.js"></script>
     <style>
-        :root { --obsidian: #080808; --card-bg: #121212; --magma: linear-gradient(135deg, #ff4d00 0%, #ff8c00 100%); }
-        body { background: var(--obsidian); color: white; font-family: system-ui, sans-serif; margin: 0; padding: 0; }
-        .nav { padding: 20px 40px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,215,0,0.1); }
-        .swap-card { max-width: 420px; margin: 60px auto; background: var(--card-bg); border-radius: 24px; padding: 24px; box-shadow: 0 20px 40px rgba(0,0,0,0.8); }
-        .swap-input-group { background: #1a1a1a; border-radius: 16px; padding: 16px; margin-bottom: 12px; }
-        .swap-input { background: transparent; border: none; color: white; font-size: 28px; width: 100%; outline: none; }
-        button { background: var(--magma); color: white; border: none; padding: 14px 28px; border-radius: 9999px; font-weight: bold; cursor: pointer; width: 100%; margin-top: 20px; font-size: 18px; }
-        button:disabled { opacity: 0.6; cursor: not-allowed; }
+        :root {
+            --obsidian: #080808;
+            --card-bg: #121212;
+            --magma: linear-gradient(135deg, #ff4d00 0%, #ff8c00 100%);
+        }
+        body {
+            background: var(--obsidian);
+            color: white;
+            font-family: system-ui, sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+        .nav {
+            padding: 20px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(255,215,0,0.1);
+        }
+        .swap-card {
+            max-width: 420px;
+            margin: 60px auto;
+            background: var(--card-bg);
+            border-radius: 24px;
+            padding: 24px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.8);
+        }
+        .swap-input-group {
+            background: #1a1a1a;
+            border-radius: 16px;
+            padding: 16px;
+            margin-bottom: 12px;
+        }
+        .swap-input {
+            background: transparent;
+            border: none;
+            color: white;
+            font-size: 28px;
+            width: 100%;
+            outline: none;
+        }
+        /* ALL buttons default to full width */
+        button {
+            background: var(--magma);
+            color: white;
+            border: none;
+            padding: 14px 28px;
+            border-radius: 9999px;
+            font-weight: bold;
+            cursor: pointer;
+            width: 100%;
+            font-size: 18px;
+        }
+        /* SPECIAL RULE: Make Connect Wallet small and top-right */
+        #connectBtn {
+            width: auto !important;
+            min-width: 140px !important;
+            padding: 10px 24px !important;
+            font-size: 15px !important;
+            background: #222 !important;
+            color: #ffd700 !important;
+            border: 1px solid #ffd700 !important;
+            border-radius: 9999px !important;
+            white-space: nowrap !important;
+        }
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
     </style>
 </head>
 <body>
@@ -41,10 +102,9 @@
     </div>
 
     <script>
-        // Safety check - make sure ethers loaded
+        // Safety check for ethers
         if (typeof ethers === "undefined") {
-            alert("❌ ethers.js failed to load. Please refresh the page or disable any ad-blocker.");
-            console.error("ethers is not defined - CDN failed to load");
+            alert("❌ ethers.js failed to load. Please refresh or disable ad-blocker.");
         }
 
         const ROUTER_ADDRESS = "0x21c38fA2c2EA3D835CCd41733E35636E75022A53";
@@ -70,8 +130,8 @@
                     method: 'wallet_switchEthereumChain',
                     params: [{ chainId: '0x' + SHIBARIUM_CHAIN_ID.toString(16) }]
                 });
-            } catch (switchError) {
-                if (switchError.code === 4902) {
+            } catch (e) {
+                if (e.code === 4902) {
                     await window.ethereum.request({
                         method: 'wallet_addEthereumChain',
                         params: [{
@@ -83,13 +143,13 @@
                         }]
                     });
                 } else {
-                    throw switchError;
+                    throw e;
                 }
             }
         }
 
         async function connectWallet() {
-            if (!window.ethereum) return alert("Please install MetaMask or another wallet");
+            if (!window.ethereum) return alert("Please install MetaMask");
 
             try {
                 connectBtn.disabled = true;
@@ -103,8 +163,9 @@
 
                 connectBtn.textContent = userAddress.slice(0,6) + "..." + userAddress.slice(-4);
                 updateQuote();
+                console.log("✅ Wallet connected successfully:", userAddress);
             } catch (e) {
-                console.error(e);
+                console.error("Connection error:", e);
                 alert("Connection failed: " + e.message);
                 connectBtn.textContent = "CONNECT WALLET";
             } finally {
