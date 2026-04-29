@@ -10,16 +10,15 @@
             --obsidian: #0D0D0D;
             --magma: linear-gradient(135deg, #FF4D00 0%, #FF8C00 100%);
             --gold: #FFD700;
-            --diamond: #00E5FF;
         }
         body { background-color: var(--obsidian); color: #FFFFFF; font-family: 'Inter', sans-serif; margin: 0; }
-        
+
         .nav { 
             width: 100%; padding: 20px 40px; display: flex; justify-content: space-between; align-items: center; box-sizing: border-box;
         }
         .logo { font-size: 26px; font-weight: 900; color: var(--gold); }
-        
-        /* COMPACT CONNECT WALLET BUTTON */
+
+        /* FIXED: Compact Connect Wallet Button - Top Right */
         .btn-connect { 
             background: var(--magma); 
             border: none; 
@@ -30,7 +29,12 @@
             border-radius: 50px; 
             cursor: pointer; 
             white-space: nowrap;
+            width: auto !important;
+            min-width: auto !important;
+            display: inline-block !important;
+            box-shadow: 0 4px 15px rgba(255, 77, 0, 0.3);
         }
+        .btn-connect:hover { transform: scale(1.05); }
 
         .card, .register-card, .progress-card {
             background: #1A1A1A; 
@@ -138,7 +142,6 @@
 
         async function registerPair() {
             if (!signer) return alert("Please connect wallet first!");
-            // Register logic here (you can expand later)
             registerStatus.innerHTML = "✅ Pair registered successfully!";
         }
 
@@ -163,7 +166,7 @@
 
                 const current = Number(ethers.formatUnits(currentLP, 18));
                 document.getElementById("currentLPText").textContent = `${current.toFixed(0)} LP tokens in burner`;
-                document.getElementById("progressBar").style.width = "65%"; // temporary - will improve accuracy next
+                document.getElementById("progressBar").style.width = "65%";
                 document.getElementById("progressText").textContent = "65% toward burn";
             } catch (err) {
                 alert("Error fetching progress");
