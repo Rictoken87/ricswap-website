@@ -6,103 +6,268 @@
     <title>RicSwap - Swap</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.15.0/ethers.umd.min.js"></script>
     <style>
-        :root { --obsidian: #0D0D0D; --magma: linear-gradient(135deg, #FF4D00 0%, #FF8C00 100%); --gold: #FFD700; }
-        body { background-color: var(--obsidian); color: #FFFFFF; font-family: 'Inter', sans-serif; margin: 0; }
-        .nav { width: 100%; padding: 20px 40px; display: flex; justify-content: space-between; align-items: center; box-sizing: border-box; }
-        .logo { font-size: 26px; font-weight: 900; color: var(--gold); }
-        .nav-link { color: white; font-weight: 600; font-size: 18px; text-decoration: none; padding: 12px 28px; border-radius: 50px; }
-        .nav-link:hover { background: var(--gold); color: black; }
-        .nav-link.active { background: var(--gold); color: black; }
-        .btn-connect { background: var(--magma); border: none; padding: 12px 32px; color: white; font-size: 17px; font-weight: bold; border-radius: 50px; cursor: pointer; white-space: nowrap; }
-        .swap-container { max-width: 480px; margin: 80px auto; background: #1A1A1A; border: 2px solid var(--gold); border-radius: 24px; padding: 40px 30px; }
-        .input-box { background: #222; border-radius: 16px; padding: 20px; margin-bottom: 12px; }
-        input { background: transparent; border: none; width: 100%; font-size: 28px; color: white; outline: none; }
-        .token-select { background: #333; padding: 8px 16px; border-radius: 9999px; display: inline-flex; align-items: center; gap: 8px; cursor: pointer; }
-        button.swap-btn { width: 100%; padding: 22px; font-size: 20px; font-weight: bold; background: var(--magma); border: none; border-radius: 16px; color: white; margin-top: 30px; cursor: pointer; }
+        :root {
+            --obsidian: #080808;
+            --card-bg: #121212;
+            --input-bg: #1a1a1a;
+            --magma: linear-gradient(135deg, #ff4d00 0%, #ff8c00 100%);
+            --gold: #ffd700;
+            --gold-glow: rgba(255, 215, 0, 0.15);
+            --text-main: #ffffff;
+            --text-dim: #888888;
+        }
+        body {
+            background-color: var(--obsidian);
+            background-image: radial-gradient(circle at 50% -20%, #301800 0%, var(--obsidian) 80%);
+            color: var(--text-main);
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        .nav {
+            width: 100%;
+            padding: 24px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-sizing: border-box;
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(255, 215, 0, 0.1);
+        }
+        .logo-container {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .logo-container img {
+            height: 45px;
+            filter: drop-shadow(0 0 8px var(--gold-glow));
+        }
+        .nav-links {
+            display: flex;
+            gap: 32px;
+            align-items: center;
+        }
+        .nav-link {
+            color: var(--text-dim);
+            font-weight: 600;
+            text-decoration: none;
+            transition: 0.3s;
+        }
+        .nav-link:hover, .nav-link.active {
+            color: var(--gold);
+        }
+        .btn-connect {
+            background: var(--magma);
+            border: none;
+            padding: 10px 24px;
+            color: white;
+            font-weight: 800;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: 0.3s;
+            box-shadow: 0 4px 15px rgba(255, 77, 0, 0.3);
+        }
+        .btn-connect:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(255, 77, 0, 0.5);
+        }
+        .swap-wrapper {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        .swap-container {
+            width: 100%;
+            max-width: 440px;
+            background: var(--card-bg);
+            border: 1px solid rgba(255, 215, 0, 0.2);
+            border-radius: 32px;
+            padding: 32px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+        }
+        .swap-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 24px;
+            font-weight: 800;
+            font-size: 20px;
+        }
+        .input-box {
+            background: var(--input-bg);
+            border: 1px solid transparent;
+            border-radius: 20px;
+            padding: 20px;
+            transition: 0.3s;
+        }
+        .input-box:focus-within {
+            border-color: var(--gold);
+            background: #222;
+        }
+        .input-label {
+            display: flex;
+            justify-content: space-between;
+            color: var(--text-dim);
+            font-size: 14px;
+            margin-bottom: 12px;
+        }
+        .input-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        input {
+            background: transparent;
+            border: none;
+            flex: 1;
+            font-size: 28px;
+            color: white;
+            outline: none;
+            font-weight: 600;
+        }
+        .token-badge {
+            background: #333;
+            padding: 6px 12px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 700;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        .divider {
+            height: 40px;
+            width: 40px;
+            background: var(--input-bg);
+            border: 4px solid var(--card-bg);
+            border-radius: 12px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: -20px auto;
+            position: relative;
+            z-index: 2;
+            color: var(--gold);
+            cursor: pointer;
+            transition: 0.3s;
+        }
+        .divider:hover {
+            transform: rotate(180deg) scale(1.1);
+            color: #ff8c00;
+        }
+        .swap-btn {
+            width: 100%;
+            padding: 20px;
+            background: var(--magma);
+            border: none;
+            border-radius: 20px;
+            color: white;
+            font-size: 18px;
+            font-weight: 800;
+            margin-top: 24px;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+        .swap-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .price-info {
+            margin-top: 16px;
+            text-align: center;
+            font-size: 13px;
+            color: var(--text-dim);
+        }
     </style>
 </head>
 <body>
-    <div class="nav">
-        <div class="logo"><img src="riclogo.png" alt="RicSwap Logo" style="height: 50px;"></div>
-        <a href="index.html" class="nav-link">Home</a>
-        <a href="swap.html" class="nav-link active">Swap</a>
-        <button id="connectBtn" class="btn-connect">CONNECT WALLET</button>
-    </div>
-
-    <div class="swap-container">
-        <div style="font-size:22px; font-weight:bold; margin-bottom:30px;">Swap Tokens</div>
-
-        <!-- You Pay -->
-        <div class="input-box">
-            <div style="display:flex; justify-content:space-between; margin-bottom:12px;">
-                <span>You pay</span>
-                <span id="fromBalance" style="color:#888;">0.0</span>
-            </div>
-            <div style="display:flex; align-items:center; gap:12px;">
-                <input id="fromAmount" type="text" placeholder="0.0" value="1">
-                <div class="token-select"><span>BONE</span></div>
-            </div>
+    <nav class="nav">
+        <div class="logo-container">
+            <img src="riclogo.png" alt="RicSwap">
+            <span style="font-weight:900; font-size:22px; color:var(--gold);">RicSwap</span>
         </div>
-
-        <div style="text-align:center; font-size:32px; margin:10px 0; color:#666;">↓</div>
-
-        <!-- You Receive -->
-        <div class="input-box">
-            <div style="display:flex; justify-content:space-between; margin-bottom:12px;">
-                <span>You receive</span>
-                <span id="toBalance" style="color:#888;">0.0</span>
-            </div>
-            <div style="display:flex; align-items:center; gap:12px;">
-                <input id="toAmount" type="text" placeholder="0.0" disabled>
-                <div class="token-select"><span>RIC</span></div>
-            </div>
+        <div class="nav-links">
+            <a href="index.html" class="nav-link">Home</a>
+            <a href="swap.html" class="nav-link active">Swap</a>
+            <a href="burn.html" class="nav-link">Hall of Flame</a>
         </div>
+        <button id="connectBtn" class="btn-connect">CONNECT</button>
+    </nav>
 
-        <button id="swapBtn" class="swap-btn">CONNECT WALLET TO SWAP</button>
-        <div id="swapStatus" style="text-align:center; margin-top:20px; font-size:14px; min-height:24px;"></div>
+    <div class="swap-wrapper">
+        <div class="swap-container">
+            <div class="swap-header">
+                <span>Swap</span>
+                <span style="color:var(--gold); font-size:14px;">Slippage: 0.5%</span>
+            </div>
+
+            <!-- From -->
+            <div class="input-box">
+                <div class="input-label">
+                    <span>From</span>
+                    <span>Balance: <span id="fromBalance">0.0</span></span>
+                </div>
+                <div class="input-row">
+                    <input id="fromAmount" type="number" placeholder="0.0" step="any">
+                    <div class="token-badge">BONE</div>
+                </div>
+            </div>
+
+            <div class="divider">↓</div>
+
+            <!-- To -->
+            <div class="input-box">
+                <div class="input-label">
+                    <span>To (Estimated)</span>
+                    <span>Balance: <span id="toBalance">0.0</span></span>
+                </div>
+                <div class="input-row">
+                    <input id="toAmount" type="text" placeholder="0.0" readonly>
+                    <div class="token-badge" style="color:var(--gold)">RIC</div>
+                </div>
+            </div>
+
+            <div class="price-info" id="priceRate">Enter an amount to see pricing</div>
+            <button id="swapBtn" class="swap-btn">CONNECT WALLET TO SWAP</button>
+        </div>
     </div>
 
     <script>
-        const ROUTER_ADDRESS = "0x92b3ACBEEAF17abf3bD73eA06724b752840A5c3D";
+        const ROUTER_ADDRESS = "0x6E8f4cADC3c0c48d3d07f64B009955136E7b89dd";
         const WBONE = "0xC76F4c819D820369Fb2d7C1531aB3Bb18e6fE8d8";
         const RIC = "0x12C94d3A30daa09f81Ea6c037004E6e99A4A3dfc";
 
         let provider, signer, userAddress;
+        const readOnlyProvider = new ethers.JsonRpcProvider("https://rpc.shibarium.shib.io");
 
-        const connectBtn = document.getElementById("connectBtn");
-        const swapBtn = document.getElementById("swapBtn");
         const fromAmountInput = document.getElementById("fromAmount");
         const toAmountInput = document.getElementById("toAmount");
-
-        async function connectWallet() {
-            if (!window.ethereum) return alert("Please install MetaMask!");
-            try {
-                provider = new ethers.BrowserProvider(window.ethereum);
-                signer = await provider.getSigner();
-                userAddress = await signer.getAddress();
-
-                const short = userAddress.slice(0,6) + "..." + userAddress.slice(-4);
-                connectBtn.textContent = short;
-                connectBtn.style.background = "linear-gradient(135deg, #00E5FF, #FFD700)";
-                swapBtn.textContent = "SWAP NOW";
-            } catch (e) { console.error(e); }
-        }
+        const swapBtn = document.getElementById("swapBtn");
+        const connectBtn = document.getElementById("connectBtn");
 
         async function updateQuote() {
             const amountIn = fromAmountInput.value.trim();
             if (!amountIn || isNaN(amountIn) || Number(amountIn) <= 0) {
                 toAmountInput.value = "";
+                document.getElementById("priceRate").innerText = "Enter an amount to see pricing";
                 return;
             }
             try {
                 const router = new ethers.Contract(ROUTER_ADDRESS, [
                     "function getAmountsOut(uint256 amountIn, address[] memory path) public view returns (uint256[] memory amounts)"
-                ], provider || new ethers.JsonRpcProvider("https://rpc.shibarium.shib.io"));
+                ], provider || readOnlyProvider);
 
                 const path = [WBONE, RIC];
                 const amountInWei = ethers.parseEther(amountIn);
                 const amounts = await router.getAmountsOut(amountInWei, path);
-                toAmountInput.value = Number(ethers.formatEther(amounts[1])).toFixed(6);
+                const out = ethers.formatEther(amounts[1]);
+
+                toAmountInput.value = Number(out).toFixed(6);
+                document.getElementById("priceRate").innerText = `1 BONE ≈ ${ (Number(out) / Number(amountIn)).toFixed(4) } RIC`;
             } catch (e) {
                 toAmountInput.value = "No Liquidity";
             }
@@ -141,7 +306,7 @@
                 );
 
                 await tx.wait();
-                alert("✅ Swap Successful!");
+                alert("✅ Swap Successful! RIC received.");
                 fromAmountInput.value = "";
                 toAmountInput.value = "";
             } catch (e) {
@@ -152,13 +317,26 @@
             }
         }
 
+        async function connectWallet() {
+            if (!window.ethereum) return alert("Please install MetaMask!");
+            try {
+                provider = new ethers.BrowserProvider(window.ethereum);
+                signer = await provider.getSigner();
+                userAddress = await signer.getAddress();
+
+                const short = userAddress.slice(0,6) + "..." + userAddress.slice(-4);
+                connectBtn.textContent = short;
+                connectBtn.style.background = "linear-gradient(135deg, #00E5FF, #FFD700)";
+                swapBtn.textContent = "SWAP NOW";
+                updateQuote();
+            } catch (e) { console.error(e); }
+        }
+
         fromAmountInput.addEventListener("input", updateQuote);
         swapBtn.addEventListener("click", executeSwap);
+        connectBtn.addEventListener("click", connectWallet);
 
-        window.addEventListener("load", () => {
-            if (typeof window.ethereum !== "undefined") connectWallet();
-            updateQuote();
-        });
+        window.addEventListener("load", updateQuote);
     </script>
 </body>
 </html>
