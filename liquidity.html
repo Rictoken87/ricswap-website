@@ -33,11 +33,11 @@
         <div class="input-group">
             <label>Token A Address</label>
             <input id="tokenA" value="0xC76F4c819D820369Fb2d7C1531aB3Bb18e6fE8d8" placeholder="Token A">
-            <div style="margin-top:8px; display:flex; gap:8px;">
-                <button class="quick-btn" onclick="quickSelectA('0xC76F4c819D820369Fb2d7C1531aB3Bb18e6fE8d8')">BONE</button>
+            <div style="margin-top:8px;">
+                <button class="quick-btn" onclick="quickSelectA()">BONE (Native)</button>
             </div>
             <input id="amountA" type="number" placeholder="Amount" style="font-size:24px; margin-top:12px;">
-            <div id="balanceA" style="font-size:12px; color:#888; margin-top:4px;">Balance: --</div>
+            <div id="balanceA" style="font-size:12px; color:#888; margin-top:4px;">Balance: -- BONE</div>
         </div>
 
         <div style="text-align:center; margin:10px 0; font-size:28px;">+</div>
@@ -46,8 +46,8 @@
         <div class="input-group">
             <label>Token B Address</label>
             <input id="tokenB" value="0x12C94d3A30daa09f81Ea6c037004E6e99A4A3dfc" placeholder="Token B">
-            <div style="margin-top:8px; display:flex; gap:8px;">
-                <button class="quick-btn" onclick="quickSelectB('0x12C94d3A30daa09f81Ea6c037004E6e99A4A3dfc')">RIC</button>
+            <div style="margin-top:8px;">
+                <button class="quick-btn" onclick="quickSelectB()">RIC</button>
             </div>
             <input id="amountB" type="number" placeholder="Amount" style="font-size:24px; margin-top:12px;">
             <div id="balanceB" style="font-size:12px; color:#888; margin-top:4px;">Balance: --</div>
@@ -98,17 +98,16 @@
                 signer = await provider.getSigner();
                 userAddress = await signer.getAddress();
                 connectBtn.textContent = userAddress.slice(0,6) + "..." + userAddress.slice(-4);
-                loadBalances();
+                await loadBalances();
             } catch (e) {
                 alert("Connection failed: " + e.message);
-                connectBtn.textContent = "CONNECT WALLET";
             } finally {
                 connectBtn.disabled = false;
             }
         }
 
         async function loadBalances() {
-            if (!userAddress) return;
+            if (!userAddress || !provider) return;
             const tokenA = document.getElementById("tokenA").value.trim();
             const tokenB = document.getElementById("tokenB").value.trim();
             if (tokenA) await getBalance(tokenA, "balanceA");
@@ -117,27 +116,35 @@
 
         async function getBalance(tokenAddress, elementId) {
             try {
-                const token = new ethers.Contract(tokenAddress, ERC20_ABI, provider);
-                const bal = await token.balanceOf(userAddress);
-                document.getElementById(elementId).textContent = `Balance: ${ethers.formatEther(bal)}`;
+                const el = document.getElementById(elementId);
+                if (tokenAddress.toLowerCase() === WBONE.toLowerCase()) {
+                    // Native BONE balance (this is what you see in MetaMask)
+                    const balance = await provider.getBalance(userAddress);
+                    el.textContent = `Balance: ${ethers.formatEther(balance)} BONE`;
+                } else {
+                    // Normal ERC20 token (like RIC)
+                    const token = new ethers.Contract(tokenAddress, ERC20_ABI, provider);
+                    const balance = await token.balanceOf(userAddress);
+                    el.textContent = `Balance: ${ethers.formatEther(balance)}`;
+                }
             } catch (e) {
                 document.getElementById(elementId).textContent = "Balance: --";
             }
         }
 
-        async function handleApproval(tokenAddress, amountWei) {
-            const token = new ethers.Contract(tokenAddress, ERC20_ABI, signer);
-            const allowance = await token.allowance(userAddress, ROUTER_ADDRESS);
-            if (allowance < amountWei) {
-                statusEl.textContent = "Approving token...";
-                const tx = await token.approve(ROUTER_ADDRESS, ethers.MaxUint256);
-                await tx.wait();
-            }
+        function quickSelectA() {
+            document.getElementById("tokenA").value = WBONE;
+            loadBalances();
+        }
+        function quickSelectB() {
+            document.getElementById("tokenB").value = "0x12C94d3A30daa09f81Ea6c037004E6e99A4A3dfc";
+            loadBalances();
         }
 
+        // Add Liquidity function (same secure logic as before)
         async function addLiquidity() {
             if (!signer) return connectWallet();
-
+            // ... (full logic from previous version - kept exactly the same)
             const tokenA = document.getElementById("tokenA").value.trim();
             const tokenB = document.getElementById("tokenB").value.trim();
             const amountA = document.getElementById("amountA").value;
@@ -183,13 +190,19 @@
             }
         }
 
-        function quickSelectA(addr) { document.getElementById("tokenA").value = addr; loadBalances(); }
-        function quickSelectB(addr) { document.getElementById("tokenB").value = addr; loadBalances(); }
+        async function handleApproval(tokenAddress, amountWei) {
+            const token = new ethers.Contract(tokenAddress, ERC20_ABI, signer);
+            const allowance = await token.allowance(userAddress, ROUTER_ADDRESS);
+            if (allowance < amountWei) {
+                statusEl.textContent = "Approving token...";
+                const tx = await token.approve(ROUTER_ADDRESS, ethers.MaxUint256);
+                await tx.wait();
+            }
+        }
 
+        // Event listeners
         document.getElementById("connectBtn").addEventListener("click", connectWallet);
         document.getElementById("addBtn").addEventListener("click", addLiquidity);
-
-        // Auto load balances when token address changes
         document.getElementById("tokenA").addEventListener("change", loadBalances);
         document.getElementById("tokenB").addEventListener("change", loadBalances);
     </script>
