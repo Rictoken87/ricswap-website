@@ -17,31 +17,16 @@
         .logo { font-size: 26px; font-weight: 900; color: var(--gold); }
 
         .btn-connect { 
-            background: var(--magma) !important;
-            border: none !important;
-            padding: 12px 32px !important;
-            color: white !important;
-            font-size: 17px !important;
-            font-weight: bold !important;
-            border-radius: 50px !important;
-            cursor: pointer !important;
-            white-space: nowrap !important;
-            width: auto !important;
-            min-width: auto !important;
-            display: inline-flex !important;
-            align-items: center !important;
-            box-shadow: 0 4px 15px rgba(255, 77, 0, 0.3) !important;
+            background: var(--magma) !important; border: none !important; padding: 12px 32px !important;
+            color: white !important; font-size: 17px !important; font-weight: bold !important;
+            border-radius: 50px !important; cursor: pointer !important; white-space: nowrap !important;
+            width: auto !important; min-width: auto !important; display: inline-flex !important;
         }
         .btn-connect:hover { transform: scale(1.05); }
 
-        .card, .register-card, .progress-card {
-            background: #1A1A1A; 
-            border: 2px solid var(--gold); 
-            border-radius: 20px;
-            padding: 35px; 
-            margin: 40px auto; 
-            width: 90%; 
-            max-width: 560px;
+        .card, .register-card, .progress-card, .hall-card {
+            background: #1A1A1A; border: 2px solid var(--gold); border-radius: 20px;
+            padding: 35px; margin: 40px auto; width: 90%; max-width: 560px;
         }
 
         label { display: block; margin: 18px 0 6px; font-weight: 600; color: #ddd; }
@@ -53,10 +38,7 @@
         .progress-text { text-align: center; margin-top: 8px; font-weight: bold; color: var(--gold); font-size: 18px; }
 
         button { width: 100%; margin-top: 25px; padding: 18px; font-weight: bold; font-size: 18px; border: none; border-radius: 16px; cursor: pointer; }
-        .register-btn, .check-btn, .burn-btn { 
-            background: var(--gold); 
-            color: black; 
-        }
+        .register-btn, .check-btn { background: var(--gold); color: black; }
         .burn-btn { background: #FF4D00; color: white; }
         .status { margin-top: 20px; padding: 14px; border-radius: 12px; text-align: center; font-size: 15px; }
     </style>
@@ -91,7 +73,7 @@
         <div id="registerStatus" class="status"></div>
     </div>
 
-    <!-- TRACK BURN PROGRESS (Improved) -->
+    <!-- TRACK BURN PROGRESS -->
     <div class="progress-card">
         <h2 style="color:var(--gold); text-align:center;">📊 Track Burn Progress</h2>
         <p style="text-align:center; color:#aaa;">Live progress toward 100% LP burn</p>
@@ -102,24 +84,26 @@
         <button id="checkProgressBtn" class="check-btn">CHECK PROGRESS</button>
 
         <div id="progressResult" style="display:none; margin-top:25px;">
-            <div class="progress-bar-bg">
-                <div id="progressBar" class="progress-bar" style="width:0%"></div>
-            </div>
+            <div class="progress-bar-bg"><div id="progressBar" class="progress-bar" style="width:0%"></div></div>
             <div id="progressText" class="progress-text">0%</div>
             <div id="currentLPText" style="text-align:center; margin-top:8px; font-size:15px;"></div>
-
             <button id="burnNowBtn" class="burn-btn" style="display:none;">🔥 BURN NOW (100% LP to DEAD ADDRESS)</button>
         </div>
     </div>
 
+    <!-- AUTOMATIC HALL OF FLAME -->
+    <div class="hall-card">
+        <h2 style="color:var(--gold); text-align:center;">🔥 HALL OF FLAME 🔥</h2>
+        <p style="text-align:center; color:#aaa;">The Elite Un-Ruggable Projects of Shibarium</p>
+        <button id="loadHallBtn" style="background:#FFD700; color:black; margin-bottom:20px;">Refresh Hall of Flame</button>
+        <div id="hallContainer" style="min-height:200px;"></div>
+    </div>
+
     <script>
+        const REGISTRY_ADDRESS = "0x58df90f6ad19A98924F948fcA3829fFff05613fb";
         let provider, signer, userAddress;
-        const FACTORY_ADDRESS = "0x42caD60c2869f7D7e7001418918550F7840f5FCe";
-        const SHIBARIUM_CHAIN_ID = 109;
 
         const connectBtn = document.getElementById("connectBtn");
-        const registerBtn = document.getElementById("registerBtn");
-        const registerStatus = document.getElementById("registerStatus");
 
         async function connectWallet() {
             if (!window.ethereum) return alert("Please install MetaMask!");
@@ -130,12 +114,8 @@
                 userAddress = await signer.getAddress();
 
                 const network = await provider.getNetwork();
-                if (network.chainId !== BigInt(SHIBARIUM_CHAIN_ID)) {
-                    try {
-                        await window.ethereum.request({ method: "wallet_switchEthereumChain", params: [{ chainId: "0x6d" }] });
-                    } catch {
-                        await window.ethereum.request({ method: "wallet_addEthereumChain", params: [{ chainId: "0x6d", chainName: "Shibarium", rpcUrls: ["https://rpc.shibarium.shib.io"], nativeCurrency: { name: "BONE", symbol: "BONE", decimals: 18 }, blockExplorerUrls: ["https://www.shibariumscan.io"] }] });
-                    }
+                if (network.chainId !== BigInt(109)) {
+                    await window.ethereum.request({ method: "wallet_switchEthereumChain", params: [{ chainId: "0x6d" }] });
                 }
                 const short = userAddress.slice(0,6) + "..." + userAddress.slice(-4);
                 connectBtn.textContent = short;
@@ -143,79 +123,47 @@
             } catch (e) { console.error(e); }
         }
 
-        async function registerPair() {
-            if (!signer) return alert("Please connect wallet first!");
-            registerStatus.innerHTML = "✅ Pair registered successfully!";
-        }
-
-        async function checkProgress() {
-            const lpAddress = document.getElementById("trackLpAddress").value.trim();
-            if (!lpAddress) return alert("Please enter LP address");
-
-            const resultDiv = document.getElementById("progressResult");
-            resultDiv.style.display = "block";
-            document.getElementById("burnNowBtn").style.display = "none";
+        async function loadHallOfFlame() {
+            const container = document.getElementById("hallContainer");
+            container.innerHTML = "<p style='color:#888; text-align:center;'>Loading Hall of Flame...</p>";
 
             try {
-                // Get burner address from Factory
-                const factory = new ethers.Contract(FACTORY_ADDRESS, ["function getBurner(address) view returns (address)"], provider || new ethers.BrowserProvider(window.ethereum));
-                const burnerAddress = await factory.getBurner(lpAddress);
+                const registry = new ethers.Contract(REGISTRY_ADDRESS, [
+                    "function getAllProjects() view returns (tuple(string name, address tokenAddress, address lpAddress, address burnerAddress, uint256 registeredAt, bool burned)[])"
+                ], provider || new ethers.BrowserProvider(window.ethereum));
 
-                if (burnerAddress === ethers.ZeroAddress) {
-                    return alert("No burner found for this LP. Please register the pair first.");
+                const projects = await registry.getAllProjects();
+
+                if (projects.length === 0) {
+                    container.innerHTML = "<p style='color:#888; text-align:center;'>No projects registered yet.<br>Be the first to register your pair!</p>";
+                    return;
                 }
 
-                // Get real status from burner
-                const burnerABI = [
-                    "function getStatus() view returns (uint256 currentLP, bool isMilestoneReached, bool isBurned, uint256 currentVipThreshold, uint256 currentServiceFee)",
-                    "function targetBalance() view returns (uint256)"
-                ];
-                const burner = new ethers.Contract(burnerAddress, burnerABI, provider || new ethers.BrowserProvider(window.ethereum));
-
-                const [currentLP, isMilestoneReached, isBurned] = await burner.getStatus();
-                const targetBalance = await burner.targetBalance();
-
-                const current = Number(ethers.formatUnits(currentLP, 18));
-                const target = Number(ethers.formatUnits(targetBalance, 18));
-                const progress = target > 0 ? Math.min(Math.floor((current / target) * 100), 100) : 0;
-
-                document.getElementById("currentLPText").textContent = `${current.toFixed(0)} / ${target.toFixed(0)} LP tokens`;
-                document.getElementById("progressBar").style.width = `${progress}%`;
-                document.getElementById("progressText").textContent = `${progress}% toward burn`;
-
-                // Show Burn Now button only if milestone reached and not yet burned
-                if (isMilestoneReached && !isBurned) {
-                    const burnBtn = document.getElementById("burnNowBtn");
-                    burnBtn.style.display = "block";
-                    burnBtn.onclick = async () => {
-                        if (!signer) return alert("Please connect wallet first!");
-                        try {
-                            burnBtn.textContent = "Burning...";
-                            burnBtn.disabled = true;
-                            const tx = await burner.connect(signer).triggerMilestoneBurn();
-                            await tx.wait();
-                            alert("✅ LP successfully burned to DEAD address!");
-                            checkProgress(); // refresh progress
-                        } catch (err) {
-                            alert("Burn failed: " + err.message);
-                        } finally {
-                            burnBtn.textContent = "🔥 BURN NOW (100% LP to DEAD ADDRESS)";
-                            burnBtn.disabled = false;
-                        }
-                    };
-                }
+                container.innerHTML = "";
+                projects.forEach(p => {
+                    const div = document.createElement("div");
+                    div.style = "background:#111; border:1px solid #444; border-radius:16px; padding:20px; margin-bottom:15px;";
+                    div.innerHTML = `
+                        <h3 style="margin:0;color:var(--gold);">${p.name}</h3>
+                        <p style="font-size:13px;color:#aaa;">LP: ${p.lpAddress.slice(0,8)}...${p.lpAddress.slice(-6)}</p>
+                        ${p.burned 
+                            ? `<span style="background:#FF4D00;color:white;padding:2px 10px;border-radius:20px;font-size:12px;">BURNED</span>` 
+                            : `<span style="color:#FFD700;">Pending Burn</span>`}
+                    `;
+                    container.appendChild(div);
+                });
             } catch (err) {
-                console.error(err);
-                alert("Error fetching progress. Make sure the pair is registered.");
+                container.innerHTML = `<p style="color:#ff6b6b;">Could not load Hall of Flame. Please refresh.</p>`;
             }
         }
 
+        // Event listeners
         connectBtn.addEventListener("click", connectWallet);
-        registerBtn.addEventListener("click", registerPair);
-        document.getElementById("checkProgressBtn").addEventListener("click", checkProgress);
+        document.getElementById("loadHallBtn").addEventListener("click", loadHallOfFlame);
 
         window.addEventListener("load", () => {
             if (typeof window.ethereum !== "undefined") connectWallet();
+            loadHallOfFlame();   // Auto load Hall of Flame
         });
     </script>
 </body>
