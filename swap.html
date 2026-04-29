@@ -4,7 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>RicSwap | Swap</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.13.0/umd/ethers.min.js"></script>
+    <!-- More reliable CDN for ethers.js -->
+    <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.0/dist/ethers.umd.min.js"></script>
     <style>
         :root {
             --obsidian: #080808;
@@ -47,7 +48,6 @@
             width: 100%;
             outline: none;
         }
-        /* ALL buttons default to full width */
         button {
             background: var(--magma);
             color: white;
@@ -59,7 +59,7 @@
             width: 100%;
             font-size: 18px;
         }
-        /* SPECIAL RULE: Make Connect Wallet small and top-right */
+        /* Force Connect Wallet to be small at top right */
         #connectBtn {
             width: auto !important;
             min-width: 140px !important;
@@ -102,9 +102,9 @@
     </div>
 
     <script>
-        // Safety check for ethers
+        // Check if ethers loaded
         if (typeof ethers === "undefined") {
-            alert("❌ ethers.js failed to load. Please refresh or disable ad-blocker.");
+            alert("ethers.js still failed to load.\n\nPlease:\n1. Disable ad-blocker for this site\n2. Hard refresh (Ctrl + Shift + R)\n3. Try again");
         }
 
         const ROUTER_ADDRESS = "0x21c38fA2c2EA3D835CCd41733E35636E75022A53";
@@ -163,9 +163,8 @@
 
                 connectBtn.textContent = userAddress.slice(0,6) + "..." + userAddress.slice(-4);
                 updateQuote();
-                console.log("✅ Wallet connected successfully:", userAddress);
             } catch (e) {
-                console.error("Connection error:", e);
+                console.error(e);
                 alert("Connection failed: " + e.message);
                 connectBtn.textContent = "CONNECT WALLET";
             } finally {
@@ -187,7 +186,6 @@
                 const amounts = await router.getAmountsOut(amountInWei, path);
                 toAmountInput.value = ethers.formatEther(amounts[1]);
             } catch (e) {
-                console.error("Quote error:", e);
                 toAmountInput.value = "No Liquidity";
             }
         }
@@ -219,8 +217,7 @@
                 fromAmountInput.value = "";
                 toAmountInput.value = "";
             } catch (e) {
-                console.error("Swap error:", e);
-                alert("Swap failed: " + (e.reason || e.message || "Check console"));
+                alert("Swap failed: " + (e.reason || e.message));
             } finally {
                 swapBtn.disabled = false;
                 swapBtn.textContent = "SWAP NOW";
