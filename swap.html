@@ -1,113 +1,170 @@
-<script>
-    const ROUTER_ADDRESS = "0x92b3ACBEEAF17abf3bD73eA06724b752840A5c3D";
-    const WBONE = "0xC76F4c819D820369Fb2d7C1531aB3Bb18e6fE8d8";
-    const RIC = "0x12C94d3A30daa09f81Ea6c037004E6e99A4A3dfc";
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RicSwap - Swap</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.15.0/ethers.umd.min.js"></script>
+    <style>
+        :root {
+            --obsidian: #0D0D0D;
+            --magma: linear-gradient(135deg, #FF4D00 0%, #FF8C00 100%);
+            --gold: #FFD700;
+        }
+        body { 
+            background-color: var(--obsidian); 
+            color: #FFFFFF; 
+            font-family: 'Inter', sans-serif; 
+            margin: 0; 
+        }
+        .nav { 
+            width: 100%; 
+            padding: 20px 40px; 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            box-sizing: border-box;
+        }
+        .logo { font-size: 26px; font-weight: 900; color: var(--gold); }
+        .nav-link { 
+            color: white; 
+            font-weight: 600; 
+            font-size: 18px; 
+            text-decoration: none; 
+            padding: 12px 28px; 
+            border-radius: 50px; 
+        }
+        .nav-link:hover { background: var(--gold); color: black; }
+        .nav-link.active { background: var(--gold); color: black; }
 
-    const ROUTER_ABI = [
-        "function getAmountsOut(uint256 amountIn, address[] memory path) public view returns (uint256[] memory amounts)",
-        "function swapExactBONEForTokens(uint256 amountOutMin, address[] calldata path, address to, uint256 deadline) external payable returns (uint256[] memory amounts)"
-    ];
-
-    let provider, signer, userAddress;
-    const readOnlyProvider = new ethers.JsonRpcProvider("https://rpc.shibarium.shib.io");
-
-    const fromAmountInput = document.getElementById("fromAmount");
-    const toAmountInput = document.getElementById("toAmount");
-    const swapBtn = document.getElementById("swapBtn");
-
-    // Live quote
-    async function updateQuote() {
-        const amountIn = fromAmountInput.value.trim();
-        if (!amountIn || isNaN(amountIn) || Number(amountIn) <= 0) {
-            toAmountInput.value = "";
-            return;
+        .btn-connect { 
+            background: var(--magma) !important;
+            border: none !important;
+            padding: 12px 32px !important;
+            color: white !important;
+            font-size: 17px !important;
+            font-weight: bold !important;
+            border-radius: 50px !important;
+            cursor: pointer !important;
+            white-space: nowrap !important;
         }
 
-        try {
-            const activeProvider = provider || readOnlyProvider;
-            const router = new ethers.Contract(ROUTER_ADDRESS, ROUTER_ABI, activeProvider);
-            const path = [WBONE, RIC];
-            const amountInWei = ethers.parseEther(amountIn);
-
-            const amounts = await router.getAmountsOut(amountInWei, path);
-            const received = Number(ethers.formatEther(amounts[1]));
-
-            toAmountInput.value = received.toFixed(6);
-        } catch (e) {
-            toAmountInput.value = "No Liquidity";
+        .swap-container {
+            max-width: 480px;
+            margin: 80px auto;
+            background: #1A1A1A;
+            border: 2px solid var(--gold);
+            border-radius: 24px;
+            padding: 40px 30px;
         }
-    }
+        .input-box {
+            background: #222;
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 12px;
+        }
+        input {
+            background: transparent;
+            border: none;
+            width: 100%;
+            font-size: 28px;
+            color: white;
+            outline: none;
+        }
+        .token-select {
+            background: #333;
+            padding: 8px 16px;
+            border-radius: 9999px;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+        }
+        button.swap-btn {
+            width: 100%;
+            padding: 22px;
+            font-size: 20px;
+            font-weight: bold;
+            background: var(--magma);
+            border: none;
+            border-radius: 16px;
+            color: white;
+            margin-top: 30px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div class="nav">
+        <div class="logo"><img src="riclogo.png" alt="RicSwap Logo" style="height: 50px;"></div>
+        <a href="index.html" class="nav-link">Home</a>
+        <a href="swap.html" class="nav-link active">Swap</a>
+        <button id="connectBtn" class="btn-connect">CONNECT WALLET</button>
+    </div>
 
-    // Execute swap with proper protection
-    async function executeSwap() {
-        if (!signer) return await connectWallet();
+    <div class="swap-container">
+        <div style="font-size:22px; font-weight:bold; margin-bottom:30px;">Swap Tokens</div>
 
-        const amountInStr = fromAmountInput.value.trim();
-        if (!amountInStr || isNaN(amountInStr) || Number(amountInStr) <= 0) {
-            return alert("Please enter a valid amount");
+        <!-- From -->
+        <div class="input-box">
+            <div style="display:flex; justify-content:space-between; margin-bottom:12px; font-size:14px;">
+                <span>You pay</span>
+                <span id="fromBalance" style="color:#888;">0.0</span>
+            </div>
+            <div style="display:flex; align-items:center; gap:12px;">
+                <input id="fromAmount" type="text" placeholder="0.0" value="1">
+                <div class="token-select"><span>BONE</span></div>
+            </div>
+        </div>
+
+        <div style="text-align:center; font-size:32px; margin:10px 0; color:#666;">↓</div>
+
+        <!-- To -->
+        <div class="input-box">
+            <div style="display:flex; justify-content:space-between; margin-bottom:12px; font-size:14px;">
+                <span>You receive</span>
+                <span id="toBalance" style="color:#888;">0.0</span>
+            </div>
+            <div style="display:flex; align-items:center; gap:12px;">
+                <input id="toAmount" type="text" placeholder="0.0" disabled>
+                <div class="token-select"><span id="toToken">RIC</span></div>
+            </div>
+        </div>
+
+        <button id="swapBtn" class="swap-btn">CONNECT WALLET TO SWAP</button>
+        <div id="swapStatus" style="text-align:center; margin-top:20px; font-size:14px; min-height:24px;"></div>
+    </div>
+
+    <script>
+        const ROUTER_ADDRESS = "0x92b3ACBEEAF17abf3bD73eA06724b752840A5c3D";
+        const WBONE = "0xC76F4c819D820369Fb2d7C1531aB3Bb18e6fE8d8";
+        const RIC = "0x12C94d3A30daa09f81Ea6c037004E6e99A4A3dfc";
+
+        let provider, signer, userAddress;
+
+        const connectBtn = document.getElementById("connectBtn");
+        const swapBtn = document.getElementById("swapBtn");
+
+        async function connectWallet() {
+            if (!window.ethereum) return alert("Please install MetaMask!");
+            try {
+                provider = new ethers.BrowserProvider(window.ethereum);
+                signer = await provider.getSigner();
+                userAddress = await signer.getAddress();
+
+                const short = userAddress.slice(0,6) + "..." + userAddress.slice(-4);
+                connectBtn.textContent = short;
+                connectBtn.style.background = "linear-gradient(135deg, #00E5FF, #FFD700)";
+                swapBtn.textContent = "SWAP NOW";
+            } catch (e) { console.error(e); }
         }
 
-        try {
-            swapBtn.disabled = true;
-            swapBtn.textContent = "CONFIRMING...";
+        swapBtn.addEventListener("click", connectWallet);
+        connectBtn.addEventListener("click", connectWallet);
 
-            const router = new ethers.Contract(ROUTER_ADDRESS, ROUTER_ABI, signer);
-            const path = [WBONE, RIC];
-            const amountInWei = ethers.parseEther(amountInStr);
-
-            const amountsOut = await router.getAmountsOut(amountInWei, path);
-            const amountOutMin = (amountsOut[1] * 995n) / 1000n;   // 0.5% slippage
-
-            const deadline = Math.floor(Date.now() / 1000) + 1200; // 20 minutes
-
-            const tx = await router.swapExactBONEForTokens(
-                amountOutMin,
-                path,
-                userAddress,
-                deadline,
-                { value: amountInWei }
-            );
-
-            swapBtn.textContent = "MINING...";
-            await tx.wait();
-
-            alert("✅ Swap Successful!");
-            fromAmountInput.value = "";
-            toAmountInput.value = "";
-
-        } catch (e) {
-            console.error(e);
-            alert(e.shortMessage || e.message || "Swap failed");
-        } finally {
-            swapBtn.disabled = false;
-            swapBtn.textContent = "SWAP NOW";
-        }
-    }
-
-    // Connect wallet
-    async function connectWallet() {
-        if (!window.ethereum) return alert("Please install MetaMask!");
-        try {
-            provider = new ethers.BrowserProvider(window.ethereum);
-            signer = await provider.getSigner();
-            userAddress = await signer.getAddress();
-
-            const short = userAddress.slice(0,6) + "..." + userAddress.slice(-4);
-            document.getElementById("connectBtn").textContent = short;
-            document.getElementById("connectBtn").style.background = "linear-gradient(135deg, #00E5FF, #FFD700)";
-
-            swapBtn.textContent = "SWAP NOW";
-            updateQuote();
-        } catch (e) {
-            console.error(e);
-        }
-    }
-
-    // Event listeners
-    fromAmountInput.addEventListener("input", updateQuote);
-    swapBtn.addEventListener("click", executeSwap);
-
-    window.addEventListener("load", () => {
-        updateQuote(); // Show price immediately
-    });
-</script>
+        window.addEventListener("load", () => {
+            if (typeof window.ethereum !== "undefined") connectWallet();
+        });
+    </script>
+</body>
+</html>
