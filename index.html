@@ -14,22 +14,33 @@
         body { background-color: var(--obsidian); color: #FFFFFF; font-family: 'Inter', sans-serif; margin: 0; }
 
         .nav { 
-            width: 100%; padding: 20px 40px; display: flex; justify-content: space-between; align-items: center; box-sizing: border-box;
+            width: 100%; 
+            padding: 20px 40px; 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            box-sizing: border-box;
         }
         .logo { font-size: 26px; font-weight: 900; color: var(--gold); }
 
-        /* Compact Connect Wallet Button */
+        /* STRONG FIX: Compact Connect Wallet Button */
         .btn-connect { 
-            background: var(--magma); 
-            border: none; 
-            padding: 12px 32px; 
-            color: white; 
-            font-size: 17px; 
-            font-weight: bold; 
-            border-radius: 50px; 
-            cursor: pointer; 
-            white-space: nowrap;
+            background: var(--magma) !important;
+            border: none !important;
+            padding: 12px 32px !important;
+            color: white !important;
+            font-size: 17px !important;
+            font-weight: bold !important;
+            border-radius: 50px !important;
+            cursor: pointer !important;
+            white-space: nowrap !important;
+            width: auto !important;
+            min-width: auto !important;
+            display: inline-flex !important;
+            align-items: center !important;
+            box-shadow: 0 4px 15px rgba(255, 77, 0, 0.3) !important;
         }
+        .btn-connect:hover { transform: scale(1.05); }
 
         .card, .register-card, .progress-card {
             background: #1A1A1A; 
@@ -49,21 +60,8 @@
         .progress-bar { height: 100%; background: linear-gradient(90deg, #FF4D00, #FFD700); transition: width 0.8s ease; }
         .progress-text { text-align: center; margin-top: 8px; font-weight: bold; color: var(--gold); font-size: 18px; }
 
-        /* Both main buttons now have identical design */
-        button { 
-            width: 100%; 
-            margin-top: 25px; 
-            padding: 18px; 
-            font-weight: bold; 
-            font-size: 18px; 
-            border: none; 
-            border-radius: 16px; 
-            cursor: pointer; 
-        }
-        .register-btn, .check-btn { 
-            background: var(--gold); 
-            color: black; 
-        }
+        button { width: 100%; margin-top: 25px; padding: 18px; font-weight: bold; font-size: 18px; border: none; border-radius: 16px; cursor: pointer; }
+        .register-btn, .check-btn { background: var(--gold); color: black; }
         .status { margin-top: 20px; padding: 14px; border-radius: 12px; text-align: center; font-size: 15px; }
     </style>
 </head>
