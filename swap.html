@@ -6,63 +6,14 @@
     <title>RicSwap | Swap</title>
     <script src="https://cdn.ethers.io/lib/ethers-6.13.0.umd.min.js"></script>
     <style>
-        :root {
-            --obsidian: #080808;
-            --card-bg: #121212;
-            --input-bg: #1a1a1a;
-            --magma: linear-gradient(135deg, #ff4d00 0%, #ff8c00 100%);
-            --gold: #ffd700;
-        }
-        body {
-            background: var(--obsidian);
-            color: white;
-            font-family: system-ui, -apple-system, sans-serif;
-            margin: 0;
-            padding: 0;
-        }
-        .nav {
-            padding: 20px 40px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-bottom: 1px solid rgba(255,215,0,0.1);
-        }
-        .swap-card {
-            max-width: 420px;
-            margin: 60px auto;
-            background: var(--card-bg);
-            border-radius: 24px;
-            padding: 24px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.8);
-        }
-        .swap-input-group {
-            background: #1a1a1a;
-            border-radius: 16px;
-            padding: 16px;
-            margin-bottom: 12px;
-        }
-        .swap-input {
-            background: transparent;
-            border: none;
-            color: white;
-            font-size: 28px;
-            width: 100%;
-            outline: none;
-        }
-        button {
-            background: var(--magma);
-            color: white;
-            border: none;
-            padding: 14px 28px;
-            border-radius: 9999px;
-            font-weight: bold;
-            cursor: pointer;
-        }
-        .main-btn {
-            width: 100%;
-            margin-top: 20px;
-            font-size: 18px;
-        }
+        :root { --obsidian: #080808; --card-bg: #121212; --magma: linear-gradient(135deg, #ff4d00 0%, #ff8c00 100%); }
+        body { background: var(--obsidian); color: white; font-family: system-ui, sans-serif; margin: 0; padding: 0; }
+        .nav { padding: 20px 40px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,215,0,0.1); }
+        .swap-card { max-width: 420px; margin: 60px auto; background: var(--card-bg); border-radius: 24px; padding: 24px; box-shadow: 0 20px 40px rgba(0,0,0,0.8); }
+        .swap-input-group { background: #1a1a1a; border-radius: 16px; padding: 16px; margin-bottom: 12px; }
+        .swap-input { background: transparent; border: none; color: white; font-size: 28px; width: 100%; outline: none; }
+        button { background: var(--magma); color: white; border: none; padding: 14px 28px; border-radius: 9999px; font-weight: bold; cursor: pointer; width: 100%; margin-top: 20px; font-size: 18px; }
+        button:disabled { opacity: 0.6; cursor: not-allowed; }
     </style>
 </head>
 <body>
@@ -86,13 +37,14 @@
             <input type="number" id="toAmount" class="swap-input" placeholder="0.0" readonly>
         </div>
 
-        <button id="swapBtn" class="main-btn">SWAP NOW</button>
+        <button id="swapBtn">SWAP NOW</button>
     </div>
 
     <script>
         const ROUTER_ADDRESS = "0x21c38fA2c2EA3D835CCd41733E35636E75022A53";
         const WBONE = "0xC76F4c819D820369Fb2d7C1531aB3Bb18e6fE8d8";
         const RIC = "0x12C94d3A30daa09f81Ea6c037004E6e99A4A3dfc";
+        const SHIBARIUM_CHAIN_ID = 109;
 
         const ROUTER_ABI = [
             "function getAmountsOut(uint256 amountIn, address[] memory path) public view returns (uint256[] memory amounts)",
@@ -106,13 +58,61 @@
         const swapBtn = document.getElementById("swapBtn");
         const connectBtn = document.getElementById("connectBtn");
 
+        async function switchToShibarium() {
+            try {
+                await window.ethereum.request({
+                    method: 'wallet_switchEthereumChain',
+                    params: [{ chainId: '0x' + SHIBARIUM_CHAIN_ID.toString(16) }]
+                });
+            } catch (switchError) {
+                if (switchError.code === 4902) {
+                    await window.ethereum.request({
+                        method: 'wallet_addEthereumChain',
+                        params: [{
+                            chainId: '0x' + SHIBARIUM_CHAIN_ID.toString(16),
+                            chainName: 'Shibarium',
+                            nativeCurrency: { name: 'BONE', symbol: 'BONE', decimals: 18 },
+                            rpcUrls: ['https://rpc.shibarium.shib.io'],
+                            blockExplorerUrls: ['https://shibariumscan.io']
+                        }]
+                    });
+                } else {
+                    throw switchError;
+                }
+            }
+        }
+
+        async function connectWallet() {
+            if (!window.ethereum) {
+                return alert("Please install MetaMask or another wallet");
+            }
+            try {
+                connectBtn.disabled = true;
+                connectBtn.textContent = "CONNECTING...";
+
+                await switchToShibarium(); // Auto switch to Shibarium
+
+                provider = new ethers.BrowserProvider(window.ethereum);
+                signer = await provider.getSigner();
+                userAddress = await signer.getAddress();
+
+                connectBtn.textContent = userAddress.slice(0,6) + "..." + userAddress.slice(-4);
+                updateQuote();
+            } catch (e) {
+                console.error(e);
+                alert("Connection failed: " + e.message);
+                connectBtn.textContent = "CONNECT WALLET";
+            } finally {
+                connectBtn.disabled = false;
+            }
+        }
+
         async function updateQuote() {
             const amountIn = fromAmountInput.value.trim();
             if (!amountIn || isNaN(amountIn) || Number(amountIn) <= 0) {
                 toAmountInput.value = "";
                 return;
             }
-
             try {
                 const activeProvider = provider || new ethers.JsonRpcProvider("https://rpc.shibarium.shib.io");
                 const router = new ethers.Contract(ROUTER_ADDRESS, ROUTER_ABI, activeProvider);
@@ -122,7 +122,7 @@
                 const amounts = await router.getAmountsOut(amountInWei, path);
                 toAmountInput.value = ethers.formatEther(amounts[1]);
             } catch (e) {
-                console.error(e);
+                console.error("Quote error:", e);
                 toAmountInput.value = "No Liquidity";
             }
         }
@@ -137,6 +137,7 @@
                 const router = new ethers.Contract(ROUTER_ADDRESS, ROUTER_ABI, signer);
                 const amountInWei = ethers.parseEther(fromAmountInput.value);
                 const path = [WBONE, RIC];
+
                 const amountsOut = await router.getAmountsOut(amountInWei, path);
                 const amountOutMin = (amountsOut[1] * 995n) / 1000n; // 0.5% slippage
                 const deadline = Math.floor(Date.now() / 1000) + 1200;
@@ -150,32 +151,23 @@
                 );
 
                 await tx.wait();
-                alert("✅ Swap Successful!");
+                alert("✅ Swap Successful! Transaction confirmed.");
                 fromAmountInput.value = "";
                 toAmountInput.value = "";
             } catch (e) {
-                console.error(e);
-                alert("Swap failed: " + (e.reason || e.message));
+                console.error("Swap error:", e);
+                alert("Swap failed: " + (e.reason || e.message || "Check console"));
             } finally {
                 swapBtn.disabled = false;
                 swapBtn.textContent = "SWAP NOW";
             }
         }
 
-        async function connectWallet() {
-            if (!window.ethereum) return alert("Please install MetaMask");
-            provider = new ethers.BrowserProvider(window.ethereum);
-            signer = await provider.getSigner();
-            userAddress = await signer.getAddress();
-            connectBtn.textContent = userAddress.slice(0,6) + "..." + userAddress.slice(-4);
-            updateQuote();
-        }
-
+        // Event listeners
         fromAmountInput.addEventListener("input", updateQuote);
         swapBtn.addEventListener("click", executeSwap);
         connectBtn.addEventListener("click", connectWallet);
 
-        // Auto load quote on page open
         window.addEventListener("load", () => {
             updateQuote();
         });
