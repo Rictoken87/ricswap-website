@@ -11,7 +11,12 @@
             --magma: linear-gradient(135deg, #FF4D00 0%, #FF8C00 100%);
             --gold: #FFD700;
         }
-        body { background-color: var(--obsidian); color: #FFFFFF; font-family: 'Inter', sans-serif; margin: 0; }
+        body { 
+            background-color: var(--obsidian); 
+            color: #FFFFFF; 
+            font-family: 'Inter', sans-serif; 
+            margin: 0; 
+        }
 
         .nav { 
             width: 100%; 
@@ -23,18 +28,28 @@
         }
         .logo { font-size: 26px; font-weight: 900; color: var(--gold); }
 
+        /* Improved Swap Navigation Button */
         .nav-link {
-            color: #fff;
-            font-weight: 600;
+            color: white;
+            font-weight: 700;
             font-size: 18px;
             text-decoration: none;
-            padding: 10px 24px;
+            padding: 12px 28px;
+            border: 2px solid transparent;
             border-radius: 50px;
-            transition: all 0.3s;
+            transition: all 0.3s ease;
+            background: rgba(255, 215, 0, 0.1);
         }
         .nav-link:hover {
-            background: rgba(255, 215, 0, 0.15);
-            color: var(--gold);
+            border-color: var(--gold);
+            background: var(--gold);
+            color: black;
+            transform: translateY(-2px);
+        }
+        .nav-link.active {
+            background: var(--gold);
+            color: black;
+            border-color: var(--gold);
         }
 
         .btn-connect { 
@@ -81,7 +96,6 @@
     <div class="nav">
         <div class="logo"><img src="riclogo.png" alt="RicSwap Logo" style="height: 50px;"></div>
         
-        <!-- Navigation Link -->
         <a href="swap.html" class="nav-link">Swap</a>
         
         <button id="connectBtn" class="btn-connect">CONNECT WALLET</button>
