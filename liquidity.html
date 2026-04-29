@@ -9,7 +9,7 @@
         :root { --obsidian: #080808; --card-bg: #121212; --magma: linear-gradient(135deg, #ff4d00 0%, #ff8c00 100%); --gold: #ffd700; }
         body { background: var(--obsidian); color: white; font-family: system-ui, sans-serif; margin: 0; padding: 0; }
         .nav { padding: 20px 40px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,215,0,0.1); }
-        .card { max-width: 480px; margin: 60px auto; background: var(--card-bg); border-radius: 24px; padding: 32px; box-shadow: 0 20px 40px rgba(0,0,0,0.8); }
+        .card { max-width: 500px; margin: 60px auto; background: var(--card-bg); border-radius: 24px; padding: 32px; box-shadow: 0 20px 40px rgba(0,0,0,0.8); }
         .input-group { background: #1a1a1a; border-radius: 16px; padding: 16px; margin-bottom: 16px; border: 1px solid #333; }
         .input-group:focus-within { border-color: var(--gold); }
         label { display: block; color: #888; font-size: 12px; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 1px; }
@@ -118,11 +118,9 @@
             try {
                 const el = document.getElementById(elementId);
                 if (tokenAddress.toLowerCase() === WBONE.toLowerCase()) {
-                    // Native BONE balance (this is what you see in MetaMask)
                     const balance = await provider.getBalance(userAddress);
                     el.textContent = `Balance: ${ethers.formatEther(balance)} BONE`;
                 } else {
-                    // Normal ERC20 token (like RIC)
                     const token = new ethers.Contract(tokenAddress, ERC20_ABI, provider);
                     const balance = await token.balanceOf(userAddress);
                     el.textContent = `Balance: ${ethers.formatEther(balance)}`;
@@ -141,10 +139,9 @@
             loadBalances();
         }
 
-        // Add Liquidity function (same secure logic as before)
         async function addLiquidity() {
             if (!signer) return connectWallet();
-            // ... (full logic from previous version - kept exactly the same)
+
             const tokenA = document.getElementById("tokenA").value.trim();
             const tokenB = document.getElementById("tokenB").value.trim();
             const amountA = document.getElementById("amountA").value;
@@ -166,15 +163,46 @@
                     const token = isBONEA ? tokenB : tokenA;
                     const amountToken = ethers.parseEther(isBONEA ? amountB : amountA);
                     const amountBONE = ethers.parseEther(isBONEA ? amountA : amountB);
-                    await handleApproval(token, amountToken);
-                    const tx = await router.addLiquidityBONE(token, amountToken, (amountToken * 995n)/1000n, (amountBONE * 995n)/1000n, userAddress, deadline, { value: amountBONE });
+
+                    const tokenContract = new ethers.Contract(token, ERC20_ABI, signer);
+                    const allowance = await tokenContract.allowance(userAddress, ROUTER_ADDRESS);
+                    if (allowance < amountToken) {
+                        statusEl.textContent = "Approving token...";
+                        const txApprove = await tokenContract.approve(ROUTER_ADDRESS, ethers.MaxUint256);
+                        await txApprove.wait();
+                    }
+
+                    const tx = await router.addLiquidityBONE(
+                        token,
+                        amountToken,
+                        (amountToken * 995n) / 1000n,
+                        (amountBONE * 995n) / 1000n,
+                        userAddress,
+                        deadline,
+                        { value: amountBONE }
+                    );
                     await tx.wait();
                 } else {
                     const amountAWei = ethers.parseEther(amountA);
                     const amountBWei = ethers.parseEther(amountB);
-                    await handleApproval(tokenA, amountAWei);
-                    await handleApproval(tokenB, amountBWei);
-                    const tx = await router.addLiquidity(tokenA, tokenB, amountAWei, amountBWei, (amountAWei * 995n)/1000n, (amountBWei * 995n)/1000n, userAddress, deadline);
+
+                    const tokenAContract = new ethers.Contract(tokenA, ERC20_ABI, signer);
+                    const tokenBContract = new ethers.Contract(tokenB, ERC20_ABI, signer);
+
+                    if ((await tokenAContract.allowance(userAddress, ROUTER_ADDRESS)) < amountAWei) {
+                        await (await tokenAContract.approve(ROUTER_ADDRESS, ethers.MaxUint256)).wait();
+                    }
+                    if ((await tokenBContract.allowance(userAddress, ROUTER_ADDRESS)) < amountBWei) {
+                        await (await tokenBContract.approve(ROUTER_ADDRESS, ethers.MaxUint256)).wait();
+                    }
+
+                    const tx = await router.addLiquidity(
+                        tokenA, tokenB, amountAWei, amountBWei,
+                        (amountAWei * 995n) / 1000n,
+                        (amountBWei * 995n) / 1000n,
+                        userAddress,
+                        deadline
+                    );
                     await tx.wait();
                 }
 
@@ -184,23 +212,12 @@
             } catch (e) {
                 console.error(e);
                 statusEl.style.color = "#f00";
-                statusEl.textContent = "Error: " + (e.reason || e.message);
+                statusEl.textContent = "Error: " + (e.reason || e.message || "Check console");
             } finally {
                 addBtn.disabled = false;
             }
         }
 
-        async function handleApproval(tokenAddress, amountWei) {
-            const token = new ethers.Contract(tokenAddress, ERC20_ABI, signer);
-            const allowance = await token.allowance(userAddress, ROUTER_ADDRESS);
-            if (allowance < amountWei) {
-                statusEl.textContent = "Approving token...";
-                const tx = await token.approve(ROUTER_ADDRESS, ethers.MaxUint256);
-                await tx.wait();
-            }
-        }
-
-        // Event listeners
         document.getElementById("connectBtn").addEventListener("click", connectWallet);
         document.getElementById("addBtn").addEventListener("click", addLiquidity);
         document.getElementById("tokenA").addEventListener("change", loadBalances);
