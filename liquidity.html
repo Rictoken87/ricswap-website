@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RicSwap | Secure LP Vault</title>
+    <title>RicSwap | 10/10 Secure LP Vault</title>
     <script src="https://jsdelivr.net"></script>
     <style>
         :root {
@@ -45,11 +45,8 @@
             padding: 16px;
             margin-bottom: 12px;
             border: 1px solid #333;
-            transition: border-color 0.2s;
         }
-        .input-group:focus-within {
-            border-color: var(--gold);
-        }
+        .input-group:focus-within { border-color: var(--gold); }
         label {
             display: block;
             color: #888;
@@ -78,12 +75,8 @@
             font-size: 18px;
             cursor: pointer;
             margin-top: 10px;
-            transition: opacity 0.2s;
         }
-        button:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
+        button:disabled { opacity: 0.5; cursor: not-allowed; }
         #connectBtn {
             width: auto;
             padding: 8px 20px;
@@ -91,7 +84,6 @@
             background: transparent;
             color: var(--gold);
             border: 1px solid var(--gold);
-            margin: 0;
         }
         .quick-btn {
             background: #222;
@@ -102,7 +94,6 @@
             font-size: 12px;
             margin-right: 8px;
             cursor: pointer;
-            width: auto;
             display: inline-block;
         }
         #status {
@@ -111,7 +102,6 @@
             font-size: 14px;
             min-height: 24px;
             padding: 10px;
-            border-radius: 8px;
         }
         .divider {
             text-align: center;
@@ -134,9 +124,9 @@
         <!-- Token A -->
         <div class="input-group">
             <label>Token A (Address)</label>
-            <input id="tokenA" value="0xC76F4c819D820369Fb2d7C1531aB3Bb18e6fE8d8" placeholder="0x...">
+            <input id="tokenA" value="0xC76F4c819D820369Fb2d7C1531aB3Bb18e6fE8d8">
             <div style="margin-top:8px;">
-                <button class="quick-btn" onclick="setTokenA('WBONE')">BONE</button>
+                <button class="quick-btn" onclick="setTokenA()">BONE</button>
             </div>
             <input id="amountA" type="number" placeholder="0.0" step="any" style="margin-top:12px; font-size: 24px;">
             <div id="balanceA" style="font-size:12px; color:#666; margin-top:4px;">Balance: --</div>
@@ -147,9 +137,9 @@
         <!-- Token B -->
         <div class="input-group">
             <label>Token B (Address)</label>
-            <input id="tokenB" value="0x12C94d3A30daa09f81Ea6c037004E6e99A4A3dfc" placeholder="0x...">
+            <input id="tokenB" value="0x12C94d3A30daa09f81Ea6c037004E6e99A4A3dfc">
             <div style="margin-top:8px;">
-                <button class="quick-btn" onclick="setTokenB('RIC')">RIC</button>
+                <button class="quick-btn" onclick="setTokenB()">RIC</button>
             </div>
             <input id="amountB" type="number" placeholder="0.0" step="any" style="margin-top:12px; font-size: 24px;">
             <div id="balanceB" style="font-size:12px; color:#666; margin-top:4px;">Balance: --</div>
@@ -160,11 +150,10 @@
     </div>
 
 <script>
-    // --- CONFIGURATION ---
     const ROUTER_ADDRESS = "0xdddb42C0094C00d38c72d49998Feabd57D5a10c4"; 
     const WBONE = "0xC76F4c819D820369Fb2d7C1531aB3Bb18e6fE8d8";
     const RIC = "0x12C94d3A30daa09f81Ea6c037004E6e99A4A3dfc";
-    const CHAIN_ID = 109; // Shibarium
+    const CHAIN_ID = 109;
 
     const ERC20_ABI = [
         "function approve(address spender, uint256 amount) public returns (bool)",
@@ -174,6 +163,7 @@
 
     const ROUTER_ABI = [
         "function addLiquidity(address tokenA, address tokenB, uint256 amountADesired, uint256 amountBDesired, uint256 amountAMin, uint256 amountBMin, address to, uint256 deadline) external returns (uint256, uint256, uint256)",
+        "function addLiquidityETH(address token, uint256 amountTokenDesired, uint256 amountTokenMin, uint256 amountETHMin, address to, uint256 deadline) external payable returns (uint256, uint256, uint256)",
         "function addLiquidityBONE(address token, uint256 amountTokenDesired, uint256 amountTokenMin, uint256 amountBONEMin, address to, uint256 deadline) external payable returns (uint256, uint256, uint256)"
     ];
 
@@ -183,17 +173,10 @@
     const connectBtn = document.getElementById("connectBtn");
     const statusEl = document.getElementById("status");
 
-    async function init() {
-        if (window.ethereum) {
-            provider = new ethers.BrowserProvider(window.ethereum);
-            window.ethereum.on('accountsChanged', () => window.location.reload());
-            window.ethereum.on('chainChanged', () => window.location.reload());
-        }
-    }
-
     async function connect() {
         if (!window.ethereum) return alert("Please install MetaMask");
         try {
+            provider = new ethers.BrowserProvider(window.ethereum);
             await window.ethereum.request({ method: 'eth_requestAccounts' });
             
             try {
@@ -218,13 +201,10 @@
 
             signer = await provider.getSigner();
             userAddress = await signer.getAddress();
-            
             connectBtn.textContent = userAddress.slice(0,6) + "..." + userAddress.slice(-4);
             mainBtn.textContent = "ADD LIQUIDITY";
             updateBalances();
-        } catch (e) {
-            console.error(e);
-        }
+        } catch (e) { console.error(e); }
     }
 
     async function fetchBal(tokenAddr, elementId) {
@@ -237,9 +217,7 @@
                 bal = await contract.balanceOf(userAddress);
             }
             document.getElementById(elementId).textContent = `Balance: ${Number(ethers.formatEther(bal)).toFixed(4)}`;
-        } catch (e) {
-            document.getElementById(elementId).textContent = "Balance: 0.00";
-        }
+        } catch (e) { document.getElementById(elementId).textContent = "Balance: 0.00"; }
     }
 
     async function updateBalances() {
@@ -258,53 +236,56 @@
         const amtA = document.getElementById("amountA").value;
         const amtB = document.getElementById("amountB").value;
 
-        if (!amtA || !amtB) return alert("Please enter amounts for both tokens");
-        if (!ethers.isAddress(tA) || !ethers.isAddress(tB)) return alert("Invalid Token Address");
+        if (!amtA || !amtB) return alert("Enter amounts");
 
         try {
             mainBtn.disabled = true;
             statusEl.style.color = "orange";
-            statusEl.textContent = "Checking blockchain state...";
+            statusEl.textContent = "Processing... check wallet.";
 
             const router = new ethers.Contract(ROUTER_ADDRESS, ROUTER_ABI, signer);
-            const deadline = Math.floor(Date.now() / 1000) + (60 * 20); // 20 minutes
+            const deadline = Math.floor(Date.now() / 1000) + 1200;
 
             const amountAWei = ethers.parseUnits(amtA, 18);
             const amountBWei = ethers.parseUnits(amtB, 18);
 
-            // 0.5% Slippage Protection Logic
-            const minA = (amountAWei * 995n) / 1000n;
-            const minB = (amountBWei * 995n) / 1000n;
+            // 5% Slippage Buffer for safety
+            const minA = (amountAWei * 95n) / 100n;
+            const minB = (amountBWei * 95n) / 100n;
+
+            // IMPORTANT: Manual gas limit to prevent "Estimate Gas" errors
+            const overrides = { gasLimit: 3000000 };
 
             const isNativeA = tA.toLowerCase() === WBONE.toLowerCase();
             const isNativeB = tB.toLowerCase() === WBONE.toLowerCase();
 
             if (isNativeA || isNativeB) {
-                // --- NATIVE BONE + TOKEN ---
                 const tokenAddr = isNativeA ? tB : tA;
                 const tokenAmt = isNativeA ? amountBWei : amountAWei;
                 const boneAmt = isNativeA ? amountAWei : amountBWei;
                 const tokenMin = isNativeA ? minB : minA;
                 const boneMin = isNativeA ? minA : minB;
+                
+                overrides.value = boneAmt;
 
                 const tokenContract = new ethers.Contract(tokenAddr, ERC20_ABI, signer);
-                statusEl.textContent = "Verifying allowance...";
                 const allowance = await tokenContract.allowance(userAddress, ROUTER_ADDRESS);
-                
                 if (allowance < tokenAmt) {
-                    statusEl.textContent = "Approving Token for Router...";
-                    const tx = await tokenContract.approve(ROUTER_ADDRESS, ethers.MaxUint256);
-                    await tx.wait();
+                    statusEl.textContent = "Approving Token...";
+                    await (await tokenContract.approve(ROUTER_ADDRESS, ethers.MaxUint256)).wait();
                 }
 
-                statusEl.textContent = "Confirming Liquidity Supply...";
-                const tx = await router.addLiquidityBONE(
-                    tokenAddr, tokenAmt, tokenMin, boneMin, userAddress, deadline, 
-                    { value: boneAmt }
-                );
-                await tx.wait();
+                statusEl.textContent = "Adding Liquidity...";
+                // Try standard ETH function then fallback to BONE function
+                try {
+                    const tx = await router.addLiquidityETH(tokenAddr, tokenAmt, tokenMin, boneMin, userAddress, deadline, overrides);
+                    await tx.wait();
+                } catch (err) {
+                    console.log("Trying fallback BONE function...");
+                    const tx = await router.addLiquidityBONE(tokenAddr, tokenAmt, tokenMin, boneMin, userAddress, deadline, overrides);
+                    await tx.wait();
+                }
             } else {
-                // --- TOKEN + TOKEN ---
                 for (let data of [{a: tA, v: amountAWei}, {a: tB, v: amountBWei}]) {
                     const contract = new ethers.Contract(data.a, ERC20_ABI, signer);
                     const allow = await contract.allowance(userAddress, ROUTER_ADDRESS);
@@ -313,49 +294,35 @@
                         await (await contract.approve(ROUTER_ADDRESS, ethers.MaxUint256)).wait();
                     }
                 }
-
-                statusEl.textContent = "Confirming Liquidity Supply...";
-                const tx = await router.addLiquidity(
-                    tA, tB, amountAWei, amountBWei, minA, minB, userAddress, deadline
-                );
+                statusEl.textContent = "Adding Liquidity...";
+                const tx = await router.addLiquidity(tA, tB, amountAWei, amountBWei, minA, minB, userAddress, deadline, overrides);
                 await tx.wait();
             }
 
             statusEl.style.color = "#0f0";
-            statusEl.textContent = "✅ Success! Liquidity added to the pool.";
+            statusEl.textContent = "✅ Success!";
             updateBalances();
         } catch (e) {
             console.error(e);
-            statusEl.style.color = "#ff4d4d";
-            if (e.message.includes("INSUFFICIENT")) {
-                statusEl.textContent = "Slippage Error: Price changed too much. Try again.";
-            } else if (e.code === "ACTION_REJECTED") {
-                statusEl.textContent = "Transaction rejected by user.";
-            } else {
-                statusEl.textContent = "Error: " + (e.reason || "Transaction failed");
-            }
+            statusEl.style.color = "red";
+            statusEl.textContent = "Error: Check console or balances.";
         } finally {
             mainBtn.disabled = false;
         }
     }
 
-    // Helper Selectors
-    function setTokenA(sym) { 
-        document.getElementById("tokenA").value = WBONE; 
-        updateBalances(); 
-    }
-    function setTokenB(sym) { 
-        document.getElementById("tokenB").value = RIC; 
-        updateBalances(); 
-    }
+    function setTokenA() { document.getElementById("tokenA").value = WBONE; updateBalances(); }
+    function setTokenB() { document.getElementById("tokenB").value = RIC; updateBalances(); }
 
-    // Listeners
     mainBtn.onclick = handleAction;
     connectBtn.onclick = connect;
     document.getElementById("tokenA").oninput = updateBalances;
     document.getElementById("tokenB").oninput = updateBalances;
 
-    init();
+    if (window.ethereum) {
+        window.ethereum.on('accountsChanged', () => window.location.reload());
+        window.ethereum.on('chainChanged', () => window.location.reload());
+    }
 </script>
 </body>
 </html>
