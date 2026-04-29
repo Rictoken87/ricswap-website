@@ -19,7 +19,7 @@
             margin: 0;
         }
         .nav {
-            padding: 20px 40px;
+            padding: 24px 40px;
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -31,7 +31,6 @@
             text-decoration: none;
             margin-left: 30px;
             font-weight: 500;
-            transition: color 0.3s;
         }
         .nav-links a:hover { color: var(--gold); }
         #connectBtn {
@@ -44,55 +43,101 @@
             border: 1px solid var(--gold) !important;
             border-radius: 9999px !important;
         }
-        .hero, .section { padding: 60px 40px; }
-        .card { background: var(--card-bg); border-radius: 24px; padding: 24px; box-shadow: 0 20px 40px rgba(0,0,0,0.8); }
+        .hero { text-align: center; padding: 80px 40px; }
+        .swap-card {
+            background: #121212;
+            border: 1px solid #222;
+            border-radius: 24px;
+            padding: 20px;
+            width: 100%;
+            max-width: 420px;
+            margin: 40px auto;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.8);
+        }
+        .swap-input-group {
+            background: #1A1A1A;
+            border-radius: 16px;
+            padding: 16px;
+            margin-bottom: 8px;
+        }
+        .swap-input {
+            background: transparent;
+            border: none;
+            color: white;
+            font-size: 24px;
+            width: 100%;
+            outline: none;
+        }
         button.main-btn {
             background: var(--magma);
             color: white;
             border: none;
-            padding: 16px 32px;
+            padding: 18px;
             border-radius: 9999px;
             font-weight: bold;
-            font-size: 18px;
-            cursor: pointer;
             width: 100%;
+            font-size: 18px;
+            margin-top: 20px;
+            cursor: pointer;
         }
     </style>
 </head>
 <body>
+
     <!-- NAVIGATION -->
     <div class="nav">
         <div class="logo">RicSwap</div>
         <div class="nav-links">
-            <a href="index.html">Home</a>
             <a href="swap.html">Swap</a>
-            <a href="liquidity.html">Add Liquidity</a>
-            <a href="#hall-of-flame">Hall of Flame</a>
+            <a href="liquidity.html" style="color:#ffd700;">Add Liquidity</a>
         </div>
         <button id="connectBtn">CONNECT WALLET</button>
     </div>
 
-    <!-- HERO / EXISTING CONTENT (keep your previous sections here) -->
-    <div class="hero" style="text-align:center;">
+    <!-- HERO -->
+    <div class="hero">
         <h1 style="font-size:64px; margin:0;">UN-RUGGABLE DEX</h1>
         <p style="font-size:24px; color:#888;">100% LP Burn • Diamond Tier Security • Shibarium</p>
-        <a href="liquidity.html" style="display:inline-block; margin-top:30px;">
-            <button class="main-btn" style="width:auto; padding:18px 40px;">ADD LIQUIDITY NOW</button>
-        </a>
     </div>
 
-    <!-- YOUR EXISTING SECTIONS (Hall of Flame, Register Pair, Track Burn Progress, etc.) -->
-    <!-- Paste all your previous content here (the diamond tier burn card, hall of flame, register form, progress bar, etc.) -->
-
-    <div id="hall-of-flame" class="section">
-        <h2 style="text-align:center;">HALL OF FLAME</h2>
-        <!-- Your hall of flame content here -->
+    <!-- SWAP CARD (your original) -->
+    <div class="swap-card">
+        <div style="display:flex; justify-content:space-between; margin-bottom:15px; align-items:center;">
+            <span style="font-weight:bold; letter-spacing:1px;">SWAP</span>
+            <span style="color:#666; cursor:pointer; font-size:18px;">⚙️</span>
+        </div>
+        <!-- FROM -->
+        <div class="swap-input-group">
+            <div class="swap-label">You Pay</div>
+            <div class="swap-row">
+                <input type="number" class="swap-input" placeholder="0.0" value="1">
+                <button class="token-selector">BONE ⬇</button>
+            </div>
+        </div>
+        <!-- ARROW -->
+        <div style="text-align:center; margin:10px 0; font-size:24px;">↓</div>
+        <!-- TO -->
+        <div class="swap-input-group">
+            <div class="swap-label">You Receive</div>
+            <div class="swap-row">
+                <input type="number" class="swap-input" placeholder="0.0" readonly>
+                <button class="token-selector" style="background:var(--magma);">RIC ⬇</button>
+            </div>
+        </div>
+        <button class="main-btn" onclick="window.location.href='swap.html'">CONNECT WALLET TO SWAP</button>
     </div>
 
-    <!-- ... rest of your original index.html content ... -->
+    <!-- HALL OF FLAME -->
+    <div class="hall-of-flame" style="text-align:center; padding:40px; background:#111;">
+        <h2>HALL OF FLAME ● 2026 DEPLOYED</h2>
+        <!-- Add your Hall of Flame projects here -->
+    </div>
+
+    <!-- YOUR ORIGINAL SECTIONS (Diamond Tier Burn, Register Pair, Track Burn Progress, etc.) -->
+    <!-- Paste your existing sections here if you want them restored exactly as before -->
 
     <script>
-        // Connect wallet (same logic as before)
+        // Simple connect wallet (keeps button small)
         document.getElementById("connectBtn").addEventListener("click", async () => {
             if (!window.ethereum) return alert("Please install MetaMask");
             try {
@@ -102,7 +147,7 @@
                 const address = await signer.getAddress();
                 document.getElementById("connectBtn").textContent = address.slice(0,6) + "..." + address.slice(-4);
             } catch (e) {
-                alert("Connection failed");
+                console.error(e);
             }
         });
     </script>
