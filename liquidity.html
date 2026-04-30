@@ -27,30 +27,24 @@
     </div>
 
     <div class="card">
-        <h3 style="text-align:center;">Add Liquidity (Any Token Pair)</h3>
+        <h3 style="text-align:center;">Add Liquidity (RIC/BONE Pair)</h3>
 
-        <!-- Token A -->
+        <!-- Token A (BONE) -->
         <div class="input-group">
-            <label>Token A Address</label>
-            <input id="tokenA" value="0xC76F4c819D820369Fb2d7C1531aB3Bb18e6fE8d8" placeholder="Token A">
-            <div style="margin-top:8px;">
-                <button class="quick-btn" onclick="quickSelectA()">BONE (Native)</button>
-            </div>
-            <input id="amountA" type="number" placeholder="Amount" style="font-size:24px; margin-top:12px;">
+            <label>Token A (WBONE)</label>
+            <input id="tokenA" value="0xC76F4c819D820369Fb2d7C1531aB3Bb18e6fE8d8" readonly>
+            <input id="amountA" type="number" placeholder="Amount of BONE" style="font-size:24px; margin-top:12px;">
             <div id="balanceA" style="font-size:12px; color:#888; margin-top:4px;">Balance: -- BONE</div>
         </div>
 
         <div style="text-align:center; margin:10px 0; font-size:28px;">+</div>
 
-        <!-- Token B -->
+        <!-- Token B (RIC) -->
         <div class="input-group">
-            <label>Token B Address</label>
-            <input id="tokenB" value="0x12C94d3A30daa09f81Ea6c037004E6e99A4A3dfc" placeholder="Token B">
-            <div style="margin-top:8px;">
-                <button class="quick-btn" onclick="quickSelectB()">RIC</button>
-            </div>
-            <input id="amountB" type="number" placeholder="Amount" style="font-size:24px; margin-top:12px;">
-            <div id="balanceB" style="font-size:12px; color:#888; margin-top:4px;">Balance: --</div>
+            <label>Token B (RIC)</label>
+            <input id="tokenB" value="0x12C94d3A30daa09f81Ea6c037004E6e99A4A3dfc" readonly>
+            <input id="amountB" type="number" placeholder="Amount of RIC" style="font-size:24px; margin-top:12px;">
+            <div id="balanceB" style="font-size:12px; color:#888; margin-top:4px;">Balance: -- RIC</div>
         </div>
 
         <button id="addBtn">ADD LIQUIDITY</button>
@@ -58,12 +52,12 @@
     </div>
 
     <script>
-        const ROUTER_ADDRESS = "0x01171829db407f8571503E3b33Cf5af2Dd1E8ce1";   // ← Your latest router
+        const ROUTER_ADDRESS = "0x01171829db407f8571503E3b33Cf5af2Dd1E8ce1";
         const WBONE = "0xC76F4c819D820369Fb2d7C1531aB3Bb18e6fE8d8";
+        const RIC = "0x12C94d3A30daa09f81Ea6c037004E6e99A4A3dfc";
         const SHIBARIUM_CHAIN_ID = 109;
 
         const ROUTER_ABI = [
-            "function addLiquidity(address tokenA, address tokenB, uint256 amountADesired, uint256 amountBDesired, uint256 amountAMin, uint256 amountBMin, address to, uint256 deadline) external returns (uint256, uint256, uint256)",
             "function addLiquidityBONE(address token, uint256 amountTokenDesired, uint256 amountTokenMin, uint256 amountBONEMin, address to, uint256 deadline) external payable returns (uint256, uint256, uint256)"
         ];
         const ERC20_ABI = [
@@ -89,7 +83,7 @@
         }
 
         async function connectWallet() {
-            if (!window.ethereum) return alert("Please install MetaMask");
+            if (!window.ethereum) return alert("Install MetaMask");
             try {
                 connectBtn.disabled = true;
                 connectBtn.textContent = "CONNECTING...";
@@ -99,55 +93,38 @@
                 userAddress = await signer.getAddress();
                 connectBtn.textContent = userAddress.slice(0,6) + "..." + userAddress.slice(-4);
                 await loadBalances();
-            } catch (e) {
-                alert("Connection failed: " + e.message);
-            } finally {
-                connectBtn.disabled = false;
-            }
+            } catch (e) { alert("Connection failed"); }
+            finally { connectBtn.disabled = false; }
         }
 
         async function loadBalances() {
-            if (!userAddress || !provider) return;
-            const tokenA = document.getElementById("tokenA").value.trim();
-            const tokenB = document.getElementById("tokenB").value.trim();
-            if (tokenA) await getBalance(tokenA, "balanceA");
-            if (tokenB) await getBalance(tokenB, "balanceB");
+            if (!userAddress) return;
+            await getBalance(WBONE, "balanceA");
+            await getBalance(RIC, "balanceB");
         }
 
-        async function getBalance(tokenAddress, elementId) {
+        async function getBalance(token, elementId) {
             try {
-                const el = document.getElementById(elementId);
-                if (tokenAddress.toLowerCase() === WBONE.toLowerCase()) {
-                    const balance = await provider.getBalance(userAddress);
-                    el.textContent = `Balance: ${ethers.formatEther(balance)} BONE`;
+                if (token === WBONE) {
+                    const bal = await provider.getBalance(userAddress);
+                    document.getElementById(elementId).textContent = `Balance: ${ethers.formatEther(bal)} BONE`;
                 } else {
-                    const token = new ethers.Contract(tokenAddress, ERC20_ABI, provider);
-                    const balance = await token.balanceOf(userAddress);
-                    el.textContent = `Balance: ${ethers.formatEther(balance)}`;
+                    const tokenContract = new ethers.Contract(token, ERC20_ABI, provider);
+                    const bal = await tokenContract.balanceOf(userAddress);
+                    document.getElementById(elementId).textContent = `Balance: ${ethers.formatEther(bal)}`;
                 }
             } catch (e) {
                 document.getElementById(elementId).textContent = "Balance: --";
             }
         }
 
-        function quickSelectA() {
-            document.getElementById("tokenA").value = WBONE;
-            loadBalances();
-        }
-        function quickSelectB() {
-            document.getElementById("tokenB").value = "0x12C94d3A30daa09f81Ea6c037004E6e99A4A3dfc";
-            loadBalances();
-        }
-
         async function addLiquidity() {
             if (!signer) return connectWallet();
 
-            const tokenA = document.getElementById("tokenA").value.trim();
-            const tokenB = document.getElementById("tokenB").value.trim();
-            const amountA = document.getElementById("amountA").value;
-            const amountB = document.getElementById("amountB").value;
+            const amountBONE = document.getElementById("amountA").value;
+            const amountRIC = document.getElementById("amountB").value;
 
-            if (!tokenA || !tokenB || !amountA || !amountB) return alert("Please fill all fields");
+            if (!amountBONE || !amountRIC) return alert("Enter both amounts");
 
             try {
                 addBtn.disabled = true;
@@ -155,56 +132,27 @@
 
                 const router = new ethers.Contract(ROUTER_ADDRESS, ROUTER_ABI, signer);
                 const deadline = Math.floor(Date.now() / 1000) + 1200;
+                const amountBONEWei = ethers.parseEther(amountBONE);
+                const amountRICWei = ethers.parseEther(amountRIC);
 
-                const isBONEA = tokenA.toLowerCase() === WBONE.toLowerCase();
-                const isBONEB = tokenB.toLowerCase() === WBONE.toLowerCase();
-
-                if (isBONEA || isBONEB) {
-                    const token = isBONEA ? tokenB : tokenA;
-                    const amountToken = ethers.parseEther(isBONEA ? amountB : amountA);
-                    const amountBONE = ethers.parseEther(isBONEA ? amountA : amountB);
-
-                    const tokenContract = new ethers.Contract(token, ERC20_ABI, signer);
-                    const allowance = await tokenContract.allowance(userAddress, ROUTER_ADDRESS);
-                    if (allowance < amountToken) {
-                        statusEl.textContent = "Approving token...";
-                        const txApprove = await tokenContract.approve(ROUTER_ADDRESS, ethers.MaxUint256);
-                        await txApprove.wait();
-                    }
-
-                    const tx = await router.addLiquidityBONE(
-                        token,
-                        amountToken,
-                        (amountToken * 995n) / 1000n,
-                        (amountBONE * 995n) / 1000n,
-                        userAddress,
-                        deadline,
-                        { value: amountBONE }
-                    );
-                    await tx.wait();
-                } else {
-                    const amountAWei = ethers.parseEther(amountA);
-                    const amountBWei = ethers.parseEther(amountB);
-
-                    const tokenAContract = new ethers.Contract(tokenA, ERC20_ABI, signer);
-                    const tokenBContract = new ethers.Contract(tokenB, ERC20_ABI, signer);
-
-                    if ((await tokenAContract.allowance(userAddress, ROUTER_ADDRESS)) < amountAWei) {
-                        await (await tokenAContract.approve(ROUTER_ADDRESS, ethers.MaxUint256)).wait();
-                    }
-                    if ((await tokenBContract.allowance(userAddress, ROUTER_ADDRESS)) < amountBWei) {
-                        await (await tokenBContract.approve(ROUTER_ADDRESS, ethers.MaxUint256)).wait();
-                    }
-
-                    const tx = await router.addLiquidity(
-                        tokenA, tokenB, amountAWei, amountBWei,
-                        (amountAWei * 995n) / 1000n,
-                        (amountBWei * 995n) / 1000n,
-                        userAddress,
-                        deadline
-                    );
-                    await tx.wait();
+                // Approve RIC
+                const ricContract = new ethers.Contract(RIC, ERC20_ABI, signer);
+                const allowance = await ricContract.allowance(userAddress, ROUTER_ADDRESS);
+                if (allowance < amountRICWei) {
+                    await (await ricContract.approve(ROUTER_ADDRESS, ethers.MaxUint256)).wait();
                 }
+
+                const tx = await router.addLiquidityBONE(
+                    RIC,
+                    amountRICWei,
+                    (amountRICWei * 995n) / 1000n,
+                    (amountBONEWei * 995n) / 1000n,
+                    userAddress,
+                    deadline,
+                    { value: amountBONEWei }
+                );
+
+                await tx.wait();
 
                 statusEl.style.color = "#0f0";
                 statusEl.textContent = "✅ Liquidity added successfully!";
@@ -212,7 +160,7 @@
             } catch (e) {
                 console.error(e);
                 statusEl.style.color = "#f00";
-                statusEl.textContent = "Error: " + (e.reason || e.message || "Check console");
+                statusEl.textContent = "Error: " + (e.reason || e.message || "Check console (F12)");
             } finally {
                 addBtn.disabled = false;
             }
@@ -220,8 +168,6 @@
 
         document.getElementById("connectBtn").addEventListener("click", connectWallet);
         document.getElementById("addBtn").addEventListener("click", addLiquidity);
-        document.getElementById("tokenA").addEventListener("change", loadBalances);
-        document.getElementById("tokenB").addEventListener("change", loadBalances);
     </script>
 </body>
 </html>
