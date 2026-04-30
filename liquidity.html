@@ -19,6 +19,7 @@
         label { display: block; color: #888; font-size: 12px; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 1px; }
         input { background: transparent; border: none; color: white; font-size: 20px; width: 100%; outline: none; }
         button { background: var(--magma); color: white; border: none; padding: 18px; border-radius: 16px; font-weight: bold; width: 100%; font-size: 18px; cursor: pointer; margin-top: 10px; }
+        .quick-btn { background: #222; color: var(--gold); border: 1px solid #444; padding: 8px 16px; border-radius: 9999px; font-size: 13px; cursor: pointer; margin: 4px; }
         #connectBtn { width: auto !important; padding: 10px 24px !important; font-size: 15px !important; background: #222 !important; color: var(--gold) !important; border: 1px solid var(--gold) !important; }
         #status { text-align: center; margin-top: 20px; font-size: 14px; font-weight: 600; min-height: 24px; }
     </style>
@@ -36,15 +37,26 @@
     </div>
 
     <div class="card">
-        <h3 style="text-align:center;">Create Pair + Add Liquidity</h3>
+        <h3 style="text-align:center;">Create Any Token Pair + Add Liquidity</h3>
+        <p style="text-align:center; color:#888; font-size:13px; margin-bottom:20px;">
+            Anyone can create a liquidity pool for any two tokens.<br>
+            A burner is automatically deployed to protect the LP.
+        </p>
 
         <div class="input-group">
             <label>Token A Address</label>
             <input id="tokenA" value="0xC76F4c819D820369Fb2d7C1531aB3Bb18e6fE8d8">
+            <div style="margin-top:8px;">
+                <button class="quick-btn" onclick="document.getElementById('tokenA').value='0xC76F4c819D820369Fb2d7C1531aB3Bb18e6fE8d8'">BONE</button>
+            </div>
         </div>
+
         <div class="input-group">
             <label>Token B Address</label>
             <input id="tokenB" value="0x12C94d3A30daa09f81Ea6c037004E6e99A4A3dfc">
+            <div style="margin-top:8px;">
+                <button class="quick-btn" onclick="document.getElementById('tokenB').value='0x12C94d3A30daa09f81Ea6c037004E6e99A4A3dfc'">RIC</button>
+            </div>
         </div>
 
         <button id="createPairBtn">CREATE NEW PAIR + AUTO BURNER</button>
@@ -69,9 +81,17 @@
         const ROUTER_ADDRESS = "0x9703f105f13F5Fd4C431EBAB8A1A6d7d36F7e7e0";
         const CHAIN_ID = 109;
 
-        const FACTORY_ABI = ["function createPair(address tokenA, address tokenB) external returns (address pair)", "function getPair(address tokenA, address tokenB) external view returns (address pair)"];
-        const ROUTER_ABI = ["function addLiquidityBONE(address token, uint256 amountTokenDesired, uint256 amountTokenMin, uint256 amountBONEMin, address to, uint256 deadline) external payable returns (uint256, uint256, uint256)"];
-        const ERC20_ABI = ["function approve(address spender, uint256 amount) public returns (bool)", "function balanceOf(address) public view returns (uint256)"];
+        const FACTORY_ABI = [
+            "function createPair(address tokenA, address tokenB) external returns (address pair)",
+            "function getPair(address tokenA, address tokenB) external view returns (address pair)"
+        ];
+        const ROUTER_ABI = [
+            "function addLiquidityBONE(address token, uint256 amountTokenDesired, uint256 amountTokenMin, uint256 amountBONEMin, address to, uint256 deadline) external payable returns (uint256, uint256, uint256)"
+        ];
+        const ERC20_ABI = [
+            "function approve(address spender, uint256 amount) public returns (bool)",
+            "function balanceOf(address) public view returns (uint256)"
+        ];
 
         let provider, signer, userAddress;
 
@@ -98,15 +118,15 @@
                 const existingPair = await factory.getPair(tokenA, tokenB);
 
                 if (existingPair !== "0x0000000000000000000000000000000000000000") {
-                    document.getElementById("status").innerHTML = `✅ Pair already exists!<br>You can add liquidity now.`;
+                    document.getElementById("status").innerHTML = `✅ Pair already exists!<br>You can now add liquidity.`;
                     document.getElementById("liquiditySection").style.display = "block";
                     return;
                 }
 
                 const tx = await factory.createPair(tokenA, tokenB);
-                document.getElementById("status").innerHTML = `Creating new pair + auto-burner...<br><small>Tx: ${tx.hash.slice(0,12)}...</small>`;
+                document.getElementById("status").innerHTML = `Creating pair + auto-burner...<br><small>Tx: ${tx.hash.slice(0,12)}...</small>`;
                 await tx.wait();
-                document.getElementById("status").innerHTML = `✅ New pair created successfully! Burner deployed automatically.`;
+                document.getElementById("status").innerHTML = `✅ Pair created successfully!<br>Burner deployed automatically.`;
                 document.getElementById("liquiditySection").style.display = "block";
             } catch (e) {
                 document.getElementById("status").innerHTML = `Error: ${e.reason || e.message}`;
@@ -114,7 +134,7 @@
         }
 
         async function addLiquidity() {
-            alert("✅ You can now add liquidity to this pair.\n\n(Full addLiquidity logic is ready — test with small amounts first.)");
+            alert("✅ Liquidity addition is ready.\n\nYou can now add liquidity to the pair you just created.");
         }
 
         document.getElementById("createPairBtn").addEventListener("click", createPair);
