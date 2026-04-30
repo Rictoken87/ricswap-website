@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>RicSwap | Add Liquidity</title>
-    <script src="https://jsdelivr.net"></script>
+    <script src="https://cloudflare.com"></script>
     <style>
         :root {
             --obsidian: #080808;
@@ -21,13 +21,13 @@
         .card { max-width: 520px; margin: 40px auto; background: var(--card-bg); border-radius: 24px; padding: 32px; box-shadow: 0 20px 40px rgba(0,0,0,0.8); border: 1px solid #222; }
         .input-group { background: #1a1a1a; border-radius: 16px; padding: 16px; margin-bottom: 16px; border: 1px solid #333; }
         .input-group:focus-within { border-color: var(--gold); }
-        label { display: block; color: #888; font-size: 12px; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 1px; }
+        label { display: block; color: #888; font-size: 11px; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 1px; }
         input { background: transparent; border: none; color: white; font-size: 18px; width: 100%; outline: none; }
         button { background: var(--magma); color: white; border: none; padding: 18px; border-radius: 16px; font-weight: bold; width: 100%; font-size: 18px; cursor: pointer; margin-top: 10px; transition: 0.2s; }
         button:disabled { opacity: 0.5; filter: grayscale(1); }
         .quick-btn { background: #222; color: var(--gold); border: 1px solid #444; padding: 8px 16px; border-radius: 9999px; font-size: 13px; cursor: pointer; margin: 4px; }
-        #connectBtn { width: auto !important; padding: 10px 24px !important; font-size: 15px !important; background: #222 !important; color: var(--gold) !important; border: 1px solid var(--gold) !important; }
-        #status { text-align: center; margin-top: 20px; font-size: 13px; min-height: 24px; font-family: monospace; line-height: 1.6; color: #aaa; }
+        #connectBtn { width: auto !important; padding: 10px 24px !important; font-size: 14px !important; background: #222 !important; color: var(--gold) !important; border: 1px solid var(--gold) !important; }
+        #status { text-align: center; margin-top: 20px; font-size: 13px; min-height: 24px; font-family: monospace; color: #aaa; }
     </style>
 </head>
 <body>
@@ -45,15 +45,13 @@
 
 <div class="card">
     <h3 style="text-align:center; margin:0;">Pair Manager</h3>
-    <p style="text-align:center; color:#888; font-size:13px; margin: 12px 0 24px 0;">
-        Create the pair first, then add liquidity.
-    </p>
+    <p style="text-align:center; color:#888; font-size:13px; margin: 12px 0 24px 0;">Create pair or add liquidity</p>
 
     <div class="input-group">
         <label>Token A (Base)</label>
         <input id="tokenA" value="0xC76F4c819D820369Fb2d7C1531aB3Bb18e6fE8d8">
         <div style="margin-top:8px;">
-            <button class="quick-btn" onclick="document.getElementById('tokenA').value='0xC76F4c819D820369Fb2d7C1531aB3Bb18e6fE8d8'">BONE</button>
+            <button class="quick-btn" id="btnBone">BONE</button>
         </div>
     </div>
 
@@ -65,7 +63,6 @@
     <button id="createPairBtn">CHECK / CREATE PAIR</button>
 
     <div id="liquiditySection" style="display:none; margin-top:24px; border-top: 1px solid #333; padding-top: 24px;">
-        <h4 style="text-align:center; color: var(--gold); margin-bottom: 16px;">Supply Liquidity</h4>
         <div class="input-group">
             <label>Amount BONE</label>
             <input id="amountA" type="number" placeholder="0.0">
@@ -77,10 +74,11 @@
         <button id="addBtn">ADD LIQUIDITY</button>
     </div>
 
-    <div id="status"></div>
+    <div id="status">Ready.</div>
 </div>
 
 <script>
+window.onload = function() {
     const FACTORY_ADDRESS = "0xc2e80224D2f61FaE15CF9b7D089e327F06db1106";
     const ROUTER_ADDRESS = "0x9703f105f13F5Fd4C431EBAB8A1A6d7d36F7e7e0";
     const WBONE = "0xC76F4c819D820369Fb2d7C1531aB3Bb18e6fE8d8";
@@ -90,81 +88,90 @@
         "function createPair(address tokenA, address tokenB) external returns (address pair)",
         "function getPair(address tokenA, address tokenB) external view returns (address pair)"
     ];
-    const ROUTER_ABI = [
-        "function addLiquidityETH(address token, uint amountTokenDesired, uint amountTokenMin, uint amountETHMin, address to, uint deadline) external payable returns (uint amountToken, uint amountETH, uint liquidity)"
-    ];
+    const ROUTER_ABI = ["function addLiquidityETH(address token, uint amountTokenDesired, uint amountTokenMin, uint amountETHMin, address to, uint deadline) external payable returns (uint amountToken, uint amountETH, uint liquidity)"];
     const ERC20_ABI = [
         "function approve(address spender, uint256 amount) public returns (bool)",
-        "function allowance(address owner, address spender) public view returns (uint256)",
-        "function balanceOf(address account) public view returns (uint256)"
+        "function allowance(address owner, address spender) public view returns (uint256)"
     ];
 
     let provider, signer, userAddress;
 
+    const connectBtn = document.getElementById("connectBtn");
+    const createBtn = document.getElementById("createPairBtn");
+    const addBtn = document.getElementById("addBtn");
+    const statusEl = document.getElementById("status");
+
     async function connectWallet() {
-        if (!window.ethereum) return alert("Install MetaMask");
+        if (!window.ethereum) return alert("MetaMask not found!");
         try {
+            statusEl.textContent = "Connecting to MetaMask...";
             provider = new ethers.BrowserProvider(window.ethereum);
             await provider.send("eth_requestAccounts", []);
-            await window.ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: '0x' + CHAIN_ID.toString(16) }] });
+            
+            // Switch to Shibarium
+            try {
+                await window.ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: '0x' + CHAIN_ID.toString(16) }] });
+            } catch (e) {
+                if (e.code === 4902) {
+                    await window.ethereum.request({
+                        method: 'wallet_addEthereumChain',
+                        params: [{
+                            chainId: '0x' + CHAIN_ID.toString(16),
+                            chainName: 'Shibarium',
+                            nativeCurrency: { name: 'BONE', symbol: 'BONE', decimals: 18 },
+                            rpcUrls: ['https://shib.io'],
+                            blockExplorerUrls: ['https://shibariumscan.io']
+                        }]
+                    });
+                }
+            }
+
             signer = await provider.getSigner();
             userAddress = await signer.getAddress();
-            document.getElementById("connectBtn").textContent = userAddress.slice(0,6) + "..." + userAddress.slice(-4);
-        } catch (e) { console.error(e); }
+            connectBtn.textContent = userAddress.slice(0,6) + "..." + userAddress.slice(-4);
+            statusEl.textContent = "Wallet Connected.";
+        } catch (e) {
+            console.error(e);
+            statusEl.textContent = "Connection failed.";
+        }
     }
 
-    async function createPair() {
-        if (!signer) await connectWallet();
+    async function checkOrCreate() {
+        if (!signer) return connectWallet();
         const tA = document.getElementById("tokenA").value.trim();
         const tB = document.getElementById("tokenB").value.trim();
-        const status = document.getElementById("status");
-
-        if (!ethers.isAddress(tA) || !ethers.isAddress(tB)) return alert("Invalid Address");
+        if (!ethers.isAddress(tA) || !ethers.isAddress(tB)) return alert("Invalid Addresses");
 
         try {
-            status.style.color = "orange";
-            status.textContent = "Querying Factory Mapping...";
+            statusEl.textContent = "Checking Factory...";
             const factory = new ethers.Contract(FACTORY_ADDRESS, FACTORY_ABI, signer);
-            
-            // Check mapping
             const pairAddr = await factory.getPair(tA, tB);
-            
+
             if (pairAddr !== ethers.ZeroAddress) {
-                status.style.color = "#ffd700";
-                status.innerHTML = `Confirmed: Pair exists at<br>${pairAddr}`;
+                statusEl.innerHTML = `Pair exists: ${pairAddr.slice(0,10)}...`;
                 document.getElementById("liquiditySection").style.display = "block";
                 return;
             }
 
-            status.textContent = "Deploying New Pair + Burner...";
-            // Manual gas limit for heavy creation
-            const tx = await factory.createPair(tA, tB, { gasLimit: 5000000 });
+            statusEl.textContent = "Creating Pair & Burner...";
+            const tx = await factory.createPair(tA, tB, { gasLimit: 4000000 });
             await tx.wait();
-            
-            status.style.color = "#0f0";
-            status.textContent = "✅ Success! Pair & Auto-Burner Live.";
+            statusEl.textContent = "✅ Success! Pair Created.";
             document.getElementById("liquiditySection").style.display = "block";
         } catch (e) {
-            status.style.color = "red";
-            status.textContent = "Factory Error: " + (e.reason || "Check if address is valid ERC20");
+            statusEl.textContent = "Error: " + (e.reason || "Action rejected");
         }
     }
 
     async function addLiquidity() {
-        const tA = document.getElementById("tokenA").value.trim();
-        const tB = document.getElementById("tokenB").value.trim();
         const amtA = document.getElementById("amountA").value;
         const amtB = document.getElementById("amountB").value;
-        const status = document.getElementById("status");
-
-        if (!amtA || !amtB) return alert("Enter amounts");
+        const tA = document.getElementById("tokenA").value.trim();
+        const tB = document.getElementById("tokenB").value.trim();
 
         try {
-            status.style.color = "orange";
-            status.textContent = "Authorizing Router...";
+            statusEl.textContent = "Authorizing...";
             const router = new ethers.Contract(ROUTER_ADDRESS, ROUTER_ABI, signer);
-            const deadline = Math.floor(Date.now() / 1000) + 1200;
-
             const valA = ethers.parseUnits(amtA, 18);
             const valB = ethers.parseUnits(amtB, 18);
 
@@ -173,40 +180,32 @@
             const tokenAmt = isNativeA ? valB : valA;
             const boneAmt = isNativeA ? valA : valB;
 
-            // ERC20 Approval
             const tokenContract = new ethers.Contract(tokenAddr, ERC20_ABI, signer);
-            const currentAllow = await tokenContract.allowance(userAddress, ROUTER_ADDRESS);
+            const allow = await tokenContract.allowance(userAddress, ROUTER_ADDRESS);
             
-            if (currentAllow < tokenAmt) {
-                status.textContent = "Approving Token B...";
-                const txApp = await tokenContract.approve(ROUTER_ADDRESS, ethers.MaxUint256);
-                await txApp.wait();
+            if (allow < tokenAmt) {
+                statusEl.textContent = "Approving Token B...";
+                await (await tokenContract.approve(ROUTER_ADDRESS, ethers.MaxUint256)).wait();
             }
 
-            status.textContent = "Injecting Liquidity into Pool...";
-            // Slippage set to 0.5% (995/1000) for safety
+            statusEl.textContent = "Adding Liquidity...";
             const tx = await router.addLiquidityETH(
-                tokenAddr, 
-                tokenAmt, 
-                (tokenAmt * 995n) / 1000n, 
-                (boneAmt * 995n) / 1000n, 
-                userAddress, 
-                deadline, 
-                { value: boneAmt, gasLimit: 2000000 }
+                tokenAddr, tokenAmt, 0, 0, userAddress, Math.floor(Date.now()/1000)+1200, 
+                { value: boneAmt, gasLimit: 1000000 }
             );
             await tx.wait();
-
-            status.style.color = "#0f0";
-            status.textContent = "✅ Pool Seeded! Check 'Pools' page.";
+            statusEl.textContent = "✅ Liquidity Added!";
         } catch (e) {
-            status.style.color = "red";
-            status.textContent = "Router Error: " + (e.reason || "Transaction Reverted");
+            statusEl.textContent = "Error: " + (e.reason || "Check balance");
         }
     }
 
-    document.getElementById("createPairBtn").onclick = createPair;
-    document.getElementById("addBtn").onclick = addLiquidity;
-    document.getElementById("connectBtn").onclick = connectWallet;
+    // Attach Event Listeners
+    connectBtn.addEventListener("click", connectWallet);
+    createBtn.addEventListener("click", checkOrCreate);
+    addBtn.addEventListener("click", addLiquidity);
+    document.getElementById("btnBone").addEventListener("click", () => { document.getElementById("tokenA").value = WBONE; });
+};
 </script>
 </body>
 </html>
