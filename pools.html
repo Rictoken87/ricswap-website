@@ -9,6 +9,10 @@
         :root { --obsidian: #080808; --card-bg: #121212; --magma: linear-gradient(135deg, #ff4d00 0%, #ff8c00 100%); --gold: #ffd700; }
         body { background: var(--obsidian); color: white; font-family: system-ui, sans-serif; margin: 0; padding: 0; }
         .nav { padding: 20px 40px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,215,0,0.1); }
+        .logo { color: var(--gold); font-size: 28px; font-weight: bold; letter-spacing: -1px; }
+        .nav-links a { color: white; text-decoration: none; margin-left: 32px; font-weight: 500; }
+        .nav-links a:hover { color: var(--gold); }
+        .nav-links a.active { color: var(--gold); font-weight: 600; }
         .card { max-width: 1000px; margin: 40px auto; background: var(--card-bg); border-radius: 24px; padding: 32px; box-shadow: 0 20px 40px rgba(0,0,0,0.8); border: 1px solid #222; overflow-x: auto; }
         table { width: 100%; border-collapse: collapse; margin-top: 20px; min-width: 700px; }
         th, td { padding: 16px; text-align: left; border-bottom: 1px solid #333; }
@@ -23,120 +27,126 @@
     </style>
 </head>
 <body>
-<div class="nav">
-    <h2 style="color: var(--gold); margin:0;">RicSwap • Pools</h2>
-    <button id="connectBtn">CONNECT WALLET</button>
-</div>
+    <div class="nav">
+        <div class="logo">RicSwap</div>
+        <div class="nav-links">
+            <a href="index.html">Home</a>
+            <a href="swap.html">Swap</a>
+            <a href="pools.html" class="active">Pools</a>
+            <a href="liquidity.html">Add Liquidity</a>
+        </div>
+        <button id="connectBtn">CONNECT WALLET</button>
+    </div>
 
-<div class="card">
-    <h3 style="text-align:center; margin:0;">Active Liquidity Pools</h3>
-    <p style="text-align:center; color:#666; font-size:14px; margin-top:8px;">Transparent • Battle-Tested • Shibarium</p>
-   
-    <table>
-        <thead>
-            <tr>
-                <th>Pool</th>
-                <th>Pair Address</th>
-                <th>Pool TVL</th>
-                <th>Your Position</th>
-                <th>Actions</th>
-            </tr>
-        </thead>
-        <tbody id="poolsTable">
-            <tr><td colspan="5" style="text-align:center; padding:60px; color:#666;">Connect wallet to see your active positions</td></tr>
-        </tbody>
-    </table>
-    <div id="status"></div>
-</div>
-
-<script>
-    const PAIR_ADDRESS = "0xd28354bC7e14Ed77D363644fa6e81b084bD44454";
-    const RIC_BURNER = "0x648FB2b013351c7611Df06F6936Ffa8AC148F268";
-    const WBONE_ADDR = "0xC76F4c819D820369Fb2d7C1531aB3Bb18e6fE8d8";
-    const CHAIN_ID = 109;
-
-    const PAIR_ABI = [
-        "function balanceOf(address) public view returns (uint256)",
-        "function totalSupply() public view returns (uint256)",
-        "function getReserves() public view returns (uint112, uint112, uint32)",
-        "function token0() public view returns (address)"
-    ];
-
-    let provider, signer, userAddress;
-
-    async function connectWallet() {
-        if (!window.ethereum) return alert("Install MetaMask");
-        try {
-            provider = new ethers.BrowserProvider(window.ethereum);
-            await provider.send("eth_requestAccounts", []);
-            await window.ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: '0x' + CHAIN_ID.toString(16) }] });
-            signer = await provider.getSigner();
-            userAddress = await signer.getAddress();
-            document.getElementById("connectBtn").textContent = userAddress.slice(0,6) + "..." + userAddress.slice(-4);
-            loadPools();
-        } catch (e) { console.error(e); }
-    }
-
-    async function loadPools() {
-        const tableBody = document.getElementById("poolsTable");
-        tableBody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:60px; color:#ffd700;">Loading live reserves...</td></tr>`;
-
-        try {
-            const pair = new ethers.Contract(PAIR_ADDRESS, PAIR_ABI, provider);
-            const [reserves, totalSupply, userLP, token0Addr] = await Promise.all([
-                pair.getReserves(),
-                pair.totalSupply(),
-                userAddress ? pair.balanceOf(userAddress) : 0n,
-                pair.token0()
-            ]);
-
-            const isBoneFirst = token0Addr.toLowerCase() === WBONE_ADDR.toLowerCase();
-            const boneRes = isBoneFirst ? reserves[0] : reserves[1];
-            const ricRes  = isBoneFirst ? reserves[1] : reserves[0];
-
-            const precision = 1000000000000n;
-            const share = totalSupply > 0n ? (userLP * precision / totalSupply) : 0n;
-            const myBone = (boneRes * share) / precision;
-            const myRic  = (ricRes * share) / precision;
-
-            tableBody.innerHTML = `
+    <div class="card">
+        <h3 style="text-align:center; margin:0;">Active Liquidity Pools</h3>
+        <p style="text-align:center; color:#666; font-size:14px; margin-top:8px;">Transparent • Battle-Tested • Shibarium</p>
+       
+        <table>
+            <thead>
                 <tr>
-                    <td>
-                        <div class="pool-name">🔥 RIC / BONE</div>
-                        <span class="lp-sub">RicSwap V2 LP</span>
-                    </td>
-                    <td>
-                        <a href="https://shibariumscan.io/address/${PAIR_ADDRESS}" target="_blank" style="color:var(--gold); text-decoration:none; font-family:monospace;">
-                            ${PAIR_ADDRESS.slice(0,6)}...${PAIR_ADDRESS.slice(-4)}
-                        </a>
-                    </td>
-                    <td>
-                        <div style="font-weight:bold;">${Number(ethers.formatEther(boneRes)).toFixed(2)} BONE</div>
-                        <div style="font-size:11px; color:#666;">${Number(ethers.formatEther(ricRes)).toFixed(2)} RIC</div>
-                    </td>
-                    <td>
-                        <div style="font-weight:bold; color:var(--gold);">${Number(ethers.formatEther(userLP)).toFixed(4)} LP</div>
-                        <span class="lp-sub">≈ ${Number(ethers.formatEther(myBone)).toFixed(2)} BONE + ${Number(ethers.formatEther(myRic)).toFixed(2)} RIC</span>
-                    </td>
-                    <td>
-                        <div style="display:flex; gap:8px;">
-                            <a href="liquidity.html" class="action-btn">Add Liquidity</a>
-                            <a href="https://shibariumscan.io/address/${RIC_BURNER}" target="_blank" class="action-btn burner-link">Burner</a>
-                        </div>
-                    </td>
+                    <th>Pool</th>
+                    <th>Pair Address</th>
+                    <th>Pool TVL</th>
+                    <th>Your Position</th>
+                    <th>Actions</th>
                 </tr>
-            `;
-        } catch (e) {
-            console.error(e);
-            tableBody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:red; padding:40px;">Pool data unavailable. Check Shibarium connection.</td></tr>`;
+            </thead>
+            <tbody id="poolsTable">
+                <tr><td colspan="5" style="text-align:center; padding:60px; color:#666;">Connect wallet to see your active positions</td></tr>
+            </tbody>
+        </table>
+        <div id="status"></div>
+    </div>
+
+    <script>
+        const PAIR_ADDRESS = "0xd28354bC7e14Ed77D363644fa6e81b084bD44454";
+        const RIC_BURNER = "0x648FB2b013351c7611Df06F6936Ffa8AC148F268";
+        const WBONE_ADDR = "0xC76F4c819D820369Fb2d7C1531aB3Bb18e6fE8d8";
+        const CHAIN_ID = 109;
+
+        const PAIR_ABI = [
+            "function balanceOf(address) public view returns (uint256)",
+            "function totalSupply() public view returns (uint256)",
+            "function getReserves() public view returns (uint112, uint112, uint32)",
+            "function token0() public view returns (address)"
+        ];
+
+        let provider, signer, userAddress;
+
+        async function connectWallet() {
+            if (!window.ethereum) return alert("Install MetaMask");
+            try {
+                provider = new ethers.BrowserProvider(window.ethereum);
+                await provider.send("eth_requestAccounts", []);
+                await window.ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: '0x' + CHAIN_ID.toString(16) }] });
+                signer = await provider.getSigner();
+                userAddress = await signer.getAddress();
+                document.getElementById("connectBtn").textContent = userAddress.slice(0,6) + "..." + userAddress.slice(-4);
+                loadPools();
+            } catch (e) { console.error(e); }
         }
-    }
 
-    document.getElementById("connectBtn").onclick = connectWallet;
+        async function loadPools() {
+            const tableBody = document.getElementById("poolsTable");
+            tableBody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:60px; color:#ffd700;">Loading live reserves...</td></tr>`;
 
-    window.addEventListener('load', () => {
-        if (window.ethereum && window.ethereum.selectedAddress) connectWallet();
-    });
-</script>
+            try {
+                const pair = new ethers.Contract(PAIR_ADDRESS, PAIR_ABI, provider);
+                const [reserves, totalSupply, userLP, token0Addr] = await Promise.all([
+                    pair.getReserves(),
+                    pair.totalSupply(),
+                    userAddress ? pair.balanceOf(userAddress) : 0n,
+                    pair.token0()
+                ]);
+
+                const isBoneFirst = token0Addr.toLowerCase() === WBONE_ADDR.toLowerCase();
+                const boneRes = isBoneFirst ? reserves[0] : reserves[1];
+                const ricRes  = isBoneFirst ? reserves[1] : reserves[0];
+
+                const precision = 1000000000000n;
+                const share = totalSupply > 0n ? (userLP * precision / totalSupply) : 0n;
+                const myBone = (boneRes * share) / precision;
+                const myRic  = (ricRes * share) / precision;
+
+                tableBody.innerHTML = `
+                    <tr>
+                        <td>
+                            <div class="pool-name">🔥 RIC / BONE</div>
+                            <span class="lp-sub">RicSwap V2 LP</span>
+                        </td>
+                        <td>
+                            <a href="https://shibariumscan.io/address/${PAIR_ADDRESS}" target="_blank" style="color:var(--gold); text-decoration:none; font-family:monospace;">
+                                ${PAIR_ADDRESS.slice(0,6)}...${PAIR_ADDRESS.slice(-4)}
+                            </a>
+                        </td>
+                        <td>
+                            <div style="font-weight:bold;">${Number(ethers.formatEther(boneRes)).toFixed(2)} BONE</div>
+                            <div style="font-size:11px; color:#666;">${Number(ethers.formatEther(ricRes)).toFixed(2)} RIC</div>
+                        </td>
+                        <td>
+                            <div style="font-weight:bold; color:var(--gold);">${Number(ethers.formatEther(userLP)).toFixed(4)} LP</div>
+                            <span class="lp-sub">≈ ${Number(ethers.formatEther(myBone)).toFixed(2)} BONE + ${Number(ethers.formatEther(myRic)).toFixed(2)} RIC</span>
+                        </td>
+                        <td>
+                            <div style="display:flex; gap:8px;">
+                                <a href="liquidity.html" class="action-btn">Add Liquidity</a>
+                                <a href="https://shibariumscan.io/address/${RIC_BURNER}" target="_blank" class="action-btn burner-link">Burner</a>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            } catch (e) {
+                console.error(e);
+                tableBody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:red; padding:40px;">Pool data unavailable. Check Shibarium connection.</td></tr>`;
+            }
+        }
+
+        document.getElementById("connectBtn").onclick = connectWallet;
+
+        window.addEventListener('load', () => {
+            if (window.ethereum && window.ethereum.selectedAddress) connectWallet();
+        });
+    </script>
 </body>
 </html>
