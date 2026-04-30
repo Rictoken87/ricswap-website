@@ -6,14 +6,31 @@
     <title>RicSwap | Add Liquidity</title>
     <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.0/dist/ethers.umd.min.js"></script>
     <style>
-        :root { --obsidian: #080808; --card-bg: #121212; --magma: linear-gradient(135deg, #ff4d00 0%, #ff8c00 100%); --gold: #ffd700; }
+        :root {
+            --obsidian: #080808;
+            --card-bg: #121212;
+            --magma: linear-gradient(135deg, #ff4d00 0%, #ff8c00 100%);
+            --gold: #ffd700;
+        }
         body { background: var(--obsidian); color: white; font-family: system-ui, sans-serif; margin: 0; padding: 0; }
         .nav { padding: 20px 40px; display: flex; align-items: center; border-bottom: 1px solid rgba(255,215,0,0.1); }
         .logo { font-size: 28px; font-weight: bold; color: var(--gold); }
         .nav-links { display: flex; gap: 30px; margin-left: 40px; }
         .nav-links a { color: white; text-decoration: none; font-weight: 500; }
         .nav-links a:hover, .nav-links a.active { color: var(--gold); }
-        .connect-btn { background: #222; color: white; border: 1px solid #444; padding: 6px 18px; border-radius: 9999px; font-size: 14px; font-weight: 500; cursor: pointer; white-space: nowrap; margin-left: auto; flex-shrink: 0; }
+        .connect-btn { 
+            background: #222; 
+            color: white; 
+            border: 1px solid #444; 
+            padding: 6px 18px; 
+            border-radius: 9999px; 
+            font-size: 14px; 
+            font-weight: 500; 
+            cursor: pointer; 
+            white-space: nowrap; 
+            margin-left: auto; 
+            flex-shrink: 0; 
+        }
         .connect-btn:hover { background: #333; border-color: var(--gold); }
         .card { max-width: 520px; margin: 40px auto; background: var(--card-bg); border-radius: 24px; padding: 32px; box-shadow: 0 20px 40px rgba(0,0,0,0.8); border: 1px solid #222; }
         .input-group { background: #1a1a1a; border-radius: 16px; padding: 16px; margin-bottom: 16px; border: 1px solid #333; }
@@ -65,7 +82,7 @@
 
     <script>
         const FACTORY_ADDRESS = "0x78ae5cCD2f13D10aE3fF47F8418A79D99B4569d0";
-        const ROUTER_ADDRESS = "0xF81FDAfa8f00f9B7e19d7a8eD3D7b18E5752D199";
+        const ROUTER_ADDRESS = "0x01c86a4d813E3ECFACc2272f5F8A0614e438825C";
         const WBONE = "0xC76F4c819D820369Fb2d7C1531aB3Bb18e6fE8d8";
 
         let provider, signer, userAddress;
@@ -93,7 +110,9 @@
 
                 const boneBalance = await provider.getBalance(userAddress);
                 document.getElementById("boneBalance").textContent = `Balance: ${ethers.formatEther(boneBalance)} BONE`;
-            } catch (e) { console.error(e); }
+            } catch (e) {
+                console.error(e);
+            }
         }
 
         async function updateTokenInfo() {
