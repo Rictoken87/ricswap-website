@@ -39,7 +39,7 @@
     <div class="card">
         <h3 style="text-align:center;">Create Any Pair + Add Liquidity</h3>
         <p style="text-align:center; color:#888; font-size:14px; margin-bottom:20px;">
-            BONE + Any Token (Permissionless)
+            BONE + Any Token
         </p>
 
         <div class="input-group">
@@ -69,70 +69,65 @@
             <button id="addBtn">ADD LIQUIDITY</button>
         </div>
 
-        <div id="status"></div>
+        <div id="status">Ready</div>
     </div>
 
     <script>
         const FACTORY_ADDRESS = "0xc2e80224D2f61FaE15CF9b7D089e327F06db1106";
-        const ROUTER_ADDRESS = "0x9703f105f13F5Fd4C431EBAB8A1A6d7d36F7e7e0";
         const CHAIN_ID = 109;
 
         const FACTORY_ABI = [
             "function createPair(address tokenA, address tokenB) external returns (address pair)",
             "function getPair(address tokenA, address tokenB) external view returns (address pair)"
         ];
-        const ROUTER_ABI = [
-            "function addLiquidityBONE(address token, uint256 amountTokenDesired, uint256 amountTokenMin, uint256 amountBONEMin, address to, uint256 deadline) external payable returns (uint256, uint256, uint256)"
-        ];
 
         let provider, signer, userAddress;
 
         async function connectWallet() {
-            if (!window.ethereum) return alert("Install MetaMask");
+            console.log("Connect button clicked");
+            if (!window.ethereum) {
+                document.getElementById("status").innerHTML = "❌ MetaMask not found";
+                return alert("Please install MetaMask");
+            }
             try {
+                document.getElementById("status").innerHTML = "Connecting...";
                 provider = new ethers.BrowserProvider(window.ethereum);
                 await provider.send("eth_requestAccounts", []);
-                await window.ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: '0x' + CHAIN_ID.toString(16) }] });
+                await window.ethereum.request({
+                    method: 'wallet_switchEthereumChain',
+                    params: [{ chainId: '0x' + CHAIN_ID.toString(16) }]
+                });
                 signer = await provider.getSigner();
                 userAddress = await signer.getAddress();
                 document.getElementById("connectBtn").textContent = userAddress.slice(0,6) + "..." + userAddress.slice(-4);
-            } catch (e) { console.error(e); }
+                document.getElementById("status").innerHTML = "✅ Wallet Connected";
+                console.log("Wallet connected:", userAddress);
+            } catch (e) {
+                console.error("Connect error:", e);
+                document.getElementById("status").innerHTML = "❌ " + (e.message || "Connection failed");
+            }
         }
 
         async function createPair() {
             if (!signer) return connectWallet();
-
             const tokenA = document.getElementById("tokenA").value.trim();
             const tokenB = document.getElementById("tokenB").value.trim();
-
             if (!tokenA || !tokenB) return alert("Please fill both token addresses");
 
             try {
+                document.getElementById("status").innerHTML = "Creating pair...";
                 const factory = new ethers.Contract(FACTORY_ADDRESS, FACTORY_ABI, signer);
-                const existingPair = await factory.getPair(tokenA, tokenB);
-
-                if (existingPair !== "0x0000000000000000000000000000000000000000") {
-                    document.getElementById("status").innerHTML = `✅ Pair already exists!<br>You can now add liquidity.`;
-                    document.getElementById("liquiditySection").style.display = "block";
-                    return;
-                }
-
                 const tx = await factory.createPair(tokenA, tokenB);
-                document.getElementById("status").innerHTML = `Creating pair + auto-burner...<br><small>Tx: ${tx.hash.slice(0,12)}...</small>`;
                 await tx.wait();
-                document.getElementById("status").innerHTML = `✅ New pair created successfully!<br>Burner deployed automatically.`;
+                document.getElementById("status").innerHTML = `✅ Pair created successfully!`;
                 document.getElementById("liquiditySection").style.display = "block";
             } catch (e) {
+                console.error(e);
                 document.getElementById("status").innerHTML = `Error: ${e.reason || e.message}`;
             }
         }
 
-        async function addLiquidity() {
-            alert("✅ Liquidity addition is ready.\n\nYou can now add liquidity to the pair.");
-        }
-
         document.getElementById("createPairBtn").addEventListener("click", createPair);
-        document.getElementById("addBtn").addEventListener("click", addLiquidity);
         document.getElementById("connectBtn").addEventListener("click", connectWallet);
     </script>
 </body>
