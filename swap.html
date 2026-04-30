@@ -6,14 +6,13 @@
     <title>RicSwap | Swap</title>
     <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.0/dist/ethers.umd.min.js"></script>
     <style>
-        :root {
-            --obsidian: #080808;
-            --card-bg: #121212;
-            --magma: linear-gradient(135deg, #ff4d00 0%, #ff8c00 100%);
-            --gold: #ffd700;
-        }
+        :root { --obsidian: #080808; --card-bg: #121212; --magma: linear-gradient(135deg, #ff4d00 0%, #ff8c00 100%); --gold: #ffd700; }
         body { background: var(--obsidian); color: white; font-family: system-ui, sans-serif; margin: 0; padding: 0; }
         .nav { padding: 20px 40px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,215,0,0.1); }
+        .logo { color: var(--gold); font-size: 28px; font-weight: bold; letter-spacing: -1px; }
+        .nav-links a { color: white; text-decoration: none; margin-left: 32px; font-weight: 500; }
+        .nav-links a:hover { color: var(--gold); }
+        .nav-links a.active { color: var(--gold); font-weight: 600; }
         .card { max-width: 420px; margin: 60px auto; background: var(--card-bg); border-radius: 24px; padding: 32px; box-shadow: 0 20px 40px rgba(0,0,0,0.8); border: 1px solid #222; }
         .input-group { background: #1a1a1a; border-radius: 16px; padding: 16px; margin-bottom: 8px; border: 1px solid #333; }
         .input-group:focus-within { border-color: var(--gold); }
@@ -27,156 +26,158 @@
     </style>
 </head>
 <body>
-
-<div class="nav">
-    <h2 style="color: var(--gold);">RicSwap • Swap</h2>
-    <button id="connectBtn">CONNECT WALLET</button>
-</div>
-
-<div class="card">
-    <h3 style="text-align:center;">BONE → RIC</h3>
-    <div class="input-group">
-        <label>You Pay (BONE)</label>
-        <input id="fromAmount" type="number" placeholder="0.0" step="any">
-        <div id="balanceA" style="font-size:12px; color:#888; margin-top:4px;">Balance: -- BONE</div>
+    <div class="nav">
+        <div class="logo">RicSwap</div>
+        <div class="nav-links">
+            <a href="index.html">Home</a>
+            <a href="swap.html" class="active">Swap</a>
+            <a href="pools.html">Pools</a>
+            <a href="liquidity.html">Add Liquidity</a>
+        </div>
+        <button id="connectBtn">CONNECT WALLET</button>
     </div>
-    <div style="text-align:center; font-size:28px; margin:8px 0; color:#444;">↓</div>
-    <div class="input-group">
-        <label>You Receive (RIC)</label>
-        <input id="toAmount" type="number" placeholder="0.0" readonly>
-        <div id="balanceB" style="font-size:12px; color:#888; margin-top:4px;">Balance: -- RIC</div>
+
+    <div class="card">
+        <h3 style="text-align:center;">BONE → RIC</h3>
+        
+        <div class="input-group">
+            <label>You Pay (BONE)</label>
+            <input id="fromAmount" type="number" placeholder="0.0" step="any">
+            <div id="balanceA" style="font-size:12px; color:#888; margin-top:4px;">Balance: -- BONE</div>
+        </div>
+
+        <div style="text-align:center; font-size:28px; margin:8px 0; color:#444;">↓</div>
+
+        <div class="input-group">
+            <label>You Receive (RIC)</label>
+            <input id="toAmount" type="number" placeholder="0.0" readonly>
+            <div id="balanceB" style="font-size:12px; color:#888; margin-top:4px;">Balance: -- RIC</div>
+        </div>
+
+        <div id="priceInfo" class="price-info">—</div>
+        <button id="swapBtn">SWAP NOW</button>
+        <div id="status"></div>
     </div>
-    <div id="priceInfo" class="price-info">—</div>
-    <button id="swapBtn">SWAP NOW</button>
-    <div id="status"></div>
-</div>
 
-<script>
-    const ROUTER_ADDRESS = "0x9703f105f13F5Fd4C431EBAB8A1A6d7d36F7e7e0";
-    const WBONE = "0xC76F4c819D820369Fb2d7C1531aB3Bb18e6fE8d8";
-    const RIC = "0x12C94d3A30daa09f81Ea6c037004E6e99A4A3dfc";
-    const CHAIN_ID = 109;
+    <script>
+        const ROUTER_ADDRESS = "0x9703f105f13F5Fd4C431EBAB8A1A6d7d36F7e7e0";
+        const WBONE = "0xC76F4c819D820369Fb2d7C1531aB3Bb18e6fE8d8";
+        const RIC = "0x12C94d3A30daa09f81Ea6c037004E6e99A4A3dfc";
+        const CHAIN_ID = 109;
 
-    const ROUTER_ABI = [
-        "function getAmountsOut(uint256 amountIn, address[] memory path) public view returns (uint256[] memory amounts)",
-        "function swapExactBONEForTokens(uint256 amountOutMin, address[] calldata path, address to, uint256 deadline) external payable returns (uint256[] memory amounts)",
-        "function swapExactETHForTokens(uint256 amountOutMin, address[] calldata path, address to, uint256 deadline) external payable returns (uint256[] memory amounts)"
-    ];
-    const ERC20_ABI = ["function balanceOf(address account) public view returns (uint256)"];
+        const ROUTER_ABI = [
+            "function getAmountsOut(uint256 amountIn, address[] memory path) public view returns (uint256[] memory amounts)",
+            "function swapExactBONEForTokens(uint256 amountOutMin, address[] calldata path, address to, uint256 deadline) external payable returns (uint256[] memory amounts)"
+        ];
+        const ERC20_ABI = ["function balanceOf(address account) public view returns (uint256)"];
 
-    let provider, signer, userAddress, quoteTimeout;
+        let provider, signer, userAddress, quoteTimeout;
 
-    async function connect() {
-        if (!window.ethereum) return alert("MetaMask not found");
-        try {
-            provider = new ethers.BrowserProvider(window.ethereum);
-            await provider.send("eth_requestAccounts", []);
-            await window.ethereum.request({
-                method: 'wallet_switchEthereumChain',
-                params: [{ chainId: '0x' + CHAIN_ID.toString(16) }]
-            }).catch(async (e) => {
-                if (e.code === 4902) {
-                    await window.ethereum.request({
-                        method: 'wallet_addEthereumChain',
-                        params: [{
-                            chainId: '0x' + CHAIN_ID.toString(16),
-                            chainName: 'Shibarium',
-                            nativeCurrency: { name: 'BONE', symbol: 'BONE', decimals: 18 },
-                            rpcUrls: ['https://rpc.shibarium.shib.io'],
-                            blockExplorerUrls: ['https://shibariumscan.io']
-                        }]
-                    });
-                }
-            });
-            signer = await provider.getSigner();
-            userAddress = await signer.getAddress();
-            document.getElementById("connectBtn").textContent = userAddress.slice(0,6) + "..." + userAddress.slice(-4);
-            loadBalances();
-        } catch (e) { console.error(e); }
-    }
-
-    async function loadBalances() {
-        if (!userAddress) return;
-        const boneBal = await provider.getBalance(userAddress);
-        document.getElementById("balanceA").textContent = `Balance: ${Number(ethers.formatEther(boneBal)).toFixed(4)} BONE`;
-        const ricContract = new ethers.Contract(RIC, ERC20_ABI, provider);
-        const ricBal = await ricContract.balanceOf(userAddress);
-        document.getElementById("balanceB").textContent = `Balance: ${Number(ethers.formatEther(ricBal)).toFixed(4)} RIC`;
-    }
-
-    async function updateQuote() {
-        const val = document.getElementById("fromAmount").value;
-        const toInput = document.getElementById("toAmount");
-        const priceInfo = document.getElementById("priceInfo");
-        if (!val || val <= 0) { toInput.value = ""; priceInfo.textContent = "—"; return; }
-        try {
-            const router = new ethers.Contract(ROUTER_ADDRESS, ROUTER_ABI, provider);
-            const amtIn = ethers.parseEther(val);
-            const path = [WBONE, RIC];
-            const amounts = await router.getAmountsOut(amtIn, path);
-            const outAmount = ethers.formatEther(amounts[1]);
-            toInput.value = Number(outAmount).toFixed(6);
-            const unitPrice = Number(outAmount) / Number(val);
-            priceInfo.textContent = `1 BONE ≈ ${unitPrice.toFixed(4)} RIC`;
-        } catch (e) {
-            toInput.value = "No Liquidity";
-            priceInfo.textContent = "—";
-        }
-    }
-
-    async function executeSwap() {
-        if (!signer) return connect();
-        const status = document.getElementById("status");
-        const btn = document.getElementById("swapBtn");
-        const val = document.getElementById("fromAmount").value;
-        if (!val || Number(val) <= 0) return alert("Invalid Amount");
-
-        try {
-            btn.disabled = true;
-            status.style.color = "orange";
-            status.textContent = "Processing Transaction...";
-
-            const router = new ethers.Contract(ROUTER_ADDRESS, ROUTER_ABI, signer);
-            const amtIn = ethers.parseEther(val);
-            const path = [WBONE, RIC];
-            const deadline = Math.floor(Date.now() / 1000) + 1200;
-            const amounts = await router.getAmountsOut(amtIn, path);
-            const minOut = (amounts[1] * 990n) / 1000n; // 1% slippage
-
-            // EXPERT FIX: Manual gas limit + Native value override
-            const overrides = { value: amtIn, gasLimit: 400000 };
-
+        async function connect() {
+            if (!window.ethereum) return alert("MetaMask not found");
             try {
-                // Try BONE specific name first
-                const tx = await router.swapExactBONEForTokens(minOut, path, userAddress, deadline, overrides);
-                await tx.wait();
-            } catch (err) {
-                console.log("Fallback to swapExactETHForTokens...");
-                const tx = await router.swapExactETHForTokens(minOut, path, userAddress, deadline, overrides);
-                await tx.wait();
+                provider = new ethers.BrowserProvider(window.ethereum);
+                await provider.send("eth_requestAccounts", []);
+                await window.ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: '0x' + CHAIN_ID.toString(16) }] });
+                signer = await provider.getSigner();
+                userAddress = await signer.getAddress();
+                document.getElementById("connectBtn").textContent = userAddress.slice(0,6) + "..." + userAddress.slice(-4);
+                loadBalances();
+                updateQuote();
+            } catch (e) { console.error(e); }
+        }
+
+        async function loadBalances() {
+            if (!userAddress) return;
+            const boneBal = await provider.getBalance(userAddress);
+            document.getElementById("balanceA").textContent = `Balance: ${Number(ethers.formatEther(boneBal)).toFixed(4)} BONE`;
+            
+            const ricContract = new ethers.Contract(RIC, ERC20_ABI, provider);
+            const ricBal = await ricContract.balanceOf(userAddress);
+            document.getElementById("balanceB").textContent = `Balance: ${Number(ethers.formatEther(ricBal)).toFixed(4)} RIC`;
+        }
+
+        async function updateQuote() {
+            const val = document.getElementById("fromAmount").value;
+            const toInput = document.getElementById("toAmount");
+            const priceInfo = document.getElementById("priceInfo");
+
+            if (!val || val <= 0) {
+                toInput.value = "";
+                priceInfo.textContent = "—";
+                return;
             }
 
-            status.style.color = "#0f0";
-            status.textContent = "✅ Swap Successful! 🔥";
-            document.getElementById("fromAmount").value = "";
-            document.getElementById("toAmount").value = "";
-            loadBalances();
-        } catch (e) {
-            console.error(e);
-            status.style.color = "red";
-            status.textContent = "Error: " + (e.reason || "Transaction failed");
-        } finally {
-            btn.disabled = false;
+            try {
+                const router = new ethers.Contract(ROUTER_ADDRESS, ROUTER_ABI, provider);
+                const amtIn = ethers.parseEther(val);
+                const path = [WBONE, RIC];
+                const amounts = await router.getAmountsOut(amtIn, path);
+                
+                const outAmount = ethers.formatEther(amounts[1]);
+                toInput.value = Number(outAmount).toFixed(6);
+                const unitPrice = Number(outAmount) / Number(val);
+                priceInfo.textContent = `1 BONE ≈ ${unitPrice.toFixed(4)} RIC`;
+            } catch (e) {
+                toInput.value = "No Liquidity";
+                priceInfo.textContent = "—";
+            }
         }
-    }
 
-    document.getElementById("fromAmount").oninput = () => {
-        clearTimeout(quoteTimeout);
-        quoteTimeout = setTimeout(updateQuote, 400);
-    };
-    document.getElementById("connectBtn").onclick = connect;
-    document.getElementById("swapBtn").onclick = executeSwap;
-    if (window.ethereum) window.ethereum.on('accountsChanged', () => window.location.reload());
-</script>
+        async function executeSwap() {
+            if (!signer) return connect();
+            const status = document.getElementById("status");
+            const btn = document.getElementById("swapBtn");
+            const val = document.getElementById("fromAmount").value;
+            if (!val || Number(val) <= 0) return alert("Invalid Amount");
+
+            try {
+                btn.disabled = true;
+                status.style.color = "orange";
+                status.textContent = "Confirm in Wallet...";
+
+                const router = new ethers.Contract(ROUTER_ADDRESS, ROUTER_ABI, signer);
+                const amtIn = ethers.parseEther(val);
+                const path = [WBONE, RIC];
+                const deadline = Math.floor(Date.now() / 1000) + 1200;
+                const amounts = await router.getAmountsOut(amtIn, path);
+                const minOut = (amounts[1] * 990n) / 1000n;
+
+                const tx = await router.swapExactBONEForTokens(
+                    minOut,
+                    path,
+                    userAddress,
+                    deadline,
+                    { value: amtIn }
+                );
+
+                await tx.wait();
+
+                status.style.color = "#0f0";
+                status.textContent = "✅ Swap Successful! 🔥 Welcome to RicSwap";
+                document.getElementById("fromAmount").value = "";
+                document.getElementById("toAmount").value = "";
+                loadBalances();
+            } catch (e) {
+                console.error(e);
+                status.style.color = "red";
+                status.textContent = e.reason || "Transaction failed";
+            } finally {
+                btn.disabled = false;
+            }
+        }
+
+        document.getElementById("fromAmount").oninput = () => {
+            clearTimeout(quoteTimeout);
+            quoteTimeout = setTimeout(updateQuote, 400);
+        };
+
+        document.getElementById("connectBtn").onclick = connect;
+        document.getElementById("swapBtn").onclick = executeSwap;
+
+        if (window.ethereum) {
+            window.ethereum.on('accountsChanged', () => window.location.reload());
+        }
+    </script>
 </body>
 </html>
