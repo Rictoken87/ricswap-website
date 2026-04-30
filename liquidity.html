@@ -19,6 +19,7 @@
         label { display: block; color: #888; font-size: 12px; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 1px; }
         input { background: transparent; border: none; color: white; font-size: 20px; width: 100%; outline: none; }
         button { background: var(--magma); color: white; border: none; padding: 18px; border-radius: 16px; font-weight: bold; width: 100%; font-size: 18px; cursor: pointer; margin-top: 10px; }
+        .quick-btn { background: #222; color: var(--gold); border: 1px solid #444; padding: 8px 16px; border-radius: 9999px; font-size: 13px; cursor: pointer; margin: 4px; }
         #connectBtn { width: auto !important; padding: 10px 24px !important; font-size: 15px !important; background: #222 !important; color: var(--gold) !important; border: 1px solid var(--gold) !important; }
         #status { text-align: center; margin-top: 20px; font-size: 14px; font-weight: 600; min-height: 24px; }
     </style>
@@ -36,7 +37,11 @@
     </div>
 
     <div class="card">
-        <h3 style="text-align:center;">Zen / BONE Pair</h3>
+        <h3 style="text-align:center;">Add Liquidity (BONE + Any Token)</h3>
+        <p style="text-align:center; color:#888; font-size:14px; margin-bottom:20px;">
+            Anyone can add liquidity to BONE + any token<br>
+            Pair must exist first (create it if needed)
+        </p>
 
         <div class="input-group">
             <label>Token A (BONE)</label>
@@ -44,16 +49,17 @@
         </div>
 
         <div class="input-group">
-            <label>Token B (Zen)</label>
-            <input id="tokenB" value="0xE40545F5093556F260c0f2390E19314b6BC93EE5" readonly>
+            <label>Token B (Any Token)</label>
+            <input id="tokenB" placeholder="Paste any token contract address">
         </div>
 
         <div class="input-group">
             <label>Amount of BONE</label>
             <input id="amountA" type="number" placeholder="0.0" value="1">
         </div>
+
         <div class="input-group">
-            <label>Amount of Zen</label>
+            <label>Amount of Token B</label>
             <input id="amountB" type="number" placeholder="0.0" value="100">
         </div>
 
@@ -95,16 +101,16 @@
             const amountBONE = document.getElementById("amountA").value;
             const amountToken = document.getElementById("amountB").value;
 
-            if (!amountBONE || !amountToken) return alert("Enter both amounts");
+            if (!tokenB || !amountBONE || !amountToken) return alert("Please fill all fields");
 
             try {
-                document.getElementById("status").innerHTML = "Approving Zen...";
+                document.getElementById("status").innerHTML = "Approving Token B...";
                 const router = new ethers.Contract(ROUTER_ADDRESS, ROUTER_ABI, signer);
                 const deadline = Math.floor(Date.now() / 1000) + 1200;
                 const amountBONEWei = ethers.parseEther(amountBONE);
                 const amountTokenWei = ethers.parseEther(amountToken);
 
-                // Approve Zen
+                // Approve Token B
                 const tokenContract = new ethers.Contract(tokenB, ERC20_ABI, signer);
                 const allowance = await tokenContract.allowance(userAddress, ROUTER_ADDRESS);
                 if (allowance < amountTokenWei) {
