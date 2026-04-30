@@ -18,11 +18,7 @@
         .nav-links { display: flex; gap: 30px; margin-left: 40px; }
         .nav-links a { color: white; text-decoration: none; font-weight: 500; }
         .nav-links a:hover, .nav-links a.active { color: var(--gold); }
-        .connect-btn { 
-            background: #222; color: white; border: 1px solid #444; padding: 6px 16px; 
-            border-radius: 9999px; font-size: 14px; font-weight: 500; cursor: pointer; 
-            white-space: nowrap; margin-left: auto; flex-shrink: 0; min-width: auto; width: auto; 
-        }
+        .connect-btn { background: #222; color: white; border: 1px solid #444; padding: 6px 16px; border-radius: 9999px; font-size: 14px; font-weight: 500; cursor: pointer; white-space: nowrap; margin-left: auto; flex-shrink: 0; min-width: auto; width: auto; }
         .connect-btn:hover { background: #333; border-color: var(--gold); }
         .card { max-width: 1000px; margin: 40px auto; background: var(--card-bg); border-radius: 24px; padding: 32px; box-shadow: 0 20px 40px rgba(0,0,0,0.8); border: 1px solid #222; }
         table { width: 100%; border-collapse: collapse; }
@@ -32,6 +28,7 @@
         .pool-name { font-weight: bold; font-size: 18px; }
         .action-btn { background: #222; color: white; padding: 6px 12px; border-radius: 8px; text-decoration: none; font-size: 13px; margin-right: 6px; }
         .status { text-align: center; margin-top: 20px; font-size: 14px; }
+        .lock-note { color: #ff4d00; font-size: 13px; text-align: center; margin-top: 10px; }
     </style>
 </head>
 <body>
@@ -47,7 +44,8 @@
     </div>
 
     <div class="card">
-        <h2 style="text-align:center; margin-bottom:24px;">All Liquidity Pools</h2>
+        <h2 style="text-align:center; margin-bottom:8px;">All Liquidity Pools</h2>
+        <p class="lock-note">🔒 Liquidity is permanently locked — no withdrawal possible</p>
         <table>
             <thead>
                 <tr>
@@ -63,32 +61,16 @@
     </div>
 
     <script>
-        const FACTORY_ADDRESS = "0xc2e80224D2f61FaE15CF9b7D089e327F06db1106";
+        const FACTORY_ADDRESS = "0x78ae5cCD2f13D10aE3fF47F8418A79D99B4569d0";
         const WBONE = "0xC76F4c819D820369Fb2d7C1531aB3Bb18e6fE8d8";
 
-        // === ALL YOUR POOLS (add new ones here) ===
-        const knownPools = [
-            {
-                name: "BONE / RIC",
-                pairAddress: "0xd28354bC7e14Ed77D363644fa6e81b084bD44454",
-                tokenSymbol: "RIC",
-                burnerAddress: "0x648FB2b013351c7611Df06F6936Ffa8AC148F268"
-            },
-            {
-                name: "BONE / RIC (New)",
-                pairAddress: "0xB4F250a362BFaB2AA561C814bDe7b92167A38043",
-                tokenSymbol: "RIC",
-                burnerAddress: ""   // ← Paste your new burner address here
-            },
-            {
-                name: "BONE / ZEN",
-                pairAddress: "0x77894FB14bED6839Cf60EF23e5CD630ae56B00eb",
-                tokenSymbol: "ZEN",
-                burnerAddress: ""   // ← Paste Zen burner if different
-            }
-        ];
-
         let provider, signer, userAddress;
+
+        const FACTORY_ABI = [
+            "function allPairs(uint256) external view returns (address)",
+            "function allPairsLength() external view returns (uint256)",
+            "function getBurner(address lpToken) external view returns (address)"
+        ];
 
         const PAIR_ABI = [
             "function getReserves() external view returns (uint112 reserve0, uint112 reserve1, uint32 blockTimestampLast)",
@@ -99,32 +81,37 @@
 
         async function connectWallet() {
             if (!window.ethereum) return alert("Please install MetaMask");
-            try {
-                provider = new ethers.BrowserProvider(window.ethereum);
-                await provider.send("eth_requestAccounts", []);
-                signer = await provider.getSigner();
-                userAddress = await signer.getAddress();
-                document.getElementById("connectBtn").textContent = userAddress.slice(0,6) + "..." + userAddress.slice(-4);
-                loadAllPools();
-            } catch (e) { console.error(e); }
+            provider = new ethers.BrowserProvider(window.ethereum);
+            await provider.send("eth_requestAccounts", []);
+            signer = await provider.getSigner();
+            userAddress = await signer.getAddress();
+            document.getElementById("connectBtn").textContent = userAddress.slice(0,6) + "..." + userAddress.slice(-4);
+            loadAllPools();
         }
 
         async function loadAllPools() {
             const tableBody = document.getElementById("poolsTable");
             const status = document.getElementById("status");
-            status.textContent = "Loading pools...";
+            status.textContent = "Loading all permanently locked pools...";
             tableBody.innerHTML = "";
 
-            for (const pool of knownPools) {
-                try {
-                    const pairContract = new ethers.Contract(pool.pairAddress, PAIR_ABI, provider);
-                    const [reserves, totalSupply, userLP] = await Promise.all([
+            try {
+                const factory = new ethers.Contract(FACTORY_ADDRESS, FACTORY_ABI, provider);
+                const length = await factory.allPairsLength();
+
+                for (let i = 0; i < length; i++) {
+                    const pairAddress = await factory.allPairs(i);
+                    const pairContract = new ethers.Contract(pairAddress, PAIR_ABI, provider);
+
+                    const [reserves, totalSupply, userLP, token0Addr, burner] = await Promise.all([
                         pairContract.getReserves(),
                         pairContract.totalSupply(),
-                        signer ? pairContract.balanceOf(userAddress) : Promise.resolve(0)
+                        signer ? pairContract.balanceOf(userAddress) : Promise.resolve(0),
+                        pairContract.token0(),
+                        factory.getBurner(pairAddress)
                     ]);
 
-                    const isBoneFirst = (await pairContract.token0()).toLowerCase() === WBONE.toLowerCase();
+                    const isBoneFirst = token0Addr.toLowerCase() === WBONE.toLowerCase();
                     const boneRes = isBoneFirst ? reserves[0] : reserves[1];
                     const tokenRes = isBoneFirst ? reserves[1] : reserves[0];
 
@@ -132,26 +119,29 @@
 
                     tableBody.innerHTML += `
                         <tr>
-                            <td class="pool-name">${pool.name}</td>
+                            <td class="pool-name">BONE / Token</td>
                             <td>
                                 <div>${ethers.formatEther(boneRes)} BONE</div>
-                                <div>${ethers.formatEther(tokenRes)} ${pool.tokenSymbol}</div>
+                                <div>${ethers.formatEther(tokenRes)} Token</div>
                             </td>
                             <td>
                                 <div style="font-weight:bold; color:var(--gold);">${ethers.formatEther(userLP)} LP</div>
                                 <div style="font-size:13px; color:#888;">≈ ${(Number(share)/100).toFixed(2)}% of pool</div>
                             </td>
                             <td>
-                                <a href="https://shibariumscan.io/address/${pool.pairAddress}" target="_blank" class="action-btn">Pair</a>
-                                ${pool.burnerAddress ? `<a href="https://shibariumscan.io/address/${pool.burnerAddress}" target="_blank" class="action-btn">Burner</a>` : ''}
+                                <a href="https://shibariumscan.io/address/${pairAddress}" target="_blank" class="action-btn">Pair</a>
+                                <a href="https://shibariumscan.io/address/${burner}" target="_blank" class="action-btn">Burner</a>
                             </td>
                         </tr>
                     `;
-                } catch (e) {
-                    console.error(`Failed to load ${pool.name}`, e);
                 }
+
+                status.innerHTML = `<span style="color:#0f0">✅ Loaded ${length} permanently locked pool(s)</span>`;
+            } catch (e) {
+                console.error(e);
+                status.style.color = "#f00";
+                status.textContent = "Error loading pools. Check console.";
             }
-            status.innerHTML = `<span style="color:#0f0">✅ Loaded ${knownPools.length} pool(s)</span>`;
         }
 
         document.getElementById("connectBtn").addEventListener("click", connectWallet);
