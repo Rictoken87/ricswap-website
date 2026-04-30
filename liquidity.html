@@ -16,7 +16,6 @@
         input { background: transparent; border: none; color: white; font-size: 20px; width: 100%; outline: none; }
         button { background: var(--magma); color: white; border: none; padding: 18px; border-radius: 16px; font-weight: bold; width: 100%; font-size: 18px; cursor: pointer; margin-top: 10px; }
         #connectBtn { width: auto !important; min-width: 140px !important; padding: 10px 24px !important; font-size: 15px !important; background: #222 !important; color: var(--gold) !important; border: 1px solid var(--gold) !important; }
-        .quick-btn { background: #222; color: var(--gold); border: 1px solid #444; padding: 8px 16px; border-radius: 9999px; font-size: 14px; margin-right: 8px; cursor: pointer; }
         #status { text-align: center; margin-top: 20px; font-size: 14px; font-weight: 600; min-height: 24px; }
     </style>
 </head>
@@ -52,7 +51,7 @@
     </div>
 
     <script>
-        const ROUTER_ADDRESS = "0x01171829db407f8571503E3b33Cf5af2Dd1E8ce1";
+        const ROUTER_ADDRESS = "0x9703f105f13F5Fd4C431EBAB8A1A6d7d36F7e7e0";   // ← YOUR NEW ROUTER
         const WBONE = "0xC76F4c819D820369Fb2d7C1531aB3Bb18e6fE8d8";
         const RIC = "0x12C94d3A30daa09f81Ea6c037004E6e99A4A3dfc";
         const SHIBARIUM_CHAIN_ID = 109;
@@ -135,7 +134,7 @@
                 const amountBONEWei = ethers.parseEther(amountBONE);
                 const amountRICWei = ethers.parseEther(amountRIC);
 
-                // Approve RIC
+                // Approve RIC if needed
                 const ricContract = new ethers.Contract(RIC, ERC20_ABI, signer);
                 const allowance = await ricContract.allowance(userAddress, ROUTER_ADDRESS);
                 if (allowance < amountRICWei) {
