@@ -19,9 +19,17 @@
         .nav-links a { color: white; text-decoration: none; font-weight: 500; }
         .nav-links a:hover, .nav-links a.active { color: var(--gold); }
         .connect-btn { 
-            background: #222; color: white; border: 1px solid #444; padding: 6px 18px; 
-            border-radius: 9999px; font-size: 14px; font-weight: 500; cursor: pointer; 
-            white-space: nowrap; margin-left: auto; flex-shrink: 0; 
+            background: #222; 
+            color: white; 
+            border: 1px solid #444; 
+            padding: 6px 18px; 
+            border-radius: 9999px; 
+            font-size: 14px; 
+            font-weight: 500; 
+            cursor: pointer; 
+            white-space: nowrap; 
+            margin-left: auto; 
+            flex-shrink: 0; 
         }
         .connect-btn:hover { background: #333; border-color: var(--gold); }
         .card { max-width: 520px; margin: 40px auto; background: var(--card-bg); border-radius: 24px; padding: 32px; box-shadow: 0 20px 40px rgba(0,0,0,0.8); border: 1px solid #222; }
@@ -144,14 +152,13 @@
 
                 const factory = new ethers.Contract(FACTORY_ADDRESS, FACTORY_ABI, signer);
                 
-                // Check if pair already exists
                 let pair = await factory.getPair(WBONE, tokenAddr);
                 if (pair === "0x0000000000000000000000000000000000000000") {
                     status.textContent = "Creating new pair...";
                     await factory.createPair(WBONE, tokenAddr);
                     status.textContent = "Pair created. Adding liquidity...";
                 } else {
-                    status.textContent = "Pair exists. Adding liquidity...";
+                    status.textContent = "Pair already exists. Adding liquidity...";
                 }
 
                 const router = new ethers.Contract(ROUTER_ADDRESS, ROUTER_ABI, signer);
