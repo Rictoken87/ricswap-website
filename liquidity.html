@@ -9,19 +9,29 @@
         :root { --obsidian: #080808; --card-bg: #121212; --magma: linear-gradient(135deg, #ff4d00 0%, #ff8c00 100%); --gold: #ffd700; }
         body { background: var(--obsidian); color: white; font-family: system-ui, sans-serif; margin: 0; padding: 0; }
         .nav { padding: 20px 40px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,215,0,0.1); }
-        .card { max-width: 500px; margin: 60px auto; background: var(--card-bg); border-radius: 24px; padding: 32px; box-shadow: 0 20px 40px rgba(0,0,0,0.8); }
+        .logo { color: var(--gold); font-size: 28px; font-weight: bold; letter-spacing: -1px; }
+        .nav-links a { color: white; text-decoration: none; margin-left: 32px; font-weight: 500; }
+        .nav-links a:hover { color: var(--gold); }
+        .nav-links a.active { color: var(--gold); font-weight: 600; }
+        .card { max-width: 500px; margin: 60px auto; background: var(--card-bg); border-radius: 24px; padding: 32px; box-shadow: 0 20px 40px rgba(0,0,0,0.8); border: 1px solid #222; }
         .input-group { background: #1a1a1a; border-radius: 16px; padding: 16px; margin-bottom: 16px; border: 1px solid #333; }
         .input-group:focus-within { border-color: var(--gold); }
         label { display: block; color: #888; font-size: 12px; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 1px; }
         input { background: transparent; border: none; color: white; font-size: 20px; width: 100%; outline: none; }
         button { background: var(--magma); color: white; border: none; padding: 18px; border-radius: 16px; font-weight: bold; width: 100%; font-size: 18px; cursor: pointer; margin-top: 10px; }
-        #connectBtn { width: auto !important; min-width: 140px !important; padding: 10px 24px !important; font-size: 15px !important; background: #222 !important; color: var(--gold) !important; border: 1px solid var(--gold) !important; }
+        #connectBtn { width: auto !important; padding: 10px 24px !important; font-size: 15px !important; background: #222 !important; color: var(--gold) !important; border: 1px solid var(--gold) !important; }
         #status { text-align: center; margin-top: 20px; font-size: 14px; font-weight: 600; min-height: 24px; }
     </style>
 </head>
 <body>
     <div class="nav">
-        <h2>RicSwap • LP Vault</h2>
+        <div class="logo">RicSwap</div>
+        <div class="nav-links">
+            <a href="index.html">Home</a>
+            <a href="swap.html">Swap</a>
+            <a href="pools.html">Pools</a>
+            <a href="liquidity.html" class="active">Add Liquidity</a>
+        </div>
         <button id="connectBtn">CONNECT WALLET</button>
     </div>
 
@@ -51,7 +61,7 @@
     </div>
 
     <script>
-        const ROUTER_ADDRESS = "0x9703f105f13F5Fd4C431EBAB8A1A6d7d36F7e7e0";   // ← YOUR NEW ROUTER
+        const ROUTER_ADDRESS = "0x9703f105f13F5Fd4C431EBAB8A1A6d7d36F7e7e0";
         const WBONE = "0xC76F4c819D820369Fb2d7C1531aB3Bb18e6fE8d8";
         const RIC = "0x12C94d3A30daa09f81Ea6c037004E6e99A4A3dfc";
         const SHIBARIUM_CHAIN_ID = 109;
@@ -76,7 +86,13 @@
                 await window.ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: '0x' + SHIBARIUM_CHAIN_ID.toString(16) }] });
             } catch (e) {
                 if (e.code === 4902) {
-                    await window.ethereum.request({ method: 'wallet_addEthereumChain', params: [{ chainId: '0x' + SHIBARIUM_CHAIN_ID.toString(16), chainName: 'Shibarium', nativeCurrency: { name: 'BONE', symbol: 'BONE', decimals: 18 }, rpcUrls: ['https://rpc.shibarium.shib.io'], blockExplorerUrls: ['https://shibariumscan.io'] }] });
+                    await window.ethereum.request({ method: 'wallet_addEthereumChain', params: [{ 
+                        chainId: '0x' + SHIBARIUM_CHAIN_ID.toString(16), 
+                        chainName: 'Shibarium', 
+                        nativeCurrency: { name: 'BONE', symbol: 'BONE', decimals: 18 }, 
+                        rpcUrls: ['https://rpc.shibarium.shib.io'], 
+                        blockExplorerUrls: ['https://shibariumscan.io'] 
+                    }]});
                 }
             }
         }
@@ -134,7 +150,7 @@
                 const amountBONEWei = ethers.parseEther(amountBONE);
                 const amountRICWei = ethers.parseEther(amountRIC);
 
-                // Approve RIC if needed
+                // Approve RIC
                 const ricContract = new ethers.Contract(RIC, ERC20_ABI, signer);
                 const allowance = await ricContract.allowance(userAddress, ROUTER_ADDRESS);
                 if (allowance < amountRICWei) {
