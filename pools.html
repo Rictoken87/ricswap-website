@@ -12,78 +12,25 @@
             --magma: linear-gradient(135deg, #ff4d00 0%, #ff8c00 100%);
             --gold: #ffd700;
         }
-        body { 
-            background: var(--obsidian); 
-            color: white; 
-            font-family: system-ui, sans-serif; 
-            margin: 0; 
-            padding: 0; 
-        }
-        .nav { 
-            padding: 20px 40px; 
-            display: flex; 
-            align-items: center; 
-            border-bottom: 1px solid rgba(255,215,0,0.1); 
-        }
-        .logo { 
-            font-size: 28px; 
-            font-weight: bold; 
-            color: var(--gold); 
-        }
-        .nav-links { 
-            display: flex; 
-            gap: 30px; 
-            margin-left: 40px; 
-        }
-        .nav-links a { 
-            color: white; 
-            text-decoration: none; 
-            font-weight: 500; 
-        }
-        .nav-links a:hover, .nav-links a.active { 
-            color: var(--gold); 
-        }
+        body { background: var(--obsidian); color: white; font-family: system-ui, sans-serif; margin: 0; padding: 0; }
+        .nav { padding: 20px 40px; display: flex; align-items: center; border-bottom: 1px solid rgba(255,215,0,0.1); }
+        .logo { font-size: 28px; font-weight: bold; color: var(--gold); }
+        .nav-links { display: flex; gap: 30px; margin-left: 40px; }
+        .nav-links a { color: white; text-decoration: none; font-weight: 500; }
+        .nav-links a:hover, .nav-links a.active { color: var(--gold); }
         .connect-btn { 
-            background: #222; 
-            color: white; 
-            border: 1px solid #444; 
-            padding: 6px 16px; 
-            border-radius: 9999px; 
-            font-size: 14px; 
-            font-weight: 500; 
-            cursor: pointer; 
-            white-space: nowrap; 
-            margin-left: auto; 
-            flex-shrink: 0; 
-            min-width: auto; 
-            width: auto; 
+            background: #222; color: white; border: 1px solid #444; padding: 6px 16px; 
+            border-radius: 9999px; font-size: 14px; font-weight: 500; cursor: pointer; 
+            white-space: nowrap; margin-left: auto; flex-shrink: 0; min-width: auto; width: auto; 
         }
-        .connect-btn:hover { 
-            background: #333; 
-            border-color: var(--gold); 
-        }
-        .card { 
-            max-width: 900px; 
-            margin: 40px auto; 
-            background: var(--card-bg); 
-            border-radius: 24px; 
-            padding: 32px; 
-            box-shadow: 0 20px 40px rgba(0,0,0,0.8); 
-            border: 1px solid #222; 
-        }
+        .connect-btn:hover { background: #333; border-color: var(--gold); }
+        .card { max-width: 1000px; margin: 40px auto; background: var(--card-bg); border-radius: 24px; padding: 32px; box-shadow: 0 20px 40px rgba(0,0,0,0.8); border: 1px solid #222; }
         table { width: 100%; border-collapse: collapse; }
         th, td { padding: 16px; text-align: left; border-bottom: 1px solid #333; }
         th { color: var(--gold); font-weight: 600; text-transform: uppercase; font-size: 13px; }
         tr:hover { background: #1a1a1a; }
         .pool-name { font-weight: bold; font-size: 18px; }
-        .action-btn { 
-            background: #222; 
-            color: white; 
-            padding: 6px 12px; 
-            border-radius: 8px; 
-            text-decoration: none; 
-            font-size: 13px; 
-        }
+        .action-btn { background: #222; color: white; padding: 6px 12px; border-radius: 8px; text-decoration: none; font-size: 13px; margin-right: 6px; }
         .status { text-align: center; margin-top: 20px; font-size: 14px; }
     </style>
 </head>
@@ -100,7 +47,7 @@
     </div>
 
     <div class="card">
-        <h2 style="text-align:center; margin-bottom:24px;">Liquidity Pools</h2>
+        <h2 style="text-align:center; margin-bottom:24px;">All Liquidity Pools</h2>
         <table>
             <thead>
                 <tr>
@@ -118,13 +65,15 @@
     <script>
         const FACTORY_ADDRESS = "0xc2e80224D2f61FaE15CF9b7D089e327F06db1106";
         const WBONE = "0xC76F4c819D820369Fb2d7C1531aB3Bb18e6fE8d8";
-        const RIC = "0x12C94d3A30daa09f81Ea6c037004E6e99A4A3dfc";
-        const PAIR_ADDRESS = "0xd28354bC7e14Ed77D363644fa6e81b084bD44454"; // RIC/BONE pair
-        const BURNER_ADDRESS = "0x648FB2b013351c7611Df06F6936Ffa8AC148F268"; // Update if you have newer burner
 
         let provider, signer, userAddress;
 
-        const FACTORY_ABI = ["function getPair(address tokenA, address tokenB) external view returns (address pair)"];
+        const FACTORY_ABI = [
+            "function allPairs(uint256) external view returns (address)",
+            "function allPairsLength() external view returns (uint256)",
+            "function getBurner(address lpToken) external view returns (address)"
+        ];
+
         const PAIR_ABI = [
             "function getReserves() external view returns (uint112 reserve0, uint112 reserve1, uint32 blockTimestampLast)",
             "function totalSupply() external view returns (uint256)",
@@ -140,55 +89,64 @@
                 signer = await provider.getSigner();
                 userAddress = await signer.getAddress();
                 document.getElementById("connectBtn").textContent = userAddress.slice(0,6) + "..." + userAddress.slice(-4);
-                loadPoolData();
-            } catch (e) {
-                console.error(e);
-            }
+                loadAllPools();
+            } catch (e) { console.error(e); }
         }
 
-        async function loadPoolData() {
-            const status = document.getElementById("status");
+        async function loadAllPools() {
             const tableBody = document.getElementById("poolsTable");
-            status.textContent = "Loading pool data...";
+            const status = document.getElementById("status");
+            status.textContent = "Loading all pools from Factory...";
+            tableBody.innerHTML = "";
 
             try {
-                const pairContract = new ethers.Contract(PAIR_ADDRESS, PAIR_ABI, provider);
-                
-                const [reserves, totalSupply, userLP] = await Promise.all([
-                    pairContract.getReserves(),
-                    pairContract.totalSupply(),
-                    signer ? pairContract.balanceOf(userAddress) : Promise.resolve(0)
-                ]);
+                const factory = new ethers.Contract(FACTORY_ADDRESS, FACTORY_ABI, provider);
+                const length = await factory.allPairsLength();
 
-                const isBoneFirst = (await pairContract.token0()).toLowerCase() === WBONE.toLowerCase();
-                const boneRes = isBoneFirst ? reserves[0] : reserves[1];
-                const ricRes = isBoneFirst ? reserves[1] : reserves[0];
+                for (let i = 0; i < length; i++) {
+                    const pairAddress = await factory.allPairs(i);
+                    const pairContract = new ethers.Contract(pairAddress, PAIR_ABI, provider);
 
-                const share = totalSupply > 0 ? (userLP * 1000000000000n / totalSupply) / 10000000000n : 0n; // 0.01% precision
+                    const [reserves, totalSupply, userLP, token0Addr] = await Promise.all([
+                        pairContract.getReserves(),
+                        pairContract.totalSupply(),
+                        signer ? pairContract.balanceOf(userAddress) : Promise.resolve(0),
+                        pairContract.token0()
+                    ]);
 
-                tableBody.innerHTML = `
-                    <tr>
-                        <td class="pool-name">BONE / RIC</td>
-                        <td>
-                            <div>${ethers.formatEther(boneRes)} BONE</div>
-                            <div>${ethers.formatEther(ricRes)} RIC</div>
-                        </td>
-                        <td>
-                            <div style="font-weight:bold; color:var(--gold);">${ethers.formatEther(userLP)} LP</div>
-                            <div style="font-size:13px; color:#888;">≈ ${(Number(share)/100).toFixed(2)}% of pool</div>
-                        </td>
-                        <td>
-                            <a href="https://shibariumscan.io/address/${PAIR_ADDRESS}" target="_blank" class="action-btn">Pair</a>
-                            <a href="https://shibariumscan.io/address/${BURNER_ADDRESS}" target="_blank" class="action-btn">Burner</a>
-                        </td>
-                    </tr>
-                `;
+                    const isBoneFirst = token0Addr.toLowerCase() === WBONE.toLowerCase();
+                    const boneRes = isBoneFirst ? reserves[0] : reserves[1];
+                    const otherRes = isBoneFirst ? reserves[1] : reserves[0];
+                    const otherToken = isBoneFirst ? "Other Token" : "Other Token";
 
-                status.innerHTML = `<span style="color:#0f0">✅ Pool data loaded</span>`;
+                    const share = totalSupply > 0n ? (userLP * 1000000000000n / totalSupply) : 0n;
+
+                    const burner = await factory.getBurner(pairAddress);
+
+                    tableBody.innerHTML += `
+                        <tr>
+                            <td class="pool-name">BONE / ${otherToken}</td>
+                            <td>
+                                <div>${ethers.formatEther(boneRes)} BONE</div>
+                                <div>${ethers.formatEther(otherRes)} Token</div>
+                            </td>
+                            <td>
+                                <div style="font-weight:bold; color:var(--gold);">${ethers.formatEther(userLP)} LP</div>
+                                <div style="font-size:13px; color:#888;">≈ ${(Number(share)/10000000000n).toFixed(2)}% of pool</div>
+                            </td>
+                            <td>
+                                <a href="https://shibariumscan.io/address/${pairAddress}" target="_blank" class="action-btn">Pair</a>
+                                <a href="https://shibariumscan.io/address/${burner}" target="_blank" class="action-btn">Burner</a>
+                            </td>
+                        </tr>
+                    `;
+                }
+
+                status.innerHTML = `<span style="color:#0f0">✅ Loaded ${length} pool(s)</span>`;
             } catch (e) {
                 console.error(e);
                 status.style.color = "#f00";
-                status.textContent = "Failed to load pool. Check console.";
+                status.textContent = "Error loading pools. Check console.";
             }
         }
 
