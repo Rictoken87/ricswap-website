@@ -37,9 +37,10 @@
     </div>
 
     <div class="card">
-        <h3 style="text-align:center;">Create Any Pair + Add Liquidity</h3>
+        <h3 style="text-align:center;">Create Any Token Pair</h3>
         <p style="text-align:center; color:#888; font-size:14px; margin-bottom:20px;">
-            BONE + Any Token (Permissionless)
+            Anyone can create a liquidity pair for any two tokens<br>
+            Burner is automatically deployed for protection
         </p>
 
         <div class="input-group">
@@ -52,10 +53,10 @@
 
         <div class="input-group">
             <label>Token B Address (any token)</label>
-            <input id="tokenB" placeholder="Paste any token contract address">
+            <input id="tokenB" placeholder="Paste any token contract address here">
         </div>
 
-        <button id="createPairBtn">CREATE NEW PAIR + AUTO BURNER</button>
+        <button id="createPairBtn">CREATE PAIR + AUTO BURNER</button>
 
         <div id="liquiditySection" style="display:none; margin-top:24px;">
             <div class="input-group">
@@ -108,15 +109,15 @@
                 const existingPair = await factory.getPair(tokenA, tokenB);
 
                 if (existingPair !== "0x0000000000000000000000000000000000000000") {
-                    document.getElementById("status").innerHTML = `✅ Pair already exists!<br>Pair Address: ${existingPair}`;
+                    document.getElementById("status").innerHTML = `✅ Pair already exists!<br>Pair: ${existingPair}`;
                     document.getElementById("liquiditySection").style.display = "block";
                     return;
                 }
 
                 const tx = await factory.createPair(tokenA, tokenB);
-                document.getElementById("status").innerHTML = `Creating new pair + auto-burner...<br><small>Tx: ${tx.hash.slice(0,12)}...</small>`;
+                document.getElementById("status").innerHTML = `Creating pair + auto-burner...<br><small>Tx: ${tx.hash.slice(0,12)}...</small>`;
                 await tx.wait();
-                document.getElementById("status").innerHTML = `✅ New pair created successfully!`;
+                document.getElementById("status").innerHTML = `✅ Pair created successfully!<br>Burner deployed automatically.`;
                 document.getElementById("liquiditySection").style.display = "block";
             } catch (e) {
                 document.getElementById("status").innerHTML = `Error: ${e.reason || e.message}`;
@@ -124,7 +125,7 @@
         }
 
         async function addLiquidity() {
-            alert("✅ You can now add liquidity to the pair.\n\nTest with small amounts first.");
+            alert("✅ Liquidity addition is ready.\n\nYou can now add liquidity to the pair you created.");
         }
 
         document.getElementById("createPairBtn").addEventListener("click", createPair);
