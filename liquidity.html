@@ -22,8 +22,8 @@
         .nav { 
             padding: 20px 40px; 
             display: flex; 
-            justify-content: space-between; 
             align-items: center; 
+            justify-content: space-between; 
             border-bottom: 1px solid rgba(255,215,0,0.1); 
         }
         .logo { 
@@ -31,9 +31,13 @@
             font-weight: bold; 
             color: var(--gold); 
         }
+        .nav-links { 
+            display: flex; 
+            gap: 30px; 
+            align-items: center; 
+        }
         .nav-links a { 
             color: white; 
-            margin-left: 30px; 
             text-decoration: none; 
             font-weight: 500; 
         }
@@ -44,13 +48,14 @@
             background: #222; 
             color: white; 
             border: 1px solid #444; 
-            padding: 8px 20px; 
+            padding: 8px 18px; 
             border-radius: 9999px; 
             font-size: 14px; 
             font-weight: 500; 
             cursor: pointer; 
             white-space: nowrap; 
             margin-left: auto; 
+            flex-shrink: 0; 
         }
         .connect-btn:hover { 
             background: #333; 
