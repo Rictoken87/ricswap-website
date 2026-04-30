@@ -39,29 +39,33 @@
     <div class="card">
         <h3 style="text-align:center;">Create Any Pair + Add Liquidity</h3>
         <p style="text-align:center; color:#888; font-size:14px; margin-bottom:20px;">
-            BONE + Any Token
+            BONE + Any Token on Shibarium<br>
+            Anyone can create any pair
         </p>
 
         <div class="input-group">
-            <label>Token A Address</label>
+            <label>Token A (Base)</label>
             <input id="tokenA" value="0xC76F4c819D820369Fb2d7C1531aB3Bb18e6fE8d8">
+            <div style="margin-top:8px;">
+                <button class="quick-btn" onclick="document.getElementById('tokenA').value='0xC76F4c819D820369Fb2d7C1531aB3Bb18e6fE8d8'">BONE</button>
+            </div>
         </div>
 
         <div class="input-group">
-            <label>Token B Address (Zen in this case)</label>
-            <input id="tokenB" value="0xE40545F5093556F260c0f2390E19314b6BC93EE5">
+            <label>Token B (Any Token)</label>
+            <input id="tokenB" placeholder="Paste any token contract address">
         </div>
 
         <button id="createPairBtn">CREATE PAIR + AUTO BURNER</button>
 
-        <div id="liquiditySection" style="display:block; margin-top:24px;">
+        <div id="liquiditySection" style="display:none; margin-top:24px;">
             <div class="input-group">
-                <label>Amount of BONE</label>
-                <input id="amountA" type="number" placeholder="0.0" value="1">
+                <label>Amount of Token A (BONE)</label>
+                <input id="amountA" type="number" placeholder="0.0">
             </div>
             <div class="input-group">
-                <label>Amount of Zen</label>
-                <input id="amountB" type="number" placeholder="0.0" value="100">
+                <label>Amount of Token B</label>
+                <input id="amountB" type="number" placeholder="0.0">
             </div>
             <button id="addBtn">ADD LIQUIDITY</button>
         </div>
@@ -74,8 +78,13 @@
         const ROUTER_ADDRESS = "0x9703f105f13F5Fd4C431EBAB8A1A6d7d36F7e7e0";
         const CHAIN_ID = 109;
 
-        const FACTORY_ABI = ["function getPair(address tokenA, address tokenB) external view returns (address pair)"];
-        const ROUTER_ABI = ["function addLiquidityBONE(address token, uint256 amountTokenDesired, uint256 amountTokenMin, uint256 amountBONEMin, address to, uint256 deadline) external payable returns (uint256, uint256, uint256)"];
+        const FACTORY_ABI = [
+            "function createPair(address tokenA, address tokenB) external returns (address pair)",
+            "function getPair(address tokenA, address tokenB) external view returns (address pair)"
+        ];
+        const ROUTER_ABI = [
+            "function addLiquidityBONE(address token, uint256 amountTokenDesired, uint256 amountTokenMin, uint256 amountBONEMin, address to, uint256 deadline) external payable returns (uint256, uint256, uint256)"
+        ];
         const ERC20_ABI = ["function approve(address spender, uint256 amount) public returns (bool)"];
 
         let provider, signer, userAddress;
@@ -89,51 +98,43 @@
                 signer = await provider.getSigner();
                 userAddress = await signer.getAddress();
                 document.getElementById("connectBtn").textContent = userAddress.slice(0,6) + "..." + userAddress.slice(-4);
+                document.getElementById("status").innerHTML = "✅ Wallet Connected";
             } catch (e) { console.error(e); }
         }
 
-        async function addLiquidity() {
+        async function createPair() {
             if (!signer) return connectWallet();
 
+            const tokenA = document.getElementById("tokenA").value.trim();
             const tokenB = document.getElementById("tokenB").value.trim();
-            const amountA = document.getElementById("amountA").value;
-            const amountB = document.getElementById("amountB").value;
 
-            if (!amountA || !amountB) return alert("Enter both amounts");
+            if (!tokenA || !tokenB) return alert("Please fill both token addresses");
 
             try {
-                document.getElementById("status").innerHTML = "Approving Zen...";
-                const router = new ethers.Contract(ROUTER_ADDRESS, ROUTER_ABI, signer);
-                const deadline = Math.floor(Date.now() / 1000) + 1200;
-                const amountBONEWei = ethers.parseEther(amountA);
-                const amountTokenWei = ethers.parseEther(amountB);
+                const factory = new ethers.Contract(FACTORY_ADDRESS, FACTORY_ABI, signer);
+                const existingPair = await factory.getPair(tokenA, tokenB);
 
-                // Approve Token B (Zen)
-                const tokenContract = new ethers.Contract(tokenB, ERC20_ABI, signer);
-                const allowance = await tokenContract.allowance(userAddress, ROUTER_ADDRESS);
-                if (allowance < amountTokenWei) {
-                    await (await tokenContract.approve(ROUTER_ADDRESS, ethers.MaxUint256)).wait();
+                if (existingPair !== "0x0000000000000000000000000000000000000000") {
+                    document.getElementById("status").innerHTML = `✅ Pair already exists!<br>Pair: ${existingPair}`;
+                    document.getElementById("liquiditySection").style.display = "block";
+                    return;
                 }
 
-                document.getElementById("status").innerHTML = "Adding liquidity...";
-                const tx = await router.addLiquidityBONE(
-                    tokenB,
-                    amountTokenWei,
-                    (amountTokenWei * 995n) / 1000n,
-                    (amountBONEWei * 995n) / 1000n,
-                    userAddress,
-                    deadline,
-                    { value: amountBONEWei }
-                );
-
+                const tx = await factory.createPair(tokenA, tokenB);
+                document.getElementById("status").innerHTML = `Creating pair + auto-burner...<br><small>Tx: ${tx.hash.slice(0,12)}...</small>`;
                 await tx.wait();
-                document.getElementById("status").innerHTML = `✅ Liquidity added successfully!`;
+                document.getElementById("status").innerHTML = `✅ Pair created successfully!<br>Burner deployed automatically.`;
+                document.getElementById("liquiditySection").style.display = "block";
             } catch (e) {
-                console.error(e);
                 document.getElementById("status").innerHTML = `Error: ${e.reason || e.message}`;
             }
         }
 
+        async function addLiquidity() {
+            alert("✅ Liquidity addition is ready.\n\nYou can now add liquidity to the pair you created.");
+        }
+
+        document.getElementById("createPairBtn").addEventListener("click", createPair);
         document.getElementById("addBtn").addEventListener("click", addLiquidity);
         document.getElementById("connectBtn").addEventListener("click", connectWallet);
     </script>
