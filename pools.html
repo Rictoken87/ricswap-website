@@ -18,7 +18,11 @@
         .nav-links { display: flex; gap: 30px; margin-left: 40px; }
         .nav-links a { color: white; text-decoration: none; font-weight: 500; }
         .nav-links a:hover, .nav-links a.active { color: var(--gold); }
-        .connect-btn { background: #222; color: white; border: 1px solid #444; padding: 6px 16px; border-radius: 9999px; font-size: 14px; font-weight: 500; cursor: pointer; white-space: nowrap; margin-left: auto; flex-shrink: 0; min-width: auto; width: auto; }
+        .connect-btn { 
+            background: #222; color: white; border: 1px solid #444; padding: 6px 18px; 
+            border-radius: 9999px; font-size: 14px; font-weight: 500; cursor: pointer; 
+            white-space: nowrap; margin-left: auto; flex-shrink: 0; 
+        }
         .connect-btn:hover { background: #333; border-color: var(--gold); }
         .card { max-width: 1000px; margin: 40px auto; background: var(--card-bg); border-radius: 24px; padding: 32px; box-shadow: 0 20px 40px rgba(0,0,0,0.8); border: 1px solid #222; }
         table { width: 100%; border-collapse: collapse; }
@@ -79,6 +83,8 @@
             "function token0() external view returns (address)"
         ];
 
+        const ERC20_ABI = ["function symbol() external view returns (string)"];
+
         async function connectWallet() {
             if (!window.ethereum) return alert("Please install MetaMask");
             provider = new ethers.BrowserProvider(window.ethereum);
@@ -113,16 +119,22 @@
 
                     const isBoneFirst = token0Addr.toLowerCase() === WBONE.toLowerCase();
                     const boneRes = isBoneFirst ? reserves[0] : reserves[1];
-                    const tokenRes = isBoneFirst ? reserves[1] : reserves[0];
+                    const otherTokenAddr = isBoneFirst ? reserves[1] === 0 ? token0Addr : (await pairContract.token0() === WBONE ? reserves[1] : reserves[0]) : reserves[0]; // simplified
+
+                    let tokenSymbol = "Token";
+                    try {
+                        const tokenContract = new ethers.Contract(otherTokenAddr, ERC20_ABI, provider);
+                        tokenSymbol = await tokenContract.symbol();
+                    } catch (e) {}
 
                     const share = totalSupply > 0n ? (userLP * 1000000000000n / totalSupply) / 10000000000n : 0n;
 
                     tableBody.innerHTML += `
                         <tr>
-                            <td class="pool-name">BONE / Token</td>
+                            <td class="pool-name">BONE / ${tokenSymbol}</td>
                             <td>
                                 <div>${ethers.formatEther(boneRes)} BONE</div>
-                                <div>${ethers.formatEther(tokenRes)} Token</div>
+                                <div>${ethers.formatEther(isBoneFirst ? reserves[1] : reserves[0])} ${tokenSymbol}</div>
                             </td>
                             <td>
                                 <div style="font-weight:bold; color:var(--gold);">${ethers.formatEther(userLP)} LP</div>
@@ -130,7 +142,7 @@
                             </td>
                             <td>
                                 <a href="https://shibariumscan.io/address/${pairAddress}" target="_blank" class="action-btn">Pair</a>
-                                <a href="https://shibariumscan.io/address/${burner}" target="_blank" class="action-btn">Burner</a>
+                                ${burner && burner !== "0x0000000000000000000000000000000000000000" ? `<a href="https://shibariumscan.io/address/${burner}" target="_blank" class="action-btn">Burner</a>` : ''}
                             </td>
                         </tr>
                     `;
