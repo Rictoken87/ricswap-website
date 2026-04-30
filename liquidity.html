@@ -6,31 +6,14 @@
     <title>RicSwap | Add Liquidity</title>
     <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.0/dist/ethers.umd.min.js"></script>
     <style>
-        :root {
-            --obsidian: #080808;
-            --card-bg: #121212;
-            --magma: linear-gradient(135deg, #ff4d00 0%, #ff8c00 100%);
-            --gold: #ffd700;
-        }
+        :root { --obsidian: #080808; --card-bg: #121212; --magma: linear-gradient(135deg, #ff4d00 0%, #ff8c00 100%); --gold: #ffd700; }
         body { background: var(--obsidian); color: white; font-family: system-ui, sans-serif; margin: 0; padding: 0; }
         .nav { padding: 20px 40px; display: flex; align-items: center; border-bottom: 1px solid rgba(255,215,0,0.1); }
         .logo { font-size: 28px; font-weight: bold; color: var(--gold); }
         .nav-links { display: flex; gap: 30px; margin-left: 40px; }
         .nav-links a { color: white; text-decoration: none; font-weight: 500; }
         .nav-links a:hover, .nav-links a.active { color: var(--gold); }
-        .connect-btn { 
-            background: #222; 
-            color: white; 
-            border: 1px solid #444; 
-            padding: 6px 18px; 
-            border-radius: 9999px; 
-            font-size: 14px; 
-            font-weight: 500; 
-            cursor: pointer; 
-            white-space: nowrap; 
-            margin-left: auto; 
-            flex-shrink: 0; 
-        }
+        .connect-btn { background: #222; color: white; border: 1px solid #444; padding: 6px 18px; border-radius: 9999px; font-size: 14px; font-weight: 500; cursor: pointer; white-space: nowrap; margin-left: auto; flex-shrink: 0; }
         .connect-btn:hover { background: #333; border-color: var(--gold); }
         .card { max-width: 520px; margin: 40px auto; background: var(--card-bg); border-radius: 24px; padding: 32px; box-shadow: 0 20px 40px rgba(0,0,0,0.8); border: 1px solid #222; }
         .input-group { background: #1a1a1a; border-radius: 16px; padding: 16px; margin-bottom: 16px; border: 1px solid #333; }
@@ -110,22 +93,14 @@
 
                 const boneBalance = await provider.getBalance(userAddress);
                 document.getElementById("boneBalance").textContent = `Balance: ${ethers.formatEther(boneBalance)} BONE`;
-            } catch (e) {
-                console.error(e);
-            }
+            } catch (e) { console.error(e); }
         }
 
         async function updateTokenInfo() {
             const tokenAddr = document.getElementById("tokenAddress").value.trim();
             const infoEl = document.getElementById("tokenInfo");
             const symbolDisplay = document.getElementById("tokenSymbolDisplay");
-
-            if (!tokenAddr || !signer) {
-                infoEl.textContent = "";
-                symbolDisplay.textContent = "";
-                return;
-            }
-
+            if (!tokenAddr || !signer) { infoEl.textContent = ""; symbolDisplay.textContent = ""; return; }
             try {
                 const tokenContract = new ethers.Contract(tokenAddr, ERC20_ABI, provider);
                 const [symbol, balance] = await Promise.all([tokenContract.symbol(), tokenContract.balanceOf(userAddress)]);
@@ -151,14 +126,14 @@
                 status.textContent = "Checking pair...";
 
                 const factory = new ethers.Contract(FACTORY_ADDRESS, FACTORY_ABI, signer);
-                
                 let pair = await factory.getPair(WBONE, tokenAddr);
+
                 if (pair === "0x0000000000000000000000000000000000000000") {
                     status.textContent = "Creating new pair...";
                     await factory.createPair(WBONE, tokenAddr);
                     status.textContent = "Pair created. Adding liquidity...";
                 } else {
-                    status.textContent = "Pair already exists. Adding liquidity...";
+                    status.textContent = "Pair exists. Adding liquidity...";
                 }
 
                 const router = new ethers.Contract(ROUTER_ADDRESS, ROUTER_ABI, signer);
