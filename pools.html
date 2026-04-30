@@ -80,7 +80,8 @@
             "function getReserves() external view returns (uint112 reserve0, uint112 reserve1, uint32 blockTimestampLast)",
             "function totalSupply() external view returns (uint256)",
             "function balanceOf(address account) external view returns (uint256)",
-            "function token0() external view returns (address)"
+            "function token0() external view returns (address)",
+            "function token1() external view returns (address)"
         ];
 
         const ERC20_ABI = ["function symbol() external view returns (string)"];
@@ -109,18 +110,20 @@
                     const pairAddress = await factory.allPairs(i);
                     const pairContract = new ethers.Contract(pairAddress, PAIR_ABI, provider);
 
-                    const [reserves, totalSupply, userLP, token0Addr, burner] = await Promise.all([
+                    const [reserves, totalSupply, userLP, token0Addr, token1Addr, burner] = await Promise.all([
                         pairContract.getReserves(),
                         pairContract.totalSupply(),
                         signer ? pairContract.balanceOf(userAddress) : Promise.resolve(0),
                         pairContract.token0(),
+                        pairContract.token1(),
                         factory.getBurner(pairAddress)
                     ]);
 
-                    const isBoneFirst = token0Addr.toLowerCase() === WBONE.toLowerCase();
-                    const boneRes = isBoneFirst ? reserves[0] : reserves[1];
-                    const otherRes = isBoneFirst ? reserves[1] : reserves[0];
-                    const otherTokenAddr = isBoneFirst ? (token0Addr === WBONE ? reserves[1] : reserves[0]) : reserves[0]; // wait, better logic
+                    const boneAddr = WBONE.toLowerCase();
+                    const isBone0 = token0Addr.toLowerCase() === boneAddr;
+                    const boneRes = isBone0 ? reserves[0] : reserves[1];
+                    const otherRes = isBone0 ? reserves[1] : reserves[0];
+                    const otherTokenAddr = isBone0 ? token1Addr : token0Addr;
 
                     let tokenSymbol = "Unknown";
                     try {
