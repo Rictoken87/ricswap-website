@@ -39,7 +39,7 @@
     <div class="card">
         <h3 style="text-align:center;">Create Any Pair + Add Liquidity</h3>
         <p style="text-align:center; color:#888; font-size:14px; margin-bottom:20px;">
-            BONE + Any Token
+            BONE + Any Token (Permissionless)
         </p>
 
         <div class="input-group">
@@ -69,7 +69,7 @@
             <button id="addBtn">ADD LIQUIDITY</button>
         </div>
 
-        <div id="status">Ready</div>
+        <div id="status"></div>
     </div>
 
     <script>
@@ -84,50 +84,51 @@
         let provider, signer, userAddress;
 
         async function connectWallet() {
-            console.log("Connect button clicked");
-            if (!window.ethereum) {
-                document.getElementById("status").innerHTML = "❌ MetaMask not found";
-                return alert("Please install MetaMask");
-            }
+            if (!window.ethereum) return alert("Install MetaMask");
             try {
-                document.getElementById("status").innerHTML = "Connecting...";
                 provider = new ethers.BrowserProvider(window.ethereum);
                 await provider.send("eth_requestAccounts", []);
-                await window.ethereum.request({
-                    method: 'wallet_switchEthereumChain',
-                    params: [{ chainId: '0x' + CHAIN_ID.toString(16) }]
-                });
+                await window.ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: '0x' + CHAIN_ID.toString(16) }] });
                 signer = await provider.getSigner();
                 userAddress = await signer.getAddress();
                 document.getElementById("connectBtn").textContent = userAddress.slice(0,6) + "..." + userAddress.slice(-4);
-                document.getElementById("status").innerHTML = "✅ Wallet Connected";
-                console.log("Wallet connected:", userAddress);
-            } catch (e) {
-                console.error("Connect error:", e);
-                document.getElementById("status").innerHTML = "❌ " + (e.message || "Connection failed");
-            }
+            } catch (e) { console.error(e); }
         }
 
         async function createPair() {
             if (!signer) return connectWallet();
+
             const tokenA = document.getElementById("tokenA").value.trim();
             const tokenB = document.getElementById("tokenB").value.trim();
+
             if (!tokenA || !tokenB) return alert("Please fill both token addresses");
 
             try {
-                document.getElementById("status").innerHTML = "Creating pair...";
                 const factory = new ethers.Contract(FACTORY_ADDRESS, FACTORY_ABI, signer);
+                const existingPair = await factory.getPair(tokenA, tokenB);
+
+                if (existingPair !== "0x0000000000000000000000000000000000000000") {
+                    document.getElementById("status").innerHTML = `✅ Pair already exists!<br>Pair Address: ${existingPair}`;
+                    document.getElementById("liquiditySection").style.display = "block";
+                    return;
+                }
+
                 const tx = await factory.createPair(tokenA, tokenB);
+                document.getElementById("status").innerHTML = `Creating new pair + auto-burner...<br><small>Tx: ${tx.hash.slice(0,12)}...</small>`;
                 await tx.wait();
-                document.getElementById("status").innerHTML = `✅ Pair created successfully!`;
+                document.getElementById("status").innerHTML = `✅ New pair created successfully!`;
                 document.getElementById("liquiditySection").style.display = "block";
             } catch (e) {
-                console.error(e);
                 document.getElementById("status").innerHTML = `Error: ${e.reason || e.message}`;
             }
         }
 
+        async function addLiquidity() {
+            alert("✅ You can now add liquidity to the pair.\n\nTest with small amounts first.");
+        }
+
         document.getElementById("createPairBtn").addEventListener("click", createPair);
+        document.getElementById("addBtn").addEventListener("click", addLiquidity);
         document.getElementById("connectBtn").addEventListener("click", connectWallet);
     </script>
 </body>
