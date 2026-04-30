@@ -98,7 +98,7 @@
         async function loadAllPools() {
             const tableBody = document.getElementById("poolsTable");
             const status = document.getElementById("status");
-            status.textContent = "Loading all permanently locked pools...";
+            status.textContent = "Loading pools...";
             tableBody.innerHTML = "";
 
             try {
@@ -119,9 +119,10 @@
 
                     const isBoneFirst = token0Addr.toLowerCase() === WBONE.toLowerCase();
                     const boneRes = isBoneFirst ? reserves[0] : reserves[1];
-                    const otherTokenAddr = isBoneFirst ? reserves[1] === 0 ? token0Addr : (await pairContract.token0() === WBONE ? reserves[1] : reserves[0]) : reserves[0]; // simplified
+                    const otherRes = isBoneFirst ? reserves[1] : reserves[0];
+                    const otherTokenAddr = isBoneFirst ? (token0Addr === WBONE ? reserves[1] : reserves[0]) : reserves[0]; // wait, better logic
 
-                    let tokenSymbol = "Token";
+                    let tokenSymbol = "Unknown";
                     try {
                         const tokenContract = new ethers.Contract(otherTokenAddr, ERC20_ABI, provider);
                         tokenSymbol = await tokenContract.symbol();
@@ -134,7 +135,7 @@
                             <td class="pool-name">BONE / ${tokenSymbol}</td>
                             <td>
                                 <div>${ethers.formatEther(boneRes)} BONE</div>
-                                <div>${ethers.formatEther(isBoneFirst ? reserves[1] : reserves[0])} ${tokenSymbol}</div>
+                                <div>${ethers.formatEther(otherRes)} ${tokenSymbol}</div>
                             </td>
                             <td>
                                 <div style="font-weight:bold; color:var(--gold);">${ethers.formatEther(userLP)} LP</div>
