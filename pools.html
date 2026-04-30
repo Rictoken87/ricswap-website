@@ -33,6 +33,7 @@
         .action-btn { background: #222; color: white; padding: 6px 12px; border-radius: 8px; text-decoration: none; font-size: 13px; margin-right: 6px; }
         .status { text-align: center; margin-top: 20px; font-size: 14px; }
         .lock-note { color: #ff4d00; font-size: 13px; text-align: center; margin-top: 10px; }
+        .no-liquidity { color: #ffaa00; font-style: italic; }
     </style>
 </head>
 <body>
@@ -106,6 +107,11 @@
                 const factory = new ethers.Contract(FACTORY_ADDRESS, FACTORY_ABI, provider);
                 const length = await factory.allPairsLength();
 
+                if (length === 0) {
+                    status.innerHTML = `<span style="color:#ffaa00">No pairs created yet. Go to Add Liquidity page first.</span>`;
+                    return;
+                }
+
                 for (let i = 0; i < length; i++) {
                     const pairAddress = await factory.allPairs(i);
                     const pairContract = new ethers.Contract(pairAddress, PAIR_ABI, provider);
@@ -119,11 +125,10 @@
                         factory.getBurner(pairAddress)
                     ]);
 
-                    const boneAddr = WBONE.toLowerCase();
-                    const isBone0 = token0Addr.toLowerCase() === boneAddr;
-                    const boneRes = isBone0 ? reserves[0] : reserves[1];
-                    const otherRes = isBone0 ? reserves[1] : reserves[0];
-                    const otherTokenAddr = isBone0 ? token1Addr : token0Addr;
+                    const isBoneFirst = token0Addr.toLowerCase() === WBONE.toLowerCase();
+                    const boneRes = isBoneFirst ? reserves[0] : reserves[1];
+                    const otherRes = isBoneFirst ? reserves[1] : reserves[0];
+                    const otherTokenAddr = isBoneFirst ? token1Addr : token0Addr;
 
                     let tokenSymbol = "Unknown";
                     try {
