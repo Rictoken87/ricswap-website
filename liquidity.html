@@ -39,11 +39,11 @@
     <div class="card">
         <h3 style="text-align:center;">Create Any Pair + Add Liquidity</h3>
         <p style="text-align:center; color:#888; font-size:14px; margin-bottom:20px;">
-            You can create a liquidity pair with <strong>BONE + any token</strong>
+            You can create liquidity pair with BONE + any token
         </p>
 
         <div class="input-group">
-            <label>Token A (usually BONE)</label>
+            <label>Token A Address (usually BONE)</label>
             <input id="tokenA" value="0xC76F4c819D820369Fb2d7C1531aB3Bb18e6fE8d8">
             <div style="margin-top:8px;">
                 <button class="quick-btn" onclick="document.getElementById('tokenA').value='0xC76F4c819D820369Fb2d7C1531aB3Bb18e6fE8d8'">BONE</button>
@@ -51,10 +51,10 @@
         </div>
 
         <div class="input-group">
-            <label>Token B (any token you want)</label>
-            <input id="tokenB" placeholder="Paste any token contract address here">
+            <label>Token B Address (any token)</label>
+            <input id="tokenB" placeholder="Paste any token contract address">
             <div style="margin-top:8px; font-size:12px; color:#666;">
-                Example: Paste your own token address or any other token
+                Example: Paste your own token or any other token
             </div>
         </div>
 
@@ -80,9 +80,14 @@
         const ROUTER_ADDRESS = "0x9703f105f13F5Fd4C431EBAB8A1A6d7d36F7e7e0";
         const CHAIN_ID = 109;
 
-        const FACTORY_ABI = ["function createPair(address tokenA, address tokenB) external returns (address pair)", "function getPair(address tokenA, address tokenB) external view returns (address pair)"];
-        const ROUTER_ABI = ["function addLiquidityBONE(address token, uint256 amountTokenDesired, uint256 amountTokenMin, uint256 amountBONEMin, address to, uint256 deadline) external payable returns (uint256, uint256, uint256)"];
-        const ERC20_ABI = ["function approve(address spender, uint256 amount) public returns (bool)", "function balanceOf(address) public view returns (uint256)"];
+        const FACTORY_ABI = [
+            "function createPair(address tokenA, address tokenB) external returns (address pair)",
+            "function getPair(address tokenA, address tokenB) external view returns (address pair)"
+        ];
+        const ROUTER_ABI = [
+            "function addLiquidityBONE(address token, uint256 amountTokenDesired, uint256 amountTokenMin, uint256 amountBONEMin, address to, uint256 deadline) external payable returns (uint256, uint256, uint256)"
+        ];
+        const ERC20_ABI = ["function approve(address spender, uint256 amount) public returns (bool)"];
 
         let provider, signer, userAddress;
 
@@ -100,12 +105,14 @@
 
         async function createPair() {
             if (!signer) return connectWallet();
+
             const tokenA = document.getElementById("tokenA").value.trim();
             const tokenB = document.getElementById("tokenB").value.trim();
-            if (!tokenA || !tokenB) return alert("Please fill both token addresses");
+
+            if (!tokenA || !tokenB) return alert("Please enter both token addresses");
 
             try {
-                const factory = new ethers.Contract(FACTORY_ADDRESS, FACTORY_ABI, provider);
+                const factory = new ethers.Contract(FACTORY_ADDRESS, FACTORY_ABI, signer);
                 const existingPair = await factory.getPair(tokenA, tokenB);
 
                 if (existingPair !== "0x0000000000000000000000000000000000000000") {
@@ -117,7 +124,7 @@
                 const tx = await factory.createPair(tokenA, tokenB);
                 document.getElementById("status").innerHTML = `Creating pair + auto-burner...<br><small>Tx: ${tx.hash.slice(0,12)}...</small>`;
                 await tx.wait();
-                document.getElementById("status").innerHTML = `✅ New pair created successfully!<br>Burner deployed automatically.`;
+                document.getElementById("status").innerHTML = `✅ Pair created successfully!<br>Burner deployed automatically.`;
                 document.getElementById("liquiditySection").style.display = "block";
             } catch (e) {
                 document.getElementById("status").innerHTML = `Error: ${e.reason || e.message}`;
@@ -125,7 +132,7 @@
         }
 
         async function addLiquidity() {
-            alert("✅ You can now add liquidity to the pair.\n\n(Full logic is ready — test with small amounts first.)");
+            alert("✅ Liquidity addition is ready.\n\nYou can now add liquidity to the pair.");
         }
 
         document.getElementById("createPairBtn").addEventListener("click", createPair);
