@@ -12,20 +12,101 @@
             --magma: linear-gradient(135deg, #ff4d00 0%, #ff8c00 100%);
             --gold: #ffd700;
         }
-        body { background: var(--obsidian); color: white; font-family: system-ui, sans-serif; margin: 0; padding: 0; }
-        .nav { padding: 20px 40px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,215,0,0.1); }
-        .logo { font-size: 28px; font-weight: bold; color: var(--gold); }
-        .nav-links a { color: white; margin-left: 30px; text-decoration: none; font-weight: 500; }
-        .nav-links a:hover, .nav-links a.active { color: var(--gold); }
-        .card { max-width: 520px; margin: 40px auto; background: var(--card-bg); border-radius: 24px; padding: 32px; box-shadow: 0 20px 40px rgba(0,0,0,0.8); border: 1px solid #222; }
-        .input-group { background: #1a1a1a; border-radius: 16px; padding: 16px; margin-bottom: 16px; border: 1px solid #333; }
+        body { 
+            background: var(--obsidian); 
+            color: white; 
+            font-family: system-ui, sans-serif; 
+            margin: 0; 
+            padding: 0; 
+        }
+        .nav { 
+            padding: 20px 40px; 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            border-bottom: 1px solid rgba(255,215,0,0.1); 
+        }
+        .logo { 
+            font-size: 28px; 
+            font-weight: bold; 
+            color: var(--gold); 
+        }
+        .nav-links a { 
+            color: white; 
+            margin-left: 30px; 
+            text-decoration: none; 
+            font-weight: 500; 
+        }
+        .nav-links a:hover, .nav-links a.active { 
+            color: var(--gold); 
+        }
+        .connect-btn { 
+            background: #222; 
+            color: white; 
+            border: 1px solid #444; 
+            padding: 8px 20px; 
+            border-radius: 9999px; 
+            font-size: 14px; 
+            font-weight: 500; 
+            cursor: pointer; 
+            white-space: nowrap; 
+        }
+        .connect-btn:hover { 
+            background: #333; 
+            border-color: var(--gold); 
+        }
+        .card { 
+            max-width: 520px; 
+            margin: 40px auto; 
+            background: var(--card-bg); 
+            border-radius: 24px; 
+            padding: 32px; 
+            box-shadow: 0 20px 40px rgba(0,0,0,0.8); 
+            border: 1px solid #222; 
+        }
+        .input-group { 
+            background: #1a1a1a; 
+            border-radius: 16px; 
+            padding: 16px; 
+            margin-bottom: 16px; 
+            border: 1px solid #333; 
+        }
         .input-group:focus-within { border-color: var(--gold); }
-        label { display: block; color: #888; font-size: 12px; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 1px; }
-        input, select { background: transparent; border: none; color: white; font-size: 24px; width: 100%; outline: none; }
-        button { background: var(--magma); color: white; border: none; padding: 18px; border-radius: 16px; font-weight: bold; width: 100%; font-size: 18px; cursor: pointer; margin-top: 10px; }
+        label { 
+            display: block; 
+            color: #888; 
+            font-size: 12px; 
+            margin-bottom: 8px; 
+            text-transform: uppercase; 
+            letter-spacing: 1px; 
+        }
+        input, select { 
+            background: transparent; 
+            border: none; 
+            color: white; 
+            font-size: 24px; 
+            width: 100%; 
+            outline: none; 
+        }
+        button { 
+            background: var(--magma); 
+            color: white; 
+            border: none; 
+            padding: 18px; 
+            border-radius: 16px; 
+            font-weight: bold; 
+            width: 100%; 
+            font-size: 18px; 
+            cursor: pointer; 
+            margin-top: 10px; 
+        }
         button:disabled { opacity: 0.6; cursor: not-allowed; }
-        .status { margin-top: 15px; text-align: center; font-size: 14px; min-height: 24px; }
-        .connect-btn { background: #222; color: white; border: 1px solid #444; padding: 8px 16px; border-radius: 9999px; font-size: 14px; cursor: pointer; }
+        .status { 
+            margin-top: 15px; 
+            text-align: center; 
+            font-size: 14px; 
+            min-height: 24px; 
+        }
     </style>
 </head>
 <body>
@@ -92,7 +173,6 @@
                 document.getElementById("connectBtn").textContent = userAddress.slice(0,6) + "..." + userAddress.slice(-4);
                 document.getElementById("status").innerHTML = `<span style="color:#0f0">✅ Wallet connected</span>`;
                 
-                // Load BONE balance
                 const balance = await provider.getBalance(userAddress);
                 document.getElementById("boneBalance").textContent = `Balance: ${ethers.formatEther(balance)} BONE`;
             } catch (e) {
@@ -128,14 +208,14 @@
                 status.textContent = "Adding liquidity...";
 
                 const router = new ethers.Contract(ROUTER_ADDRESS, ROUTER_ABI, signer);
-                const deadline = Math.floor(Date.now() / 1000) + 1200; // 20 minutes
+                const deadline = Math.floor(Date.now() / 1000) + 1200;
                 const amountBONEWei = ethers.parseEther(amountBONE);
 
                 const tx = await router.addLiquidityBONE(
                     tokenAddr,
                     amountTokenWei,
-                    0, // min token (we accept any)
-                    0, // min BONE
+                    0,
+                    0,
                     userAddress,
                     deadline,
                     { value: amountBONEWei }
@@ -153,11 +233,9 @@
             }
         }
 
-        // Event listeners
         document.getElementById("connectBtn").addEventListener("click", connectWallet);
         document.getElementById("addBtn").addEventListener("click", addLiquidity);
 
-        // Auto-connect if already authorized
         window.addEventListener("load", () => {
             if (window.ethereum) {
                 window.ethereum.request({ method: 'eth_accounts' }).then(accounts => {
