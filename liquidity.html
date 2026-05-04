@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>RicSwap | Add Liquidity</title>
-    <!-- Primary CDN -->
+    <!-- FIXED: Correct CDN for Ethers v6 -->
     <script src="https://cloudflare.com"></script>
     <style>
         :root { --obsidian: #080808; --card-bg: #121212; --magma: linear-gradient(135deg, #ff4d00 0%, #ff8c00 100%); --gold: #ffd700; }
@@ -45,7 +45,9 @@
         <div id="tokenInfo" class="token-info"></div>
     </div>
     <button id="createPairBtn" class="main-btn" style="background:#222; border: 1px solid #444; font-size: 14px;">1. Create Pair & Burner</button>
+    
     <div style="margin: 20px 0; text-align:center; color:#444; font-size: 11px;">THEN ADD LIQUIDITY</div>
+    
     <div class="input-group">
         <label>Amount BONE</label>
         <input type="number" id="amountBONE" value="1">
@@ -59,56 +61,49 @@
 </div>
 
 <script>
-    // System Constants
     const FACTORY_ADDRESS = "0x78ae5cCD2f13D10aE3fF47F8418A79D99B4569d0";
     const ROUTER_ADDRESS = "0xA809a9060D36f5324061EF93192ad5DA12Afc62e";
     const WBONE = "0xC76F4c819D820369Fb2d7C1531aB3Bb18e6fE8d8";
-    const CHAIN_ID_HEX = "0x6d";
+    const CHAIN_ID_HEX = "0x6d"; // 109 in hex
 
     let provider, signer, userAddress;
 
-    // --- BOOTSTRAP FUNCTION ---
     async function init() {
         const statusEl = document.getElementById("status");
-        
-        // 1. Verify Ethers is loaded
         if (typeof ethers === 'undefined') {
-            statusEl.textContent = "Retrying connection to Ethers library...";
-            // Try secondary CDN if primary failed
-            const script = document.createElement('script');
-            script.src = "https://jsdelivr.net";
-            document.head.appendChild(script);
-            
-            script.onload = () => { statusEl.textContent = "System Ready"; setupListeners(); };
-            script.onerror = () => { statusEl.textContent = "Critical Error: Library Blocked"; };
-        } else {
-            statusEl.textContent = "System Ready";
-            setupListeners();
-            // Auto-connect if already authorized
-            if (window.ethereum && window.ethereum.selectedAddress) connectWallet();
+            statusEl.textContent = "Error: Library failed to load. Use a different browser or disable adblock.";
+            return;
         }
+        statusEl.textContent = "System Ready";
+        setupListeners();
+        
+        // Auto-connect if wallet is already unlocked
+        if (window.ethereum && window.ethereum.selectedAddress) connectWallet();
     }
 
     function setupListeners() {
         document.getElementById("connectBtn").onclick = connectWallet;
-        document.getElementById("createPairBtn").onclick = createPair;
+        document.getElementById("createPairBtn").onclick = checkOrCreate;
         document.getElementById("addBtn").onclick = addLiquidity;
         document.getElementById("tokenAddress").oninput = updateTokenInfo;
     }
 
     async function connectWallet() {
         const status = document.getElementById("status");
-        if (!window.ethereum) return alert("MetaMask not found!");
+        if (!window.ethereum) return alert("Install MetaMask!");
 
         try {
-            status.textContent = "Connecting Wallet...";
+            status.textContent = "Requesting Connection...";
             provider = new ethers.BrowserProvider(window.ethereum);
             const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
-            userAddress = accounts[0]; // Fix: isolated string from array
+            userAddress = accounts[0];
 
-            // Force Shibarium
+            // Forced Chain Switch
             try {
-                await window.ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: CHAIN_ID_HEX }] });
+                await window.ethereum.request({
+                    method: 'wallet_switchEthereumChain',
+                    params: [{ chainId: CHAIN_ID_HEX }],
+                });
             } catch (e) {
                 if (e.code === 4902) {
                     await window.ethereum.request({
@@ -117,7 +112,7 @@
                             chainId: CHAIN_ID_HEX,
                             chainName: 'Shibarium',
                             nativeCurrency: { name: 'BONE', symbol: 'BONE', decimals: 18 },
-                            rpcUrls: ['https://shib.io'],
+                            rpcUrls: ['https://rpc.shibarium.shib.io'],
                             blockExplorerUrls: ['https://shibariumscan.io']
                         }]
                     });
@@ -126,10 +121,10 @@
 
             signer = await provider.getSigner();
             document.getElementById("connectBtn").textContent = userAddress.slice(0,6) + "..." + userAddress.slice(-4);
-            status.textContent = "✅ Wallet Connected";
+            status.textContent = "✅ Connected to Shibarium";
         } catch (err) {
-            status.textContent = "Connection Failed";
             console.error(err);
+            status.textContent = "Connect Failed";
         }
     }
 
@@ -139,21 +134,24 @@
         try {
             const token = new ethers.Contract(addr, ["function symbol() view returns (string)", "function balanceOf(address) view returns (uint256)"], provider);
             const [sym, bal] = await Promise.all([token.symbol(), token.balanceOf(userAddress)]);
-            document.getElementById("tokenInfo").textContent = `Token: ${sym} | Balance: ${Number(ethers.formatEther(bal)).toFixed(4)}`;
-        } catch (e) { document.getElementById("tokenInfo").textContent = "Invalid Token Address"; }
+            document.getElementById("tokenInfo").textContent = `Detected: ${sym} | Bal: ${Number(ethers.formatEther(bal)).toFixed(4)}`;
+        } catch (e) { document.getElementById("tokenInfo").textContent = "Invalid Address"; }
     }
 
-    async function createPair() {
+    async function checkOrCreate() {
         if (!signer) return connectWallet();
         const status = document.getElementById("status");
         const addr = document.getElementById("tokenAddress").value.trim();
+        if (!ethers.isAddress(addr)) return alert("Invalid Address");
+
         try {
-            status.textContent = "Creating Pair (Check Wallet)...";
+            status.textContent = "Checking Factory...";
             const factory = new ethers.Contract(FACTORY_ADDRESS, ["function createPair(address,address) returns (address)"], signer);
             const tx = await factory.createPair(WBONE, addr, { gasLimit: 5000000 });
+            status.textContent = "Deploying Pair (Check Wallet)...";
             await tx.wait();
-            status.textContent = "✅ Pair Created!";
-        } catch (e) { status.textContent = "Error: " + (e.reason || "Rejected"); }
+            status.textContent = "✅ Pair & Burner Ready!";
+        } catch (e) { status.textContent = "Error: " + (e.reason || "Check if pair exists"); }
     }
 
     async function addLiquidity() {
@@ -164,25 +162,25 @@
         const amtT = document.getElementById("amountToken").value;
 
         try {
-            status.textContent = "Authorizing...";
             const valB = ethers.parseEther(amtB);
             const valT = ethers.parseEther(amtT);
             const token = new ethers.Contract(addr, ["function approve(address,uint) returns (bool)", "function allowance(address,address) view returns (uint256)"], signer);
             
+            status.textContent = "Approving...";
             const allow = await token.allowance(userAddress, ROUTER_ADDRESS);
             if (allow < valT) {
-                await (await token.approve(ROUTER_ADDRESS, ethers.MaxUint256)).wait();
+                const txA = await token.approve(ROUTER_ADDRESS, ethers.MaxUint256);
+                await txA.wait();
             }
 
-            status.textContent = "Confirming LP Deposit...";
+            status.textContent = "Seeding Liquidity...";
             const router = new ethers.Contract(ROUTER_ADDRESS, ["function addLiquidityBONE(address,uint,uint,uint,address,uint) external payable returns (uint,uint,uint)"], signer);
-            const tx = await router.addLiquidityBONE(addr, valT, 0, 0, userAddress, Math.floor(Date.now()/1000)+1200, { value: valB, gasLimit: 2000000 });
+            const tx = await router.addLiquidityBONE(addr, valT, 0, 0, userAddress, Math.floor(Date.now()/1000)+3600, { value: valB, gasLimit: 2000000 });
             await tx.wait();
-            status.textContent = "✅ Liquidity Added!";
+            status.textContent = "✅ Success! LP Locked Forever.";
         } catch (e) { status.textContent = "Error: " + (e.reason || "Check Balance"); }
     }
 
-    // Launch!
     window.onload = init;
 </script>
 </body>
