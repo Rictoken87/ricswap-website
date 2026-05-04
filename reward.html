@@ -18,17 +18,68 @@
         .nav-links { display: flex; gap: 30px; margin-left: 40px; }
         .nav-links a { color: white; text-decoration: none; font-weight: 500; }
         .nav-links a:hover, .nav-links a.active { color: var(--gold); }
-        .connect-btn, .admin-btn { background: #222; color: white; border: 1px solid #444; padding: 8px 18px; border-radius: 9999px; margin-left: auto; cursor: pointer; }
+        .connect-btn, .admin-btn { 
+            background: #222; 
+            color: white; 
+            border: 1px solid #444; 
+            padding: 8px 18px; 
+            border-radius: 9999px; 
+            margin-left: auto; 
+            cursor: pointer; 
+        }
         
-        .rewards-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 25px; padding: 40px; max-width: 1400px; margin: 0 auto; }
-        .reward-card { background: var(--card-bg); border-radius: 16px; overflow: hidden; border: 1px solid #333; }
+        .rewards-grid { 
+            display: grid; 
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); 
+            gap: 25px; 
+            padding: 40px; 
+            max-width: 1400px; 
+            margin: 0 auto; 
+        }
+        .reward-card { 
+            background: var(--card-bg); 
+            border-radius: 16px; 
+            overflow: hidden; 
+            border: 1px solid #333; 
+        }
         .reward-card img { width: 100%; height: 200px; object-fit: cover; }
         .reward-info { padding: 20px; }
         .price { color: var(--gold); font-size: 1.4rem; font-weight: bold; }
-        .redeem-btn { background: var(--magma); color: white; border: none; padding: 12px; width: 100%; border-radius: 8px; margin-top: 10px; cursor: pointer; }
+        .redeem-btn { 
+            background: var(--magma); 
+            color: white; 
+            border: none; 
+            padding: 12px; 
+            width: 100%; 
+            border-radius: 8px; 
+            margin-top: 10px; 
+            cursor: pointer; 
+        }
         
-        .admin-panel { display: none; padding: 40px; background: #111; margin: 20px; border-radius: 12px; }
-        input, textarea { width: 100%; padding: 10px; margin: 8px 0; background: #222; color: white; border: 1px solid #444; border-radius: 8px; }
+        .admin-panel { 
+            display: none; 
+            padding: 40px; 
+            background: #111; 
+            margin: 20px; 
+            border-radius: 12px; 
+        }
+        input, textarea { 
+            width: 100%; 
+            padding: 12px; 
+            margin: 8px 0; 
+            background: #222; 
+            color: white; 
+            border: 1px solid #444; 
+            border-radius: 8px; 
+        }
+        .staff-item { 
+            padding: 12px; 
+            background: #1f1f1f; 
+            margin: 8px 0; 
+            border-radius: 8px; 
+            display: flex; 
+            justify-content: space-between; 
+        }
     </style>
 </head>
 <body>
@@ -54,33 +105,33 @@
 
     <!-- ADMIN PANEL -->
     <div id="adminPanel" class="admin-panel">
-        <h2>Admin Panel</h2>
-        <p><strong>Master Owner Only:</strong> Manage Staff & Products</p>
+        <h2>Admin Console</h2>
 
-        <h3>Add Staff Wallet</h3>
-        <input type="text" id="newStaffWallet" placeholder="0x... Staff Wallet Address">
-        <button onclick="addStaff()" style="background:var(--gold); color:black; padding:10px 20px; border:none; border-radius:8px;">Add Staff</button>
+        <!-- Master Owner Only -->
+        <div id="masterSection" style="display:none;">
+            <h3>Add Staff Wallet</h3>
+            <input type="text" id="staffWalletInput" placeholder="0x... Staff Address">
+            <button onclick="addStaff()" style="background:var(--gold); color:black; padding:10px 20px; border:none; border-radius:8px;">Add Staff</button>
+            <div id="staffList" style="margin-top:15px;"></div>
+        </div>
 
-        <h3 style="margin-top:30px;">Current Staff</h3>
-        <div id="staffList"></div>
-
-        <hr style="margin:30px 0;">
-
-        <h3>Add New Product</h3>
+        <h3 style="margin-top:30px;">Add New Product</h3>
         <input type="text" id="pName" placeholder="Product Name">
         <input type="number" id="pPrice" placeholder="Price in $RIC">
         <input type="text" id="pImage" placeholder="Image URL">
-        <input type="number" id="pStock" placeholder="Stock Quantity" value="10">
         <textarea id="pDesc" placeholder="Description"></textarea>
         <button onclick="addProduct()" style="background:var(--magma); padding:12px 30px; border:none; color:white; border-radius:8px; width:100%; margin-top:10px;">Add Product</button>
+
+        <h3 style="margin-top:30px;">Current Products</h3>
+        <div id="productList"></div>
     </div>
 
     <script>
-        let products = JSON.parse(localStorage.getItem('ricRewards')) || [];
-        let staffWallets = JSON.parse(localStorage.getItem('ricStaffWallets')) || [];
+        let products = JSON.parse(localStorage.getItem('ricProducts')) || [];
+        let staffWallets = JSON.parse(localStorage.getItem('ricStaff')) || [];
         let userAddress = null;
         const RIC_ADDRESS = "0x12C94d3A30daa09f81Ea6c037004E6e99A4A3dfc";
-        const MASTER_OWNER = "0x5E5aE526D45d69991039901a29148029a4889102"; // ← Your wallet
+        const MASTER_OWNER = "0x5E5aE526D45d69991039901a29148029a4889102";
 
         async function connectWallet() {
             if (!window.ethereum) return alert("Please install MetaMask");
@@ -94,80 +145,124 @@
             } catch (e) { console.error(e); }
         }
 
-        function isMasterOwner() {
+        function isMaster() {
             return userAddress && userAddress.toLowerCase() === MASTER_OWNER.toLowerCase();
         }
 
-        function isStaff() {
+        function isAuthorized() {
             if (!userAddress) return false;
-            return staffWallets.some(addr => addr.toLowerCase() === userAddress.toLowerCase()) || isMasterOwner();
+            return isMaster() || staffWallets.some(s => s.toLowerCase() === userAddress.toLowerCase());
         }
 
         function checkAdminAccess() {
-            if (!userAddress) {
-                alert("Please connect wallet first");
-                return;
-            }
-            if (isStaff()) {
+            if (!userAddress) return alert("Connect wallet first");
+            if (isAuthorized()) {
                 document.getElementById('adminPanel').style.display = 'block';
+                if (isMaster()) document.getElementById('masterSection').style.display = 'block';
                 renderAdminPanel();
             } else {
-                alert("You are not authorized as Admin.");
+                alert("Access Denied");
             }
         }
 
         function renderAdminPanel() {
             renderStaffList();
-            renderProducts(); // Refresh main grid too
+            renderProductList();
         }
 
         function renderStaffList() {
             const list = document.getElementById('staffList');
             list.innerHTML = '';
-            staffWallets.forEach((addr, index) => {
+            staffWallets.forEach((wallet, i) => {
                 list.innerHTML += `
-                    <div style="padding:10px; background:#1f1f1f; margin:5px 0; border-radius:8px; display:flex; justify-content:space-between;">
-                        <span>${addr}</span>
-                        <button onclick="removeStaff(${index})" style="color:red;">Remove</button>
+                    <div class="staff-item">
+                        <span>${wallet}</span>
+                        <button onclick="removeStaff(${i})" style="color:red;">Remove</button>
                     </div>`;
             });
         }
 
         function addStaff() {
-            if (!isMasterOwner()) return alert("Only Master Owner can add staff");
-            const wallet = document.getElementById('newStaffWallet').value.trim();
-            if (!wallet || !wallet.startsWith('0x')) return alert("Invalid wallet address");
-            if (!staffWallets.includes(wallet)) {
+            if (!isMaster()) return alert("Only Master Owner can add staff");
+            const wallet = document.getElementById('staffWalletInput').value.trim();
+            if (wallet && wallet.startsWith('0x')) {
                 staffWallets.push(wallet);
-                localStorage.setItem('ricStaffWallets', JSON.stringify(staffWallets));
-                renderStaffList();
-                alert("Staff added successfully!");
-            }
-        }
-
-        function removeStaff(index) {
-            if (!isMasterOwner()) return alert("Only Master Owner can remove staff");
-            if (confirm("Remove this staff member?")) {
-                staffWallets.splice(index, 1);
-                localStorage.setItem('ricStaffWallets', JSON.stringify(staffWallets));
+                localStorage.setItem('ricStaff', JSON.stringify(staffWallets));
                 renderStaffList();
             }
         }
 
-        // Rest of functions (addProduct, deleteProduct, redeemProduct, renderProducts) remain the same as previous version
-        function addProduct() { /* same as before */ 
+        function removeStaff(i) {
+            if (!isMaster()) return;
+            if (confirm("Remove this staff?")) {
+                staffWallets.splice(i, 1);
+                localStorage.setItem('ricStaff', JSON.stringify(staffWallets));
+                renderStaffList();
+            }
+        }
+
+        function addProduct() {
             const name = document.getElementById('pName').value.trim();
             const price = parseInt(document.getElementById('pPrice').value);
             const image = document.getElementById('pImage').value || 'https://picsum.photos/600/400';
-            const stock = parseInt(document.getElementById('pStock').value) || 10;
             const desc = document.getElementById('pDesc').value.trim();
 
             if (!name || !price) return alert("Name and price required");
 
-            products.push({ id: Date.now(), name, price, image, stock, desc });
-            localStorage.setItem('ricRewards', JSON.stringify(products));
+            products.push({ id: Date.now(), name, price, image, desc });
+            localStorage.setItem('ricProducts', JSON.stringify(products));
             renderProducts();
-            alert("Product added successfully!");
+            renderProductList();
+            alert("Product added!");
+        }
+
+        function renderProductList() {
+            const list = document.getElementById('productList');
+            list.innerHTML = '';
+            products.forEach(p => {
+                list.innerHTML += `
+                    <div style="padding:12px; background:#1f1f1f; margin:5px 0; border-radius:8px; display:flex; justify-content:space-between;">
+                        <span>${p.name} — ${p.price} RIC</span>
+                        <button onclick="deleteProduct(${p.id})" style="color:red;">Delete</button>
+                    </div>`;
+            });
+        }
+
+        function deleteProduct(id) {
+            if (confirm("Delete this product?")) {
+                products = products.filter(p => p.id !== id);
+                localStorage.setItem('ricProducts', JSON.stringify(products));
+                renderProducts();
+                renderProductList();
+            }
+        }
+
+        async function redeemProduct(id) {
+            if (!userAddress) return alert("Connect wallet first");
+            const p = products.find(x => x.id === id);
+            if (!p) return;
+
+            try {
+                const provider = new ethers.BrowserProvider(window.ethereum);
+                const signer = await provider.getSigner();
+                const contract = new ethers.Contract(RIC_ADDRESS, [
+                    "function balanceOf(address) view returns (uint256)",
+                    "function transfer(address,uint256) returns (bool)"
+                ], signer);
+
+                const bal = await contract.balanceOf(userAddress);
+                if (Number(ethers.formatEther(bal)) < p.price) {
+                    return alert("Not enough $RIC");
+                }
+
+                if (!confirm(`Send ${p.price} $RIC for ${p.name}?`)) return;
+
+                const tx = await contract.transfer(MASTER_OWNER, ethers.parseEther(p.price.toString()));
+                await tx.wait();
+                alert(`✅ Redeemed! Tx: ${tx.hash}`);
+            } catch (e) {
+                alert("Failed: " + (e.reason || e.message));
+            }
         }
 
         function renderProducts() {
@@ -179,15 +274,14 @@
                         <img src="${p.image}" alt="${p.name}">
                         <div class="reward-info">
                             <h3>${p.name}</h3>
-                            <p>${p.desc || ''}</p>
-                            <div class="price">${p.price.toLocaleString()} $RIC</div>
-                            <button class="redeem-btn" onclick="redeemProduct(${p.id})">Redeem with $RIC</button>
+                            <p>${p.desc}</p>
+                            <div class="price">${p.price} $RIC</div>
+                            <button class="redeem-btn" onclick="redeemProduct(${p.id})">Redeem</button>
                         </div>
                     </div>`;
             });
         }
 
-        // Initialize
         renderProducts();
         document.getElementById("connectBtn").addEventListener("click", connectWallet);
     </script>
