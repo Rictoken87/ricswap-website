@@ -73,7 +73,7 @@
             border-radius: 8px; 
         }
         .product-item {
-            padding: 12px;
+            padding: 12px 15px;
             background: #1f1f1f;
             margin: 8px 0;
             border-radius: 8px;
@@ -156,11 +156,15 @@
         function renderAdminList() {
             const list = document.getElementById('productList');
             list.innerHTML = '';
+            if (products.length === 0) {
+                list.innerHTML = '<p style="color:#888;">No products yet.</p>';
+                return;
+            }
             products.forEach(p => {
                 list.innerHTML += `
                     <div class="product-item">
                         <span><strong>${p.name}</strong> — ${p.price} $RIC</span>
-                        <button onclick="deleteProduct(${p.id})" style="color:red; background:none; border:none; cursor:pointer; font-weight:bold;">DELETE</button>
+                        <button onclick="deleteProduct(${p.id})" style="color:red; background:none; border:none; cursor:pointer; font-weight:bold; padding:4px 10px;">DELETE</button>
                     </div>`;
             });
         }
@@ -169,7 +173,7 @@
             const pass = prompt("Enter Staff Password:");
             if (pass === "ricstaff2026") {
                 document.getElementById('adminPanel').style.display = 'block';
-                renderAdminList();
+                renderAdminList();   // ← This was missing before
             } else {
                 alert("Wrong password");
             }
