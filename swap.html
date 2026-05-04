@@ -13,25 +13,14 @@
         .nav-links { display: flex; gap: 30px; margin-left: 40px; }
         .nav-links a { color: white; text-decoration: none; font-weight: 500; }
         .nav-links a:hover, .nav-links a.active { color: var(--gold); }
-        .connect-btn { 
-            background: #222; 
-            color: white; 
-            border: 1px solid #444; 
-            padding: 8px 18px; 
-            border-radius: 9999px; 
-            font-size: 14px; 
-            font-weight: 500; 
-            cursor: pointer; 
-            white-space: nowrap; 
-            margin-left: auto; 
-        }
+        .connect-btn { background: #222; color: white; border: 1px solid #444; padding: 8px 18px; border-radius: 9999px; font-size: 14px; font-weight: 500; cursor: pointer; white-space: nowrap; margin-left: auto; }
         .connect-btn:hover { background: #333; border-color: var(--gold); }
         .card { max-width: 420px; margin: 40px auto; background: var(--card-bg); border-radius: 24px; padding: 32px; box-shadow: 0 20px 40px rgba(0,0,0,0.8); border: 1px solid #222; }
         .input-group { background: #1a1a1a; border-radius: 16px; padding: 16px; margin-bottom: 8px; border: 1px solid #333; }
         .input-group:focus-within { border-color: var(--gold); }
         label { display: block; color: #888; font-size: 12px; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 1px; }
         input { background: transparent; border: none; color: white; font-size: 28px; width: 100%; outline: none; }
-        button#swapBtn { background: var(--magma); color: white; border: none; padding: 18px; border-radius: 16px; font-weight: bold; width: 100%; font-size: 18px; cursor: pointer; margin-top: 20px; }
+        button { background: var(--magma); color: white; border: none; padding: 18px; border-radius: 16px; font-weight: bold; width: 100%; font-size: 18px; cursor: pointer; margin-top: 20px; }
         .status { margin-top: 15px; text-align: center; font-size: 13px; min-height: 24px; font-family: monospace; }
         .tx-link { color: var(--gold); text-decoration: underline; font-size: 13px; }
     </style>
@@ -50,7 +39,6 @@
 
     <div class="card">
         <h3 style="margin-top:0; text-align:center;">Swap BONE to RIC</h3>
-       
         <div class="input-group">
             <div style="display:flex; justify-content:space-between;">
                 <label>You Pay</label>
@@ -89,7 +77,7 @@
             document.getElementById("connectBtn").textContent = userAddress.slice(0,6) + "..." + userAddress.slice(-4);
             loadBalances();
             updateQuote();
-            document.getElementById("status").textContent = "✅ Wallet Connected";
+            document.getElementById("status").textContent = "Wallet Connected";
         } catch (e) { console.error(e); }
     }
 
@@ -128,7 +116,7 @@
             ], signer);
             const amtInWei = ethers.parseEther(val.toString());
             const amounts = await router.getAmountsOut(amtInWei, [WBONE, RIC]);
-            const minOut = (amounts[1] * 995n) / 1000n; // 0.5% slippage
+            const minOut = (amounts[1] * 995n) / 1000n;
             const tx = await router.swapExactBONEForTokens(
                 minOut, [WBONE, RIC], userAddress, Math.floor(Date.now()/1000) + 1200,
                 { value: amtInWei, gasLimit: 500000 }
@@ -139,8 +127,9 @@
             status.innerHTML = `✅ Success!<br><a href="https://shibariumscan.io/tx/${tx.hash}" target="_blank" class="tx-link">View Receipt</a>`;
             loadBalances();
         } catch (e) {
+            console.error(e);
             status.style.color = "red";
-            status.textContent = "Error: " + (e.reason || "Check Pool/Balance");
+            status.textContent = "Error: " + (e.reason || e.message || "Check Pool/Balance");
         }
     }
 
