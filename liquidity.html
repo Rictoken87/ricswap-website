@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>RicSwap | Add Liquidity</title>
+    <!-- Primary CDN -->
     <script src="https://cloudflare.com"></script>
     <style>
         :root { --obsidian: #080808; --card-bg: #121212; --magma: linear-gradient(135deg, #ff4d00 0%, #ff8c00 100%); --gold: #ffd700; }
@@ -54,42 +55,62 @@
         <input type="number" id="amountToken" placeholder="0.0">
     </div>
     <button id="addBtn" class="main-btn">2. Supply Permanent LP</button>
-    <div class="status" id="status">Status: Offline</div>
+    <div class="status" id="status">Loading System...</div>
 </div>
 
 <script>
+    // System Constants
     const FACTORY_ADDRESS = "0x78ae5cCD2f13D10aE3fF47F8418A79D99B4569d0";
     const ROUTER_ADDRESS = "0xA809a9060D36f5324061EF93192ad5DA12Afc62e";
     const WBONE = "0xC76F4c819D820369Fb2d7C1531aB3Bb18e6fE8d8";
-    const CHAIN_ID_HEX = "0x6d"; // 109 in hex
+    const CHAIN_ID_HEX = "0x6d";
 
     let provider, signer, userAddress;
 
+    // --- BOOTSTRAP FUNCTION ---
+    async function init() {
+        const statusEl = document.getElementById("status");
+        
+        // 1. Verify Ethers is loaded
+        if (typeof ethers === 'undefined') {
+            statusEl.textContent = "Retrying connection to Ethers library...";
+            // Try secondary CDN if primary failed
+            const script = document.createElement('script');
+            script.src = "https://jsdelivr.net";
+            document.head.appendChild(script);
+            
+            script.onload = () => { statusEl.textContent = "System Ready"; setupListeners(); };
+            script.onerror = () => { statusEl.textContent = "Critical Error: Library Blocked"; };
+        } else {
+            statusEl.textContent = "System Ready";
+            setupListeners();
+            // Auto-connect if already authorized
+            if (window.ethereum && window.ethereum.selectedAddress) connectWallet();
+        }
+    }
+
+    function setupListeners() {
+        document.getElementById("connectBtn").onclick = connectWallet;
+        document.getElementById("createPairBtn").onclick = createPair;
+        document.getElementById("addBtn").onclick = addLiquidity;
+        document.getElementById("tokenAddress").oninput = updateTokenInfo;
+    }
+
     async function connectWallet() {
         const status = document.getElementById("status");
-        if (!window.ethereum) {
-            status.textContent = "Error: No Wallet Found";
-            return alert("Please install MetaMask!");
-        }
+        if (!window.ethereum) return alert("MetaMask not found!");
 
         try {
-            status.textContent = "Connecting...";
-            
-            // 1. Initialize Provider
+            status.textContent = "Connecting Wallet...";
             provider = new ethers.BrowserProvider(window.ethereum);
-            
-            // 2. Request Accounts
             const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
-            userAddress = accounts[0];
+            userAddress = accounts[0]; // Fix: isolated string from array
 
-            // 3. Chain Check / Switch
+            // Force Shibarium
             try {
-                await window.ethereum.request({
-                    method: 'wallet_switchEthereumChain',
-                    params: [{ chainId: CHAIN_ID_HEX }],
-                });
-            } catch (switchError) {
-                if (switchError.code === 4902) {
+                await window.ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: CHAIN_ID_HEX }] });
+            } catch (e) {
+                if (e.code === 4902) {
                     await window.ethereum.request({
                         method: 'wallet_addEthereumChain',
                         params: [{
@@ -103,17 +124,12 @@
                 }
             }
 
-            // 4. Set Signer
             signer = await provider.getSigner();
-            
-            // 5. Update UI
             document.getElementById("connectBtn").textContent = userAddress.slice(0,6) + "..." + userAddress.slice(-4);
-            status.textContent = "Connected to Shibarium";
-            console.log("Wallet Connected:", userAddress);
-
-        } catch (error) {
-            console.error("Connect Error:", error);
-            status.textContent = "Connection Failed: " + (error.message.slice(0,30));
+            status.textContent = "✅ Wallet Connected";
+        } catch (err) {
+            status.textContent = "Connection Failed";
+            console.error(err);
         }
     }
 
@@ -124,7 +140,7 @@
             const token = new ethers.Contract(addr, ["function symbol() view returns (string)", "function balanceOf(address) view returns (uint256)"], provider);
             const [sym, bal] = await Promise.all([token.symbol(), token.balanceOf(userAddress)]);
             document.getElementById("tokenInfo").textContent = `Token: ${sym} | Balance: ${Number(ethers.formatEther(bal)).toFixed(4)}`;
-        } catch (e) { document.getElementById("tokenInfo").textContent = "Invalid Token"; }
+        } catch (e) { document.getElementById("tokenInfo").textContent = "Invalid Token Address"; }
     }
 
     async function createPair() {
@@ -132,12 +148,12 @@
         const status = document.getElementById("status");
         const addr = document.getElementById("tokenAddress").value.trim();
         try {
-            status.textContent = "Creating Pair...";
+            status.textContent = "Creating Pair (Check Wallet)...";
             const factory = new ethers.Contract(FACTORY_ADDRESS, ["function createPair(address,address) returns (address)"], signer);
             const tx = await factory.createPair(WBONE, addr, { gasLimit: 5000000 });
             await tx.wait();
-            status.textContent = "Pair Created!";
-        } catch (e) { status.textContent = "Error: " + (e.reason || "Check Gas"); }
+            status.textContent = "✅ Pair Created!";
+        } catch (e) { status.textContent = "Error: " + (e.reason || "Rejected"); }
     }
 
     async function addLiquidity() {
@@ -148,36 +164,26 @@
         const amtT = document.getElementById("amountToken").value;
 
         try {
+            status.textContent = "Authorizing...";
             const valB = ethers.parseEther(amtB);
             const valT = ethers.parseEther(amtT);
-            
-            status.textContent = "Approving...";
             const token = new ethers.Contract(addr, ["function approve(address,uint) returns (bool)", "function allowance(address,address) view returns (uint256)"], signer);
+            
             const allow = await token.allowance(userAddress, ROUTER_ADDRESS);
             if (allow < valT) {
                 await (await token.approve(ROUTER_ADDRESS, ethers.MaxUint256)).wait();
             }
 
-            status.textContent = "Seeding LP...";
+            status.textContent = "Confirming LP Deposit...";
             const router = new ethers.Contract(ROUTER_ADDRESS, ["function addLiquidityBONE(address,uint,uint,uint,address,uint) external payable returns (uint,uint,uint)"], signer);
             const tx = await router.addLiquidityBONE(addr, valT, 0, 0, userAddress, Math.floor(Date.now()/1000)+1200, { value: valB, gasLimit: 2000000 });
             await tx.wait();
-            status.textContent = "Liquidity Added!";
+            status.textContent = "✅ Liquidity Added!";
         } catch (e) { status.textContent = "Error: " + (e.reason || "Check Balance"); }
     }
 
-    // Attach Listeners
-    document.getElementById("connectBtn").addEventListener("click", connectWallet);
-    document.getElementById("createPairBtn").addEventListener("click", createPair);
-    document.getElementById("addBtn").addEventListener("click", addLiquidity);
-    document.getElementById("tokenAddress").addEventListener("input", updateTokenInfo);
-
-    // Auto-Run on Load
-    window.onload = () => {
-        if (window.ethereum && window.ethereum.selectedAddress) {
-            connectWallet();
-        }
-    }
+    // Launch!
+    window.onload = init;
 </script>
 </body>
 </html>
