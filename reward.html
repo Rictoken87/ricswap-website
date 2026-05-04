@@ -55,8 +55,18 @@
 
     <!-- ADMIN PANEL -->
     <div id="adminPanel" class="admin-panel">
-        <h2>Staff Admin Panel</h2>
+        <h2>Admin Panel</h2>
 
+        <h3>Add Staff Wallet (Master Owner Only)</h3>
+        <input type="text" id="newStaffWallet" placeholder="0x... Staff Address">
+        <button onclick="addStaff()" style="background:var(--gold); color:black; padding:10px 20px; border:none; border-radius:8px;">Add Staff</button>
+
+        <h3 style="margin-top:30px;">Current Staff</h3>
+        <div id="staffList"></div>
+
+        <hr style="margin:30px 0;">
+
+        <h3>Add New Product</h3>
         <input type="text" id="pName" placeholder="Product Name">
         <input type="number" id="pPrice" placeholder="Price in $RIC">
         <input type="text" id="pImage" placeholder="Image URL">
@@ -69,6 +79,7 @@
 
     <script>
         let products = JSON.parse(localStorage.getItem('ricProducts')) || [];
+        let staffWallets = JSON.parse(localStorage.getItem('ricStaffWallets')) || [];
         let userAddress = null;
         const RIC_ADDRESS = "0x12C94d3A30daa09f81Ea6c037004E6e99A4A3dfc";
         const MASTER_OWNER = "0x5E5aE526D45d69991039901a29148029a4889102";
@@ -85,48 +96,55 @@
             } catch (e) { console.error(e); }
         }
 
-        function isAuthorized() {
-            if (!userAddress) return false;
-            return userAddress.toLowerCase() === MASTER_OWNER.toLowerCase();
+        function isMasterOwner() {
+            return userAddress && userAddress.toLowerCase() === MASTER_OWNER.toLowerCase();
         }
 
         function checkAdminAccess() {
             if (!userAddress) return alert("Please connect wallet first");
-            if (isAuthorized()) {
+            if (isMasterOwner() || staffWallets.some(s => s.toLowerCase() === userAddress.toLowerCase())) {
                 document.getElementById('adminPanel').style.display = 'block';
-                renderAdminList();
+                renderAdminPanel();
             } else {
-                alert("Only Master Owner can access Admin Panel");
+                alert("Access Denied");
             }
         }
 
-        function renderProducts() {
-            const grid = document.getElementById('rewardsGrid');
-            grid.innerHTML = '';
-            products.forEach(p => {
-                grid.innerHTML += `
-                    <div class="reward-card">
-                        <img src="${p.image}" alt="${p.name}">
-                        <div class="reward-info">
-                            <h3>${p.name}</h3>
-                            <p>${p.desc || ''}</p>
-                            <div class="price">${p.price} $RIC</div>
-                            <button class="redeem-btn" onclick="redeemProduct(${p.id})">Redeem</button>
-                        </div>
+        function renderAdminPanel() {
+            renderStaffList();
+            renderProductList();
+        }
+
+        function renderStaffList() {
+            const list = document.getElementById('staffList');
+            list.innerHTML = '';
+            staffWallets.forEach((wallet, i) => {
+                list.innerHTML += `
+                    <div class="product-item">
+                        <span>${wallet}</span>
+                        <button onclick="removeStaff(${i})" style="color:red;">Remove</button>
                     </div>`;
             });
         }
 
-        function renderAdminList() {
-            const list = document.getElementById('productList');
-            list.innerHTML = '';
-            products.forEach(p => {
-                list.innerHTML += `
-                    <div class="product-item">
-                        <span><strong>${p.name}</strong> — ${p.price} RIC</span>
-                        <button onclick="deleteProduct(${p.id})" style="color:red; background:none; border:none; cursor:pointer;">DELETE</button>
-                    </div>`;
-            });
+        function addStaff() {
+            if (!isMasterOwner()) return alert("Only Master Owner can add staff");
+            const wallet = document.getElementById('newStaffWallet').value.trim();
+            if (wallet && wallet.startsWith('0x')) {
+                staffWallets.push(wallet);
+                localStorage.setItem('ricStaffWallets', JSON.stringify(staffWallets));
+                renderStaffList();
+                alert("Staff added!");
+            }
+        }
+
+        function removeStaff(i) {
+            if (!isMasterOwner()) return;
+            if (confirm("Remove this staff?")) {
+                staffWallets.splice(i, 1);
+                localStorage.setItem('ricStaffWallets', JSON.stringify(staffWallets));
+                renderStaffList();
+            }
         }
 
         function addProduct() {
@@ -140,8 +158,20 @@
             products.push({ id: Date.now(), name, price, image, desc });
             localStorage.setItem('ricProducts', JSON.stringify(products));
             renderProducts();
-            renderAdminList();
+            renderProductList();
             alert("Product added successfully!");
+        }
+
+        function renderProductList() {
+            const list = document.getElementById('productList');
+            list.innerHTML = '';
+            products.forEach(p => {
+                list.innerHTML += `
+                    <div class="product-item">
+                        <span><strong>${p.name}</strong> — ${p.price} RIC</span>
+                        <button onclick="deleteProduct(${p.id})" style="color:red;">DELETE</button>
+                    </div>`;
+            });
         }
 
         function deleteProduct(id) {
@@ -149,7 +179,7 @@
                 products = products.filter(p => p.id !== id);
                 localStorage.setItem('ricProducts', JSON.stringify(products));
                 renderProducts();
-                renderAdminList();
+                renderProductList();
             }
         }
 
@@ -180,6 +210,23 @@
             } catch (e) {
                 alert("Transaction failed: " + (e.reason || e.message));
             }
+        }
+
+        function renderProducts() {
+            const grid = document.getElementById('rewardsGrid');
+            grid.innerHTML = '';
+            products.forEach(p => {
+                grid.innerHTML += `
+                    <div class="reward-card">
+                        <img src="${p.image}" alt="${p.name}">
+                        <div class="reward-info">
+                            <h3>${p.name}</h3>
+                            <p>${p.desc || ''}</p>
+                            <div class="price">${p.price} $RIC</div>
+                            <button class="redeem-btn" onclick="redeemProduct(${p.id})">Redeem with $RIC</button>
+                        </div>
+                    </div>`;
+            });
         }
 
         // Initialize
