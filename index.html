@@ -20,6 +20,42 @@
             padding: 0;
             overflow-x: hidden;
         }
+
+        /* FIXED NAVIGATION CSS */
+        .nav { 
+            padding: 15px 40px; 
+            display: flex; 
+            align-items: center; 
+            border-bottom: 1px solid rgba(255,215,0,0.05); 
+            background: rgba(8,8,8,0.9);
+            position: fixed;
+            top: 0;
+            width: 100%;
+            box-sizing: border-box;
+            z-index: 1000;
+        }
+        .logo { font-size: 24px; font-weight: bold; color: var(--gold); letter-spacing: -1px; }
+        .nav-links { display: flex; gap: 25px; margin-left: 40px; }
+        .nav-links a { color: #888; text-decoration: none; font-weight: 500; font-size: 14px; transition: 0.2s; }
+        .nav-links a:hover { color: var(--gold); }
+
+        /* THE SMALL BUTTON (Consistent with your Swap page) */
+        .small-btn { 
+            background: #1a1a1a; 
+            color: white; 
+            border: 1px solid #333; 
+            padding: 6px 16px; 
+            border-radius: 9999px; 
+            font-size: 13px; 
+            font-weight: 600; 
+            cursor: pointer; 
+            white-space: nowrap; 
+            margin-left: auto; 
+            transition: all 0.2s ease;
+        }
+        .small-btn:hover { border-color: var(--gold); background: #222; }
+
+        /* HERO SECTION */
         .hero {
             height: 100vh;
             background: radial-gradient(circle at center, #1a0f00 0%, var(--obsidian) 70%);
@@ -32,9 +68,10 @@
         .hero-content {
             max-width: 800px;
             z-index: 2;
+            padding: 20px;
         }
         .hero h1 {
-            font-size: 4.5rem;
+            font-size: clamp(2.5rem, 8vw, 4.5rem);
             font-weight: 800;
             margin-bottom: 20px;
             background: linear-gradient(90deg, var(--gold), #fff);
@@ -42,93 +79,98 @@
             -webkit-text-fill-color: transparent;
         }
         .hero p {
-            font-size: 1.4rem;
+            font-size: 1.2rem;
             color: #ccc;
             margin-bottom: 40px;
         }
-        .cta-btn {
+
+        /* LARGE CTA BUTTON */
+        .cta-btn-large {
             background: var(--magma);
             color: white;
             padding: 18px 48px;
-            font-size: 1.3rem;
+            font-size: 1.1rem;
             font-weight: bold;
             border: none;
             border-radius: 9999px;
             cursor: pointer;
             transition: all 0.3s;
         }
-        .cta-btn:hover {
-            transform: scale(1.05);
-            box-shadow: 0 0 30px rgba(255, 77, 0, 0.6);
+        .cta-btn-large:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 30px rgba(255, 77, 0, 0.4);
         }
+
+        /* FEATURES / STATS */
         .features {
             padding: 100px 40px;
-            background: #0f0f0f;
+            background: #0b0b0b;
         }
         .stats {
             display: flex;
             justify-content: center;
-            gap: 80px;
+            gap: 60px;
             margin: 60px 0;
             flex-wrap: wrap;
         }
-        .stat {
-            text-align: center;
-        }
+        .stat { text-align: center; min-width: 150px; }
         .stat-number {
             font-size: 3rem;
             font-weight: 700;
             color: var(--gold);
+            margin-bottom: 10px;
         }
+        .stat-label { color: #666; text-transform: uppercase; font-size: 12px; letter-spacing: 2px; }
+
         .footer {
             padding: 60px 40px;
             text-align: center;
-            border-top: 1px solid #222;
-            color: #666;
+            border-top: 1px solid #151515;
+            color: #444;
+            font-size: 14px;
         }
     </style>
 </head>
 <body>
-    <!-- Navigation -->
-    <div class="nav">
+
+    <nav class="nav">
         <div class="logo">RicSwap</div>
         <div class="nav-links">
             <a href="swap.html">Swap</a>
             <a href="pools.html">Pools</a>
             <a href="liquidity.html">Add Liquidity</a>
         </div>
-        <button onclick="window.location.href='swap.html'" class="cta-btn">Launch App</button>
-    </div>
+        <button onclick="window.location.href='swap.html'" class="small-btn">Launch App</button>
+    </nav>
 
-    <!-- Hero -->
-    <div class="hero">
+    <section class="hero">
         <div class="hero-content">
             <h1>The Obsidian Tier DEX</h1>
             <p>Permanent Liquidity • No Rugs • Built for Shibarium</p>
-            <button onclick="window.location.href='swap.html'" class="cta-btn">Start Swapping Now</button>
+            <button onclick="window.location.href='swap.html'" class="cta-btn-large">Start Swapping Now</button>
         </div>
-    </div>
+    </section>
 
-    <!-- Features / Stats -->
-    <div class="features">
+    <section class="features">
         <div class="stats">
             <div class="stat">
                 <div class="stat-number">100%</div>
-                <div>LP Burned Forever</div>
+                <div class="stat-label">LP Burned</div>
             </div>
             <div class="stat">
                 <div class="stat-number">0.3%</div>
-                <div>Low Trading Fee</div>
+                <div class="stat-label">Trading Fee</div>
             </div>
             <div class="stat">
                 <div class="stat-number">∞</div>
-                <div>Permissionless Pairs</div>
+                <div class="stat-label">Permissionless</div>
             </div>
         </div>
-    </div>
+    </section>
 
-    <div class="footer">
+    <footer class="footer">
         RicSwap © 2026 • Permanently Locked Liquidity on Shibarium
-    </div>
+    </footer>
+
 </body>
 </html>
