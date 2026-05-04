@@ -4,8 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>RicSwap | Swap</title>
-    <!-- Faster CDN for ethers -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.13.0/umd/ethers.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.0/dist/ethers.umd.min.js"></script>
     <style>
         :root {
             --obsidian: #080808;
@@ -14,11 +13,19 @@
             --gold: #ffd700;
         }
         body { background: var(--obsidian); color: white; font-family: system-ui, sans-serif; margin: 0; padding: 0; }
-        .nav { padding: 20px 40px; display: flex; align-items: center; border-bottom: 1px solid rgba(255,215,0,0.1); }
+        
+        .nav { 
+            padding: 20px 40px; 
+            display: flex; 
+            align-items: center; 
+            border-bottom: 1px solid rgba(255,215,0,0.1); 
+        }
         .logo { font-size: 28px; font-weight: bold; color: var(--gold); }
         .nav-links { display: flex; gap: 30px; margin-left: 40px; }
         .nav-links a { color: white; text-decoration: none; font-weight: 500; }
         .nav-links a:hover, .nav-links a.active { color: var(--gold); }
+        
+        /* SMALL CONNECT BUTTON - Same as liquidity.html */
         .connect-btn { 
             background: #222; 
             color: white; 
@@ -30,8 +37,10 @@
             cursor: pointer; 
             white-space: nowrap; 
             margin-left: auto; 
+            flex-shrink: 0; 
         }
         .connect-btn:hover { background: #333; border-color: var(--gold); }
+
         .card { max-width: 420px; margin: 40px auto; background: var(--card-bg); border-radius: 24px; padding: 32px; box-shadow: 0 20px 40px rgba(0,0,0,0.8); border: 1px solid #222; }
         .input-group { background: #1a1a1a; border-radius: 16px; padding: 16px; margin-bottom: 8px; border: 1px solid #333; }
         .input-group:focus-within { border-color: var(--gold); }
@@ -81,7 +90,7 @@
         </div>
 
         <button id="swapBtn">Swap Now</button>
-        <div class="status" id="status">Ready</div>
+        <div class="status" id="status"></div>
     </div>
 
     <script>
