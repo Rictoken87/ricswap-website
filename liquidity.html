@@ -1,73 +1,3 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RicSwap | Add Liquidity</title>
-    <script src="https://cloudflare.com"></script>
-    <style>
-        :root {
-            --obsidian: #080808;
-            --card-bg: #121212;
-            --magma: linear-gradient(135deg, #ff4d00 0%, #ff8c00 100%);
-            --gold: #ffd700;
-        }
-        body { background: var(--obsidian); color: white; font-family: system-ui, sans-serif; margin: 0; padding: 0; }
-        .nav { padding: 20px 40px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid rgba(255,215,0,0.1); }
-        .logo { font-size: 28px; font-weight: bold; color: var(--gold); }
-        .nav-links { display: flex; gap: 30px; margin-left: 40px; }
-        .nav-links a { color: #888; text-decoration: none; font-weight: 500; }
-        .nav-links a:hover, .nav-links a.active { color: var(--gold); }
-        .connect-btn { background: #222; color: white; border: 1px solid #444; padding: 8px 18px; border-radius: 9999px; font-size: 14px; font-weight: 600; cursor: pointer; white-space: nowrap; margin-left: auto; width: 160px; text-align: center; }
-        .connect-btn:hover { border-color: var(--gold); }
-        .card { max-width: 520px; margin: 40px auto; background: var(--card-bg); border-radius: 24px; padding: 32px; box-shadow: 0 20px 40px rgba(0,0,0,0.8); border: 1px solid #222; }
-        .input-group { background: #1a1a1a; border-radius: 16px; padding: 16px; margin-bottom: 16px; border: 1px solid #333; }
-        .input-group:focus-within { border-color: var(--gold); }
-        label { display: block; color: #888; font-size: 11px; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 1px; }
-        input { background: transparent; border: none; color: white; font-size: 24px; width: 100%; outline: none; }
-        .main-btn { background: var(--magma); color: white; border: none; padding: 18px; border-radius: 16px; font-weight: bold; width: 100%; font-size: 18px; cursor: pointer; margin-top: 10px; }
-        .status { margin-top: 15px; text-align: center; font-size: 13px; min-height: 24px; font-family: monospace; line-height: 1.5; }
-        .token-info { font-size: 12px; color: #ffd700; margin-top: 6px; font-weight: 500; }
-        .tx-link { color: var(--gold); text-decoration: underline; }
-    </style>
-</head>
-<body>
-
-<div class="nav">
-    <div class="logo">RicSwap</div>
-    <div class="nav-links">
-        <a href="index.html">Home</a>
-        <a href="swap.html">Swap</a>
-        <a href="pools.html">Pools</a>
-        <a href="liquidity.html" class="active">Add Liquidity</a>
-    </div>
-    <button id="connectBtn" class="connect-btn">Connect Wallet</button>
-</div>
-
-<div class="card">
-    <h2 style="text-align:center; margin-bottom:24px;">Permanent LP Vault</h2>
-    
-    <div class="input-group">
-        <label>Amount BONE</label>
-        <input type="number" id="amountBONE" placeholder="0.0" step="any">
-        <div style="text-align:right; font-size:11px; color:#666;" id="boneBalance">Balance: --</div>
-    </div>
-
-    <div class="input-group">
-        <label>Token Address</label>
-        <input type="text" id="tokenAddress" placeholder="0x..." style="font-size:16px;">
-        <div id="tokenInfo" class="token-info"></div>
-    </div>
-
-    <div class="input-group">
-        <label>Amount Token <span id="symDisplay"></span></label>
-        <input type="number" id="amountToken" placeholder="0.0" step="any">
-    </div>
-
-    <button id="addBtn" class="main-btn">Add Permanent Liquidity</button>
-    <div class="status" id="status">Ready to initialize.</div>
-</div>
-
 <script>
     const FACTORY_ADDRESS = "0x78ae5cCD2f13D10aE3fF47F8418A79D99B4569d0";
     const ROUTER_ADDRESS = "0xA809a9060D36f5324061EF93192ad5DA12Afc62e";
@@ -89,7 +19,6 @@
             const accounts = await provider.send("eth_requestAccounts", []);
             userAddress = accounts[0];
             signer = await provider.getSigner();
-            
             document.getElementById("connectBtn").textContent = userAddress.slice(0,6) + "..." + userAddress.slice(-4);
             const bal = await provider.getBalance(userAddress);
             document.getElementById("boneBalance").textContent = `Balance: ${Number(ethers.formatEther(bal)).toFixed(4)} BONE`;
@@ -104,7 +33,6 @@
             const contract = new ethers.Contract(addr, ERC20_ABI, provider);
             const [sym, bal] = await Promise.all([contract.symbol(), contract.balanceOf(userAddress)]);
             document.getElementById("tokenInfo").textContent = `Detected: ${sym} | Your Balance: ${Number(ethers.formatEther(bal)).toFixed(4)}`;
-            document.getElementById("symDisplay").textContent = `(${sym})`;
         } catch (e) { document.getElementById("tokenInfo").textContent = "Invalid Token"; }
     }
 
@@ -121,16 +49,16 @@
             status.style.color = "orange";
             const factory = new ethers.Contract(FACTORY_ADDRESS, ["function getPair(address,address) view returns (address)", "function createPair(address,address) returns (address)"], signer);
             
-            // 1. Pair Creation Logic
-            status.textContent = "Checking Pool...";
+            // 1. Check Pair
+            status.textContent = "Verifying Pool...";
             let pair = await factory.getPair(WBONE, tAddr);
             if (pair === ethers.ZeroAddress) {
-                status.textContent = "Creating New Pair...";
-                const txP = await factory.createPair(WBONE, tAddr, { gasLimit: 4000000 });
+                status.textContent = "Creating New Permanent Pair...";
+                const txP = await factory.createPair(WBONE, tAddr, { gasLimit: 5000000 });
                 await txP.wait();
             }
 
-            // 2. ERC20 Approval Logic (CRITICAL)
+            // 2. Handle Approval
             status.textContent = "Checking Allowance...";
             const tokenContract = new ethers.Contract(tAddr, ERC20_ABI, signer);
             const valT = ethers.parseEther(amtT);
@@ -138,36 +66,55 @@
             
             const allowance = await tokenContract.allowance(userAddress, ROUTER_ADDRESS);
             if (allowance < valT) {
-                status.textContent = "Approving Token...";
-                await (await tokenContract.approve(ROUTER_ADDRESS, ethers.MaxUint256)).wait();
+                status.textContent = "Approving Token for Router...";
+                const txApp = await tokenContract.approve(ROUTER_ADDRESS, ethers.MaxUint256);
+                await txApp.wait();
             }
 
-            // 3. Add Liquidity
-            status.textContent = "Adding Liquidity...";
-            const router = new ethers.Contract(ROUTER_ADDRESS, ["function addLiquidityBONE(address,uint,uint,uint,address,uint) external payable returns (uint,uint,uint)"], signer);
-            const deadline = Math.floor(Date.now() / 1000) + 1200;
+            // 3. Add Liquidity with Forced Manual Gas
+            status.textContent = "Confirming LP Deposit...";
+            const router = new ethers.Contract(ROUTER_ADDRESS, [
+                "function addLiquidityBONE(address,uint,uint,uint,address,uint) external payable returns (uint,uint,uint)",
+                "function addLiquidityETH(address,uint,uint,uint,address,uint) external payable returns (uint,uint,uint)"
+            ], signer);
 
-            const tx = await router.addLiquidityBONE(
-                tAddr, valT, 0, 0, userAddress, deadline, 
-                { value: valB, gasLimit: 1000000 }
-            );
+            // Set a long deadline (2 hours) to avoid 'Expired' error
+            const deadline = Math.floor(Date.now() / 1000) + 7200;
 
-            status.textContent = "Transaction Pending...";
+            // FIX: We manually set the gasLimit to bypass "estimateGas" failure
+            const txOverrides = { 
+                value: valB, 
+                gasLimit: 2500000 
+            };
+
+            let tx;
+            try {
+                // Try BONE-specific function
+                tx = await router.addLiquidityBONE(tAddr, valT, 0, 0, userAddress, deadline, txOverrides);
+            } catch (err) {
+                console.warn("BONE method failed, trying standard ETH method...");
+                // Fallback to standard Uniswap name
+                tx = await router.addLiquidityETH(tAddr, valT, 0, 0, userAddress, deadline, txOverrides);
+            }
+
+            status.textContent = "Mining transaction...";
             await tx.wait();
             
             status.style.color = "#0f0";
-            status.innerHTML = `✅ Success!<br><a href="https://shibariumscan.io/tx/${tx.hash}" target="_blank" class="tx-link">View Receipt</a>`;
+            status.innerHTML = `✅ Liquidity Seeded!<br><a href="https://shibariumscan.io{tx.hash}" target="_blank" style="color:var(--gold)">View Transaction</a>`;
         } catch (e) {
+            console.error("Full Error Object:", e);
             status.style.color = "red";
-            status.textContent = "Error: " + (e.reason || "Check Balance/Gas");
+            // Check for specific common failures
+            if (e.message.includes("insufficient funds")) {
+                status.textContent = "Error: Not enough BONE for gas/amount";
+            } else {
+                status.textContent = "Transaction Reverted. Check console (F12).";
+            }
         }
     }
 
     document.getElementById("connectBtn").onclick = connectWallet;
     document.getElementById("addBtn").onclick = addLiquidity;
     document.getElementById("tokenAddress").oninput = updateTokenInfo;
-
-    window.onload = () => { if(window.ethereum?.selectedAddress) connectWallet(); }
 </script>
-</body>
-</html>
