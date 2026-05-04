@@ -55,8 +55,32 @@
             margin-top: 10px; 
             cursor: pointer; 
         }
-        .admin-panel { display: none; padding: 40px; background: #111; }
-        input, textarea { width: 100%; padding: 10px; margin: 8px 0; background: #222; color: white; border: 1px solid #444; border-radius: 8px; }
+        
+        .admin-panel { 
+            display: none; 
+            padding: 40px; 
+            background: #111; 
+            margin: 20px; 
+            border-radius: 12px; 
+        }
+        input, textarea { 
+            width: 100%; 
+            padding: 10px; 
+            margin: 8px 0; 
+            background: #222; 
+            color: white; 
+            border: 1px solid #444; 
+            border-radius: 8px; 
+        }
+        .product-item {
+            padding: 12px;
+            background: #1f1f1f;
+            margin: 8px 0;
+            border-radius: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
     </style>
 </head>
 <body>
@@ -82,13 +106,17 @@
 
     <!-- ADMIN PANEL -->
     <div id="adminPanel" class="admin-panel">
-        <h2>Staff: Add New Product</h2>
+        <h2>Staff Admin Panel</h2>
+        
         <input type="text" id="pName" placeholder="Product Name">
         <input type="number" id="pPrice" placeholder="Price in $RIC">
         <input type="text" id="pImage" placeholder="Image URL">
         <input type="number" id="pStock" placeholder="Stock Quantity" value="10">
         <textarea id="pDesc" placeholder="Description"></textarea>
-        <button onclick="addProduct()" style="background:var(--magma); padding:12px 30px; border:none; color:white; border-radius:8px;">Add Product</button>
+        <button onclick="addProduct()" style="background:var(--magma); padding:12px 30px; border:none; color:white; border-radius:8px; width:100%; margin-top:10px;">Add New Product</button>
+
+        <h3 style="margin-top:30px;">Current Products</h3>
+        <div id="productList"></div>
     </div>
 
     <script>
@@ -105,10 +133,7 @@
                 userAddress = await signer.getAddress();
                 document.getElementById("connectBtn").textContent = userAddress.slice(0,6) + "..." + userAddress.slice(-4);
                 renderProducts();
-            } catch (e) {
-                console.error(e);
-                alert("Connection failed");
-            }
+            } catch (e) { console.error(e); }
         }
 
         function renderProducts() {
@@ -128,43 +153,23 @@
             });
         }
 
-        async function redeemProduct(id) {
-            if (!userAddress) return alert("Please connect wallet first");
-            const product = products.find(p => p.id === id);
-            if (!product) return;
-
-            try {
-                const provider = new ethers.BrowserProvider(window.ethereum);
-                const signer = await provider.getSigner();
-                const ricContract = new ethers.Contract(RIC_ADDRESS, [
-                    "function balanceOf(address) view returns (uint256)",
-                    "function transfer(address to, uint256 amount) returns (bool)"
-                ], signer);
-
-                const balance = await ricContract.balanceOf(userAddress);
-                const balanceNum = Number(ethers.formatEther(balance));
-
-                if (balanceNum < product.price) {
-                    return alert(`Not enough $RIC!\nYour balance: ${balanceNum.toFixed(2)} RIC\nNeeded: ${product.price} RIC`);
-                }
-
-                if (!confirm(`Send ${product.price} $RIC to redeem ${product.name}?\n\nShipping paid by you.`)) return;
-
-                const amount = ethers.parseEther(product.price.toString());
-                const tx = await ricContract.transfer("0x5E5aE526D45d69991039901a29148029a4889102", amount); // ← Change to your treasury
-                await tx.wait();
-
-                alert(`✅ Successfully redeemed!\nTransaction: ${tx.hash}`);
-            } catch (e) {
-                console.error(e);
-                alert("Transaction failed: " + (e.reason || e.message));
-            }
+        function renderAdminList() {
+            const list = document.getElementById('productList');
+            list.innerHTML = '';
+            products.forEach(p => {
+                list.innerHTML += `
+                    <div class="product-item">
+                        <span><strong>${p.name}</strong> — ${p.price} $RIC</span>
+                        <button onclick="deleteProduct(${p.id})" style="color:red; background:none; border:none; cursor:pointer; font-weight:bold;">DELETE</button>
+                    </div>`;
+            });
         }
 
         function toggleAdmin() {
             const pass = prompt("Enter Staff Password:");
             if (pass === "ricstaff2026") {
                 document.getElementById('adminPanel').style.display = 'block';
+                renderAdminList();
             } else {
                 alert("Wrong password");
             }
@@ -182,7 +187,47 @@
             products.push({ id: Date.now(), name, price, image, stock, desc });
             localStorage.setItem('ricRewards', JSON.stringify(products));
             renderProducts();
+            renderAdminList();
             alert("Product added successfully!");
+        }
+
+        function deleteProduct(id) {
+            if (confirm("Delete this product permanently?")) {
+                products = products.filter(p => p.id !== id);
+                localStorage.setItem('ricRewards', JSON.stringify(products));
+                renderProducts();
+                renderAdminList();
+            }
+        }
+
+        async function redeemProduct(id) {
+            if (!userAddress) return alert("Please connect wallet first");
+            const product = products.find(p => p.id === id);
+            if (!product) return;
+
+            try {
+                const provider = new ethers.BrowserProvider(window.ethereum);
+                const signer = await provider.getSigner();
+                const ricContract = new ethers.Contract(RIC_ADDRESS, [
+                    "function balanceOf(address) view returns (uint256)",
+                    "function transfer(address to, uint256 amount) returns (bool)"
+                ], signer);
+
+                const balance = await ricContract.balanceOf(userAddress);
+                if (Number(ethers.formatEther(balance)) < product.price) {
+                    return alert(`Not enough $RIC! You need ${product.price} RIC`);
+                }
+
+                if (!confirm(`Send ${product.price} $RIC to redeem ${product.name}?`)) return;
+
+                const tx = await ricContract.transfer("0x5E5aE526D45d69991039901a29148029a4889102", ethers.parseEther(product.price.toString()));
+                await tx.wait();
+
+                alert(`✅ Redeemed successfully!\nTx: ${tx.hash}`);
+            } catch (e) {
+                console.error(e);
+                alert("Transaction failed: " + (e.reason || e.message));
+            }
         }
 
         // Initialize
