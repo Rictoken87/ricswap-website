@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RicSwap | Rewards Store</title>
+    <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.0/dist/ethers.umd.min.js"></script>
+    <style>
+        :root {
+            --obsidian: #080808;
+            --card-bg: #121212;
+            --magma: linear-gradient(135deg, #ff4d00 0%, #ff8c00 100%);
+            --gold: #ffd700;
+        }
+        body { background: var(--obsidian); color: white; font-family: system-ui, sans-serif; margin: 0; padding: 0; }
+        .nav { padding: 20px 40px; display: flex; align-items: center; border-bottom: 1px solid rgba(255,215,0,0.1); }
+        .logo { font-size: 28px; font-weight: bold; color: var(--gold); }
+        .nav-links { display: flex; gap: 30px; margin-left: 40px; }
+        .nav-links a { color: white; text-decoration: none; font-weight: 500; }
+        .nav-links a:hover, .nav-links a.active { color: var(--gold); }
+        .connect-btn, .admin-btn { background: #222; color: white; border: 1px solid #444; padding: 8px 18px; border-radius: 9999px; margin-left: auto; cursor: pointer; }
+        
+        .rewards-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 25px; padding: 40px; max-width: 1400px; margin: 0 auto; }
+        .reward-card { background: var(--card-bg); border-radius: 16px; overflow: hidden; border: 1px solid #333; }
+        .reward-card img { width: 100%; height: 200px; object-fit: cover; }
+        .reward-info { padding: 20px; }
+        .price { color: var(--gold); font-size: 1.4rem; font-weight: bold; }
+        .redeem-btn { background: var(--magma); color: white; border: none; padding: 12px; width: 100%; border-radius: 8px; margin-top: 10px; cursor: pointer; }
+        
+        .admin-panel { display: none; padding: 40px; background: #111; }
+        input, textarea { width: 100%; padding: 10px; margin: 8px 0; background: #222; color: white; border: 1px solid #444; border-radius: 8px; }
+        .admin-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 15px; }
+    </style>
+</head>
+<body>
+    <div class="nav">
+        <div class="logo">RicSwap</div>
+        <div class="nav-links">
+            <a href="index.html">Home</a>
+            <a href="swap.html">Swap</a>
+            <a href="pools.html">Pools</a>
+            <a href="liquidity.html">Add Liquidity</a>
+            <a href="reward.html" class="active">Rewards</a>
+        </div>
+        <button id="connectBtn" class="connect-btn">Connect Wallet</button>
+        <button onclick="toggleAdmin()" class="admin-btn" style="margin-left:10px;">Staff Admin</button>
+    </div>
+
+    <div style="padding:80px 40px; text-align:center; background:radial-gradient(#1a0f00,var(--obsidian));">
+        <h1>Redeem $RIC for Real Products</h1>
+        <p>Shipping cost paid by redeemer</p>
+    </div>
+
+    <div class="rewards-grid" id="rewardsGrid"></div>
+
+    <!-- ADMIN PANEL -->
+    <div id="adminPanel" class="admin-panel">
+        <h2>Staff Admin Panel</h2>
+        <div class="admin-grid">
+            <input type="text" id="pName" placeholder="Product Name">
+            <input type="number" id="pPrice" placeholder="Price in $RIC">
+            <input type="text" id="pImage" placeholder="Image URL">
+            <input type="number" id="pStock" placeholder="Stock Quantity" value="10">
+            <textarea id="pDesc" placeholder="Description"></textarea>
+            <button onclick="addProduct()" style="background:var(--magma); padding:12px;">Add New Product</button>
+        </div>
+        <div id="productList" style="margin-top:30px;"></div>
+    </div>
+
+    <script>
+        let products = JSON.parse(localStorage.getItem('ricRewards')) || [];
+        let userAddress = null;
+        const RIC = "0x12C94d3A30daa09f81Ea6c037004E6e99A4A3dfc";
+
+        async function connectWallet() {
+            if (!window.ethereum) return alert("Please install MetaMask");
+            try {
+                const provider = new ethers.BrowserProvider(window.ethereum);
+                const accounts = await provider.send("eth_requestAccounts", []);
+                userAddress = accounts[0];
+                document.getElementById("connectBtn").textContent = userAddress.slice(0,6) + "..." + userAddress.slice(-4);
+            } catch (e) {}
+        }
+
+        function renderProducts() {
+            const grid = document.getElementById('rewardsGrid');
+            grid.innerHTML = '';
+            products.forEach(p => {
+                grid.innerHTML += `
+                    <div class="reward-card">
+                        <img src="${p.image}" alt="${p.name}">
+                        <div class="reward-info">
+                            <h3>${p.name}</h3>
+                            <p>${p.desc || ''}</p>
+                            <div class="price">${p.price.toLocaleString()} $RIC</div>
+                            <div style="font-size:12px;color:#888;">Stock: ${p.stock || '∞'}</div>
+                            <button class="redeem-btn" onclick="redeemProduct(${p.id})">Redeem with $RIC</button>
+                        </div>
+                    </div>`;
+            });
+        }
+
+        async function redeemProduct(id) {
+            if (!userAddress) return alert("Please connect wallet first");
+            const product = products.find(p => p.id === id);
+            if (!product) return;
+
+            try {
+                const provider = new ethers.BrowserProvider(window.ethereum);
+                const ricContract = new ethers.Contract(RIC, ["function balanceOf(address) view returns (uint256)"], provider);
+                const balance = await ricContract.balanceOf(userAddress);
+                const balanceNum = Number(ethers.formatEther(balance));
+
+                if (balanceNum < product.price) {
+                    return alert(`Not enough $RIC!\n\nYour balance: ${balanceNum.toFixed(2)} RIC\nRequired: ${product.price} RIC`);
+                }
+
+                if (confirm(`Redeem ${product.name} for ${product.price} $RIC?\n\nShipping will be paid by you.`)) {
+                    alert("✅ Redemption request recorded!\nOur team will contact you shortly.");
+                    // In real version, you can send transaction here
+                }
+            } catch (e) {
+                alert("Error checking balance");
+            }
+        }
+
+        function toggleAdmin() {
+            const pass = prompt("Enter Staff Password:");
+            if (pass === "ricstaff2026") {
+                document.getElementById('adminPanel').style.display = 'block';
+                renderAdminList();
+            } else {
+                alert("Wrong password");
+            }
+        }
+
+        function addProduct() {
+            const name = document.getElementById('pName').value.trim();
+            const price = parseInt(document.getElementById('pPrice').value);
+            const image = document.getElementById('pImage').value || 'https://picsum.photos/600/400';
+            const stock = parseInt(document.getElementById('pStock').value) || 10;
+            const desc = document.getElementById('pDesc').value.trim();
+
+            if (!name || !price) return alert("Name and price are required");
+
+            products.push({ id: Date.now(), name, price, image, stock, desc });
+            localStorage.setItem('ricRewards', JSON.stringify(products));
+            renderProducts();
+            renderAdminList();
+            alert("Product added successfully!");
+        }
+
+        function renderAdminList() {
+            let html = '<h3>Current Products (Click to Delete)</h3>';
+            products.forEach(p => {
+                html += `<div style="padding:10px; background:#1f1f1f; margin:5px 0; border-radius:8px; display:flex; justify-content:space-between;">
+                    <span>${p.name} — ${p.price} RIC</span>
+                    <button onclick="deleteProduct(${p.id})" style="color:red; background:none; border:none; cursor:pointer;">Delete</button>
+                </div>`;
+            });
+            document.getElementById('productList').innerHTML = html;
+        }
+
+        function deleteProduct(id) {
+            if (confirm("Delete this product?")) {
+                products = products.filter(p => p.id !== id);
+                localStorage.setItem('ricRewards', JSON.stringify(products));
+                renderProducts();
+                renderAdminList();
+            }
+        }
+
+        // Init
+        renderProducts();
+    </script>
+</body>
+</html>
