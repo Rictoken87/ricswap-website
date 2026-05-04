@@ -27,7 +27,7 @@
         .price { color: var(--gold); font-size: 1.4rem; font-weight: bold; }
         .redeem-btn { background: var(--magma); color: white; border: none; padding: 12px; width: 100%; border-radius: 8px; margin-top: 10px; cursor: pointer; }
         
-        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 2000; align-items: center; justify-content: center; }
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 2000; align-items: center; justify-content: center; }
         .modal-content { background: #1a1a1a; padding: 30px; border-radius: 16px; max-width: 500px; width: 90%; }
     </style>
 </head>
@@ -56,10 +56,13 @@
     <div id="redeemModal" class="modal">
         <div class="modal-content">
             <h2 id="modalTitle"></h2>
-            <p id="modalPrice"></p>
+            <p id="modalPrice" style="color:var(--gold); font-size:1.3rem;"></p>
             
+            <h3>Your Email Address</h3>
+            <input type="email" id="customerEmail" placeholder="your@email.com" style="width:100%; padding:12px; margin:10px 0;">
+
             <h3>Shipping Address</h3>
-            <textarea id="shippingAddress" rows="4" placeholder="Full name, address, city, country, phone..."></textarea>
+            <textarea id="shippingAddress" rows="4" placeholder="Full name, address, city, postal code, country, phone..."></textarea>
             
             <button onclick="confirmRedemption()" style="background:var(--magma); color:white; padding:14px; width:100%; border:none; border-radius:8px; margin-top:15px;">Confirm & Send $RIC</button>
             <button onclick="closeModal()" style="background:#333; color:white; padding:14px; width:100%; border:none; border-radius:8px; margin-top:8px;">Cancel</button>
@@ -71,7 +74,7 @@
         let userAddress = null;
         const RIC_ADDRESS = "0x12C94d3A30daa09f81Ea6c037004E6e99A4A3dfc";
         const MASTER_OWNER = "0x5E5aE526D45d69991039901a29148029a4889102";
-        let currentRedeemProduct = null;
+        let currentProduct = null;
 
         async function connectWallet() {
             if (!window.ethereum) return alert("Please install MetaMask");
@@ -103,11 +106,11 @@
         }
 
         function showRedeemModal(id) {
-            currentRedeemProduct = products.find(p => p.id === id);
-            if (!currentRedeemProduct) return;
+            currentProduct = products.find(p => p.id === id);
+            if (!currentProduct) return;
 
-            document.getElementById('modalTitle').textContent = currentRedeemProduct.name;
-            document.getElementById('modalPrice').textContent = `Price: ${currentRedeemProduct.price} $RIC`;
+            document.getElementById('modalTitle').textContent = currentProduct.name;
+            document.getElementById('modalPrice').textContent = `Price: ${currentProduct.price} $RIC`;
             document.getElementById('redeemModal').style.display = 'flex';
         }
 
@@ -116,10 +119,12 @@
         }
 
         async function confirmRedemption() {
-            const addressInput = document.getElementById('shippingAddress').value.trim();
-            if (!addressInput) return alert("Please enter shipping address");
+            const email = document.getElementById('customerEmail').value.trim();
+            const shipping = document.getElementById('shippingAddress').value.trim();
 
-            if (!userAddress) return alert("Please connect wallet");
+            if (!email || !shipping) return alert("Please fill both email and shipping address");
+
+            if (!userAddress) return alert("Please connect wallet first");
 
             try {
                 const provider = new ethers.BrowserProvider(window.ethereum);
@@ -130,17 +135,20 @@
                 ], signer);
 
                 const balance = await ricContract.balanceOf(userAddress);
-                if (Number(ethers.formatEther(balance)) < currentRedeemProduct.price) {
-                    return alert("Not enough $RIC!");
+                if (Number(ethers.formatEther(balance)) < currentProduct.price) {
+                    return alert(`Not enough $RIC! You need ${currentProduct.price} RIC`);
                 }
 
-                const tx = await ricContract.transfer(MASTER_OWNER, ethers.parseEther(currentRedeemProduct.price.toString()));
+                if (!confirm(`Send ${currentProduct.price} $RIC for ${currentProduct.name}?\n\nReceipt will be sent to: ${email}`)) return;
+
+                const tx = await ricContract.transfer(MASTER_OWNER, ethers.parseEther(currentProduct.price.toString()));
                 await tx.wait();
 
-                alert(`✅ Redemption Successful!\n\nProduct: ${currentRedeemProduct.name}\nAmount: ${currentRedeemProduct.price} $RIC\nShipping Address:\n${addressInput}\n\nTransaction: ${tx.hash}\n\nOur team will contact you soon.`);
+                alert(`✅ Redemption Successful!\n\nProduct: ${currentProduct.name}\nAmount: ${currentProduct.price} $RIC\nEmail: ${email}\nShipping: ${shipping}\n\nTransaction: ${tx.hash}\n\nReceipt has been prepared.`);
 
                 closeModal();
             } catch (e) {
+                console.error(e);
                 alert("Transaction failed: " + (e.reason || e.message));
             }
         }
