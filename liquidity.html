@@ -8,18 +8,18 @@
     <style>
         :root { --obsidian: #080808; --card-bg: #121212; --magma: linear-gradient(135deg, #ff4d00 0%, #ff8c00 100%); --gold: #ffd700; }
         body { background: var(--obsidian); color: white; font-family: system-ui, sans-serif; margin: 0; padding: 0; }
-        .nav { padding: 20px 40px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid rgba(255,215,0,0.1); }
+        .nav { padding: 20px 40px; display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; border-bottom: 1px solid rgba(255,215,0,0.1); }
         .logo { font-size: 28px; font-weight: bold; color: var(--gold); }
-        .nav-links { display: flex; gap: 30px; margin-left: 40px; }
+        .nav-links { display: flex; gap: 30px; justify-content: center; }
         .nav-links a { color: white; text-decoration: none; font-weight: 500; }
-        .nav-links a:hover, .nav-links a.active { color: var(--gold); }
-        .connect-btn { background: #222; color: white; border: 1px solid #444; padding: 6px 18px; border-radius: 9999px; font-size: 14px; font-weight: 600; cursor: pointer; white-space: nowrap; margin-left: auto; width: 160px; text-align: center; }
+        .nav-links a.active { color: var(--gold); }
+        .connect-btn { justify-self: end; background: #222; color: white; border: 1px solid #444; padding: 10px 0; width: 160px; border-radius: 9999px; font-size: 14px; font-weight: 600; cursor: pointer; text-align: center; }
         .card { max-width: 520px; margin: 40px auto; background: var(--card-bg); border-radius: 24px; padding: 32px; box-shadow: 0 20px 40px rgba(0,0,0,0.8); border: 1px solid #222; }
         .input-group { background: #1a1a1a; border-radius: 16px; padding: 16px; margin-bottom: 16px; border: 1px solid #333; }
         label { display: block; color: #888; font-size: 12px; margin-bottom: 8px; text-transform: uppercase; }
         input { background: transparent; border: none; color: white; font-size: 20px; width: 100%; outline: none; }
-        button { background: var(--magma); color: white; border: none; padding: 18px; border-radius: 16px; font-weight: bold; width: 100%; font-size: 18px; cursor: pointer; margin-top: 10px; }
-        .status { margin-top: 15px; text-align: center; font-size: 13px; min-height: 24px; font-family: monospace; line-height: 1.5; }
+        button.main-btn { background: var(--magma); color: white; border: none; padding: 18px; border-radius: 16px; font-weight: bold; width: 100%; font-size: 18px; cursor: pointer; margin-top: 10px; }
+        .status { margin-top: 15px; text-align: center; font-size: 13px; min-height: 24px; font-family: monospace; color: #ffd700; background: rgba(255,215,0,0.05); padding: 8px; border-radius: 8px; }
         .token-info { font-size: 12px; color: var(--gold); margin-top: 4px; }
     </style>
 </head>
@@ -31,67 +31,69 @@
         <a href="index.html">Home</a>
         <a href="swap.html">Swap</a>
         <a href="pools.html">Pools</a>
-        <a href="liquidity.html" class="active">Add Liquidity</a>
+        <a href="liquidity.html" class="active">Add</a>
     </div>
     <button id="connectBtn" class="connect-btn">Connect Wallet</button>
 </div>
 
 <div class="card">
     <h2 style="text-align:center; margin-bottom:24px;">Initialize & Supply LP</h2>
-    
     <div class="input-group">
-        <label>Token Address (ERC20)</label>
+        <label>Token Address</label>
         <input type="text" id="tokenAddress" placeholder="0x...">
         <div id="tokenInfo" class="token-info"></div>
     </div>
-    <button id="createPairBtn" style="background:#222; font-size: 14px; border: 1px solid #444;">1. Create Pair & Burner</button>
-
-    <div style="margin: 25px 0; text-align:center; color:#444; font-size: 12px; letter-spacing: 2px;">THEN ADD LIQUIDITY</div>
-
+    <button id="createPairBtn" class="main-btn" style="background:#222; border: 1px solid #444; font-size: 14px;">1. Create Pair & Burner</button>
+    <div style="margin: 20px 0; text-align:center; color:#444; font-size: 11px;">THEN ADD LIQUIDITY</div>
     <div class="input-group">
         <label>Amount BONE</label>
         <input type="number" id="amountBONE" value="1">
-        <div id="boneBalance" style="text-align:right; font-size:11px; color:#666;">Balance: --</div>
     </div>
-
     <div class="input-group">
-        <label>Amount Token <span id="symDisplay"></span></label>
+        <label>Amount Token</label>
         <input type="number" id="amountToken" placeholder="0.0">
     </div>
-
-    <button id="addBtn">2. Supply Permanent LP</button>
-    <div class="status" id="status">Ready.</div>
+    <button id="addBtn" class="main-btn">2. Supply Permanent LP</button>
+    <div class="status" id="status">Status: Offline</div>
 </div>
 
 <script>
     const FACTORY_ADDRESS = "0x78ae5cCD2f13D10aE3fF47F8418A79D99B4569d0";
     const ROUTER_ADDRESS = "0xA809a9060D36f5324061EF93192ad5DA12Afc62e";
     const WBONE = "0xC76F4c819D820369Fb2d7C1531aB3Bb18e6fE8d8";
+    const CHAIN_ID_HEX = "0x6d"; // 109 in hex
 
     let provider, signer, userAddress;
 
-    const ERC20_ABI = [
-        "function symbol() view returns (string)",
-        "function balanceOf(address) view returns (uint256)",
-        "function approve(address,uint) returns (bool)",
-        "function allowance(address,address) view returns (uint256)"
-    ];
-
     async function connectWallet() {
-        if (!window.ethereum) return alert("Install MetaMask");
+        const status = document.getElementById("status");
+        if (!window.ethereum) {
+            status.textContent = "Error: No Wallet Found";
+            return alert("Please install MetaMask!");
+        }
+
         try {
+            status.textContent = "Connecting...";
+            
+            // 1. Initialize Provider
             provider = new ethers.BrowserProvider(window.ethereum);
             
-            // Force Switch to Shibarium
-            await window.ethereum.request({
-                method: 'wallet_switchEthereumChain',
-                params: [{ chainId: '0x6d' }] // 109 in hex
-            }).catch(async (e) => {
-                if (e.code === 4902) {
+            // 2. Request Accounts
+            const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+            userAddress = accounts[0];
+
+            // 3. Chain Check / Switch
+            try {
+                await window.ethereum.request({
+                    method: 'wallet_switchEthereumChain',
+                    params: [{ chainId: CHAIN_ID_HEX }],
+                });
+            } catch (switchError) {
+                if (switchError.code === 4902) {
                     await window.ethereum.request({
                         method: 'wallet_addEthereumChain',
                         params: [{
-                            chainId: '0x6d',
+                            chainId: CHAIN_ID_HEX,
                             chainName: 'Shibarium',
                             nativeCurrency: { name: 'BONE', symbol: 'BONE', decimals: 18 },
                             rpcUrls: ['https://shib.io'],
@@ -99,26 +101,30 @@
                         }]
                     });
                 }
-            });
+            }
 
-            const accounts = await provider.send("eth_requestAccounts", []);
-            userAddress = accounts[0];
+            // 4. Set Signer
             signer = await provider.getSigner();
+            
+            // 5. Update UI
             document.getElementById("connectBtn").textContent = userAddress.slice(0,6) + "..." + userAddress.slice(-4);
-            const bal = await provider.getBalance(userAddress);
-            document.getElementById("boneBalance").textContent = `Balance: ${Number(ethers.formatEther(bal)).toFixed(4)} BONE`;
-        } catch (e) { console.error(e); }
+            status.textContent = "Connected to Shibarium";
+            console.log("Wallet Connected:", userAddress);
+
+        } catch (error) {
+            console.error("Connect Error:", error);
+            status.textContent = "Connection Failed: " + (error.message.slice(0,30));
+        }
     }
 
     async function updateTokenInfo() {
         const addr = document.getElementById("tokenAddress").value.trim();
         if (!ethers.isAddress(addr) || !signer) return;
         try {
-            const token = new ethers.Contract(addr, ERC20_ABI, provider);
+            const token = new ethers.Contract(addr, ["function symbol() view returns (string)", "function balanceOf(address) view returns (uint256)"], provider);
             const [sym, bal] = await Promise.all([token.symbol(), token.balanceOf(userAddress)]);
             document.getElementById("tokenInfo").textContent = `Token: ${sym} | Balance: ${Number(ethers.formatEther(bal)).toFixed(4)}`;
-            document.getElementById("symDisplay").textContent = `(${sym})`;
-        } catch (e) { document.getElementById("tokenInfo").textContent = "Address is not a token"; }
+        } catch (e) { document.getElementById("tokenInfo").textContent = "Invalid Token"; }
     }
 
     async function createPair() {
@@ -126,17 +132,12 @@
         const status = document.getElementById("status");
         const addr = document.getElementById("tokenAddress").value.trim();
         try {
-            status.style.color = "orange";
-            status.textContent = "Checking Factory...";
-            const factory = new ethers.Contract(FACTORY_ADDRESS, ["function getPair(address,address) view returns (address)", "function createPair(address,address) returns (address)"], signer);
-            const pair = await factory.getPair(WBONE, addr);
-            if (pair !== ethers.ZeroAddress) { status.textContent = "✅ Pair already exists."; return; }
-            status.textContent = "Creating Pair & Burner...";
+            status.textContent = "Creating Pair...";
+            const factory = new ethers.Contract(FACTORY_ADDRESS, ["function createPair(address,address) returns (address)"], signer);
             const tx = await factory.createPair(WBONE, addr, { gasLimit: 5000000 });
             await tx.wait();
-            status.style.color = "#0f0";
-            status.textContent = "✅ Pair Created Successfully!";
-        } catch (e) { status.style.color = "red"; status.textContent = "Error: " + (e.reason || "Rejected"); }
+            status.textContent = "Pair Created!";
+        } catch (e) { status.textContent = "Error: " + (e.reason || "Check Gas"); }
     }
 
     async function addLiquidity() {
@@ -147,31 +148,36 @@
         const amtT = document.getElementById("amountToken").value;
 
         try {
-            status.style.color = "orange";
             const valB = ethers.parseEther(amtB);
             const valT = ethers.parseEther(amtT);
-            const token = new ethers.Contract(addr, ERC20_ABI, signer);
-
-            status.textContent = "Approving Token...";
-            const allowance = await token.allowance(userAddress, ROUTER_ADDRESS);
-            if (allowance < valT) {
-                const txApp = await token.approve(ROUTER_ADDRESS, ethers.MaxUint256);
-                await txApp.wait();
+            
+            status.textContent = "Approving...";
+            const token = new ethers.Contract(addr, ["function approve(address,uint) returns (bool)", "function allowance(address,address) view returns (uint256)"], signer);
+            const allow = await token.allowance(userAddress, ROUTER_ADDRESS);
+            if (allow < valT) {
+                await (await token.approve(ROUTER_ADDRESS, ethers.MaxUint256)).wait();
             }
 
-            status.textContent = "Depositing LP...";
+            status.textContent = "Seeding LP...";
             const router = new ethers.Contract(ROUTER_ADDRESS, ["function addLiquidityBONE(address,uint,uint,uint,address,uint) external payable returns (uint,uint,uint)"], signer);
-            const tx = await router.addLiquidityBONE(addr, valT, 0, 0, userAddress, Math.floor(Date.now()/1000)+1200, { value: valB, gasLimit: 1500000 });
+            const tx = await router.addLiquidityBONE(addr, valT, 0, 0, userAddress, Math.floor(Date.now()/1000)+1200, { value: valB, gasLimit: 2000000 });
             await tx.wait();
-            status.style.color = "#0f0";
-            status.textContent = "✅ Permanent LP Added!";
-        } catch (e) { status.style.color = "red"; status.textContent = "Error: " + (e.reason || "Check Balance/Gas"); }
+            status.textContent = "Liquidity Added!";
+        } catch (e) { status.textContent = "Error: " + (e.reason || "Check Balance"); }
     }
 
-    document.getElementById("connectBtn").onclick = connectWallet;
-    document.getElementById("createPairBtn").onclick = createPair;
-    document.getElementById("addBtn").onclick = addLiquidity;
-    document.getElementById("tokenAddress").oninput = updateTokenInfo;
+    // Attach Listeners
+    document.getElementById("connectBtn").addEventListener("click", connectWallet);
+    document.getElementById("createPairBtn").addEventListener("click", createPair);
+    document.getElementById("addBtn").addEventListener("click", addLiquidity);
+    document.getElementById("tokenAddress").addEventListener("input", updateTokenInfo);
+
+    // Auto-Run on Load
+    window.onload = () => {
+        if (window.ethereum && window.ethereum.selectedAddress) {
+            connectWallet();
+        }
+    }
 </script>
 </body>
 </html>
