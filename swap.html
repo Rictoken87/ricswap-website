@@ -136,7 +136,7 @@
                 const amountInWei = ethers.parseEther(amountIn);
                 const path = [WBONE, RIC];
                 const amounts = await router.getAmountsOut(amountInWei, path);
-                const minOut = (amounts[1] * 995n) / 1000n; // 0.5% slippage
+                const minOut = (amounts[1] * 995n) / 1000n;
 
                 const tx = await router.swapExactBONEForTokens(
                     minOut,
@@ -156,7 +156,7 @@
             } catch (e) {
                 console.error(e);
                 status.style.color = "#f00";
-                status.textContent = "Error: " + (e.reason || e.message || "Check balance or pool liquidity");
+                status.textContent = "Error: " + (e.reason || e.message || "Check pool liquidity");
             }
         }
 
