@@ -13,89 +13,28 @@
             --magma: linear-gradient(135deg, #ff4d00 0%, #ff8c00 100%);
             --gold: #ffd700;
         }
-        body { 
-            background: var(--obsidian); 
-            color: white; 
-            font-family: system-ui, sans-serif; 
-            margin: 0; 
-            padding: 0; 
-        }
-        .nav { 
-            padding: 20px 40px; 
-            display: flex; 
-            align-items: center; 
-            border-bottom: 1px solid rgba(255,215,0,0.1); 
-        }
+        body { background: var(--obsidian); color: white; font-family: system-ui, sans-serif; margin: 0; padding: 0; }
+        .nav { padding: 20px 40px; display: flex; align-items: center; border-bottom: 1px solid rgba(255,215,0,0.1); }
         .logo { font-size: 28px; font-weight: bold; color: var(--gold); }
         .nav-links { display: flex; gap: 30px; margin-left: 40px; }
         .nav-links a { color: white; text-decoration: none; font-weight: 500; }
         .nav-links a:hover, .nav-links a.active { color: var(--gold); }
-        .connect-btn, .admin-btn, .test-btn { 
-            background: #222; 
-            color: white; 
-            border: 1px solid #444; 
-            padding: 8px 18px; 
-            border-radius: 9999px; 
-            margin-left: 10px; 
-            cursor: pointer; 
+        .connect-btn, .test-btn { 
+            background: #222; color: white; border: 1px solid #444; 
+            padding: 8px 18px; border-radius: 9999px; margin-left: 10px; cursor: pointer; 
         }
         .test-btn { background: #333; border-color: var(--gold); }
 
-        .rewards-grid { 
-            display: grid; 
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); 
-            gap: 25px; 
-            padding: 40px; 
-            max-width: 1400px; 
-            margin: 0 auto; 
-        }
-        .reward-card { 
-            background: var(--card-bg); 
-            border-radius: 16px; 
-            overflow: hidden; 
-            border: 1px solid #333; 
-        }
+        .rewards-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 25px; padding: 40px; max-width: 1400px; margin: 0 auto; }
+        .reward-card { background: var(--card-bg); border-radius: 16px; overflow: hidden; border: 1px solid #333; }
         .reward-card img { width: 100%; height: 200px; object-fit: cover; }
         .reward-info { padding: 20px; }
         .price { color: var(--gold); font-size: 1.4rem; font-weight: bold; }
-        .redeem-btn { 
-            background: var(--magma); 
-            color: white; 
-            border: none; 
-            padding: 12px; 
-            width: 100%; 
-            border-radius: 8px; 
-            margin-top: 10px; 
-            cursor: pointer; 
-        }
+        .redeem-btn { background: var(--magma); color: white; border: none; padding: 12px; width: 100%; border-radius: 8px; margin-top: 10px; cursor: pointer; }
 
-        .modal { 
-            display: none; 
-            position: fixed; 
-            top: 0; left: 0; 
-            width: 100%; height: 100%; 
-            background: rgba(0,0,0,0.95); 
-            z-index: 2000; 
-            align-items: center; 
-            justify-content: center; 
-        }
-        .modal-content { 
-            background: #1a1a1a; 
-            padding: 30px; 
-            border-radius: 16px; 
-            max-width: 500px; 
-            width: 90%; 
-        }
-        .modal-content input, .modal-content textarea {
-            width: 100%;
-            padding: 14px;
-            margin: 10px 0;
-            background: #222;
-            color: white;
-            border: 1px solid #444;
-            border-radius: 10px;
-            font-size: 15px;
-        }
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 2000; align-items: center; justify-content: center; }
+        .modal-content { background: #1a1a1a; padding: 30px; border-radius: 16px; max-width: 500px; width: 90%; }
+        .modal-content input, .modal-content textarea { width: 100%; padding: 14px; margin: 10px 0; background: #222; color: white; border: 1px solid #444; border-radius: 10px; font-size: 15px; }
     </style>
 </head>
 <body>
@@ -125,11 +64,11 @@
             <h2 id="modalTitle"></h2>
             <p id="modalPrice" style="color:var(--gold); font-size:1.3rem;"></p>
             
-            <h3>Your Email (Receipt will be sent here)</h3>
+            <h3>Your Email</h3>
             <input type="email" id="customerEmail" placeholder="your@email.com">
 
             <h3>Shipping Address</h3>
-            <textarea id="shippingAddress" rows="5" placeholder="Full name, street address, city, postal code, country, phone..."></textarea>
+            <textarea id="shippingAddress" rows="5" placeholder="Full name, street, city, postal code, country, phone..."></textarea>
             
             <button onclick="confirmRedemption()" style="background:var(--magma); color:white; padding:14px; width:100%; border:none; border-radius:8px; margin-top:15px;">Confirm & Send $RIC</button>
             <button onclick="closeModal()" style="background:#333; color:white; padding:14px; width:100%; border:none; border-radius:8px; margin-top:8px;">Cancel</button>
@@ -143,7 +82,6 @@
         const MASTER_OWNER = "0x5E5aE526D45d69991039901a29148029a4889102";
         let currentProduct = null;
 
-        // EmailJS Setup
         emailjs.init("Y5GsSScYku74Bt0LH");
 
         async function connectWallet() {
@@ -154,25 +92,21 @@
                 const signer = await provider.getSigner();
                 userAddress = await signer.getAddress();
                 document.getElementById("connectBtn").textContent = userAddress.slice(0,6) + "..." + userAddress.slice(-4);
-                renderProducts();
             } catch (e) { console.error(e); }
         }
 
         function renderProducts() {
             const grid = document.getElementById('rewardsGrid');
-            grid.innerHTML = '';
-            products.forEach(p => {
-                grid.innerHTML += `
-                    <div class="reward-card">
-                        <img src="${p.image}" alt="${p.name}">
-                        <div class="reward-info">
-                            <h3>${p.name}</h3>
-                            <p>${p.desc || ''}</p>
-                            <div class="price">${p.price} $RIC</div>
-                            <button class="redeem-btn" onclick="showRedeemModal(${p.id})">Redeem with $RIC</button>
-                        </div>
-                    </div>`;
-            });
+            grid.innerHTML = products.map(p => `
+                <div class="reward-card">
+                    <img src="${p.image}" alt="${p.name}">
+                    <div class="reward-info">
+                        <h3>${p.name}</h3>
+                        <p>${p.desc || ''}</p>
+                        <div class="price">${p.price} $RIC</div>
+                        <button class="redeem-btn" onclick="showRedeemModal(${p.id})">Redeem</button>
+                    </div>
+                </div>`).join('');
         }
 
         function showRedeemModal(id) {
@@ -187,82 +121,27 @@
             document.getElementById('redeemModal').style.display = 'none';
         }
 
-        async function confirmRedemption() {
-            const email = document.getElementById('customerEmail').value.trim();
-            const shipping = document.getElementById('shippingAddress').value.trim();
-
-            if (!email || !shipping) return alert("Please fill both email and shipping address");
-            if (!userAddress) return alert("Please connect wallet first");
-
-            try {
-                const provider = new ethers.BrowserProvider(window.ethereum);
-                const signer = await provider.getSigner();
-                const ricContract = new ethers.Contract(RIC_ADDRESS, [
-                    "function balanceOf(address) view returns (uint256)",
-                    "function transfer(address to, uint256 amount) returns (bool)"
-                ], signer);
-
-                const balance = await ricContract.balanceOf(userAddress);
-                if (Number(ethers.formatEther(balance)) < currentProduct.price) {
-                    return alert(`Not enough $RIC! You need ${currentProduct.price} RIC`);
-                }
-
-                if (!confirm(`Send ${currentProduct.price} $RIC for ${currentProduct.name}?`)) return;
-
-                const tx = await ricContract.transfer(MASTER_OWNER, ethers.parseEther(currentProduct.price.toString()));
-                await tx.wait();
-
-                sendEmailReceipt(email, currentProduct.name, currentProduct.price, shipping, tx.hash);
-
-                alert(`✅ Redemption Successful!\nReceipt sent to: ${email}`);
-                closeModal();
-            } catch (e) {
-                console.error(e);
-                alert("Transaction failed: " + (e.reason || e.message));
-            }
-        }
-
-        function sendEmailReceipt(email, productName, amount, shipping, txHash) {
-            const templateParams = {
-                to_email: email,
-                product_name: productName,
-                amount_ric: amount.toString(),
-                shipping_address: shipping,
-                tx_hash: txHash || "Pending",
-                user_address: userAddress || "Unknown"
-            };
-
-            emailjs.send("service_577894p", "template_zga1woa", templateParams)
-                .then(() => {
-                    console.log("✅ Email sent successfully to " + email);
-                })
-                .catch((err) => {
-                    console.error("❌ EmailJS Full Error:", err);
-                    alert("Email sending failed. Check console (F12) for details.");
-                });
-        }
-
         function sendTestEmail() {
-            const testEmail = prompt("Enter your test email address:");
+            const testEmail = prompt("Enter your test email:");
             if (!testEmail) return;
 
-            const templateParams = {
-                to_email: testEmail,
-                product_name: "Test Product - Hoodie",
-                amount_ric: "2500",
-                shipping_address: "123 Test Street, Test City, 12345, Test Country",
-                tx_hash: "0xTestTransactionHashForDebug123",
-                user_address: userAddress || "0xTestWallet"
-            };
+            console.log("🚀 Sending test email to:", testEmail);
 
-            emailjs.send("service_577894p", "template_zga1woa", templateParams)
-                .then(() => {
-                    alert("✅ Test email sent! Please check your inbox and spam folder.");
-                })
-                .catch((err) => {
-                    console.error("❌ EmailJS Full Error:", err);
-                    alert("Test failed. Check console (F12) for details.");
-                });
+            emailjs.send("service_577894p", "template_zga1woa", {
+                to_email: testEmail,
+                product_name: "Test Hoodie",
+                amount_ric: "2500",
+                shipping_address: "Test Address",
+                tx_hash: "0xTest123",
+                user_address: userAddress || "0xTest"
+            })
+            .then(() => {
+                alert("✅ Test email sent successfully! Check inbox & spam.");
+            })
+            .catch(err => {
+                console.error("❌ Full EmailJS Error:", err);
+                alert("Failed.\n\nError: " + (err.text || err.message || JSON.stringify(err)));
+            });
         }
 
         // Initialize
