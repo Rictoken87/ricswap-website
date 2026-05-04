@@ -13,23 +13,79 @@
             --magma: linear-gradient(135deg, #ff4d00 0%, #ff8c00 100%);
             --gold: #ffd700;
         }
-        body { background: var(--obsidian); color: white; font-family: system-ui, sans-serif; margin: 0; padding: 0; }
-        .nav { padding: 20px 40px; display: flex; align-items: center; border-bottom: 1px solid rgba(255,215,0,0.1); }
+        body { 
+            background: var(--obsidian); 
+            color: white; 
+            font-family: system-ui, sans-serif; 
+            margin: 0; 
+            padding: 0; 
+        }
+        .nav { 
+            padding: 20px 40px; 
+            display: flex; 
+            align-items: center; 
+            border-bottom: 1px solid rgba(255,215,0,0.1); 
+        }
         .logo { font-size: 28px; font-weight: bold; color: var(--gold); }
         .nav-links { display: flex; gap: 30px; margin-left: 40px; }
         .nav-links a { color: white; text-decoration: none; font-weight: 500; }
         .nav-links a:hover, .nav-links a.active { color: var(--gold); }
-        .connect-btn, .admin-btn { background: #222; color: white; border: 1px solid #444; padding: 8px 18px; border-radius: 9999px; margin-left: auto; cursor: pointer; }
-        
-        .rewards-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 25px; padding: 40px; max-width: 1400px; margin: 0 auto; }
-        .reward-card { background: var(--card-bg); border-radius: 16px; overflow: hidden; border: 1px solid #333; }
+        .connect-btn, .admin-btn, .test-btn { 
+            background: #222; 
+            color: white; 
+            border: 1px solid #444; 
+            padding: 8px 18px; 
+            border-radius: 9999px; 
+            margin-left: 10px; 
+            cursor: pointer; 
+        }
+        .test-btn { background: #333; border-color: var(--gold); }
+
+        .rewards-grid { 
+            display: grid; 
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); 
+            gap: 25px; 
+            padding: 40px; 
+            max-width: 1400px; 
+            margin: 0 auto; 
+        }
+        .reward-card { 
+            background: var(--card-bg); 
+            border-radius: 16px; 
+            overflow: hidden; 
+            border: 1px solid #333; 
+        }
         .reward-card img { width: 100%; height: 200px; object-fit: cover; }
         .reward-info { padding: 20px; }
         .price { color: var(--gold); font-size: 1.4rem; font-weight: bold; }
-        .redeem-btn { background: var(--magma); color: white; border: none; padding: 12px; width: 100%; border-radius: 8px; margin-top: 10px; cursor: pointer; }
-        
-        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 2000; align-items: center; justify-content: center; }
-        .modal-content { background: #1a1a1a; padding: 30px; border-radius: 16px; max-width: 500px; width: 90%; }
+        .redeem-btn { 
+            background: var(--magma); 
+            color: white; 
+            border: none; 
+            padding: 12px; 
+            width: 100%; 
+            border-radius: 8px; 
+            margin-top: 10px; 
+            cursor: pointer; 
+        }
+
+        .modal { 
+            display: none; 
+            position: fixed; 
+            top: 0; left: 0; 
+            width: 100%; height: 100%; 
+            background: rgba(0,0,0,0.95); 
+            z-index: 2000; 
+            align-items: center; 
+            justify-content: center; 
+        }
+        .modal-content { 
+            background: #1a1a1a; 
+            padding: 30px; 
+            border-radius: 16px; 
+            max-width: 500px; 
+            width: 90%; 
+        }
         .modal-content input, .modal-content textarea {
             width: 100%;
             padding: 14px;
@@ -53,7 +109,7 @@
             <a href="reward.html" class="active">Rewards</a>
         </div>
         <button id="connectBtn" class="connect-btn">Connect Wallet</button>
-        <button onclick="checkAdminAccess()" class="admin-btn" style="margin-left:10px;">Staff Admin</button>
+        <button onclick="sendTestEmail()" class="test-btn">📧 Test Email</button>
     </div>
 
     <div style="padding:80px 40px; text-align:center; background:radial-gradient(#1a0f00,var(--obsidian));">
@@ -87,7 +143,7 @@
         const MASTER_OWNER = "0x5E5aE526D45d69991039901a29148029a4889102";
         let currentProduct = null;
 
-        // EmailJS Setup (Fully Configured)
+        // EmailJS Setup - Fully Configured
         emailjs.init("Y5GsSScYku74Bt0LH");
 
         async function connectWallet() {
@@ -156,7 +212,6 @@
                 const tx = await ricContract.transfer(MASTER_OWNER, ethers.parseEther(currentProduct.price.toString()));
                 await tx.wait();
 
-                // Send Real Email Receipt
                 sendEmailReceipt(email, currentProduct.name, currentProduct.price, shipping, tx.hash);
 
                 alert(`✅ Redemption Successful!\nReceipt sent to: ${email}`);
@@ -173,12 +228,32 @@
                 product_name: productName,
                 amount_ric: amount,
                 shipping_address: shipping,
-                tx_hash: txHash,
-                user_address: userAddress
+                tx_hash: txHash || "Pending",
+                user_address: userAddress || "Unknown"
             }).then(() => {
-                console.log("✅ Receipt email sent successfully to " + email);
+                console.log("✅ Email sent to " + email);
             }).catch(err => {
-                console.error("EmailJS Error:", err);
+                console.error("❌ EmailJS Error:", err);
+            });
+        }
+
+        // Test Email Function
+        function sendTestEmail() {
+            const testEmail = prompt("Enter email address to test receipt:");
+            if (!testEmail) return;
+
+            emailjs.send("service_577894p", "template_zga1woa", {
+                to_email: testEmail,
+                product_name: "Test Redemption (Hoodie)",
+                amount_ric: "2500",
+                shipping_address: "Test Shipping Address - 123 Main Street, City, Country",
+                tx_hash: "0xTestTransactionHash123456789",
+                user_address: userAddress || "0xTestWalletAddress"
+            }).then(() => {
+                alert("✅ Test email sent! Please check your inbox and spam folder.");
+            }).catch(err => {
+                alert("❌ Test failed. Check console (F12) for details.");
+                console.error(err);
             });
         }
 
