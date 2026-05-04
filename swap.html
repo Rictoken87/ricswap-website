@@ -4,25 +4,26 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>RicSwap | Swap</title>
-    <script src="https://cloudflare.com"></script>
+    <script src="https://jsdelivr.net"></script>
     <style>
         :root { --obsidian: #080808; --card-bg: #121212; --magma: linear-gradient(135deg, #ff4d00 0%, #ff8c00 100%); --gold: #ffd700; }
         body { background: var(--obsidian); color: white; font-family: system-ui, sans-serif; margin: 0; padding: 0; }
-        .nav { padding: 20px 40px; display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; border-bottom: 1px solid rgba(255,215,0,0.1); }
+        .nav { padding: 20px 40px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid rgba(255,215,0,0.1); }
         .logo { font-size: 28px; font-weight: bold; color: var(--gold); }
-        .nav-links { display: flex; gap: 30px; justify-content: center; }
+        .nav-links { display: flex; gap: 30px; margin-left: 40px; }
         .nav-links a { color: #888; text-decoration: none; font-weight: 500; }
         .nav-links a:hover, .nav-links a.active { color: var(--gold); }
-        .connect-btn { justify-self: end; background: #222; color: white; border: 1px solid #444; padding: 10px 0; width: 160px; border-radius: 9999px; font-size: 14px; font-weight: 600; cursor: pointer; text-align: center; }
+        .connect-btn { background: #222; color: white; border: 1px solid #444; padding: 8px 18px; border-radius: 9999px; font-size: 14px; font-weight: 600; cursor: pointer; white-space: nowrap; margin-left: auto; width: 160px; text-align: center; }
+        .connect-btn:hover { border-color: var(--gold); }
         .card { max-width: 420px; margin: 40px auto; background: var(--card-bg); border-radius: 24px; padding: 32px; box-shadow: 0 20px 40px rgba(0,0,0,0.8); border: 1px solid #222; }
         .input-group { background: #1a1a1a; border-radius: 16px; padding: 16px; margin-bottom: 16px; border: 1px solid #333; }
         .input-group:focus-within { border-color: var(--gold); }
-        label { display: block; color: #888; font-size: 12px; margin-bottom: 8px; text-transform: uppercase; }
+        label { display: block; color: #888; font-size: 12px; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 1px; }
         input { background: transparent; border: none; color: white; font-size: 28px; width: 100%; outline: none; }
-        button#swapBtn { background: var(--magma); color: white; border: none; padding: 18px; border-radius: 16px; font-weight: bold; width: 100%; font-size: 18px; cursor: pointer; margin-top: 20px; transition: 0.2s; }
-        button#swapBtn:disabled { opacity: 0.5; cursor: not-allowed; }
+        button#swapBtn { background: var(--magma); color: white; border: none; padding: 18px; border-radius: 16px; font-weight: bold; width: 100%; font-size: 18px; cursor: pointer; margin-top: 20px; }
         .status { margin-top: 15px; text-align: center; font-size: 13px; min-height: 24px; font-family: monospace; line-height: 1.5; }
-        .tx-link { color: var(--gold); text-decoration: underline; }
+        .tx-link { color: var(--gold); text-decoration: underline; font-size: 13px; }
+        .swap-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
     </style>
 </head>
 <body>
@@ -37,7 +38,7 @@
         <button id="connectBtn" class="connect-btn">Connect Wallet</button>
     </div>
     <div class="card">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+        <div class="swap-header">
             <span style="font-weight:bold; font-size:18px;">Swap</span>
             <span style="color:var(--gold); font-size:12px; font-weight:600;">SHIBARIUM</span>
         </div>
@@ -55,12 +56,11 @@
                 <label>You Receive</label>
                 <span id="toBalance" style="font-size:11px; color:#888;">Balance: --</span>
             </div>
-            <input type="number" id="toAmount" placeholder="0.0" disabled style="color: #666;">
+            <input type="number" id="toAmount" placeholder="0.0" disabled>
             <div style="margin-top:8px; font-size:14px; font-weight:600;">RIC</div>
         </div>
-        <div id="priceInfo" style="font-size:11px; color:#555; text-align:right; padding: 4px;">Slippage: 0.5%</div>
         <button id="swapBtn">Swap Now</button>
-        <div class="status" id="status">Ready</div>
+        <div class="status" id="status">Ready.</div>
     </div>
 
 <script>
@@ -70,101 +70,90 @@
     
     let provider, signer, userAddress, quoteTimeout;
 
+    const ROUTER_ABI = [
+        "function getAmountsOut(uint amountIn, address[] memory path) public view returns (uint[] memory amounts)",
+        "function swapExactBONEForTokens(uint amountOutMin, address[] calldata path, address to, uint deadline) external payable returns (uint[] memory amounts)"
+    ];
+
     async function connectWallet() {
         if (!window.ethereum) return alert("Install MetaMask");
         try {
             provider = new ethers.BrowserProvider(window.ethereum);
-            const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
-            userAddress = accounts[0];
+            const accounts = await provider.send("eth_requestAccounts", []);
+            userAddress = accounts[0]; // Isolate string from array
             signer = await provider.getSigner();
-            document.getElementById("connectBtn").textContent = userAddress.slice(0,6) + "..." + userAddress.slice(-4);
-            loadBalances();
-            updateQuote();
-        } catch (e) { console.error(e); }
-    }
-
-    async function loadBalances() {
-        if (!userAddress) return;
-        try {
-            const boneBal = await provider.getBalance(userAddress);
-            document.getElementById("fromBalance").textContent = `Balance: ${Number(ethers.formatEther(boneBal)).toFixed(4)}`;
             
-            const ricContract = new ethers.Contract(RIC, ["function balanceOf(address) view returns (uint256)"], provider);
-            const ricBal = await ricContract.balanceOf(userAddress);
-            document.getElementById("toBalance").textContent = `Balance: ${Number(ethers.formatEther(ricBal)).toFixed(2)}`;
-        } catch (e) { console.warn(e); }
+            document.getElementById("connectBtn").textContent = userAddress.slice(0,6) + "..." + userAddress.slice(-4);
+            const bal = await provider.getBalance(userAddress);
+            document.getElementById("fromBalance").textContent = `Balance: ${Number(ethers.formatEther(bal)).toFixed(4)}`;
+            document.getElementById("status").textContent = "✅ Wallet Connected";
+            updateQuote();
+        } catch (e) { 
+            console.error(e); 
+            document.getElementById("status").textContent = "Connection Failed";
+        }
     }
 
     async function updateQuote() {
-        const val = document.getElementById("fromAmount").value;
-        const toInput = document.getElementById("toAmount");
-        if (!val || val <= 0) { toInput.value = ""; return; }
+        const amountIn = document.getElementById("fromAmount").value;
+        if (!amountIn || amountIn <= 0 || !provider) return;
         try {
-            const router = new ethers.Contract(ROUTER_ADDRESS, [
-                "function getAmountsOut(uint amountIn, address[] memory path) public view returns (uint[] memory amounts)"
-            ], provider);
-            const amounts = await router.getAmountsOut(ethers.parseEther(val), [WBONE, RIC]);
-            toInput.value = Number(ethers.formatEther(amounts[1])).toFixed(6);
-        } catch (e) { toInput.value = "No Liquidity"; }
+            const router = new ethers.Contract(ROUTER_ADDRESS, ROUTER_ABI, provider);
+            const amtInWei = ethers.parseEther(amountIn);
+            const amounts = await router.getAmountsOut(amtInWei, [WBONE, RIC]);
+            document.getElementById("toAmount").value = Number(ethers.formatEther(amounts[1])).toFixed(6);
+        } catch (e) { 
+            document.getElementById("toAmount").value = "No Liquidity"; 
+        }
     }
 
     async function executeSwap() {
         if (!signer) return connectWallet();
         const status = document.getElementById("status");
-        const btn = document.getElementById("swapBtn");
-        const val = document.getElementById("fromAmount").value;
-        
+        const amountIn = document.getElementById("fromAmount").value;
+        if (!amountIn || amountIn <= 0) return alert("Enter amount");
+
         try {
-            btn.disabled = true;
             status.style.color = "orange";
-            status.textContent = "Estimating Quote...";
+            status.textContent = "Confirming Price...";
+            const router = new ethers.Contract(ROUTER_ADDRESS, ROUTER_ABI, signer);
+            const amtInWei = ethers.parseEther(amountIn);
             
-            const router = new ethers.Contract(ROUTER_ADDRESS, [
-                "function getAmountsOut(uint amountIn, address[] memory path) public view returns (uint[] memory amounts)",
-                "function swapExactBONEForTokens(uint amountOutMin, address[] calldata path, address to, uint deadline) external payable returns (uint[] memory amounts)",
-                "function swapExactETHForTokens(uint amountOutMin, address[] calldata path, address to, uint deadline) external payable returns (uint[] memory amounts)"
-            ], signer);
-
-            const amtIn = ethers.parseEther(val);
-            const path = [WBONE, RIC];
-            const deadline = Math.floor(Date.now()/1000) + 1200;
-            
-            const amounts = await router.getAmountsOut(amtIn, path);
+            const amounts = await router.getAmountsOut(amtInWei, [WBONE, RIC]);
             const minOut = (amounts[1] * 995n) / 1000n; // 0.5% slippage
-
-            status.textContent = "Confirm in Wallet...";
             
-            // EXPERT FIX: Hardcoded gas limit to prevent 'Check Balance' estimation failure
-            const overrides = { value: amtIn, gasLimit: 300000 };
-
-            let tx;
-            try {
-                tx = await router.swapExactBONEForTokens(minOut, path, userAddress, deadline, overrides);
-            } catch (err) {
-                console.log("Retrying with standard ETH method...");
-                tx = await router.swapExactETHForTokens(minOut, path, userAddress, deadline, overrides);
-            }
-
+            status.textContent = "Confirm in Wallet...";
+            const tx = await router.swapExactBONEForTokens(
+                minOut, 
+                [WBONE, RIC], 
+                userAddress, 
+                Math.floor(Date.now()/1000) + 1200, 
+                { value: amtInWei, gasLimit: 500000 }
+            );
+            
             status.textContent = "Processing Swap...";
             await tx.wait();
             status.style.color = "#0f0";
-            status.innerHTML = `✅ Swap Success! 🔥<br><a href="https://shibariumscan.io{tx.hash}" target="_blank" class="tx-link">View Receipt</a>`;
-            loadBalances();
+            status.innerHTML = `✅ Swap Successful! 🔥<br><a href="https://shibariumscan.io{tx.hash}" target="_blank" class="tx-link">View Receipt</a>`;
         } catch (e) {
-            console.error(e);
             status.style.color = "red";
-            status.textContent = e.reason || "Swap Failed: Not enough BONE for Gas";
-        } finally { btn.disabled = false; }
+            status.textContent = "Swap Failed: " + (e.reason || "Check Balance/Gas");
+        }
     }
 
-    document.getElementById("fromAmount").oninput = () => {
-        clearTimeout(quoteTimeout);
-        quoteTimeout = setTimeout(updateQuote, 500);
+    // This initialization logic is what fixed the liquidity page
+    window.onload = () => {
+        document.getElementById("connectBtn").onclick = connectWallet;
+        document.getElementById("swapBtn").onclick = executeSwap;
+        document.getElementById("fromAmount").oninput = () => {
+            clearTimeout(quoteTimeout);
+            quoteTimeout = setTimeout(updateQuote, 500);
+        };
+        
+        if (window.ethereum && window.ethereum.selectedAddress) {
+            connectWallet();
+        }
     };
-
-    document.getElementById("connectBtn").onclick = connectWallet;
-    document.getElementById("swapBtn").onclick = executeSwap;
-    window.onload = () => { if(window.ethereum?.selectedAddress) connectWallet(); }
 </script>
 </body>
 </html>
