@@ -15,34 +15,36 @@
         body { background: var(--obsidian); color: white; font-family: system-ui, sans-serif; margin: 0; padding: 0; }
         
         .nav { 
-            padding: 20px 40px; 
+            padding: 15px 40px; /* Reduced vertical padding */
             display: flex; 
             align-items: center; 
             border-bottom: 1px solid rgba(255,215,0,0.1); 
         }
-        .logo { font-size: 28px; font-weight: bold; color: var(--gold); }
-        .nav-links { display: flex; gap: 30px; margin-left: 40px; }
-        .nav-links a { color: white; text-decoration: none; font-weight: 500; }
+        .logo { font-size: 24px; font-weight: bold; color: var(--gold); }
+        .nav-links { display: flex; gap: 25px; margin-left: 40px; }
+        .nav-links a { color: white; text-decoration: none; font-weight: 500; font-size: 14px; }
         .nav-links a:hover, .nav-links a.active { color: var(--gold); }
         
-        /* CONNECT WALLET BUTTON - Narrow & Matching Screenshot Style */
+        /* SMALL CONNECT BUTTON - Corrected for Small Size */
         .connect-btn { 
             background: #1a1a1a;
             color: var(--gold);
-            border: 2px solid var(--gold);
-            padding: 9px 22px;     /* Narrower */
-            border-radius: 8px;
-            font-size: 14px;
+            border: 1.5px solid var(--gold); /* Slimmer border */
+            padding: 6px 16px; /* SMALLER PADDING */
+            border-radius: 6px; /* Sharper modern corners */
+            font-size: 12px;    /* SMALLER FONT */
             font-weight: 700;
             cursor: pointer;
             white-space: nowrap;
             margin-left: auto;
-            letter-spacing: 1px;
+            letter-spacing: 0.5px; /* Tighter letters */
             transition: all 0.2s;
+            text-transform: uppercase;
         }
         .connect-btn:hover { 
-            background: #222;
-            box-shadow: 0 0 12px rgba(255, 215, 0, 0.5);
+            background: var(--gold);
+            color: black;
+            box-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
         }
 
         .card { max-width: 420px; margin: 40px auto; background: var(--card-bg); border-radius: 24px; padding: 32px; box-shadow: 0 20px 40px rgba(0,0,0,0.8); border: 1px solid #222; }
@@ -50,7 +52,7 @@
         .input-group:focus-within { border-color: var(--gold); }
         label { display: block; color: #888; font-size: 12px; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 1px; }
         input { background: transparent; border: none; color: white; font-size: 28px; width: 100%; outline: none; }
-        button { background: var(--magma); color: white; border: none; padding: 18px; border-radius: 16px; font-weight: bold; width: 100%; font-size: 18px; cursor: pointer; margin-top: 20px; }
+        .main-btn { background: var(--magma); color: white; border: none; padding: 18px; border-radius: 16px; font-weight: bold; width: 100%; font-size: 18px; cursor: pointer; margin-top: 20px; }
         .status { margin-top: 15px; text-align: center; font-size: 13px; min-height: 24px; }
         .tx-link { color: var(--gold); text-decoration: underline; font-size: 13px; }
     </style>
@@ -64,7 +66,7 @@
             <a href="pools.html">Pools</a>
             <a href="liquidity.html">Add Liquidity</a>
         </div>
-        <button id="connectBtn" class="connect-btn">CONNECT WALLET</button>
+        <button id="connectBtn" class="connect-btn">Connect Wallet</button>
     </div>
 
     <div class="card">
@@ -93,7 +95,7 @@
             <div style="margin-top:8px; font-size:14px; font-weight:600;">RIC</div>
         </div>
 
-        <button id="swapBtn">Swap Now</button>
+        <button id="swapBtn" class="main-btn">Swap Now</button>
         <div class="status" id="status"></div>
     </div>
 
@@ -116,7 +118,8 @@
                 await provider.send("eth_requestAccounts", []);
                 signer = await provider.getSigner();
                 userAddress = await signer.getAddress();
-                document.getElementById("connectBtn").textContent = userAddress.slice(0,6) + "..." + userAddress.slice(-4);
+                // Shortened address for small button
+                document.getElementById("connectBtn").textContent = userAddress.slice(0,4) + "..." + userAddress.slice(-4);
                 updateQuote();
             } catch (e) { console.error(e); }
         }
@@ -138,14 +141,12 @@
 
         async function executeSwap() {
             if (!signer) return connectWallet();
-
             const status = document.getElementById("status");
             const amountIn = document.getElementById("fromAmount").value;
 
             try {
                 status.style.color = "#ff0";
                 status.textContent = "Confirming...";
-
                 const router = new ethers.Contract(ROUTER_ADDRESS, ROUTER_ABI, signer);
                 const amountInWei = ethers.parseEther(amountIn);
                 const path = [WBONE, RIC];
@@ -159,18 +160,12 @@
                     Math.floor(Date.now() / 1000) + 1200,
                     { value: amountInWei }
                 );
-
                 await tx.wait();
-
                 status.style.color = "#0f0";
-                status.innerHTML = `✅ Swap Successful!<br><a href="https://shibariumscan.io/tx/${tx.hash}" target="_blank" class="tx-link">View Transaction</a>`;
-                
-                document.getElementById("fromAmount").value = "";
-                document.getElementById("toAmount").value = "";
+                status.innerHTML = `✅ Successful! <a href="https://shibariumscan.io/tx/${tx.hash}" target="_blank" class="tx-link">View</a>`;
             } catch (e) {
-                console.error(e);
                 status.style.color = "#f00";
-                status.textContent = "Error: " + (e.reason || e.message || "Check pool liquidity");
+                status.textContent = "Error: " + (e.reason || "Check liquidity");
             }
         }
 
