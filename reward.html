@@ -14,18 +14,7 @@
         .nav-links { display: flex; gap: 30px; margin-left: 40px; }
         .nav-links a { color: white; text-decoration: none; font-weight: 500; }
         .nav-links a:hover, .nav-links a.active { color: var(--gold); }
-        .connect-btn { 
-            background: #222; 
-            color: white; 
-            border: 1.5px solid #444; 
-            padding: 8px 20px; 
-            border-radius: 9999px; 
-            font-size: 14px; 
-            font-weight: 600; 
-            cursor: pointer; 
-            margin-left: auto; 
-        }
-        .connect-btn:hover { border-color: var(--gold); }
+        .connect-btn, .admin-btn { background: #222; color: white; border: 1px solid #444; padding: 8px 18px; border-radius: 9999px; margin-left: auto; cursor: pointer; }
         
         .rewards-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 30px; padding: 40px; max-width: 1400px; margin: 0 auto; }
         .reward-card { background: var(--card-bg); border-radius: 20px; overflow: hidden; border: 1px solid #333; }
@@ -86,40 +75,19 @@
 
         emailjs.init("Y5GsSScYku74Bt0LH");
 
-        // === IMPROVED CONNECT WALLET (Rabby + MetaMask) ===
         async function connectWallet() {
-            const btn = document.getElementById("connectBtn");
-            btn.textContent = "Connecting...";
-
+            if (!window.ethereum) return alert("Please install MetaMask or Rabby Wallet");
             try {
-                let provider;
-
-                // Priority: Rabby first, then MetaMask / others
-                if (window.rabby) {
-                    console.log("Rabby Wallet detected");
-                    await window.rabby.request({ method: 'eth_requestAccounts' });
-                    provider = new ethers.BrowserProvider(window.rabby);
-                } else if (window.ethereum) {
-                    console.log("Ethereum provider detected");
-                    await window.ethereum.request({ method: 'eth_requestAccounts' });
-                    provider = new ethers.BrowserProvider(window.ethereum);
-                } else {
-                    return alert("Please install MetaMask or Rabby Wallet");
-                }
-
+                const provider = new ethers.BrowserProvider(window.ethereum);
+                await provider.send("eth_requestAccounts", []);
                 const signer = await provider.getSigner();
                 userAddress = await signer.getAddress();
-
-                btn.textContent = userAddress.slice(0,6) + "..." + userAddress.slice(-4);
-                btn.style.borderColor = "#ffd700";
-                console.log("✅ Wallet Connected:", userAddress);
-
-            } catch (e) {
-                console.error(e);
-                btn.textContent = "Connect Wallet";
-                alert("Connection failed. Please try again or check wallet.");
-            }
+                document.getElementById("connectBtn").textContent = userAddress.slice(0,6) + "..." + userAddress.slice(-4);
+            } catch (e) { console.error(e); alert("Connection failed"); }
         }
+
+        function isMaster() { return userAddress && userAddress.toLowerCase() === MASTER_OWNER.toLowerCase(); }
+        function isStaff() { return userAddress && staffWallets.some(a => a.toLowerCase() === userAddress.toLowerCase()); }
 
         function renderProducts() {
             const grid = document.getElementById('rewardsGrid');
@@ -137,7 +105,6 @@
 
         function openRedeemModal(id) {
             window.currentProduct = products.find(p => p.id === id);
-            if (!window.currentProduct) return;
             document.getElementById('modalTitle').textContent = window.currentProduct.name;
             document.getElementById('modalPrice').textContent = `${window.currentProduct.price} RIC`;
             document.getElementById('redeemModal').style.display = 'flex';
@@ -149,14 +116,111 @@
 
         async function confirmRedemption() {
             if (!userAddress) return alert("Please connect wallet first");
-            // ... your redemption logic here
-            alert("Redemption logic (connect wallet is now fixed)");
-            closeModal();
+            const email = document.getElementById('customerEmail').value.trim();
+            const shipping = document.getElementById('shippingAddress').value.trim();
+            if (!email || !shipping) return alert("Please fill email and shipping");
+
+            try {
+                const provider = new ethers.BrowserProvider(window.ethereum);
+                const signer = await provider.getSigner();
+                const ric = new ethers.Contract(RIC_ADDRESS, ["function transfer(address,uint256) returns (bool)"], signer);
+
+                const tx = await ric.transfer(MASTER_OWNER, ethers.parseEther(window.currentProduct.price.toString()));
+                await tx.wait();
+
+                await emailjs.send("service_577894p", "template_zga1woa", {
+                    to_email: email,
+                    product_name: window.currentProduct.name,
+                    amount_ric: window.currentProduct.price,
+                    shipping_address: shipping,
+                    tx_hash: tx.hash
+                });
+
+                alert(`✅ Success! Receipt sent to ${email}`);
+                closeModal();
+            } catch (e) {
+                console.error(e);
+                alert("Error: " + (e.reason || e.message));
+            }
         }
 
-        // Staff Admin (kept simple for now)
+        // ==================== STAFF ADMIN ====================
         function openAdminPanel() {
-            alert("Staff Admin Panel - Connect wallet first");
+            if (!userAddress) return alert("Please connect wallet first");
+            if (!isMaster() && !isStaff()) return alert("You are not authorized as staff.");
+
+            let html = `<h2>Staff Admin Panel</h2><p>Connected: ${userAddress.slice(0,6)}...${userAddress.slice(-4)}</p>`;
+
+            if (isMaster()) {
+                html += `<h3>Appoint New Staff</h3><input type="text" id="newStaff" placeholder="0xStaffWallet"><button onclick="addStaff()">Add Staff</button><br><br>`;
+            }
+
+            html += `<h3>Current Staff</h3><div id="staffList"></div>`;
+            html += `<h3>Add New Product</h3>`;
+            html += `<input type="text" id="newName" placeholder="Product Name"><br>`;
+            html += `<input type="number" id="newPrice" placeholder="Price in RIC"><br>`;
+            html += `<input type="text" id="newImage" placeholder="Image URL"><br>`;
+            html += `<textarea id="newDesc" placeholder="Description"></textarea><br>`;
+            html += `<button onclick="addProduct()">Add Product</button><br><br>`;
+            html += `<h3>Current Products</h3><div id="productList"></div>`;
+
+            document.body.innerHTML = html;
+            renderStaffList();
+            renderProductList();
+        }
+
+        function addStaff() {
+            const addr = document.getElementById('newStaff').value.trim();
+            if (addr && addr.length === 42) {
+                if (!staffWallets.includes(addr)) {
+                    staffWallets.push(addr);
+                    localStorage.setItem('ricStaffWallets', JSON.stringify(staffWallets));
+                    renderStaffList();
+                }
+            }
+        }
+
+        function renderStaffList() {
+            const div = document.getElementById('staffList');
+            div.innerHTML = staffWallets.map((addr, i) => `
+                <div>${addr} <button onclick="removeStaff(${i})" style="color:red;">Remove</button></div>
+            `).join('');
+        }
+
+        function removeStaff(i) {
+            staffWallets.splice(i, 1);
+            localStorage.setItem('ricStaffWallets', JSON.stringify(staffWallets));
+            renderStaffList();
+        }
+
+        function addProduct() {
+            const name = document.getElementById('newName').value;
+            const price = parseFloat(document.getElementById('newPrice').value);
+            const image = document.getElementById('newImage').value;
+            const desc = document.getElementById('newDesc').value;
+
+            if (!name || !price) return alert("Name and price required");
+
+            products.push({ id: Date.now(), name, price, image, desc });
+            localStorage.setItem('ricProducts', JSON.stringify(products));
+            renderProductList();
+        }
+
+        function renderProductList() {
+            const div = document.getElementById('productList');
+            div.innerHTML = products.map((p, i) => `
+                <div>${p.name} - ${p.price} RIC 
+                    <button onclick="deleteProduct(${i})" style="color:red;">Delete</button>
+                </div>
+            `).join('');
+        }
+
+        function deleteProduct(i) {
+            if (confirm("Delete this product?")) {
+                products.splice(i, 1);
+                localStorage.setItem('ricProducts', JSON.stringify(products));
+                renderProductList();
+            }
         }
 
         // Initialize
