@@ -28,6 +28,14 @@
         .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 2000; align-items: center; justify-content: center; }
         .modal-content { background: #1a1a1a; padding: 30px; border-radius: 24px; max-width: 500px; width: 90%; }
         .modal-content input, .modal-content textarea { width: 100%; padding: 14px; margin: 10px 0; background: #222; color: white; border: 1px solid #444; border-radius: 12px; }
+        
+        /* IMPROVED ADMIN PANEL */
+        .admin-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 3000; align-items: center; justify-content: center; }
+        .admin-panel { background: var(--card-bg); padding: 40px; border-radius: 24px; max-width: 1100px; width: 90%; max-height: 92vh; overflow-y: auto; border: 1px solid var(--gold); }
+        .admin-section { background: #1a1a1a; padding: 25px; border-radius: 16px; margin-bottom: 25px; }
+        .list-item { padding: 14px; background: #222; margin: 8px 0; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; }
+        input, textarea { width: 100%; padding: 14px; margin: 8px 0; background: #0f0f0f; color: white; border: 1px solid #444; border-radius: 12px; }
+        button { padding: 12px 20px; border-radius: 12px; cursor: pointer; font-weight: bold; }
     </style>
 </head>
 <body>
@@ -64,8 +72,53 @@
             <label>Shipping Address</label>
             <textarea id="shippingAddress" rows="5" placeholder="Full name, street, city, country, phone..."></textarea>
             
-            <button onclick="confirmRedemption()" id="payBtn" style="background:var(--magma); color:white; padding:16px; width:100%; border:none; border-radius:12px; margin-top:15px;">Pay with $RIC</button>
+            <button onclick="confirmRedemption()" style="background:var(--magma); color:white; padding:16px; width:100%; border:none; border-radius:12px; margin-top:15px;">Pay with $RIC</button>
             <button onclick="closeModal()" style="background:#333; color:white; padding:14px; width:100%; border:none; margin-top:10px;">Cancel</button>
+        </div>
+    </div>
+
+    <!-- STAFF ADMIN OVERLAY -->
+    <div id="adminOverlay" class="admin-overlay">
+        <div class="admin-panel">
+            <button onclick="closeAdminPanel()" style="float:right; background:#333; padding:10px 20px; border:none; border-radius:12px;">✕ Close</button>
+            <h2 style="color:var(--gold); margin-top:0;">Staff Admin Panel</h2>
+            <p id="adminConnected" style="margin-bottom:25px; opacity:0.8;"></p>
+
+            <!-- Appoint Staff -->
+            <div class="admin-section" id="appointSection">
+                <h3>Appoint New Staff (Master Only)</h3>
+                <input type="text" id="newStaff" placeholder="0xStaffWalletAddress">
+                <button onclick="addStaff()" style="width:100%; margin-top:10px;">Add Staff Wallet</button>
+            </div>
+
+            <!-- Current Staff -->
+            <div class="admin-section">
+                <h3>Current Staff Wallets</h3>
+                <div id="staffList"></div>
+            </div>
+
+            <!-- Add Product -->
+            <div class="admin-section">
+                <h3>Add New Product</h3>
+                <input type="text" id="newName" placeholder="Product Name"><br>
+                <input type="number" id="newPrice" placeholder="Price in RIC"><br>
+                <input type="number" id="newStock" placeholder="Initial Stock" value="10"><br>
+                <input type="text" id="newImage" placeholder="Image URL"><br>
+                <textarea id="newDesc" placeholder="Description"></textarea><br>
+                <button onclick="addProduct()" style="width:100%; margin-top:10px;">Add Product</button>
+            </div>
+
+            <!-- Current Products -->
+            <div class="admin-section">
+                <h3>Current Products</h3>
+                <div id="productList"></div>
+            </div>
+
+            <!-- Order History -->
+            <div class="admin-section">
+                <h3>Recent Order History</h3>
+                <div id="historyList"></div>
+            </div>
         </div>
     </div>
 
@@ -92,10 +145,7 @@
                 const signer = await provider.getSigner();
                 userAddress = await signer.getAddress();
                 document.getElementById("connectBtn").textContent = userAddress.slice(0,6) + "..." + userAddress.slice(-4);
-            } catch (e) { 
-                console.error(e);
-                alert("Connection failed. Please try again.");
-            }
+            } catch (e) { console.error(e); }
         }
 
         function isMaster() { return userAddress && userAddress.toLowerCase() === MASTER_OWNER.toLowerCase(); }
@@ -120,10 +170,9 @@
         function openRedeemModal(id) {
             window.currentProduct = products.find(p => p.id === id);
             if (window.currentProduct.stock <= 0) return alert("This product is out of stock!");
-            
             document.getElementById('modalTitle').textContent = window.currentProduct.name;
             document.getElementById('modalPrice').textContent = `${window.currentProduct.price} RIC`;
-            document.getElementById('modalStock').textContent = `Stock left: ${window.currentProduct.stock}`;
+            document.getElementById('modalStock').textContent = `Stock Left: ${window.currentProduct.stock}`;
             document.getElementById('redeemModal').style.display = 'flex';
         }
 
@@ -132,12 +181,7 @@
         }
 
         async function confirmRedemption() {
-            if (!userAddress) {
-                alert("Please connect wallet first");
-                await connectWallet();
-                if (!userAddress) return;
-            }
-
+            if (!userAddress) return alert("Please connect wallet first");
             const email = document.getElementById('customerEmail').value.trim();
             const shipping = document.getElementById('shippingAddress').value.trim();
             if (!email || !shipping) return alert("Please fill email and shipping address");
@@ -150,11 +194,9 @@
                 const tx = await ric.transfer(MASTER_OWNER, ethers.parseEther(window.currentProduct.price.toString()));
                 await tx.wait();
 
-                // Decrease stock
                 window.currentProduct.stock = (window.currentProduct.stock || 10) - 1;
                 localStorage.setItem('ricProducts', JSON.stringify(products));
 
-                // Save to history
                 orderHistory.unshift({
                     time: new Date().toLocaleString(),
                     customer: email,
@@ -173,58 +215,28 @@
                     tx_hash: tx.hash
                 });
 
-                alert(`✅ Payment Successful!\nReceipt sent to ${email}`);
+                alert(`✅ Success! Receipt sent to ${email}`);
                 closeModal();
-                renderProducts(); // Refresh stock display
+                renderProducts();
             } catch (e) {
                 console.error(e);
-                alert("Payment failed: " + (e.reason || e.message || "Unknown error"));
+                alert("Error: " + (e.reason || e.message));
             }
         }
 
-        // ==================== STAFF ADMIN ====================
         function openAdminPanel() {
             if (!userAddress) return alert("Please connect wallet first");
             if (!isMaster() && !isStaff()) return alert("You are not authorized as staff.");
 
-            let html = `<div style="padding:40px; max-width:1100px; margin:0 auto;">`;
-            html += `<h2 style="color:var(--gold);">Staff Admin Panel</h2>`;
-            html += `<p>Connected: ${userAddress.slice(0,6)}...${userAddress.slice(-4)}</p>`;
-
-            if (isMaster()) {
-                html += `<div style="background:#1a1a1a;padding:20px;border-radius:16px;margin:20px 0;">
-                    <h3>Appoint New Staff</h3>
-                    <input type="text" id="newStaff" placeholder="0xStaffWalletAddress" style="width:70%;">
-                    <button onclick="addStaff()" style="width:28%;">Add Staff</button>
-                </div>`;
-            }
-
-            html += `<div style="background:#1a1a1a;padding:20px;border-radius:16px;margin:20px 0;">
-                <h3>Current Staff</h3><div id="staffList"></div>
-            </div>`;
-
-            html += `<div style="background:#1a1a1a;padding:20px;border-radius:16px;margin:20px 0;">
-                <h3>Add New Product</h3>
-                <input type="text" id="newName" placeholder="Product Name"><br>
-                <input type="number" id="newPrice" placeholder="Price in RIC"><br>
-                <input type="number" id="newStock" placeholder="Initial Stock" value="10"><br>
-                <input type="text" id="newImage" placeholder="Image URL"><br>
-                <textarea id="newDesc" placeholder="Description"></textarea><br>
-                <button onclick="addProduct()">Add Product</button>
-            </div>`;
-
-            html += `<div style="background:#1a1a1a;padding:20px;border-radius:16px;margin:20px 0;">
-                <h3>Current Products</h3><div id="productList"></div>
-            </div>`;
-
-            html += `<div style="background:#1a1a1a;padding:20px;border-radius:16px;margin:20px 0;">
-                <h3>Order History (Latest 10)</h3><div id="historyList"></div>
-            </div>`;
-
-            document.body.innerHTML = html;
+            document.getElementById('adminOverlay').style.display = 'flex';
+            document.getElementById('adminConnected').innerHTML = `Connected: <strong>${userAddress}</strong>`;
             renderStaffList();
             renderProductList();
             renderHistoryList();
+        }
+
+        function closeAdminPanel() {
+            document.getElementById('adminOverlay').style.display = 'none';
         }
 
         function addStaff() {
@@ -241,8 +253,9 @@
         function renderStaffList() {
             const div = document.getElementById('staffList');
             div.innerHTML = staffWallets.map((addr, i) => `
-                <div style="padding:12px; background:#222; margin:8px 0; border-radius:12px;">
-                    ${addr} <button onclick="removeStaff(${i})" style="color:red;float:right;">Remove</button>
+                <div class="list-item">
+                    <span>${addr}</span>
+                    <button onclick="removeStaff(${i})" style="color:red;">Remove</button>
                 </div>
             `).join('');
         }
@@ -272,7 +285,7 @@
         function renderProductList() {
             const div = document.getElementById('productList');
             div.innerHTML = products.map((p, i) => `
-                <div style="padding:12px; background:#222; margin:8px 0; border-radius:12px; display:flex; justify-content:space-between;">
+                <div class="list-item">
                     <span><strong>${p.name}</strong> — ${p.price} RIC (Stock: ${p.stock})</span>
                     <button onclick="deleteProduct(${i})" style="color:red;">Delete</button>
                 </div>
@@ -290,8 +303,9 @@
         function renderHistoryList() {
             const div = document.getElementById('historyList');
             div.innerHTML = orderHistory.map(o => `
-                <div style="padding:12px; background:#222; margin:8px 0; border-radius:12px;">
-                    ${o.time} - ${o.customer} bought ${o.product} (${o.amount} RIC)
+                <div class="list-item">
+                    <span>${o.time} — ${o.customer}<br>${o.product} (${o.amount} RIC)</span>
+                    <span style="color:#0f0; font-size:0.9em;">${o.tx.slice(0,12)}...</span>
                 </div>
             `).join('');
         }
