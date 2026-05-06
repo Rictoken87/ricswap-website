@@ -81,34 +81,17 @@
 
         emailjs.init("Y5GsSScYku74Bt0LH");
 
-        // === STRONG CONNECT WALLET (Rabby First) ===
         async function connectWallet() {
-            const btn = document.getElementById("connectBtn");
-            btn.textContent = "Connecting...";
-
+            if (!window.ethereum) return alert("Please install MetaMask or Rabby Wallet");
             try {
-                let accounts;
-
-                // 1. Rabby Wallet (User's preferred)
-                if (window.rabby) {
-                    accounts = await window.rabby.request({ method: 'eth_requestAccounts' });
-                } 
-                // 2. Standard Ethereum provider (MetaMask, Rabby injected, etc.)
-                else if (window.ethereum) {
-                    accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
-                } 
-                else {
-                    return alert("Please install MetaMask or Rabby Wallet");
-                }
-
-                userAddress = accounts[0];
+                const provider = new ethers.BrowserProvider(window.ethereum);
+                await provider.send("eth_requestAccounts", []);
+                const signer = await provider.getSigner();
+                userAddress = await signer.getAddress();
                 document.getElementById("connectBtn").textContent = userAddress.slice(0,6) + "..." + userAddress.slice(-4);
-                console.log("✅ Wallet Connected:", userAddress);
-
-            } catch (e) {
-                console.error("Connect failed:", e);
-                btn.textContent = "Connect Wallet";
-                alert("Connection failed. Please open your wallet and try again.");
+            } catch (e) { 
+                console.error(e);
+                alert("Connection failed. Please try again.");
             }
         }
 
@@ -170,7 +153,7 @@
             }
         }
 
-        // ==================== STAFF ADMIN ====================
+        // ==================== STAFF ADMIN PANEL ====================
         function openAdminPanel() {
             if (!userAddress) return alert("Please connect wallet first");
             if (!isMaster() && !isStaff()) return alert("You are not authorized as staff.");
