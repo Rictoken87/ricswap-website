@@ -9,7 +9,7 @@
     <style>
         :root { --obsidian: #080808; --card-bg: #121212; --magma: linear-gradient(135deg, #ff4d00 0%, #ff8c00 100%); --gold: #ffd700; }
         body { background: var(--obsidian); color: white; font-family: system-ui, sans-serif; margin: 0; padding: 0; }
-        .nav { padding: 20px 40px; display: flex; align-items: center; border-bottom: 1px solid rgba(255,215,0,0.1); }
+        .nav { padding: 20px 40px; display: flex; align-items: center; border-bottom: 1px solid rgba(255,215,0,0.1); position: sticky; top: 0; background: var(--obsidian); z-index: 100; }
         .logo { font-size: 28px; font-weight: bold; color: var(--gold); }
         .nav-links { display: flex; gap: 30px; margin-left: 40px; }
         .nav-links a { color: white; text-decoration: none; font-weight: 500; }
@@ -27,6 +27,11 @@
         .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 2000; align-items: center; justify-content: center; }
         .modal-content { background: #1a1a1a; padding: 30px; border-radius: 24px; max-width: 500px; width: 90%; }
         .modal-content input, .modal-content textarea { width: 100%; padding: 14px; margin: 10px 0; background: #222; color: white; border: 1px solid #444; border-radius: 12px; }
+        
+        /* ADMIN PANEL */
+        .admin-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 3000; align-items: center; justify-content: center; }
+        .admin-panel { background: var(--card-bg); padding: 40px; border-radius: 24px; max-width: 1000px; width: 90%; max-height: 90vh; overflow-y: auto; border: 1px solid var(--gold); }
+        .list-item { padding: 14px; background: #1a1a1a; margin: 10px 0; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; }
     </style>
 </head>
 <body>
@@ -67,6 +72,40 @@
         </div>
     </div>
 
+    <!-- STAFF ADMIN OVERLAY -->
+    <div id="adminOverlay" class="admin-overlay">
+        <div class="admin-panel">
+            <button onclick="closeAdminPanel()" style="float:right; background:#333; padding:8px 16px;">Close</button>
+            <h2 style="color:var(--gold);">Staff Admin Panel</h2>
+            <p id="adminConnected"></p>
+
+            <div class="admin-section">
+                <h3>Appoint New Staff (Master Only)</h3>
+                <input type="text" id="newStaff" placeholder="0xStaffWalletAddress">
+                <button onclick="addStaff()">Add Staff</button>
+            </div>
+
+            <div class="admin-section">
+                <h3>Current Staff</h3>
+                <div id="staffList"></div>
+            </div>
+
+            <div class="admin-section">
+                <h3>Add New Product</h3>
+                <input type="text" id="newName" placeholder="Product Name"><br>
+                <input type="number" id="newPrice" placeholder="Price in RIC"><br>
+                <input type="text" id="newImage" placeholder="Image URL"><br>
+                <textarea id="newDesc" placeholder="Description"></textarea><br>
+                <button onclick="addProduct()">Add Product</button>
+            </div>
+
+            <div class="admin-section">
+                <h3>Current Products</h3>
+                <div id="productList"></div>
+            </div>
+        </div>
+    </div>
+
     <script>
         let products = JSON.parse(localStorage.getItem('ricProducts')) || [
             { id: 1, name: "Cup Coffee", price: 500, image: "https://picsum.photos/id/201/600/400", desc: "Premium ceramic coffee cup" },
@@ -81,40 +120,17 @@
 
         emailjs.init("Y5GsSScYku74Bt0LH");
 
-        // === STRONG CONNECT WALLET (Rabby Priority) ===
         async function connectWallet() {
-            const btn = document.getElementById("connectBtn");
-            btn.textContent = "Connecting...";
-
+            if (!window.ethereum) return alert("Please install MetaMask or Rabby Wallet");
             try {
-                // Rabby Wallet First
-                if (window.rabby) {
-                    console.log("Rabby detected");
-                    await window.rabby.request({ method: 'eth_requestAccounts' });
-                    const provider = new ethers.BrowserProvider(window.rabby);
-                    const signer = await provider.getSigner();
-                    userAddress = await signer.getAddress();
-                } 
-                // Standard Provider (MetaMask, Rabby injected, etc.)
-                else if (window.ethereum) {
-                    console.log("Ethereum provider detected");
-                    await window.ethereum.request({ method: 'eth_requestAccounts' });
-                    const provider = new ethers.BrowserProvider(window.ethereum);
-                    const signer = await provider.getSigner();
-                    userAddress = await signer.getAddress();
-                } 
-                else {
-                    return alert("Please install MetaMask or Rabby Wallet");
-                }
-
-                btn.textContent = userAddress.slice(0,6) + "..." + userAddress.slice(-4);
-                btn.style.borderColor = "#ffd700";
-                console.log("✅ Wallet Connected:", userAddress);
-
-            } catch (e) {
-                console.error("Connect failed:", e);
-                btn.textContent = "Connect Wallet";
-                alert("Connection failed. Please open your wallet and try again.");
+                const provider = new ethers.BrowserProvider(window.ethereum);
+                await provider.send("eth_requestAccounts", []);
+                const signer = await provider.getSigner();
+                userAddress = await signer.getAddress();
+                document.getElementById("connectBtn").textContent = userAddress.slice(0,6) + "..." + userAddress.slice(-4);
+            } catch (e) { 
+                console.error(e);
+                alert("Connection failed. Please try again.");
             }
         }
 
@@ -181,40 +197,13 @@
             if (!userAddress) return alert("Please connect wallet first");
             if (!isMaster() && !isStaff()) return alert("You are not authorized as staff.");
 
-            let html = `<div class="admin-panel" style="padding:40px; max-width:1100px; margin:0 auto;">`;
-            html += `<h2 style="color:var(--gold);">Staff Admin Panel</h2>`;
-            html += `<p>Connected: ${userAddress.slice(0,6)}...${userAddress.slice(-4)}</p>`;
-
-            if (isMaster()) {
-                html += `<div class="admin-section">
-                    <h3>Appoint New Staff</h3>
-                    <input type="text" id="newStaff" placeholder="0xStaffWalletAddress">
-                    <button onclick="addStaff()" style="width:100%; margin-top:10px;">Add Staff</button>
-                </div>`;
-            }
-
-            html += `<div class="admin-section">
-                <h3>Current Staff</h3>
-                <div id="staffList"></div>
-            </div>`;
-
-            html += `<div class="admin-section">
-                <h3>Add New Product</h3>
-                <input type="text" id="newName" placeholder="Product Name"><br>
-                <input type="number" id="newPrice" placeholder="Price in RIC"><br>
-                <input type="text" id="newImage" placeholder="Image URL"><br>
-                <textarea id="newDesc" placeholder="Description"></textarea><br>
-                <button onclick="addProduct()" style="width:100%; margin-top:10px;">Add Product</button>
-            </div>`;
-
-            html += `<div class="admin-section">
-                <h3>Current Products</h3>
-                <div id="productList"></div>
-            </div>`;
-
-            document.body.innerHTML = html;
+            document.getElementById('adminOverlay').style.display = 'flex';
             renderStaffList();
             renderProductList();
+        }
+
+        function closeAdminPanel() {
+            document.getElementById('adminOverlay').style.display = 'none';
         }
 
         function addStaff() {
