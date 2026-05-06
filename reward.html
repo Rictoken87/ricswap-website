@@ -68,7 +68,7 @@
             <input type="email" id="customerEmail" placeholder="your@email.com">
 
             <h3>Shipping Address</h3>
-            <textarea id="shippingAddress" rows="5" placeholder="Full name, street, city, postal code, country, phone..."></textarea>
+            <textarea id="shippingAddress" rows="5" placeholder="Full name, street address, city, postal code, country, phone..."></textarea>
             
             <button onclick="confirmRedemption()" style="background:var(--magma); color:white; padding:14px; width:100%; border:none; border-radius:8px; margin-top:15px;">Confirm & Send $RIC</button>
             <button onclick="closeModal()" style="background:#333; color:white; padding:14px; width:100%; border:none; border-radius:8px; margin-top:8px;">Cancel</button>
@@ -122,26 +122,72 @@
         }
 
         function sendTestEmail() {
-            const testEmail = prompt("Enter your test email:");
+            const testEmail = prompt("Enter your test email address:");
             if (!testEmail) return;
 
-            console.log("🚀 Sending test email to:", testEmail);
+            console.log("🚀 Starting EmailJS Test...");
 
             emailjs.send("service_577894p", "template_zga1woa", {
                 to_email: testEmail,
-                product_name: "Test Hoodie",
+                product_name: "Test Product - Hoodie",
                 amount_ric: "2500",
-                shipping_address: "Test Address",
-                tx_hash: "0xTest123",
-                user_address: userAddress || "0xTest"
+                shipping_address: "123 Test Street, Test City, 12345, Test Country",
+                tx_hash: "0xTestTransactionHashForDebug123",
+                user_address: userAddress || "0xTestWallet"
             })
-            .then(() => {
-                alert("✅ Test email sent successfully! Check inbox & spam.");
+            .then((response) => {
+                console.log("✅ EmailJS Success:", response);
+                alert("✅ Test email sent successfully!\n\nPlease check your inbox and spam folder.");
             })
-            .catch(err => {
-                console.error("❌ Full EmailJS Error:", err);
-                alert("Failed.\n\nError: " + (err.text || err.message || JSON.stringify(err)));
+            .catch((err) => {
+                console.error("❌ EmailJS Full Error Object:", err);
+                alert("Email failed.\n\nError: " + (err.text || err.message || "Unknown error - check console"));
             });
+        }
+
+        async function confirmRedemption() {
+            const email = document.getElementById('customerEmail').value.trim();
+            const shipping = document.getElementById('shippingAddress').value.trim();
+
+            if (!email || !shipping) return alert("Please fill email and shipping address");
+
+            try {
+                const provider = new ethers.BrowserProvider(window.ethereum);
+                const signer = await provider.getSigner();
+                const ricContract = new ethers.Contract(RIC_ADDRESS, [
+                    "function balanceOf(address) view returns (uint256)",
+                    "function transfer(address,uint256) returns (bool)"
+                ], signer);
+
+                const balance = await ricContract.balanceOf(userAddress);
+                if (Number(ethers.formatEther(balance)) < currentProduct.price) {
+                    return alert(`Not enough $RIC. You need ${currentProduct.price} RIC`);
+                }
+
+                if (!confirm(`Send ${currentProduct.price} $RIC?`)) return;
+
+                const tx = await ricContract.transfer(MASTER_OWNER, ethers.parseEther(currentProduct.price.toString()));
+                await tx.wait();
+
+                sendEmailReceipt(email, currentProduct.name, currentProduct.price, shipping, tx.hash);
+
+                alert(`✅ Success! Receipt sent to ${email}`);
+                closeModal();
+            } catch (e) {
+                console.error(e);
+                alert("Transaction failed: " + (e.reason || e.message));
+            }
+        }
+
+        function sendEmailReceipt(email, productName, amount, shipping, txHash) {
+            emailjs.send("service_577894p", "template_zga1woa", {
+                to_email: email,
+                product_name: productName,
+                amount_ric: amount.toString(),
+                shipping_address: shipping,
+                tx_hash: txHash,
+                user_address: userAddress
+            }).catch(err => console.error("Email error:", err));
         }
 
         // Initialize
