@@ -29,7 +29,7 @@
         .modal-content { background: #1a1a1a; padding: 30px; border-radius: 24px; max-width: 500px; width: 90%; }
         .modal-content input, .modal-content textarea { width: 100%; padding: 14px; margin: 10px 0; background: #222; color: white; border: 1px solid #444; border-radius: 12px; }
         
-        /* ADMIN */
+        /* ADMIN OVERLAY */
         .admin-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 3000; align-items: center; justify-content: center; }
         .admin-panel { background: var(--card-bg); padding: 40px; border-radius: 24px; max-width: 1100px; width: 90%; max-height: 90vh; overflow-y: auto; border: 1px solid var(--gold); }
         .list-item { padding: 14px; background: #1a1a1a; margin: 10px 0; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; }
@@ -61,7 +61,7 @@
         <div class="modal-content">
             <h2 id="modalTitle"></h2>
             <p id="modalPrice" style="color:var(--gold); font-size:1.4rem;"></p>
-            <p id="modalStock" style="color:#888;"></p>
+            <p id="modalStock" style="color:#0f0;"></p>
             
             <label>Your Email</label>
             <input type="email" id="customerEmail" placeholder="you@example.com">
@@ -74,7 +74,7 @@
         </div>
     </div>
 
-    <!-- ADMIN OVERLAY -->
+    <!-- STAFF ADMIN OVERLAY -->
     <div id="adminOverlay" class="admin-overlay">
         <div class="admin-panel">
             <button onclick="closeAdminPanel()" style="float:right; background:#333; padding:8px 16px;">Close</button>
@@ -99,11 +99,16 @@
                 <input type="number" id="newStock" placeholder="Initial Stock" value="10"><br>
                 <input type="text" id="newImage" placeholder="Image URL"><br>
                 <textarea id="newDesc" placeholder="Description"></textarea><br>
-                <button onclick="addProduct()">Add Product</button>
+                <button onclick="addProduct()" style="width:100%; margin-top:10px;">Add Product</button>
             </div>
 
             <div class="admin-section">
-                <h3>Order History (Last 10)</h3>
+                <h3>Current Products</h3>
+                <div id="productList"></div>
+            </div>
+
+            <div class="admin-section">
+                <h3>Order History (Latest 10)</h3>
                 <div id="historyList"></div>
             </div>
         </div>
@@ -157,7 +162,6 @@
         function openRedeemModal(id) {
             window.currentProduct = products.find(p => p.id === id);
             if (window.currentProduct.stock <= 0) return alert("This product is out of stock!");
-            
             document.getElementById('modalTitle').textContent = window.currentProduct.name;
             document.getElementById('modalPrice').textContent = `${window.currentProduct.price} RIC`;
             document.getElementById('redeemModal').style.display = 'flex';
@@ -185,7 +189,7 @@
                 window.currentProduct.stock = (window.currentProduct.stock || 10) - 1;
                 localStorage.setItem('ricProducts', JSON.stringify(products));
 
-                // Save to history
+                // Save history
                 orderHistory.unshift({
                     time: new Date().toLocaleString(),
                     customer: email,
@@ -206,13 +210,14 @@
 
                 alert(`✅ Success! Receipt sent to ${email}`);
                 closeModal();
-                renderProducts(); // Refresh stock
+                renderProducts();
             } catch (e) {
                 console.error(e);
                 alert("Error: " + (e.reason || e.message));
             }
         }
 
+        // Staff Admin
         function openAdminPanel() {
             if (!userAddress) return alert("Please connect wallet first");
             if (!isMaster() && !isStaff()) return alert("You are not authorized as staff.");
@@ -227,13 +232,66 @@
             document.getElementById('adminOverlay').style.display = 'none';
         }
 
-        // Staff & Product functions (same as before)
-        function addStaff() { /* ... */ }
-        function renderStaffList() { /* ... */ }
-        function removeStaff(i) { /* ... */ }
-        function addProduct() { /* ... */ }
-        function renderProductList() { /* ... */ }
-        function deleteProduct(i) { /* ... */ }
+        function addStaff() {
+            const addr = document.getElementById('newStaff').value.trim();
+            if (addr && addr.length === 42) {
+                if (!staffWallets.includes(addr)) {
+                    staffWallets.push(addr);
+                    localStorage.setItem('ricStaffWallets', JSON.stringify(staffWallets));
+                    renderStaffList();
+                }
+            }
+        }
+
+        function renderStaffList() {
+            const div = document.getElementById('staffList');
+            div.innerHTML = staffWallets.map((addr, i) => `
+                <div class="list-item">
+                    <span>${addr}</span>
+                    <button onclick="removeStaff(${i})" style="color:red;">Remove</button>
+                </div>
+            `).join('');
+        }
+
+        function removeStaff(i) {
+            if (confirm("Remove this staff?")) {
+                staffWallets.splice(i, 1);
+                localStorage.setItem('ricStaffWallets', JSON.stringify(staffWallets));
+                renderStaffList();
+            }
+        }
+
+        function addProduct() {
+            const name = document.getElementById('newName').value;
+            const price = parseFloat(document.getElementById('newPrice').value);
+            const stock = parseInt(document.getElementById('newStock').value) || 10;
+            const image = document.getElementById('newImage').value;
+            const desc = document.getElementById('newDesc').value;
+
+            if (!name || !price) return alert("Name and price required");
+
+            products.push({ id: Date.now(), name, price, image, desc, stock });
+            localStorage.setItem('ricProducts', JSON.stringify(products));
+            renderProductList();
+        }
+
+        function renderProductList() {
+            const div = document.getElementById('productList');
+            div.innerHTML = products.map((p, i) => `
+                <div class="list-item">
+                    <span><strong>${p.name}</strong> — ${p.price} RIC (Stock: ${p.stock})</span>
+                    <button onclick="deleteProduct(${i})" style="color:red;">Delete</button>
+                </div>
+            `).join('');
+        }
+
+        function deleteProduct(i) {
+            if (confirm("Delete this product?")) {
+                products.splice(i, 1);
+                localStorage.setItem('ricProducts', JSON.stringify(products));
+                renderProductList();
+            }
+        }
 
         function renderHistoryList() {
             const div = document.getElementById('historyList');
