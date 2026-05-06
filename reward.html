@@ -9,7 +9,7 @@
     <style>
         :root { --obsidian: #080808; --card-bg: #121212; --magma: linear-gradient(135deg, #ff4d00 0%, #ff8c00 100%); --gold: #ffd700; }
         body { background: var(--obsidian); color: white; font-family: system-ui, sans-serif; margin: 0; padding: 0; }
-        .nav { padding: 20px 40px; display: flex; align-items: center; border-bottom: 1px solid rgba(255,215,0,0.1); position: sticky; top: 0; background: var(--obsidian); z-index: 100; }
+        .nav { padding: 20px 40px; display: flex; align-items: center; border-bottom: 1px solid rgba(255,215,0,0.1); }
         .logo { font-size: 28px; font-weight: bold; color: var(--gold); }
         .nav-links { display: flex; gap: 30px; margin-left: 40px; }
         .nav-links a { color: white; text-decoration: none; font-weight: 500; }
@@ -30,7 +30,7 @@
         
         /* ADMIN PANEL */
         .admin-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 3000; align-items: center; justify-content: center; }
-        .admin-panel { background: var(--card-bg); padding: 40px; border-radius: 24px; max-width: 1000px; width: 90%; max-height: 90vh; overflow-y: auto; border: 1px solid var(--gold); }
+        .admin-panel { background: var(--card-bg); padding: 40px; border-radius: 24px; max-width: 1100px; width: 90%; max-height: 90vh; overflow-y: auto; border: 1px solid var(--gold); }
         .list-item { padding: 14px; background: #1a1a1a; margin: 10px 0; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; }
     </style>
 </head>
@@ -75,14 +75,24 @@
     <!-- STAFF ADMIN OVERLAY -->
     <div id="adminOverlay" class="admin-overlay">
         <div class="admin-panel">
-            <button onclick="closeAdminPanel()" style="float:right; background:#333; padding:8px 16px;">Close</button>
-            <h2 style="color:var(--gold);">Staff Admin Panel</h2>
-            <p id="adminConnected"></p>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+                <h2 style="color:var(--gold); margin:0;">Staff Admin Panel</h2>
+                <button onclick="closeAdminPanel()" style="background:#333; padding:8px 16px; border:none; border-radius:8px; color:white;">Close</button>
+            </div>
+            <p id="adminConnected" style="margin-bottom:20px;"></p>
+
+            <!-- Navigation inside Admin -->
+            <div style="margin-bottom:20px;">
+                <a href="index.html" style="color:var(--gold); margin-right:15px;">Home</a>
+                <a href="swap.html" style="color:var(--gold); margin-right:15px;">Swap</a>
+                <a href="pools.html" style="color:var(--gold); margin-right:15px;">Pools</a>
+                <a href="liquidity.html" style="color:var(--gold);">Add Liquidity</a>
+            </div>
 
             <div class="admin-section">
                 <h3>Appoint New Staff (Master Only)</h3>
                 <input type="text" id="newStaff" placeholder="0xStaffWalletAddress">
-                <button onclick="addStaff()">Add Staff</button>
+                <button onclick="addStaff()" style="width:100%; margin-top:10px;">Add Staff</button>
             </div>
 
             <div class="admin-section">
@@ -96,7 +106,7 @@
                 <input type="number" id="newPrice" placeholder="Price in RIC"><br>
                 <input type="text" id="newImage" placeholder="Image URL"><br>
                 <textarea id="newDesc" placeholder="Description"></textarea><br>
-                <button onclick="addProduct()">Add Product</button>
+                <button onclick="addProduct()" style="width:100%; margin-top:10px;">Add Product</button>
             </div>
 
             <div class="admin-section">
