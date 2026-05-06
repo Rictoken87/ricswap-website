@@ -11,21 +11,7 @@
         body { background: var(--obsidian); color: white; font-family: system-ui, sans-serif; margin: 0; padding: 0; }
         .nav { padding: 20px 40px; display: flex; align-items: center; border-bottom: 1px solid rgba(255,215,0,0.1); }
         .logo { font-size: 28px; font-weight: bold; color: var(--gold); }
-        .nav-links { display: flex; gap: 30px; margin-left: 40px; }
-        .nav-links a { color: white; text-decoration: none; font-weight: 500; }
-        .nav-links a:hover, .nav-links a.active { color: var(--gold); }
-        .connect-btn { 
-            background: #222; 
-            color: white; 
-            border: 1.5px solid #444; 
-            padding: 8px 20px; 
-            border-radius: 9999px; 
-            font-size: 14px; 
-            font-weight: 600; 
-            cursor: pointer; 
-            margin-left: auto; 
-        }
-        .connect-btn:hover { border-color: var(--gold); }
+        .connect-btn { background: #222; color: white; border: 1px solid #444; padding: 8px 18px; border-radius: 9999px; margin-left: auto; cursor: pointer; }
         
         .rewards-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 30px; padding: 40px; max-width: 1400px; margin: 0 auto; }
         .reward-card { background: var(--card-bg); border-radius: 20px; overflow: hidden; border: 1px solid #333; }
@@ -42,20 +28,11 @@
 <body>
     <div class="nav">
         <div class="logo">RicSwap</div>
-        <div class="nav-links">
-            <a href="index.html">Home</a>
-            <a href="swap.html">Swap</a>
-            <a href="pools.html">Pools</a>
-            <a href="liquidity.html">Add Liquidity</a>
-            <a href="reward.html" class="active">Rewards</a>
-        </div>
         <button id="connectBtn" class="connect-btn">Connect Wallet</button>
-        <button onclick="openAdminPanel()" class="admin-btn" style="margin-left:10px;">Staff Admin</button>
     </div>
 
     <div style="padding:80px 40px; text-align:center; background:radial-gradient(#1a0f00,var(--obsidian));">
         <h1>RIC Rewards Store</h1>
-        <p>Redeem $RIC for Real Products</p>
     </div>
 
     <div class="rewards-grid" id="rewardsGrid"></div>
@@ -79,43 +56,23 @@
 
     <script>
         let products = JSON.parse(localStorage.getItem('ricProducts')) || [];
-        let staffWallets = JSON.parse(localStorage.getItem('ricStaffWallets')) || [];
         let userAddress = null;
         const RIC_ADDRESS = "0x12C94d3A30daa09f81Ea6c037004E6e99A4A3dfc";
         const MASTER_OWNER = "0x5E5aE526D45d69991039901a29148029a4889102";
 
         emailjs.init("Y5GsSScYku74Bt0LH");
 
-        // Improved Connect Wallet for Rabby + MetaMask
         async function connectWallet() {
-            const btn = document.getElementById("connectBtn");
-            btn.textContent = "Connecting...";
-
+            if (!window.ethereum) return alert("Please install MetaMask or Rabby Wallet");
             try {
-                // Detect Rabby first if available
-                if (window.rabby) {
-                    console.log("Rabby Wallet detected");
-                    await window.rabby.request({ method: 'eth_requestAccounts' });
-                } else if (window.ethereum) {
-                    console.log("Ethereum provider detected (MetaMask or Rabby)");
-                    const provider = new ethers.BrowserProvider(window.ethereum);
-                    await provider.send("eth_requestAccounts", []);
-                } else {
-                    return alert("Please install MetaMask or Rabby Wallet");
-                }
-
                 const provider = new ethers.BrowserProvider(window.ethereum);
+                await provider.send("eth_requestAccounts", []);
                 const signer = await provider.getSigner();
                 userAddress = await signer.getAddress();
-
-                btn.textContent = userAddress.slice(0,6) + "..." + userAddress.slice(-4);
-                btn.style.borderColor = "#ffd700";
-                
-                console.log("✅ Connected:", userAddress);
+                document.getElementById("connectBtn").textContent = userAddress.slice(0,6) + "..." + userAddress.slice(-4);
             } catch (e) {
                 console.error(e);
-                btn.textContent = "Connect Wallet";
-                alert("Connection failed. Please try again.");
+                alert("Connection failed");
             }
         }
 
@@ -126,7 +83,6 @@
                     <img src="${p.image || 'https://picsum.photos/600/400'}">
                     <div class="reward-info">
                         <h3>${p.name}</h3>
-                        <p>${p.desc || ''}</p>
                         <div class="price-tag">${p.price} RIC</div>
                         <button class="redeem-btn" onclick="openRedeemModal(${p.id})">Redeem Now</button>
                     </div>
@@ -146,9 +102,52 @@
         }
 
         async function confirmRedemption() {
-            // ... (same as before, can keep your existing logic)
-            alert("Redemption logic here - connect wallet works now");
-            closeModal();
+            if (!userAddress) {
+                alert("Please connect wallet first");
+                return;
+            }
+
+            const email = document.getElementById('customerEmail').value.trim();
+            const shipping = document.getElementById('shippingAddress').value.trim();
+
+            if (!email || !shipping) return alert("Please fill email and shipping address");
+
+            try {
+                const provider = new ethers.BrowserProvider(window.ethereum);
+                const signer = await provider.getSigner();
+                const ricContract = new ethers.Contract(RIC_ADDRESS, [
+                    "function balanceOf(address) view returns (uint256)",
+                    "function transfer(address to, uint256 amount) returns (bool)"
+                ], signer);
+
+                // Check balance
+                const balance = await ricContract.balanceOf(userAddress);
+                const needed = ethers.parseEther(window.currentProduct.price.toString());
+
+                if (balance < needed) {
+                    return alert(`Not enough $RIC! You have ${ethers.formatEther(balance)} RIC but need ${window.currentProduct.price} RIC`);
+                }
+
+                if (!confirm(`Send ${window.currentProduct.price} $RIC to complete this order?`)) return;
+
+                const tx = await ricContract.transfer(MASTER_OWNER, needed);
+                await tx.wait();
+
+                // Send email
+                await emailjs.send("service_577894p", "template_zga1woa", {
+                    to_email: email,
+                    product_name: window.currentProduct.name,
+                    amount_ric: window.currentProduct.price,
+                    shipping_address: shipping,
+                    tx_hash: tx.hash
+                });
+
+                alert(`✅ Order Successful!\nTransaction: ${tx.hash}\nReceipt sent to ${email}`);
+                closeModal();
+            } catch (e) {
+                console.error(e);
+                alert("Error: " + (e.reason || e.message || "Transaction failed"));
+            }
         }
 
         // Initialize
