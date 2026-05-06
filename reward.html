@@ -23,14 +23,10 @@
         .reward-info { padding: 24px; }
         .price-tag { color: var(--gold); font-size: 1.6rem; font-weight: bold; }
         .redeem-btn { background: var(--magma); color: white; border: none; padding: 14px; width: 100%; border-radius: 12px; cursor: pointer; font-weight: bold; }
-
-        /* NICE ADMIN PANEL */
-        .admin-panel { padding: 40px; max-width: 1100px; margin: 0 auto; }
-        .admin-section { background: var(--card-bg); padding: 30px; border-radius: 20px; margin-bottom: 30px; border: 1px solid #333; }
-        .admin-section h3 { color: var(--gold); margin-bottom: 20px; border-bottom: 1px solid #444; padding-bottom: 10px; }
-        .list-item { padding: 16px; background: #1a1a1a; margin: 10px 0; border-radius: 16px; display: flex; justify-content: space-between; align-items: center; border: 1px solid #333; }
-        input, textarea { width: 100%; padding: 14px; margin: 8px 0; background: #0f0f0f; color: white; border: 1px solid #444; border-radius: 12px; }
-        button { padding: 12px 20px; border-radius: 12px; cursor: pointer; font-weight: bold; }
+        
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 2000; align-items: center; justify-content: center; }
+        .modal-content { background: #1a1a1a; padding: 30px; border-radius: 24px; max-width: 500px; width: 90%; }
+        .modal-content input, .modal-content textarea { width: 100%; padding: 14px; margin: 10px 0; background: #222; color: white; border: 1px solid #444; border-radius: 12px; }
     </style>
 </head>
 <body>
@@ -85,15 +81,35 @@
 
         emailjs.init("Y5GsSScYku74Bt0LH");
 
+        // === STRONG CONNECT WALLET (Rabby First) ===
         async function connectWallet() {
-            if (!window.ethereum) return alert("Please install MetaMask or Rabby Wallet");
+            const btn = document.getElementById("connectBtn");
+            btn.textContent = "Connecting...";
+
             try {
-                const provider = new ethers.BrowserProvider(window.ethereum);
-                await provider.send("eth_requestAccounts", []);
-                const signer = await provider.getSigner();
-                userAddress = await signer.getAddress();
+                let accounts;
+
+                // 1. Rabby Wallet (User's preferred)
+                if (window.rabby) {
+                    accounts = await window.rabby.request({ method: 'eth_requestAccounts' });
+                } 
+                // 2. Standard Ethereum provider (MetaMask, Rabby injected, etc.)
+                else if (window.ethereum) {
+                    accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+                } 
+                else {
+                    return alert("Please install MetaMask or Rabby Wallet");
+                }
+
+                userAddress = accounts[0];
                 document.getElementById("connectBtn").textContent = userAddress.slice(0,6) + "..." + userAddress.slice(-4);
-            } catch (e) { console.error(e); }
+                console.log("✅ Wallet Connected:", userAddress);
+
+            } catch (e) {
+                console.error("Connect failed:", e);
+                btn.textContent = "Connect Wallet";
+                alert("Connection failed. Please open your wallet and try again.");
+            }
         }
 
         function isMaster() { return userAddress && userAddress.toLowerCase() === MASTER_OWNER.toLowerCase(); }
@@ -154,34 +170,34 @@
             }
         }
 
-        // ==================== NICE STAFF ADMIN ====================
+        // ==================== STAFF ADMIN ====================
         function openAdminPanel() {
             if (!userAddress) return alert("Please connect wallet first");
             if (!isMaster() && !isStaff()) return alert("You are not authorized as staff.");
 
-            let html = `<div class="admin-panel">`;
-            html += `<h2 style="color:var(--gold); text-align:center;">Staff Admin Panel</h2>`;
-            html += `<p style="text-align:center;">Connected: ${userAddress.slice(0,6)}...${userAddress.slice(-4)}</p>`;
+            let html = `<div class="admin-panel" style="padding:40px; max-width:1100px; margin:0 auto;">`;
+            html += `<h2 style="color:var(--gold);">Staff Admin Panel</h2>`;
+            html += `<p>Connected: ${userAddress.slice(0,6)}...${userAddress.slice(-4)}</p>`;
 
             if (isMaster()) {
                 html += `<div class="admin-section">
-                    <h3>Appoint New Staff Wallet</h3>
+                    <h3>Appoint New Staff</h3>
                     <input type="text" id="newStaff" placeholder="0xStaffWalletAddress">
                     <button onclick="addStaff()" style="width:100%; margin-top:10px;">Add Staff</button>
                 </div>`;
             }
 
             html += `<div class="admin-section">
-                <h3>Current Staff Wallets</h3>
+                <h3>Current Staff</h3>
                 <div id="staffList"></div>
             </div>`;
 
             html += `<div class="admin-section">
                 <h3>Add New Product</h3>
-                <input type="text" id="newName" placeholder="Product Name">
-                <input type="number" id="newPrice" placeholder="Price in RIC">
-                <input type="text" id="newImage" placeholder="Image URL">
-                <textarea id="newDesc" placeholder="Description"></textarea>
+                <input type="text" id="newName" placeholder="Product Name"><br>
+                <input type="number" id="newPrice" placeholder="Price in RIC"><br>
+                <input type="text" id="newImage" placeholder="Image URL"><br>
+                <textarea id="newDesc" placeholder="Description"></textarea><br>
                 <button onclick="addProduct()" style="width:100%; margin-top:10px;">Add Product</button>
             </div>`;
 
@@ -217,7 +233,7 @@
         }
 
         function removeStaff(i) {
-            if (confirm("Remove this staff wallet?")) {
+            if (confirm("Remove this staff?")) {
                 staffWallets.splice(i, 1);
                 localStorage.setItem('ricStaffWallets', JSON.stringify(staffWallets));
                 renderStaffList();
@@ -230,7 +246,7 @@
             const image = document.getElementById('newImage').value;
             const desc = document.getElementById('newDesc').value;
 
-            if (!name || !price) return alert("Name and price are required");
+            if (!name || !price) return alert("Name and price required");
 
             products.push({ id: Date.now(), name, price, image, desc });
             localStorage.setItem('ricProducts', JSON.stringify(products));
