@@ -81,17 +81,40 @@
 
         emailjs.init("Y5GsSScYku74Bt0LH");
 
+        // === STRONG CONNECT WALLET (Rabby Priority) ===
         async function connectWallet() {
-            if (!window.ethereum) return alert("Please install MetaMask or Rabby Wallet");
+            const btn = document.getElementById("connectBtn");
+            btn.textContent = "Connecting...";
+
             try {
-                const provider = new ethers.BrowserProvider(window.ethereum);
-                await provider.send("eth_requestAccounts", []);
-                const signer = await provider.getSigner();
-                userAddress = await signer.getAddress();
-                document.getElementById("connectBtn").textContent = userAddress.slice(0,6) + "..." + userAddress.slice(-4);
-            } catch (e) { 
-                console.error(e);
-                alert("Connection failed. Please try again.");
+                // Rabby Wallet First
+                if (window.rabby) {
+                    console.log("Rabby detected");
+                    await window.rabby.request({ method: 'eth_requestAccounts' });
+                    const provider = new ethers.BrowserProvider(window.rabby);
+                    const signer = await provider.getSigner();
+                    userAddress = await signer.getAddress();
+                } 
+                // Standard Provider (MetaMask, Rabby injected, etc.)
+                else if (window.ethereum) {
+                    console.log("Ethereum provider detected");
+                    await window.ethereum.request({ method: 'eth_requestAccounts' });
+                    const provider = new ethers.BrowserProvider(window.ethereum);
+                    const signer = await provider.getSigner();
+                    userAddress = await signer.getAddress();
+                } 
+                else {
+                    return alert("Please install MetaMask or Rabby Wallet");
+                }
+
+                btn.textContent = userAddress.slice(0,6) + "..." + userAddress.slice(-4);
+                btn.style.borderColor = "#ffd700";
+                console.log("✅ Wallet Connected:", userAddress);
+
+            } catch (e) {
+                console.error("Connect failed:", e);
+                btn.textContent = "Connect Wallet";
+                alert("Connection failed. Please open your wallet and try again.");
             }
         }
 
@@ -153,7 +176,7 @@
             }
         }
 
-        // ==================== STAFF ADMIN PANEL ====================
+        // ==================== STAFF ADMIN ====================
         function openAdminPanel() {
             if (!userAddress) return alert("Please connect wallet first");
             if (!isMaster() && !isStaff()) return alert("You are not authorized as staff.");
