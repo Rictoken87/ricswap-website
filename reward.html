@@ -18,19 +18,15 @@
         
         .rewards-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 30px; padding: 40px; max-width: 1400px; margin: 0 auto; }
         .reward-card { background: var(--card-bg); border-radius: 20px; overflow: hidden; border: 1px solid #333; transition: 0.3s; }
-        .reward-card:hover { transform: translateY(-8px); box-shadow: 0 10px 30px rgba(255,215,0,0.1); }
+        .reward-card:hover { transform: translateY(-8px); }
         .reward-card img { width: 100%; height: 220px; object-fit: cover; }
         .reward-info { padding: 24px; }
         .price-tag { color: var(--gold); font-size: 1.6rem; font-weight: bold; }
-        .redeem-btn { background: var(--magma); color: white; border: none; padding: 14px; width: 100%; border-radius: 12px; cursor: pointer; font-weight: bold; }
-
-        /* ADMIN PANEL - NICE UI */
-        .admin-panel { padding: 40px; max-width: 1000px; margin: 0 auto; }
-        .admin-section { background: var(--card-bg); border-radius: 20px; padding: 30px; margin-bottom: 30px; border: 1px solid #333; }
-        .admin-section h3 { color: var(--gold); border-bottom: 1px solid #444; padding-bottom: 10px; }
-        input, textarea, button { padding: 12px; margin: 8px 0; border-radius: 12px; border: 1px solid #444; background: #1a1a1a; color: white; width: 100%; }
-        button { background: var(--magma); cursor: pointer; font-weight: bold; }
-        .list-item { padding: 12px; background: #1a1a1a; border-radius: 12px; margin: 8px 0; display: flex; justify-content: space-between; align-items: center; }
+        .redeem-btn { background: var(--magma); color: white; border: none; padding: 14px; width: 100%; border-radius: 12px; cursor: pointer; }
+        
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 2000; align-items: center; justify-content: center; }
+        .modal-content { background: #1a1a1a; padding: 30px; border-radius: 24px; max-width: 500px; width: 90%; }
+        .modal-content input, .modal-content textarea { width: 100%; padding: 14px; margin: 10px 0; background: #222; color: white; border: 1px solid #444; border-radius: 12px; }
     </style>
 </head>
 <body>
@@ -72,7 +68,13 @@
     </div>
 
     <script>
-        let products = JSON.parse(localStorage.getItem('ricProducts')) || [];
+        // Default products (visible to everyone)
+        let products = JSON.parse(localStorage.getItem('ricProducts')) || [
+            { id: 1, name: "Cup Coffee", price: 500, image: "https://picsum.photos/600/400?random=1", desc: "Premium coffee cup" },
+            { id: 2, name: "RicSwap Hoodie", price: 5000, image: "https://picsum.photos/600/400?random=2", desc: "Limited Edition" },
+            { id: 3, name: "Amazon Gift Card", price: 4000, image: "https://picsum.photos/600/400?random=3", desc: "$50 Gift Card" }
+        ];
+
         let staffWallets = JSON.parse(localStorage.getItem('ricStaffWallets')) || [];
         let userAddress = null;
         const RIC_ADDRESS = "0x12C94d3A30daa09f81Ea6c037004E6e99A4A3dfc";
@@ -98,7 +100,7 @@
             const grid = document.getElementById('rewardsGrid');
             grid.innerHTML = products.map(p => `
                 <div class="reward-card">
-                    <img src="${p.image || 'https://picsum.photos/600/400'}">
+                    <img src="${p.image}">
                     <div class="reward-info">
                         <h3>${p.name}</h3>
                         <p>${p.desc || ''}</p>
@@ -149,45 +151,39 @@
             }
         }
 
-        // ==================== NICE STAFF ADMIN PANEL ====================
+        // ==================== STAFF ADMIN ====================
         function openAdminPanel() {
             if (!userAddress) return alert("Please connect wallet first");
             if (!isMaster() && !isStaff()) return alert("You are not authorized as staff.");
 
-            let html = `
-                <div class="admin-panel" style="padding:40px; max-width:1100px; margin:0 auto;">
-                    <h2 style="color:var(--gold);">Staff Admin Panel</h2>
-                    <p>Connected: ${userAddress.slice(0,6)}...${userAddress.slice(-4)}</p>
-            `;
+            let html = `<div style="padding:40px; max-width:1100px; margin:0 auto;">`;
+            html += `<h2 style="color:var(--gold);">Staff Admin Panel</h2>`;
+            html += `<p>Connected: ${userAddress.slice(0,6)}...${userAddress.slice(-4)}</p>`;
 
             if (isMaster()) {
-                html += `
-                    <div class="admin-section">
-                        <h3>Appoint New Staff</h3>
-                        <input type="text" id="newStaff" placeholder="0xStaffWalletAddress" style="width:70%; display:inline-block;">
-                        <button onclick="addStaff()" style="width:28%; display:inline-block;">Add Staff</button>
-                    </div>
-                `;
+                html += `<div style="background:#1a1a1a; padding:20px; border-radius:16px; margin:20px 0;">
+                    <h3>Appoint New Staff</h3>
+                    <input type="text" id="newStaff" placeholder="0xStaffAddress" style="width:70%;">
+                    <button onclick="addStaff()" style="width:28%;">Add Staff</button>
+                </div>`;
             }
 
-            html += `
-                <div class="admin-section">
-                    <h3>Current Staff</h3>
-                    <div id="staffList"></div>
-                </div>
-                <div class="admin-section">
-                    <h3>Add New Product</h3>
-                    <input type="text" id="newName" placeholder="Product Name"><br>
-                    <input type="number" id="newPrice" placeholder="Price in RIC"><br>
-                    <input type="text" id="newImage" placeholder="Image URL (optional)"><br>
-                    <textarea id="newDesc" placeholder="Description"></textarea><br>
-                    <button onclick="addProduct()">Add Product</button>
-                </div>
-                <div class="admin-section">
-                    <h3>Current Products</h3>
-                    <div id="productList"></div>
-                </div>
-            `;
+            html += `<div style="background:#1a1a1a; padding:20px; border-radius:16px; margin:20px 0;">
+                <h3>Current Staff</h3><div id="staffList"></div>
+            </div>`;
+
+            html += `<div style="background:#1a1a1a; padding:20px; border-radius:16px; margin:20px 0;">
+                <h3>Add New Product</h3>
+                <input type="text" id="newName" placeholder="Product Name"><br>
+                <input type="number" id="newPrice" placeholder="Price in RIC"><br>
+                <input type="text" id="newImage" placeholder="Image URL"><br>
+                <textarea id="newDesc" placeholder="Description"></textarea><br>
+                <button onclick="addProduct()">Add Product</button>
+            </div>`;
+
+            html += `<div style="background:#1a1a1a; padding:20px; border-radius:16px; margin:20px 0;">
+                <h3>Current Products</h3><div id="productList"></div>
+            </div>`;
 
             document.body.innerHTML = html;
             renderStaffList();
@@ -208,15 +204,14 @@
         function renderStaffList() {
             const div = document.getElementById('staffList');
             div.innerHTML = staffWallets.map((addr, i) => `
-                <div class="list-item">
-                    <span>${addr}</span>
-                    <button onclick="removeStaff(${i})" style="color:red; background:none; border:none; cursor:pointer;">Remove</button>
+                <div style="padding:10px; background:#222; margin:5px 0; border-radius:8px;">
+                    ${addr} <button onclick="removeStaff(${i})" style="color:red; float:right;">Remove</button>
                 </div>
             `).join('');
         }
 
         function removeStaff(i) {
-            if (confirm("Remove this staff member?")) {
+            if (confirm("Remove this staff?")) {
                 staffWallets.splice(i, 1);
                 localStorage.setItem('ricStaffWallets', JSON.stringify(staffWallets));
                 renderStaffList();
@@ -229,26 +224,25 @@
             const image = document.getElementById('newImage').value;
             const desc = document.getElementById('newDesc').value;
 
-            if (!name || !price) return alert("Name and price are required");
+            if (!name || !price) return alert("Name and price required");
 
             products.push({ id: Date.now(), name, price, image, desc });
             localStorage.setItem('ricProducts', JSON.stringify(products));
             renderProductList();
-            alert("Product added successfully!");
         }
 
         function renderProductList() {
             const div = document.getElementById('productList');
             div.innerHTML = products.map((p, i) => `
-                <div class="list-item">
+                <div style="padding:12px; background:#222; margin:8px 0; border-radius:12px; display:flex; justify-content:space-between;">
                     <span><strong>${p.name}</strong> — ${p.price} RIC</span>
-                    <button onclick="deleteProduct(${i})" style="color:red; background:none; border:none; cursor:pointer;">Delete</button>
+                    <button onclick="deleteProduct(${i})" style="color:red;">Delete</button>
                 </div>
             `).join('');
         }
 
         function deleteProduct(i) {
-            if (confirm("Delete this product permanently?")) {
+            if (confirm("Delete this product?")) {
                 products.splice(i, 1);
                 localStorage.setItem('ricProducts', JSON.stringify(products));
                 renderProductList();
