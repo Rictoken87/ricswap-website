@@ -18,11 +18,11 @@
         
         .rewards-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 30px; padding: 40px; max-width: 1400px; margin: 0 auto; }
         .reward-card { background: var(--card-bg); border-radius: 20px; overflow: hidden; border: 1px solid #333; transition: 0.3s; }
-        .reward-card:hover { transform: translateY(-8px); }
+        .reward-card:hover { transform: translateY(-8px); box-shadow: 0 10px 30px rgba(255, 215, 0, 0.15); }
         .reward-card img { width: 100%; height: 220px; object-fit: cover; }
         .reward-info { padding: 24px; }
         .price-tag { color: var(--gold); font-size: 1.6rem; font-weight: bold; }
-        .redeem-btn { background: var(--magma); color: white; border: none; padding: 14px; width: 100%; border-radius: 12px; cursor: pointer; }
+        .redeem-btn { background: var(--magma); color: white; border: none; padding: 14px; width: 100%; border-radius: 12px; cursor: pointer; font-weight: bold; }
         
         .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 2000; align-items: center; justify-content: center; }
         .modal-content { background: #1a1a1a; padding: 30px; border-radius: 24px; max-width: 500px; width: 90%; }
@@ -45,7 +45,7 @@
 
     <div style="padding:80px 40px; text-align:center; background:radial-gradient(#1a0f00,var(--obsidian));">
         <h1>RIC Rewards Store</h1>
-        <p>Redeem $RIC for Real Products</p>
+        <p>Redeem $RIC for Real Products • Shipping paid by buyer</p>
     </div>
 
     <div class="rewards-grid" id="rewardsGrid"></div>
@@ -68,11 +68,12 @@
     </div>
 
     <script>
-        // Default products (visible to everyone)
+        // Global default products (visible to everyone in the world)
         let products = JSON.parse(localStorage.getItem('ricProducts')) || [
-            { id: 1, name: "Cup Coffee", price: 500, image: "https://picsum.photos/600/400?random=1", desc: "Premium coffee cup" },
-            { id: 2, name: "RicSwap Hoodie", price: 5000, image: "https://picsum.photos/600/400?random=2", desc: "Limited Edition" },
-            { id: 3, name: "Amazon Gift Card", price: 4000, image: "https://picsum.photos/600/400?random=3", desc: "$50 Gift Card" }
+            { id: 1, name: "Cup Coffee", price: 500, image: "https://picsum.photos/id/201/600/400", desc: "Premium ceramic coffee cup" },
+            { id: 2, name: "RicSwap Hoodie", price: 5000, image: "https://picsum.photos/id/64/600/400", desc: "Limited Edition Gold Hoodie" },
+            { id: 3, name: "Amazon Gift Card", price: 4000, image: "https://picsum.photos/id/180/600/400", desc: "$50 Amazon Gift Card" },
+            { id: 4, name: "Wireless Earbuds", price: 15000, image: "https://picsum.photos/id/201/600/400", desc: "High quality earbuds" }
         ];
 
         let staffWallets = JSON.parse(localStorage.getItem('ricStaffWallets')) || [];
@@ -125,7 +126,7 @@
             if (!userAddress) return alert("Please connect wallet first");
             const email = document.getElementById('customerEmail').value.trim();
             const shipping = document.getElementById('shippingAddress').value.trim();
-            if (!email || !shipping) return alert("Please fill email and shipping");
+            if (!email || !shipping) return alert("Please fill email and shipping address");
 
             try {
                 const provider = new ethers.BrowserProvider(window.ethereum);
@@ -151,7 +152,7 @@
             }
         }
 
-        // ==================== STAFF ADMIN ====================
+        // ==================== STAFF ADMIN PANEL ====================
         function openAdminPanel() {
             if (!userAddress) return alert("Please connect wallet first");
             if (!isMaster() && !isStaff()) return alert("You are not authorized as staff.");
@@ -161,18 +162,18 @@
             html += `<p>Connected: ${userAddress.slice(0,6)}...${userAddress.slice(-4)}</p>`;
 
             if (isMaster()) {
-                html += `<div style="background:#1a1a1a; padding:20px; border-radius:16px; margin:20px 0;">
+                html += `<div style="background:#1a1a1a;padding:20px;border-radius:16px;margin:20px 0;">
                     <h3>Appoint New Staff</h3>
-                    <input type="text" id="newStaff" placeholder="0xStaffAddress" style="width:70%;">
+                    <input type="text" id="newStaff" placeholder="0xStaffWalletAddress" style="width:70%;">
                     <button onclick="addStaff()" style="width:28%;">Add Staff</button>
                 </div>`;
             }
 
-            html += `<div style="background:#1a1a1a; padding:20px; border-radius:16px; margin:20px 0;">
+            html += `<div style="background:#1a1a1a;padding:20px;border-radius:16px;margin:20px 0;">
                 <h3>Current Staff</h3><div id="staffList"></div>
             </div>`;
 
-            html += `<div style="background:#1a1a1a; padding:20px; border-radius:16px; margin:20px 0;">
+            html += `<div style="background:#1a1a1a;padding:20px;border-radius:16px;margin:20px 0;">
                 <h3>Add New Product</h3>
                 <input type="text" id="newName" placeholder="Product Name"><br>
                 <input type="number" id="newPrice" placeholder="Price in RIC"><br>
@@ -181,7 +182,7 @@
                 <button onclick="addProduct()">Add Product</button>
             </div>`;
 
-            html += `<div style="background:#1a1a1a; padding:20px; border-radius:16px; margin:20px 0;">
+            html += `<div style="background:#1a1a1a;padding:20px;border-radius:16px;margin:20px 0;">
                 <h3>Current Products</h3><div id="productList"></div>
             </div>`;
 
@@ -204,8 +205,8 @@
         function renderStaffList() {
             const div = document.getElementById('staffList');
             div.innerHTML = staffWallets.map((addr, i) => `
-                <div style="padding:10px; background:#222; margin:5px 0; border-radius:8px;">
-                    ${addr} <button onclick="removeStaff(${i})" style="color:red; float:right;">Remove</button>
+                <div style="padding:12px; background:#222; margin:8px 0; border-radius:12px;">
+                    ${addr} <button onclick="removeStaff(${i})" style="color:red;float:right;">Remove</button>
                 </div>
             `).join('');
         }
