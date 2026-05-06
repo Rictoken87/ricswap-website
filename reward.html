@@ -7,31 +7,21 @@
     <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.0/dist/ethers.umd.min.js"></script>
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
     <style>
-        :root {
-            --obsidian: #080808;
-            --card-bg: #121212;
-            --magma: linear-gradient(135deg, #ff4d00 0%, #ff8c00 100%);
-            --gold: #ffd700;
-        }
+        :root { --obsidian: #080808; --card-bg: #121212; --magma: linear-gradient(135deg, #ff4d00 0%, #ff8c00 100%); --gold: #ffd700; }
         body { background: var(--obsidian); color: white; font-family: system-ui, sans-serif; margin: 0; padding: 0; }
         .nav { padding: 20px 40px; display: flex; align-items: center; border-bottom: 1px solid rgba(255,215,0,0.1); }
         .logo { font-size: 28px; font-weight: bold; color: var(--gold); }
         .nav-links { display: flex; gap: 30px; margin-left: 40px; }
         .nav-links a { color: white; text-decoration: none; font-weight: 500; }
         .nav-links a:hover, .nav-links a.active { color: var(--gold); }
-        .connect-btn, .test-btn { 
-            background: #222; color: white; border: 1px solid #444; 
-            padding: 8px 18px; border-radius: 9999px; margin-left: 10px; cursor: pointer; 
-        }
+        .connect-btn, .test-btn { background: #222; color: white; border: 1px solid #444; padding: 8px 18px; border-radius: 9999px; margin-left: 10px; cursor: pointer; }
         .test-btn { background: #333; border-color: var(--gold); }
-
         .rewards-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 25px; padding: 40px; max-width: 1400px; margin: 0 auto; }
         .reward-card { background: var(--card-bg); border-radius: 16px; overflow: hidden; border: 1px solid #333; }
         .reward-card img { width: 100%; height: 200px; object-fit: cover; }
         .reward-info { padding: 20px; }
         .price { color: var(--gold); font-size: 1.4rem; font-weight: bold; }
         .redeem-btn { background: var(--magma); color: white; border: none; padding: 12px; width: 100%; border-radius: 8px; margin-top: 10px; cursor: pointer; }
-
         .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 2000; align-items: center; justify-content: center; }
         .modal-content { background: #1a1a1a; padding: 30px; border-radius: 16px; max-width: 500px; width: 90%; }
         .modal-content input, .modal-content textarea { width: 100%; padding: 14px; margin: 10px 0; background: #222; color: white; border: 1px solid #444; border-radius: 10px; font-size: 15px; }
@@ -58,18 +48,14 @@
 
     <div class="rewards-grid" id="rewardsGrid"></div>
 
-    <!-- REDEMPTION MODAL -->
     <div id="redeemModal" class="modal">
         <div class="modal-content">
             <h2 id="modalTitle"></h2>
             <p id="modalPrice" style="color:var(--gold); font-size:1.3rem;"></p>
-            
             <h3>Your Email</h3>
             <input type="email" id="customerEmail" placeholder="your@email.com">
-
             <h3>Shipping Address</h3>
             <textarea id="shippingAddress" rows="5" placeholder="Full name, street address, city, postal code, country, phone..."></textarea>
-            
             <button onclick="confirmRedemption()" style="background:var(--magma); color:white; padding:14px; width:100%; border:none; border-radius:8px; margin-top:15px;">Confirm & Send $RIC</button>
             <button onclick="closeModal()" style="background:#333; color:white; padding:14px; width:100%; border:none; border-radius:8px; margin-top:8px;">Cancel</button>
         </div>
@@ -121,72 +107,29 @@
             document.getElementById('redeemModal').style.display = 'none';
         }
 
+        // ==================== TEST EMAIL ====================
         function sendTestEmail() {
             const testEmail = prompt("Enter your test email address:");
             if (!testEmail) return;
 
-            console.log("🚀 Trying to send test email to:", testEmail);
+            console.log("🚀 Sending test email to:", testEmail);
 
             emailjs.send("service_577894p", "template_zga1woa", {
                 to_email: testEmail,
                 product_name: "Test Product - Hoodie",
                 amount_ric: "2500",
                 shipping_address: "123 Test Street, Test City, 12345, Test Country",
-                tx_hash: "0xTestTransactionHashForDebug123",
+                tx_hash: "0xTestTransactionHash123",
                 user_address: userAddress || "0xTestWallet"
             })
-            .then(() => {
-                alert("✅ Test email sent! Check inbox & spam.");
+            .then((response) => {
+                console.log("✅ SUCCESS:", response);
+                alert("✅ Test email sent! Check inbox & spam folder.");
             })
-            .catch(err => {
-                console.error("❌ Full Error:", err);
-                alert("Failed.\nError: " + (err.text || err.message || "Check EmailJS dashboard"));
+            .catch((err) => {
+                console.error("❌ FULL ERROR:", err);
+                alert("Failed.\n\nError: " + (err.text || err.message || "See console (F12)"));
             });
-        }
-
-        async function confirmRedemption() {
-            const email = document.getElementById('customerEmail').value.trim();
-            const shipping = document.getElementById('shippingAddress').value.trim();
-
-            if (!email || !shipping) return alert("Please fill email and shipping address");
-
-            try {
-                const provider = new ethers.BrowserProvider(window.ethereum);
-                const signer = await provider.getSigner();
-                const ricContract = new ethers.Contract(RIC_ADDRESS, [
-                    "function balanceOf(address) view returns (uint256)",
-                    "function transfer(address to, uint256 amount) returns (bool)"
-                ], signer);
-
-                const balance = await ricContract.balanceOf(userAddress);
-                if (Number(ethers.formatEther(balance)) < currentProduct.price) {
-                    return alert(`Not enough $RIC! Need ${currentProduct.price} RIC`);
-                }
-
-                if (!confirm(`Send ${currentProduct.price} $RIC?`)) return;
-
-                const tx = await ricContract.transfer(MASTER_OWNER, ethers.parseEther(currentProduct.price.toString()));
-                await tx.wait();
-
-                sendEmailReceipt(email, currentProduct.name, currentProduct.price, shipping, tx.hash);
-
-                alert(`✅ Success! Receipt should be sent to ${email}`);
-                closeModal();
-            } catch (e) {
-                console.error(e);
-                alert("Transaction failed: " + (e.reason || e.message));
-            }
-        }
-
-        function sendEmailReceipt(email, productName, amount, shipping, txHash) {
-            emailjs.send("service_577894p", "template_zga1woa", {
-                to_email: email,
-                product_name: productName,
-                amount_ric: amount.toString(),
-                shipping_address: shipping,
-                tx_hash: txHash || "Pending",
-                user_address: userAddress || "Unknown"
-            }).catch(err => console.error("Email error:", err));
         }
 
         // Initialize
