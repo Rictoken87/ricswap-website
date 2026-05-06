@@ -4,74 +4,139 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>RicSwap | Rewards Store</title>
-    <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.0/dist/ethers.umd.min.js"></script>
-    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+    <!-- Ethers v6 for Blockchain -->
+    <script src="https://jsdelivr.net"></script>
+    <!-- EmailJS for Automated Orders -->
+    <script type="text/javascript" src="https://jsdelivr.net"></script>
+    
     <style>
-        :root { --obsidian: #080808; --card-bg: #121212; --magma: linear-gradient(135deg, #ff4d00 0%, #ff8c00 100%); --gold: #ffd700; }
-        body { background: var(--obsidian); color: white; font-family: system-ui, sans-serif; margin: 0; padding: 0; }
-        .nav { padding: 20px 40px; display: flex; align-items: center; border-bottom: 1px solid rgba(255,215,0,0.1); }
-        .logo { font-size: 28px; font-weight: bold; color: var(--gold); }
-        .nav-links { display: flex; gap: 30px; margin-left: 40px; }
-        .nav-links a { color: white; text-decoration: none; font-weight: 500; }
+        :root { 
+            --obsidian: #080808; 
+            --card-bg: #121212; 
+            --magma: linear-gradient(135deg, #ff4d00 0%, #ff8c00 100%); 
+            --gold: #ffd700; 
+        }
+        
+        /* BASE STYLES */
+        body { background: var(--obsidian); color: white; font-family: 'Inter', system-ui, sans-serif; margin: 0; padding: 0; }
+        
+        /* NAVIGATION */
+        .nav { padding: 15px 40px; display: flex; align-items: center; border-bottom: 1px solid rgba(255,215,0,0.1); background: rgba(8,8,8,0.95); position:sticky; top:0; z-index:100; }
+        .logo { font-size: 24px; font-weight: bold; color: var(--gold); letter-spacing: -1px; text-decoration: none; }
+        .nav-links { display: flex; gap: 25px; margin-left: 40px; }
+        .nav-links a { color: #999; text-decoration: none; font-weight: 500; font-size: 14px; transition: 0.2s; }
         .nav-links a:hover, .nav-links a.active { color: var(--gold); }
-        .connect-btn, .test-btn { background: #222; color: white; border: 1px solid #444; padding: 8px 18px; border-radius: 9999px; margin-left: 10px; cursor: pointer; }
-        .test-btn { background: #333; border-color: var(--gold); }
-        .rewards-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 25px; padding: 40px; max-width: 1400px; margin: 0 auto; }
-        .reward-card { background: var(--card-bg); border-radius: 16px; overflow: hidden; border: 1px solid #333; }
-        .reward-card img { width: 100%; height: 200px; object-fit: cover; }
-        .reward-info { padding: 20px; }
-        .price { color: var(--gold); font-size: 1.4rem; font-weight: bold; }
-        .redeem-btn { background: var(--magma); color: white; border: none; padding: 12px; width: 100%; border-radius: 8px; margin-top: 10px; cursor: pointer; }
-        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 2000; align-items: center; justify-content: center; }
-        .modal-content { background: #1a1a1a; padding: 30px; border-radius: 16px; max-width: 500px; width: 90%; }
-        .modal-content input, .modal-content textarea { width: 100%; padding: 14px; margin: 10px 0; background: #222; color: white; border: 1px solid #444; border-radius: 10px; font-size: 15px; }
+        
+        /* BUTTONS */
+        .connect-btn { 
+            background: #1a1a1a; color: white; border: 1.5px solid #333; padding: 6px 16px; 
+            border-radius: 9999px; font-size: 13px; font-weight: 600; cursor: pointer; 
+            white-space: nowrap; margin-left: auto; transition: 0.2s;
+        }
+        .connect-btn:hover { border-color: var(--gold); }
+        
+        .test-btn { 
+            background: transparent; color: #666; border: 1px solid #333; padding: 6px 12px; 
+            border-radius: 8px; font-size: 11px; margin-left: 10px; cursor: pointer; 
+        }
+        .test-btn:hover { color: white; border-color: #666; }
+
+        /* HEADER */
+        .store-header { padding: 80px 20px; text-align: center; background: radial-gradient(circle at center, #1a0f00 0%, var(--obsidian) 70%); }
+        .store-header h1 { font-size: clamp(2rem, 5vw, 3.5rem); margin-bottom: 10px; background: linear-gradient(90deg, var(--gold), #fff); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-weight: 800; }
+        .store-header p { color: #888; font-size: 1.1rem; }
+
+        /* PRODUCTS GRID */
+        .rewards-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 30px; padding: 40px; max-width: 1400px; margin: 0 auto; }
+        .reward-card { background: var(--card-bg); border-radius: 20px; overflow: hidden; border: 1px solid #222; transition: 0.3s; }
+        .reward-card:hover { transform: translateY(-5px); border-color: #444; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        .reward-card img { width: 100%; height: 220px; object-fit: cover; }
+        .reward-info { padding: 24px; }
+        .reward-info h3 { margin: 0 0 10px 0; font-size: 1.4rem; }
+        .reward-info p { color: #888; font-size: 0.9rem; line-height: 1.5; height: 40px; overflow: hidden; }
+        .price-tag { color: var(--gold); font-size: 1.6rem; font-weight: 800; margin: 15px 0; }
+        .redeem-btn { background: var(--magma); color: white; border: none; padding: 14px; width: 100%; border-radius: 12px; font-weight: bold; cursor: pointer; transition: 0.2s; }
+        .redeem-btn:hover { filter: brightness(1.1); transform: scale(1.02); }
+
+        /* MODAL */
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 2000; align-items: center; justify-content: center; backdrop-filter: blur(5px); }
+        .modal-content { background: #151515; padding: 30px; border-radius: 24px; max-width: 500px; width: 90%; border: 1px solid #333; box-shadow: 0 25px 50px rgba(0,0,0,0.5); }
+        .modal-header { display: flex; justify-content: space-between; margin-bottom: 20px; }
+        .modal h2 { margin: 0; font-size: 1.8rem; }
+        .modal input, .modal textarea { width: 100%; padding: 14px; margin: 8px 0 20px 0; background: #0a0a0a; color: white; border: 1px solid #333; border-radius: 12px; font-size: 15px; box-sizing: border-box; outline: none; }
+        .modal input:focus, .modal textarea:focus { border-color: var(--gold); }
+        .confirm-btn { background: var(--gold); color: black; width: 100%; padding: 16px; border: none; border-radius: 12px; font-weight: bold; font-size: 16px; cursor: pointer; }
+        .cancel-btn { background: transparent; color: #888; width: 100%; padding: 12px; border: none; margin-top: 10px; cursor: pointer; font-size: 14px; }
     </style>
 </head>
 <body>
-    <div class="nav">
-        <div class="logo">RicSwap</div>
+
+    <nav class="nav">
+        <a href="index.html" class="logo">RicSwap</a>
         <div class="nav-links">
-            <a href="index.html">Home</a>
             <a href="swap.html">Swap</a>
             <a href="pools.html">Pools</a>
             <a href="liquidity.html">Add Liquidity</a>
             <a href="reward.html" class="active">Rewards</a>
         </div>
         <button id="connectBtn" class="connect-btn">Connect Wallet</button>
-        <button onclick="sendTestEmail()" class="test-btn">📧 Test Email</button>
-    </div>
+        <!-- Hidden Dev Tool for testing emails -->
+        <button onclick="sendTestEmail()" class="test-btn" title="Send Test Email">Test Email</button>
+    </nav>
 
-    <div style="padding:80px 40px; text-align:center; background:radial-gradient(#1a0f00,var(--obsidian));">
-        <h1>Redeem $RIC for Real Products</h1>
-        <p>Shipping cost paid by redeemer</p>
-    </div>
+    <header class="store-header">
+        <h1>RIC Rewards Store</h1>
+        <p>Redeem $RIC for exclusive merch. Verified on-chain, delivered to your door.</p>
+    </header>
 
-    <div class="rewards-grid" id="rewardsGrid"></div>
+    <main class="rewards-grid" id="rewardsGrid"></main>
 
+    <!-- SHIPPING MODAL -->
     <div id="redeemModal" class="modal">
         <div class="modal-content">
-            <h2 id="modalTitle"></h2>
-            <p id="modalPrice" style="color:var(--gold); font-size:1.3rem;"></p>
+            <div class="modal-header">
+                <div>
+                    <h2 id="modalTitle">Product Name</h2>
+                    <div id="modalPrice" style="color:var(--gold); font-weight:bold;">0 RIC</div>
+                </div>
+            </div>
             
-            <h3>Your Email</h3>
-            <input type="email" id="customerEmail" placeholder="your@email.com">
+            <label style="font-size:12px; color:#888; text-transform:uppercase;">Contact Email</label>
+            <input type="email" id="customerEmail" placeholder="you@example.com">
 
-            <h3>Shipping Address</h3>
-            <textarea id="shippingAddress" rows="5" placeholder="Full name, street address, city, postal code, country, phone..."></textarea>
+            <label style="font-size:12px; color:#888; text-transform:uppercase;">Shipping Address</label>
+            <textarea id="shippingAddress" rows="4" placeholder="Full Name&#10;Street Address&#10;City, State, Zip Code&#10;Country"></textarea>
             
-            <button onclick="confirmRedemption()" style="background:var(--magma); color:white; padding:14px; width:100%; border:none; border-radius:8px; margin-top:15px;">Confirm & Send $RIC</button>
-            <button onclick="closeModal()" style="background:#333; color:white; padding:14px; width:100%; border:none; border-radius:8px; margin-top:8px;">Cancel</button>
+            <button onclick="confirmRedemption()" class="confirm-btn">Pay & Order</button>
+            <button onclick="closeModal()" class="cancel-btn">Cancel</button>
         </div>
     </div>
 
     <script>
-        let products = JSON.parse(localStorage.getItem('ricProducts')) || [];
-        let userAddress = null;
+        // CONFIGURATION
         const RIC_ADDRESS = "0x12C94d3A30daa09f81Ea6c037004E6e99A4A3dfc";
-        const MASTER_OWNER = "0x5E5aE526D45d69991039901a29148029a4889102";
+        const MASTER_OWNER = "0x5E5aE526D45d69991039901a29148029a4889102"; // Treasury Wallet
+        
+        // EMAILJS KEYS (Make sure these are correct!)
+        const EMAIL_SERVICE = "service_577894p";
+        const EMAIL_TEMPLATE = "template_zga1woa";
+        const EMAIL_PUBLIC_KEY = "Y5GsSScYku74Bt0LH";
+
+        // Default Products (If localStorage is empty)
+        const defaultProducts = [
+            { id: 1, name: "RicSwap Hoodie", price: 5000, image: "https://unsplash.com", desc: "Premium black hoodie with gold RicSwap embroidery." },
+            { id: 2, name: "Gold Metal Card", price: 15000, image: "https://unsplash.com", desc: "Limited edition laser-etched metal membership card." },
+            { id: 3, name: "Obsidian Cap", price: 2500, image: "https://unsplash.com", desc: "Stealth black cap with adjustable strap." }
+        ];
+
+        let products = JSON.parse(localStorage.getItem('ricProducts')) || defaultProducts;
+        let userAddress = null;
         let currentProduct = null;
 
-        emailjs.init("Y5GsSScYku74Bt0LH");
+        // Initialize EmailJS
+        (function(){
+            emailjs.init(EMAIL_PUBLIC_KEY);
+        })();
 
         async function connectWallet() {
             if (!window.ethereum) return alert("Please install MetaMask");
@@ -80,7 +145,10 @@
                 await provider.send("eth_requestAccounts", []);
                 const signer = await provider.getSigner();
                 userAddress = await signer.getAddress();
+                
+                // Truncate for Small Button
                 document.getElementById("connectBtn").textContent = userAddress.slice(0,6) + "..." + userAddress.slice(-4);
+                document.getElementById("connectBtn").style.borderColor = "var(--gold)";
             } catch (e) { console.error(e); }
         }
 
@@ -91,18 +159,19 @@
                     <img src="${p.image}" alt="${p.name}">
                     <div class="reward-info">
                         <h3>${p.name}</h3>
-                        <p>${p.desc || ''}</p>
-                        <div class="price">${p.price} $RIC</div>
-                        <button class="redeem-btn" onclick="showRedeemModal(${p.id})">Redeem</button>
+                        <p>${p.desc}</p>
+                        <div class="price-tag">${p.price.toLocaleString()} RIC</div>
+                        <button class="redeem-btn" onclick="openModal(${p.id})">Redeem Now</button>
                     </div>
                 </div>`).join('');
         }
 
-        function showRedeemModal(id) {
+        function openModal(id) {
             currentProduct = products.find(p => p.id === id);
             if (!currentProduct) return;
+            
             document.getElementById('modalTitle').textContent = currentProduct.name;
-            document.getElementById('modalPrice').textContent = `Price: ${currentProduct.price} $RIC`;
+            document.getElementById('modalPrice').textContent = `${currentProduct.price.toLocaleString()} RIC`;
             document.getElementById('redeemModal').style.display = 'flex';
         }
 
@@ -110,42 +179,80 @@
             document.getElementById('redeemModal').style.display = 'none';
         }
 
-        // ==================== DEEP DEBUG TEST ====================
-        function sendTestEmail() {
-            const testEmail = prompt("Enter your test email:");
-            if (!testEmail) return;
+        async function confirmRedemption() {
+            if (!userAddress) return alert("Please connect wallet first.");
+            
+            const email = document.getElementById('customerEmail').value;
+            const address = document.getElementById('shippingAddress').value;
 
-            console.log("%c🚀 Starting EmailJS Test...", "color:orange; font-weight:bold");
-            console.log("Service ID:", "service_577894p");
-            console.log("Template ID:", "template_zga1woa");
-            console.log("to_email value:", testEmail);
+            if (!email || !address) return alert("Please enter email and shipping address.");
 
-            const params = {
-                to_email: testEmail,
-                product_name: "Test Product - Hoodie",
-                amount_ric: "2500",
-                shipping_address: "123 Test Street, Test City, 12345, Test Country",
-                tx_hash: "0xTestTransactionHash123",
-                user_address: userAddress || "0xTestWallet"
-            };
+            try {
+                const provider = new ethers.BrowserProvider(window.ethereum);
+                const signer = await provider.getSigner();
+                const ricContract = new ethers.Contract(RIC_ADDRESS, [
+                    "function transfer(address to, uint256 amount) returns (bool)"
+                ], signer);
 
-            console.log("Sending params:", params);
+                // 1. Calculate Amount
+                const amountWei = ethers.parseEther(currentProduct.price.toString());
+                
+                // 2. Send Transaction
+                const tx = await ricContract.transfer(MASTER_OWNER, amountWei);
+                
+                const btn = document.querySelector('.confirm-btn');
+                btn.textContent = "Processing Blockchain...";
+                btn.disabled = true;
 
-            emailjs.send("service_577894p", "template_zga1woa", params)
-                .then((response) => {
-                    console.log("%c✅ EmailJS SUCCESS!", "color:green; font-size:16px", response);
-                    alert("✅ Test email sent successfully!\nCheck your inbox and spam folder.");
-                })
-                .catch((error) => {
-                    console.error("%c❌ EmailJS FAILED", "color:red; font-size:16px");
-                    console.error("Status:", error.status);
-                    console.error("Text:", error.text);
-                    console.error("Full Error:", error);
-                    alert("Failed.\n\nError: " + (error.text || error.message || "Unknown"));
-                });
+                await tx.wait();
+
+                // 3. Send Email Notification (Automated Fulfillment)
+                btn.textContent = "Sending Confirmation...";
+                
+                const orderParams = {
+                    to_email: email,
+                    product_name: currentProduct.name,
+                    amount_ric: currentProduct.price,
+                    shipping_address: address,
+                    tx_hash: tx.hash,
+                    user_wallet: userAddress
+                };
+
+                await emailjs.send(EMAIL_SERVICE, EMAIL_TEMPLATE, orderParams);
+
+                alert(`✅ Order Successful!\n\nTransaction Hash: ${tx.hash.slice(0,10)}...\nConfirmation email sent to: ${email}`);
+                closeModal();
+                btn.textContent = "Pay & Order";
+                btn.disabled = false;
+
+            } catch (e) {
+                console.error(e);
+                alert("Order Failed: " + (e.reason || e.message || "User rejected transaction"));
+                document.querySelector('.confirm-btn').textContent = "Pay & Order";
+                document.querySelector('.confirm-btn').disabled = false;
+            }
         }
 
-        // Initialize
+        // --- DEV TOOL: Test Email Function ---
+        function sendTestEmail() {
+            const testEmail = prompt("Enter your email to test connectivity:");
+            if(!testEmail) return;
+            
+            const params = {
+                to_email: testEmail,
+                product_name: "TEST PRODUCT",
+                amount_ric: "0",
+                shipping_address: "Test Street, Blockchain City",
+                tx_hash: "0xTEST_HASH_123456789",
+                user_wallet: "0xDevWallet"
+            };
+
+            emailjs.send(EMAIL_SERVICE, EMAIL_TEMPLATE, params)
+                .then(() => alert("✅ Test Email Sent! Check your inbox."))
+                .catch((err) => alert("❌ Failed: " + JSON.stringify(err)));
+        }
+
+        // Init
         renderProducts();
         document.getElementById("connectBtn").addEventListener("click", connectWallet);
     </script>
