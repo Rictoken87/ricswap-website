@@ -52,10 +52,13 @@
         <div class="modal-content">
             <h2 id="modalTitle"></h2>
             <p id="modalPrice" style="color:var(--gold); font-size:1.3rem;"></p>
+            
             <h3>Your Email</h3>
             <input type="email" id="customerEmail" placeholder="your@email.com">
+
             <h3>Shipping Address</h3>
             <textarea id="shippingAddress" rows="5" placeholder="Full name, street address, city, postal code, country, phone..."></textarea>
+            
             <button onclick="confirmRedemption()" style="background:var(--magma); color:white; padding:14px; width:100%; border:none; border-radius:8px; margin-top:15px;">Confirm & Send $RIC</button>
             <button onclick="closeModal()" style="background:#333; color:white; padding:14px; width:100%; border:none; border-radius:8px; margin-top:8px;">Cancel</button>
         </div>
@@ -107,29 +110,39 @@
             document.getElementById('redeemModal').style.display = 'none';
         }
 
-        // ==================== TEST EMAIL ====================
+        // ==================== DEEP DEBUG TEST ====================
         function sendTestEmail() {
-            const testEmail = prompt("Enter your test email address:");
+            const testEmail = prompt("Enter your test email:");
             if (!testEmail) return;
 
-            console.log("🚀 Sending test email to:", testEmail);
+            console.log("%c🚀 Starting EmailJS Test...", "color:orange; font-weight:bold");
+            console.log("Service ID:", "service_577894p");
+            console.log("Template ID:", "template_zga1woa");
+            console.log("to_email value:", testEmail);
 
-            emailjs.send("service_577894p", "template_zga1woa", {
+            const params = {
                 to_email: testEmail,
                 product_name: "Test Product - Hoodie",
                 amount_ric: "2500",
                 shipping_address: "123 Test Street, Test City, 12345, Test Country",
                 tx_hash: "0xTestTransactionHash123",
                 user_address: userAddress || "0xTestWallet"
-            })
-            .then((response) => {
-                console.log("✅ SUCCESS:", response);
-                alert("✅ Test email sent! Check inbox & spam folder.");
-            })
-            .catch((err) => {
-                console.error("❌ FULL ERROR:", err);
-                alert("Failed.\n\nError: " + (err.text || err.message || "See console (F12)"));
-            });
+            };
+
+            console.log("Sending params:", params);
+
+            emailjs.send("service_577894p", "template_zga1woa", params)
+                .then((response) => {
+                    console.log("%c✅ EmailJS SUCCESS!", "color:green; font-size:16px", response);
+                    alert("✅ Test email sent successfully!\nCheck your inbox and spam folder.");
+                })
+                .catch((error) => {
+                    console.error("%c❌ EmailJS FAILED", "color:red; font-size:16px");
+                    console.error("Status:", error.status);
+                    console.error("Text:", error.text);
+                    console.error("Full Error:", error);
+                    alert("Failed.\n\nError: " + (error.text || error.message || "Unknown"));
+                });
         }
 
         // Initialize
