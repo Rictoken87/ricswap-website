@@ -3,54 +3,60 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RicSwap Launch Pad</title>
+    <title>RicSwap | Launch Pad</title>
     <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.0/dist/ethers.umd.min.js"></script>
     <style>
-        :root {
-            --obsidian: #080808;
-            --card: #121212;
-            --gold: #ffd700;
-            --magma: linear-gradient(135deg, #ff4d00, #ff8c00);
-        }
-        body { background: var(--obsidian); color: white; font-family: system-ui; margin:0; padding:0; }
-        .nav { padding: 20px 40px; display:flex; align-items:center; justify-content:space-between; border-bottom:1px solid rgba(255,215,0,0.1); }
-        .logo { font-size:28px; font-weight:bold; color:var(--gold); }
-        .card { background:var(--card); border-radius:20px; padding:40px; margin:30px auto; max-width:800px; border:1px solid #333; }
-        input, select { width:100%; padding:14px; margin:12px 0; background:#1a1a1a; border:1px solid #444; border-radius:12px; color:white; }
-        button { background:var(--magma); color:white; border:none; padding:18px; border-radius:12px; font-weight:bold; cursor:pointer; width:100%; margin-top:20px; font-size:1.1rem; }
-        .info { font-size:0.9rem; opacity:0.8; margin:15px 0; }
+        :root { --obsidian: #080808; --card: #121212; --gold: #ffd700; --magma: linear-gradient(135deg, #ff4d00, #ff8c00); }
+        body { background: var(--obsidian); color: white; font-family: system-ui, sans-serif; margin:0; padding:0; }
+        .nav { padding: 15px 40px; display: flex; align-items: center; border-bottom: 1px solid rgba(255,215,0,0.1); background: rgba(8,8,8,0.95); position: sticky; top: 0; z-index: 100; }
+        .logo { font-size: 24px; font-weight: 800; color: var(--gold); text-decoration: none; }
+        .connect-btn { background: #1a1a1a; color: white; border: 1.5px solid #333; padding: 6px 16px; border-radius: 9999px; font-size: 13px; font-weight: 600; cursor: pointer; margin-left: auto; }
+        .connect-btn:hover { border-color: var(--gold); }
+        .header { padding: 80px 20px 40px; text-align: center; background: radial-gradient(circle at center, #1a0f00 0%, var(--obsidian) 70%); }
+        .header h1 { font-size: 2.5rem; margin: 0; background: linear-gradient(90deg, var(--gold), #fff); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-weight: 800; }
+        .card { background: var(--card); border-radius: 24px; padding: 40px; margin: 0 auto 60px; max-width: 560px; border: 1px solid #222; }
+        label { display: block; font-size: 11px; color: #666; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 1px; }
+        input { width: 100%; padding: 14px; margin-bottom: 20px; background: #080808; border: 1px solid #222; border-radius: 12px; color: white; box-sizing: border-box; }
+        input:focus { border-color: var(--gold); }
+        .launch-btn { background: var(--magma); color: white; border: none; padding: 18px; border-radius: 14px; font-weight: 800; cursor: pointer; width: 100%; font-size: 1.1rem; }
+        .launch-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .status-box { margin-top: 25px; padding: 15px; border-radius: 12px; background: rgba(255,215,0,0.05); border: 1px solid rgba(255,215,0,0.2); font-size: 13px; display: none; }
     </style>
 </head>
 <body>
-    <div class="nav">
-        <div class="logo">RicSwap Launch Pad</div>
-        <button onclick="connectWallet()" id="connectBtn">Connect Wallet</button>
+    <nav class="nav">
+        <a href="index.html" class="logo">RicSwap</a>
+        <button id="connectBtn" class="connect-btn" onclick="connectWallet()">Connect Wallet</button>
+    </nav>
+
+    <div class="header">
+        <h1>RIC Token Factory</h1>
+        <p style="color:#666;">Fair • Transparent • Deflationary Launch Pad</p>
     </div>
 
     <div class="card">
-        <h2>🚀 Create Your Token</h2>
-        <p class="info">Pay <strong>100 $RIC</strong> → 70% Burned • 30% to Development</p>
+        <h2>🚀 Launch New Token</h2>
+        <p style="font-size:13px; color:#888; margin-bottom:30px;">
+            Fee: <strong>100 $RIC</strong> → <span style="color:#0f0">70% Burned Forever</span> / <span style="color:#ffd700">30% Development</span>
+        </p>
 
         <label>Token Name</label>
-        <input type="text" id="name" placeholder="e.g. Golden Doge">
+        <input type="text" id="name" placeholder="e.g. Shibarium Gold">
 
         <label>Token Symbol</label>
-        <input type="text" id="symbol" placeholder="e.g. GDOGE">
+        <input type="text" id="symbol" placeholder="e.g. GOLD">
 
-        <label>Total Supply (max 1 Billion recommended)</label>
+        <label>Total Supply</label>
         <input type="number" id="supply" value="1000000000">
 
-        <label>Initial Liquidity (% of supply)</label>
-        <input type="number" id="liq" value="60">
-
-        <button onclick="launchToken()">Pay 100 RIC & Launch Token</button>
+        <button onclick="handleLaunch()" id="launchBtn" class="launch-btn">Approve 100 RIC & Launch Token</button>
+        
+        <div id="statusBox" class="status-box"></div>
     </div>
 
     <script>
         const RIC_ADDRESS = "0x12C94d3A30daa09f81Ea6c037004E6e99A4A3dfc";
-        const FACTORY_ADDRESS = "YOUR_FACTORY_ADDRESS_HERE"; // Will be filled after deployment
-        const MASTER_TREASURY = "0x5E5aE526D45d69991039901a29148029a4889102";
-        const DEAD = "0x000000000000000000000000000000000000dEaD";
+        const FACTORY_ADDRESS = "0x819a53FE6c72322c9E377979Cad269eDDD9A0463";   // ← YOUR DEPLOYED FACTORY
 
         let signer, userAddress;
 
@@ -62,39 +68,57 @@
             document.getElementById("connectBtn").textContent = userAddress.slice(0,6) + "..." + userAddress.slice(-4);
         }
 
-        async function launchToken() {
-            if (!signer) return alert("Please connect wallet first");
+        async function handleLaunch() {
+            if (!signer) return await connectWallet();
 
             const name = document.getElementById("name").value.trim();
             const symbol = document.getElementById("symbol").value.trim();
-            const supply = document.getElementById("supply").value;
-            const liqPercent = document.getElementById("liq").value;
+            const supply = BigInt(document.getElementById("supply").value || "1000000000");
 
-            if (!name || !symbol) return alert("Name and Symbol required");
+            if (!name || !symbol) return alert("Please enter Token Name and Symbol");
+
+            const status = document.getElementById("statusBox");
+            const btn = document.getElementById("launchBtn");
+            btn.disabled = true;
+            status.style.display = "block";
+            status.style.color = "#ffd700";
+            status.innerText = "Approving 100 RIC...";
 
             try {
                 const ric = new ethers.Contract(RIC_ADDRESS, [
-                    "function transfer(address to, uint256 amount) returns (bool)",
+                    "function approve(address,uint256) returns (bool)",
                     "function balanceOf(address) view returns (uint256)"
                 ], signer);
 
                 const fee = ethers.parseEther("100");
 
-                // Check balance
-                const balance = await ric.balanceOf(userAddress);
-                if (balance < fee) return alert("Not enough $RIC (need 100 RIC)");
+                if (await ric.balanceOf(userAddress) < fee) {
+                    throw new Error("Not enough $RIC (need at least 100 RIC)");
+                }
 
-                // Step 1: Pay 100 RIC
-                alert("Sending 100 RIC...\n70% will be burned, 30% to development.");
-                const tx = await ric.transfer(FACTORY_ADDRESS, fee); // Factory will handle split
-                await tx.wait();
+                const approveTx = await ric.approve(FACTORY_ADDRESS, fee);
+                await approveTx.wait();
 
-                alert(`✅ Payment successful!\nToken creation starting...\n\nName: ${name}\nSymbol: ${symbol}`);
-                // TODO: Call Factory after contract is deployed
+                status.innerText = "Deploying your token...";
+
+                const factory = new ethers.Contract(FACTORY_ADDRESS, [
+                    "function createToken(string name, string symbol, uint256 totalSupply) external"
+                ], signer);
+
+                const deployTx = await factory.createToken(name, symbol, supply);
+                await deployTx.wait();
+
+                status.style.color = "#0f0";
+                status.innerHTML = `✅ <strong>Success!</strong><br>Your token <b>${symbol}</b> is now live!`;
+
+                alert(`🎉 Token ${symbol} launched successfully!`);
 
             } catch (e) {
                 console.error(e);
-                alert("Transaction failed: " + (e.reason || e.message));
+                status.style.color = "red";
+                status.innerText = "❌ " + (e.reason || e.message || "Transaction failed");
+            } finally {
+                btn.disabled = false;
             }
         }
     </script>
