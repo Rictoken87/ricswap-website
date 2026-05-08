@@ -7,6 +7,7 @@
     <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.0/dist/ethers.umd.min.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
     
     <style>
         :root { --obsidian: #080808; --card: #121212; --gold: #ffd700; --magma: linear-gradient(135deg, #ff4d00, #ff8c00); }
@@ -23,11 +24,10 @@
         .reward-card:hover { transform: translateY(-5px); border-color: var(--gold); }
         .reward-card img { width: 100%; height: 220px; object-fit: cover; }
         
-        #adminOverlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.96); z-index: 1000; padding: 40px; overflow: auto; }
-        .admin-box { max-width: 700px; margin: auto; background: var(--card); padding: 35px; border-radius: 24px; border: 1px solid #333; }
-        input { width: 100%; padding: 14px; margin: 10px 0; background: #080808; border: 1px solid #333; border-radius: 12px; color: white; }
+        #adminOverlay, #receiptModal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.96); z-index: 1000; padding: 40px; overflow: auto; }
+        .modal-box { max-width: 600px; margin: auto; background: var(--card); padding: 35px; border-radius: 24px; border: 1px solid #333; }
+        input, textarea { width: 100%; padding: 14px; margin: 10px 0; background: #080808; border: 1px solid #333; border-radius: 12px; color: white; }
         .btn-main { background: var(--magma); color: white; border: none; padding: 16px; border-radius: 14px; font-weight: 800; cursor: pointer; width: 100%; }
-        .list-item { display: flex; justify-content: space-between; align-items: center; padding: 12px; background: #000; margin-top: 8px; border-radius: 10px; border: 1px solid #222; }
     </style>
 </head>
 <body>
@@ -54,20 +54,26 @@
 
     <!-- ADMIN PANEL -->
     <div id="adminOverlay">
-        <div class="admin-box">
-            <button onclick="closeAdminPanel()" style="float:right; background:transparent; color:#666; border:none; cursor:pointer; font-weight:bold;">[ CLOSE ]</button>
+        <div class="modal-box">
+            <button onclick="closeAdminPanel()" style="float:right; background:transparent; color:#666;">[ CLOSE ]</button>
             <h2 style="color:var(--gold);">Staff Admin Panel</h2>
-            
-            <div style="margin-bottom:30px;">
-                <h3>➕ Add New Global Product</h3>
-                <input type="text" id="pName" placeholder="Product Name">
-                <input type="number" id="pPrice" placeholder="Price in RIC">
-                <input type="text" id="pImage" placeholder="Image URL">
-                <button onclick="addProduct()" class="btn-main">Add to Global Store</button>
-            </div>
-            
-            <h3>📦 Manage Products</h3>
-            <div id="productList"></div>
+            <input type="text" id="pName" placeholder="Product Name">
+            <input type="number" id="pPrice" placeholder="Price in RIC">
+            <input type="text" id="pImage" placeholder="Image URL">
+            <button onclick="addProduct()" class="btn-main">Add to Global Store</button>
+            <div id="productList" style="margin-top:30px;"></div>
+        </div>
+    </div>
+
+    <!-- RECEIPT MODAL -->
+    <div id="receiptModal">
+        <div class="modal-box">
+            <h2 style="color:var(--gold);">Order Confirmation</h2>
+            <p>Please enter your details for shipping:</p>
+            <input type="email" id="customerEmail" placeholder="Your Email Address" required>
+            <textarea id="shippingAddress" rows="4" placeholder="Full Shipping Address"></textarea>
+            <button onclick="sendReceipt()" class="btn-main">Confirm & Send Receipt</button>
+            <button onclick="closeReceiptModal()" style="margin-top:10px; background:#333;">Cancel</button>
         </div>
     </div>
 
@@ -89,13 +95,16 @@
         const MASTER_OWNER = "0x5e5ae526d45d69991039901a29148029a4889102".toLowerCase();
         const RIC_ADDRESS = "0x12C94d3A30daa09f81Ea6c037004E6e99A4A3dfc";
         let userAddress = "";
+        let currentRedeemProduct = null;
+
+        // EmailJS Setup
+        emailjs.init("Y5GsSScYku74Bt0LH");
 
         // Real-time Sync
         db.ref('products').on('value', (snapshot) => {
             const data = snapshot.val();
             const products = data ? Object.keys(data).map(key => ({ id: key, ...data[key] })) : [];
             renderProducts(products);
-            renderAdminList(products);
         });
 
         async function connectWallet() {
@@ -114,31 +123,52 @@
                     <div style="padding:24px;">
                         <h3>${p.name}</h3>
                         <p style="color:var(--gold); font-size:1.6rem; font-weight:900;">${p.price} RIC</p>
-                        <button onclick="redeem('${p.id}', ${p.price})" style="width:100%; padding:12px; background:var(--magma);">Redeem Now</button>
+                        <button onclick="startRedemption('${p.id}', ${p.price}, '${p.name}')" style="width:100%; padding:12px; background:var(--magma);">Redeem Now</button>
                     </div>
                 </div>
             `).join('');
         }
 
-        async function redeem(id, price) {
+        function startRedemption(id, price, name) {
             if (!userAddress) return alert("Please connect wallet first");
-            
+            currentRedeemProduct = { id, price, name };
+            document.getElementById('receiptModal').style.display = 'block';
+        }
+
+        async function sendReceipt() {
+            const email = document.getElementById('customerEmail').value.trim();
+            const address = document.getElementById('shippingAddress').value.trim();
+
+            if (!email || !address) return alert("Email and Shipping Address are required");
+
             try {
                 const provider = new ethers.BrowserProvider(window.ethereum);
                 const signer = await provider.getSigner();
                 const ric = new ethers.Contract(RIC_ADDRESS, ["function transfer(address,uint256) returns (bool)"], signer);
                 
-                const amountWei = ethers.parseUnits(price.toString(), 18);
-                
-                if (!confirm(`Pay ${price} $RIC for this product?`)) return;
-                
+                const amountWei = ethers.parseUnits(currentRedeemProduct.price.toString(), 18);
                 const tx = await ric.transfer(MASTER_OWNER, amountWei);
                 await tx.wait();
-                
-                alert(`✅ Success! Paid ${price} $RIC.\nStaff will process your reward shortly.`);
+
+                // Send Email Receipt
+                await emailjs.send("service_577894p", "template_zga1woa", {
+                    to_email: email,
+                    product_name: currentRedeemProduct.name,
+                    amount_ric: currentRedeemProduct.price,
+                    shipping_address: address,
+                    tx_hash: tx.hash,
+                    user_wallet: userAddress
+                });
+
+                alert("✅ Payment Successful & Receipt Sent!");
+                closeReceiptModal();
             } catch (e) {
                 alert("Transaction failed: " + (e.reason || e.message));
             }
+        }
+
+        function closeReceiptModal() {
+            document.getElementById('receiptModal').style.display = 'none';
         }
 
         function addProduct() {
