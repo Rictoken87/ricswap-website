@@ -8,19 +8,36 @@
     <style>
         :root { --obsidian: #080808; --card: #121212; --gold: #ffd700; --magma: linear-gradient(135deg, #ff4d00, #ff8c00); }
         body { background: var(--obsidian); color: white; font-family: system-ui, sans-serif; margin:0; padding:0; }
-        .nav { padding: 15px 40px; display: flex; align-items: center; border-bottom: 1px solid rgba(255,215,0,0.1); background: rgba(8,8,8,0.95); position: sticky; top: 0; z-index: 100; }
+        
+        .nav { 
+            padding: 15px 40px; 
+            display: flex; 
+            align-items: center; 
+            border-bottom: 1px solid rgba(255,215,0,0.1); 
+            background: rgba(8,8,8,0.95); 
+            position: sticky; 
+            top: 0; 
+            z-index: 100; 
+        }
         .logo { font-size: 24px; font-weight: 800; color: var(--gold); text-decoration: none; }
         .nav-links { display: flex; gap: 25px; margin-left: 40px; }
         .nav-links a { color: #888; text-decoration: none; font-weight: 500; }
         .nav-links a:hover, .nav-links a.active { color: var(--gold); }
-        .connect-btn, .admin-btn { background: #1a1a1a; color: white; border: 1.5px solid #333; padding: 6px 16px; border-radius: 9999px; font-size: 13px; font-weight: 600; cursor: pointer; margin-left: auto; }
-        .rewards-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 25px; padding: 40px; max-width: 1400px; margin: 0 auto; }
+        .connect-btn, .admin-btn { 
+            background: #1a1a1a; color: white; border: 1.5px solid #333; 
+            padding: 6px 16px; border-radius: 9999px; font-size: 13px; 
+            font-weight: 600; cursor: pointer; margin-left: auto; 
+        }
+        .rewards-grid { 
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); 
+            gap: 25px; padding: 40px; max-width: 1400px; margin: 0 auto; 
+        }
         .reward-card { background: var(--card); border-radius: 20px; overflow: hidden; border: 1px solid #222; }
         .reward-card img { width: 100%; height: 200px; object-fit: cover; }
     </style>
 </head>
 <body>
-    <!-- YOUR STANDARD NAVIGATION -->
+    <!-- STANDARD NAVIGATION -->
     <div class="nav">
         <div class="logo">RicSwap</div>
         <div class="nav-links">
@@ -47,7 +64,7 @@
         <h2 style="color:var(--gold);">Staff Admin Panel</h2>
         <button onclick="closeAdminPanel()" style="float:right; background:red; color:white; border:none; padding:8px 16px; border-radius:8px;">Close</button>
 
-        <h3>Appoint New Staff</h3>
+        <h3>Appoint New Staff (Master Only)</h3>
         <input type="text" id="staffWallet" placeholder="0x... Staff Address" style="width:70%; padding:10px;">
         <button onclick="addStaff()">Add Staff</button>
 
@@ -67,7 +84,6 @@
 
     <script>
         const MASTER_OWNER = "0x5e5ae526d45d69991039901a29148029a4889102".toLowerCase();
-        const RIC_ADDRESS = "0x12C94d3A30daa09f81Ea6c037004E6e99A4A3dfc";
         let userAddress = "";
         let products = [];
         let staffWallets = [];
@@ -93,7 +109,7 @@
         function renderProducts() {
             const grid = document.getElementById('rewardsGrid');
             if (products.length === 0) {
-                grid.innerHTML = `<p style="text-align:center; color:#666; padding:60px;">No products available yet.</p>`;
+                grid.innerHTML = `<p style="text-align:center; color:#666; padding:80px;">No products available yet.</p>`;
                 return;
             }
             grid.innerHTML = products.map(p => `
@@ -102,27 +118,10 @@
                     <div style="padding:15px;">
                         <h3>${p.name}</h3>
                         <p><strong>${p.price} $RIC</strong> • Stock: ${p.stock}</p>
-                        <button onclick="redeemProduct(${p.id})" style="width:100%; padding:10px; background:var(--magma);">Redeem Now</button>
+                        <button onclick="redeemProduct(${p.id})" style="width:100%; padding:12px; background:var(--magma); border:none; border-radius:10px; color:white;">Redeem Now</button>
                     </div>
                 </div>
             `).join('');
-        }
-
-        async function redeemProduct(id) {
-            if (!userAddress) return alert("Please connect wallet first");
-            const p = products.find(x => x.id === id);
-            if (!p) return;
-
-            try {
-                const provider = new ethers.BrowserProvider(window.ethereum);
-                const signer = await provider.getSigner();
-                const ric = new ethers.Contract(RIC_ADDRESS, ["function transfer(address,uint256) returns (bool)"], signer);
-                const tx = await ric.transfer(MASTER_OWNER, ethers.parseEther(p.price.toString()));
-                await tx.wait();
-                alert(`✅ Successfully paid ${p.price} RIC for ${p.name}!`);
-            } catch (e) {
-                alert("Transaction failed: " + (e.reason || e.message));
-            }
         }
 
         function openAdminPanel() {
@@ -137,19 +136,27 @@
         }
 
         function renderAdmin() {
-            document.getElementById('staffList').innerHTML = staffWallets.map((addr, i) => `
-                <div>${addr} ${isMaster() ? `<button onclick="removeStaff(${i})" style="color:red;">Remove</button>` : ''}</div>
-            `).join('') || "<p>No staff yet.</p>";
+            // Staff List
+            let sHtml = staffWallets.map((addr, i) => `
+                <div style="padding:10px; background:#1a1a1a; margin:5px 0; border-radius:8px; display:flex; justify-content:space-between;">
+                    ${addr}
+                    ${isMaster() ? `<button onclick="removeStaff(${i})" style="color:red;">Remove</button>` : ''}
+                </div>
+            `).join('');
+            document.getElementById('staffList').innerHTML = sHtml || "<p>No staff appointed yet.</p>";
 
-            document.getElementById('productList').innerHTML = products.map((p, i) => `
-                <div>${p.name} (${p.price} RIC) - Stock: ${p.stock} 
+            // Product List
+            let pHtml = products.map((p, i) => `
+                <div style="padding:10px; background:#1a1a1a; margin:5px 0; border-radius:8px; display:flex; justify-content:space-between;">
+                    ${p.name} (${p.price} RIC) - Stock: ${p.stock}
                     <button onclick="deleteProduct(${i})" style="color:red;">Delete</button>
                 </div>
-            `).join('') || "<p>No products yet.</p>";
+            `).join('');
+            document.getElementById('productList').innerHTML = pHtml || "<p>No products yet.</p>";
         }
 
         function addStaff() {
-            if (!isMaster()) return alert("Only Master can add staff");
+            if (!isMaster()) return alert("Only Master can appoint staff");
             const addr = document.getElementById('staffWallet').value.trim();
             if (addr && addr.startsWith('0x')) {
                 staffWallets.push(addr);
@@ -172,17 +179,18 @@
             const image = document.getElementById('pImage').value || 'https://picsum.photos/300/200';
             const stock = parseInt(document.getElementById('pStock').value) || 50;
 
-            if (!name || !price) return alert("Name and price required");
+            if (!name || !price) return alert("Name and price are required");
 
             products.push({ id: Date.now(), name, price, image, stock });
             localStorage.setItem('ricGlobalProducts', JSON.stringify(products));
+
             renderProducts();
             renderAdmin();
-            alert("Product added!");
+            alert("✅ Product added to store!");
         }
 
         function deleteProduct(i) {
-            if (confirm("Delete product?")) {
+            if (confirm("Delete this product?")) {
                 products.splice(i, 1);
                 localStorage.setItem('ricGlobalProducts', JSON.stringify(products));
                 renderProducts();
@@ -190,6 +198,11 @@
             }
         }
 
+        function redeemProduct(id) {
+            alert("Redemption feature (on-chain payment) coming soon.");
+        }
+
+        // Initialize
         window.onload = loadData;
     </script>
 </body>
