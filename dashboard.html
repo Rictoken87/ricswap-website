@@ -35,9 +35,9 @@
         .stat-label { color: #aaa; font-size: 1.1rem; }
         .burn-card { background: linear-gradient(135deg, #4a0000, #220000); border: 1px solid #ff6666; }
 
-        .update-panel { background: #1a1a1a; border: 2px solid var(--gold); border-radius: 20px; padding: 30px; margin: 40px auto; max-width: 800px; }
+        .update-panel { background: #1a1a1a; border: 2px solid var(--gold); border-radius: 20px; padding: 30px; margin: 40px auto; max-width: 800px; display: none; }
         input { background: #222; border: 1px solid #444; color: white; padding: 12px; border-radius: 8px; width: 100%; margin: 8px 0; font-size: 1.1rem; }
-        button { background: var(--magma); color: white; border: none; padding: 14px 24px; border-radius: 12px; font-weight: bold; cursor: pointer; margin-top: 10px; }
+        button { background: var(--magma); color: white; border: none; padding: 14px 24px; border-radius: 12px; font-weight: bold; cursor: pointer; margin-top: 10px; width: 100%; }
     </style>
 </head>
 <body>
@@ -60,25 +60,25 @@
     </div>
 
     <div style="padding:100px 20px; text-align:center; background: radial-gradient(circle at center, #1a0f00 0%, var(--obsidian) 70%);">
-        <h1 style="font-size: 3.2rem; margin:0;">Dashboard</h1>
-        <p style="color:#888; font-size: 1.3rem;">Real-time Overview + Burn Tracking</p>
+        <h1 style="font-size: 3.2rem; margin:0;">RicSwap Dashboard</h1>
+        <p style="color:#888; font-size: 1.3rem;">Real-time Stats & Burn Tracking</p>
     </div>
 
     <div class="dashboard-grid" id="dashboardGrid"></div>
 
-    <!-- Master Only: Update Burn Stats -->
-    <div class="update-panel" id="updatePanel" style="display:none;">
+    <!-- Master Only Update Panel -->
+    <div class="update-panel" id="updatePanel">
         <h2 style="color:var(--gold); margin-top:0;">🔥 Update Burn & Lock Stats (Master Only)</h2>
-        <input type="number" id="ricBurnInput" placeholder="Total RIC Burned (e.g. 4500000)" />
-        <input type="number" id="lpBurnInput" placeholder="Total LP Tokens Burned / Locked" />
-        <button onclick="updateBurnStats()">Save Updated Stats</button>
+        <input type="number" id="ricBurnInput" placeholder="Total RIC Burned (e.g. 4500000)" value="4000000">
+        <input type="number" id="lpBurnInput" placeholder="Total LP Tokens Burned / Locked (e.g. 1250000)">
+        <button onclick="updateBurnStats()">Save & Update Dashboard</button>
     </div>
 
     <script>
         const MASTER_OWNER = "0x5e5ae526d45d69991039901a29148029a4889102".toLowerCase();
         let userAddress = "";
 
-        const firebaseConfig = { /* Your Firebase config */ };
+        const firebaseConfig = { /* Your config here */ };
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
@@ -96,7 +96,6 @@
 
         function loadDashboard() {
             const grid = document.getElementById('dashboardGrid');
-            
             grid.innerHTML = `
                 <div class="stat-card">
                     <div class="stat-number" id="totalProducts">0</div>
@@ -121,14 +120,14 @@
                 </div>
             `;
 
-            // Real-time listeners
+            // Real-time listeners from Firebase
             db.ref('stats/totalBurnedRIC').on('value', (snap) => {
                 document.getElementById('totalBurned').textContent = (snap.val() || 4000000).toLocaleString();
             });
             db.ref('stats/totalLPBurned').on('value', (snap) => {
                 document.getElementById('totalLPBurned').textContent = (snap.val() || 0).toLocaleString();
             });
-            // ... other counters (products, orders, staff)
+            // Add other counters (products, orders, staff) similarly...
         }
 
         function updateBurnStats() {
@@ -141,7 +140,7 @@
                 lastUpdated: Date.now()
             });
 
-            alert("✅ Burn & Lock stats updated successfully!");
+            alert("✅ Burn & LP Lock stats updated successfully for everyone!");
         }
 
         window.onload = loadDashboard;
