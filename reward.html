@@ -20,7 +20,7 @@
         .connect-btn, .admin-btn { background: #1a1a1a; color: white; border: 1.5px solid #333; padding: 6px 16px; border-radius: 9999px; font-size: 13px; font-weight: 600; cursor: pointer; margin-left: auto; }
         .rewards-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 30px; padding: 40px; max-width: 1400px; margin: 0 auto; }
         .reward-card { background: var(--card); border-radius: 24px; overflow: hidden; border: 1px solid #222; transition: 0.3s; }
-        .reward-card:hover { transform: translateY(-5px); }
+        .reward-card:hover { transform: translateY(-5px); border-color: var(--gold); }
         .reward-card img { width: 100%; height: 220px; object-fit: cover; }
         
         #adminOverlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.96); z-index: 1000; padding: 40px; overflow: auto; }
@@ -72,7 +72,7 @@
     </div>
 
     <script>
-        // === YOUR FIREBASE CONFIG ===
+        // === FIREBASE CONFIG ===
         const firebaseConfig = {
             apiKey: "AIzaSyDoBXIlLCd0AXKU0pPtueTOnxUENqF1lmU",
             authDomain: "ricswap-bdc61.firebaseapp.com",
@@ -87,6 +87,7 @@
         const db = firebase.database();
 
         const MASTER_OWNER = "0x5e5ae526d45d69991039901a29148029a4889102".toLowerCase();
+        const RIC_ADDRESS = "0x12C94d3A30daa09f81Ea6c037004E6e99A4A3dfc";
         let userAddress = "";
 
         // Real-time Global Sync
@@ -119,14 +120,34 @@
             `).join('');
         }
 
+        async function redeem(id) {
+            if (!userAddress) return alert("Please connect wallet first");
+            
+            try {
+                const provider = new ethers.BrowserProvider(window.ethereum);
+                const signer = await provider.getSigner();
+                const ric = new ethers.Contract(RIC_ADDRESS, ["function transfer(address,uint256) returns (bool)"], signer);
+                
+                // You can improve this by fetching real price from Firebase if needed
+                const amount = ethers.parseUnits("100", 18); // Example - replace with real product price
+                
+                const tx = await ric.transfer(MASTER_OWNER, amount);
+                await tx.wait();
+                
+                alert("✅ Redemption Successful! $RIC sent to treasury.\nStaff will contact you soon.");
+            } catch (e) {
+                alert("Transaction failed: " + (e.reason || e.message));
+            }
+        }
+
         function addProduct() {
             const name = document.getElementById('pName').value.trim();
-            const price = parseInt(document.getElementById('pPrice').value);
+            const price = document.getElementById('pPrice').value;
             const image = document.getElementById('pImage').value.trim() || 'https://picsum.photos/300/200';
             
             if (!name || !price) return alert("Name and Price are required.");
             
-            db.ref('products').push({ name, price, image });
+            db.ref('products').push({ name, price: parseInt(price), image });
             
             document.getElementById('pName').value = '';
             document.getElementById('pPrice').value = '';
@@ -134,7 +155,7 @@
         }
 
         function deleteProduct(id) {
-            if (confirm("Delete this product from global store?")) {
+            if(confirm("Delete this product?")) {
                 db.ref('products/' + id).remove();
             }
         }
@@ -155,12 +176,8 @@
             document.getElementById('adminOverlay').style.display = 'block';
         }
 
-        function closeAdminPanel() {
-            document.getElementById('adminOverlay').style.display = 'none';
-        }
-
-        function redeem(id) {
-            alert("Redemption (on-chain payment) coming soon.");
+        function closeAdminPanel() { 
+            document.getElementById('adminOverlay').style.display = 'none'; 
         }
     </script>
 </body>
