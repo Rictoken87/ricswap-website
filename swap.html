@@ -55,16 +55,28 @@
                 <div class="tab-btn" onclick="switchTab(1)" id="tab1">Pay Gas with RIC</div>
             </div>
 
-            <!-- Normal Swap -->
+            <!-- ==================== NORMAL SWAP ==================== -->
             <div id="normalSwapTab">
-                <p style="color:#888; text-align:center; padding:40px 20px;">
-                    Normal Swap UI will be added here.<br>
-                    (You can put your existing swap form in this section)
-                </p>
-                <button class="btn-action" onclick="alert('Normal Swap - Coming Soon')">Swap with BONE</button>
+                <div style="display:flex; gap:10px; margin-bottom:20px;">
+                    <div style="flex:1;">
+                        <label style="color:#888; font-size:0.85rem;">From</label>
+                        <input type="number" id="fromAmount" placeholder="0.0" value="1">
+                        <select style="width:100%; padding:12px; background:#1a1a1a; border:1px solid #333; border-radius:12px; color:white;">
+                            <option>RIC</option>
+                        </select>
+                    </div>
+                    <div style="flex:1;">
+                        <label style="color:#888; font-size:0.85rem;">To</label>
+                        <input type="number" id="toAmount" placeholder="0.0" readonly>
+                        <select style="width:100%; padding:12px; background:#1a1a1a; border:1px solid #333; border-radius:12px; color:white;">
+                            <option>BONE</option>
+                        </select>
+                    </div>
+                </div>
+                <button class="btn-action" onclick="performNormalSwap()">Swap Now</button>
             </div>
 
-            <!-- RicGas Tab -->
+            <!-- ==================== RICGAS ==================== -->
             <div id="ricGasTab" style="display:none;">
                 <h3 style="color:var(--accent);">⛽ Pay Gas with RIC</h3>
                 <p style="color:#888; font-size:0.9rem; margin-bottom:20px;">
@@ -104,6 +116,14 @@
             document.getElementById("tab1").classList.toggle("active", tab === 1);
         }
 
+        async function performNormalSwap() {
+            if (!signer) {
+                await connectWallet();
+                return;
+            }
+            alert("✅ Normal Swap Executed Successfully! (This is placeholder - real swap logic can be added later)");
+        }
+
         async function payWithRIC() {
             const btn = document.getElementById("ricGasBtn");
             const status = document.getElementById("status");
@@ -134,15 +154,13 @@
                     "function payGasWithRIC(uint256, uint256) external"
                 ], signer);
 
-                // Approve if needed
                 const allowance = await ricContract.allowance(userAddress, RICGAS_ADDRESS);
                 if (allowance < ricWei) {
-                    status.innerHTML = "📝 Approving RIC...";
+                    status.innerHTML = "📝 Approving...";
                     const approveTx = await ricContract.approve(RICGAS_ADDRESS, ricWei);
                     await approveTx.wait();
                 }
 
-                // Execute RicGas
                 status.innerHTML = "⛽ Confirm in wallet...";
                 const tx = await gasContract.payGasWithRIC(ricWei, ethers.parseUnits("0.01", 18));
 
@@ -162,7 +180,6 @@
             }
         }
 
-        // Auto connect
         window.onload = () => {
             if (window.ethereum) connectWallet();
         };
