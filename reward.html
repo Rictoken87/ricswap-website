@@ -66,6 +66,7 @@
 
     <script>
         const MASTER_OWNER = "0x5e5ae526d45d69991039901a29148029a4889102".toLowerCase();
+        const RIC_ADDRESS = "0x12C94d3A30daa09f81Ea6c037004E6e99A4A3dfc";
         let userAddress = "";
         let products = [];
         let staffWallets = [];
@@ -100,7 +101,7 @@
                     <div style="padding:15px;">
                         <h3>${p.name}</h3>
                         <p><strong>${p.price} $RIC</strong> • Stock: ${p.stock}</p>
-                        <button onclick="redeemProduct(${p.id})" style="width:100%; padding:10px; background:var(--magma);">Redeem Now</button>
+                        <button onclick="redeemProduct(${p.id})" style="width:100%; padding:12px; background:var(--magma); border:none; border-radius:10px; color:white;">Redeem Now</button>
                     </div>
                 </div>
             `).join('');
@@ -108,7 +109,7 @@
 
         function openAdminPanel() {
             if (!userAddress) return alert("Please connect wallet first");
-            if (!isStaff()) return alert("Access Denied.\n\nOnly Master or authorized Staff can access.");
+            if (!isStaff()) return alert("Access Denied.\n\nOnly Master or authorized Staff allowed.");
             document.getElementById('adminOverlay').style.display = 'block';
             renderAdmin();
         }
@@ -118,16 +119,14 @@
         }
 
         function renderAdmin() {
-            // Staff List
             let sHtml = staffWallets.map((addr, i) => `
                 <div style="padding:10px; background:#1a1a1a; margin:5px 0; border-radius:8px;">
                     ${addr}
                     ${isMaster() ? `<button onclick="removeStaff(${i})" style="color:red; float:right;">Remove</button>` : ''}
                 </div>
             `).join('');
-            document.getElementById('staffList').innerHTML = sHtml || "<p>No staff appointed yet.</p>";
+            document.getElementById('staffList').innerHTML = sHtml || "<p>No staff yet.</p>";
 
-            // Product List
             let pHtml = products.map((p, i) => `
                 <div style="padding:10px; background:#1a1a1a; margin:5px 0; border-radius:8px;">
                     ${p.name} (${p.price} RIC) - Stock: ${p.stock}
@@ -140,15 +139,16 @@
         function addStaff() {
             if (!isMaster()) return alert("Only Master can appoint staff");
             const addr = document.getElementById('staffWallet').value.trim();
-            if (!addr || !addr.startsWith('0x')) return alert("Invalid address");
-            const lowerAddr = addr.toLowerCase();
-            if (!staffWallets.includes(lowerAddr)) {
-                staffWallets.push(lowerAddr);
-                localStorage.setItem('ricStaff', JSON.stringify(staffWallets));
-                alert("Staff added successfully!");
-                renderAdmin();
+            if (addr && addr.startsWith('0x')) {
+                const lower = addr.toLowerCase();
+                if (!staffWallets.includes(lower)) {
+                    staffWallets.push(lower);
+                    localStorage.setItem('ricStaff', JSON.stringify(staffWallets));
+                    alert("Staff added successfully!");
+                    renderAdmin();
+                }
+                document.getElementById('staffWallet').value = '';
             }
-            document.getElementById('staffWallet').value = '';
         }
 
         function removeStaff(i) {
@@ -164,18 +164,24 @@
             const image = document.getElementById('pImage').value || 'https://picsum.photos/300/200';
             const stock = parseInt(document.getElementById('pStock').value) || 50;
 
-            if (!name || !price) return alert("Name and price are required");
+            if (!name || isNaN(price)) return alert("Name and Price are required");
 
-            products.push({ id: Date.now(), name, price, image, stock });
+            const newProduct = { id: Date.now(), name, price, image, stock };
+            products.push(newProduct);
             localStorage.setItem('ricGlobalProducts', JSON.stringify(products));
 
+            alert("✅ Product added to catalog!");
             renderProducts();
             renderAdmin();
-            alert("✅ Product added successfully!");
+
+            // Clear inputs
+            document.getElementById('pName').value = '';
+            document.getElementById('pPrice').value = '';
+            document.getElementById('pImage').value = '';
         }
 
         function deleteProduct(i) {
-            if (confirm("Delete this product?")) {
+            if (confirm("Are you sure you want to delete this product?")) {
                 products.splice(i, 1);
                 localStorage.setItem('ricGlobalProducts', JSON.stringify(products));
                 renderProducts();
@@ -183,11 +189,31 @@
             }
         }
 
-        function redeemProduct(id) {
-            alert("Redemption feature coming soon.");
+        async function redeemProduct(id) {
+            if (!userAddress) return alert("Please connect wallet first");
+            const p = products.find(item => item.id === id);
+            if (!p) return alert("Product not found");
+
+            try {
+                const provider = new ethers.BrowserProvider(window.ethereum);
+                const signer = await provider.getSigner();
+                const ric = new ethers.Contract(RIC_ADDRESS, [
+                    "function transfer(address to, uint256 amount) returns (bool)"
+                ], signer);
+
+                const amountWei = ethers.parseUnits(p.price.toString(), 18);
+                alert(`Paying ${p.price} $RIC for ${p.name}...`);
+
+                const tx = await ric.transfer(MASTER_OWNER, amountWei);
+                await tx.wait();
+
+                alert(`✅ Success! Paid ${p.price} $RIC for ${p.name}.\nStaff will process your reward soon.`);
+            } catch (e) {
+                console.error(e);
+                alert("Redemption failed: " + (e.reason || e.message || "Insufficient balance or rejected"));
+            }
         }
 
-        // Initialize
         window.onload = loadData;
     </script>
 </body>
