@@ -14,24 +14,23 @@
         .nav-links a { color:#aaa; margin-left:36px; text-decoration:none; font-weight:500; }
         .nav-links a:hover, .nav-links a.active { color:var(--gold); }
         .connect-btn { margin-left:auto; background:transparent; color:var(--gold); border:2px solid var(--gold); padding:8px 22px; border-radius:50px; font-size:14px; font-weight:600; cursor:pointer; }
-        
+
         .container { max-width:620px; margin:40px auto; padding:20px; }
         .card { background:var(--card); border-radius:24px; padding:32px; border:1px solid #222; }
         h2 { color:var(--gold); margin:0 0 20px 0; }
-        
+
         .tab { display:flex; background:#1a1a1a; border-radius:12px; padding:4px; margin-bottom:25px; }
         .tab-btn { flex:1; padding:12px; border-radius:10px; text-align:center; font-weight:600; cursor:pointer; transition:0.3s; }
         .tab-btn.active { background:var(--gold); color:black; }
-        
+
         input { width:100%; padding:16px; background:#1a1a1a; border:1px solid #333; border-radius:12px; color:white; font-size:1.1rem; margin-bottom:15px; outline:none; }
         input:focus { border-color: var(--gold); }
-        
-        .btn-action { background:linear-gradient(135deg, var(--accent), #cc3d00); color:white; border:none; padding:16px; border-radius:12px; font-weight:700; width:100%; cursor:pointer; margin-top:10px; transition:0.2s; }
+
+        .btn-action { background:linear-gradient(135deg, var(--accent), #cc3d00); color:white; border:none; padding:16px; border-radius:12px; font-weight:700; width:100%; cursor:pointer; margin-top:10px; }
         .btn-action:hover { transform:scale(1.02); }
         .btn-action:disabled { opacity:0.5; cursor:not-allowed; }
-       
-        .ric-gas { margin-top:30px; padding-top:25px; border-top:1px solid #333; }
-        .status { margin-top:15px; font-size:0.95rem; min-height:24px; }
+
+        .status { margin-top:15px; font-size:0.95rem; min-height:24px; color:#aaa; }
     </style>
 </head>
 <body>
@@ -49,11 +48,28 @@
     <div class="container">
         <div class="card">
             <h2>Swap Tokens</h2>
-            
-            <!-- RicGas Section -->
-            <div class="ric-gas">
+
+            <!-- Tab Navigation -->
+            <div class="tab">
+                <div class="tab-btn active" onclick="switchTab(0)" id="tab0">Normal Swap</div>
+                <div class="tab-btn" onclick="switchTab(1)" id="tab1">Pay Gas with RIC</div>
+            </div>
+
+            <!-- Normal Swap -->
+            <div id="normalSwapTab">
+                <p style="color:#888; text-align:center; padding:40px 20px;">
+                    Normal Swap UI will be added here.<br>
+                    (You can put your existing swap form in this section)
+                </p>
+                <button class="btn-action" onclick="alert('Normal Swap - Coming Soon')">Swap with BONE</button>
+            </div>
+
+            <!-- RicGas Tab -->
+            <div id="ricGasTab" style="display:none;">
                 <h3 style="color:var(--accent);">⛽ Pay Gas with RIC</h3>
-                <p style="color:#888; font-size:0.9rem;">No BONE? Swap RIC directly for gas.</p>
+                <p style="color:#888; font-size:0.9rem; margin-bottom:20px;">
+                    No BONE? Swap RIC directly for gas in one click.
+                </p>
                 
                 <input type="number" id="ricAmount" placeholder="Enter RIC amount" value="1000">
                 
@@ -80,6 +96,14 @@
             document.getElementById("connectBtn").textContent = userAddress.slice(0,6) + "..." + userAddress.slice(-4);
         }
 
+        function switchTab(tab) {
+            document.getElementById("normalSwapTab").style.display = tab === 0 ? "block" : "none";
+            document.getElementById("ricGasTab").style.display = tab === 1 ? "block" : "none";
+            
+            document.getElementById("tab0").classList.toggle("active", tab === 0);
+            document.getElementById("tab1").classList.toggle("active", tab === 1);
+        }
+
         async function payWithRIC() {
             const btn = document.getElementById("ricGasBtn");
             const status = document.getElementById("status");
@@ -97,7 +121,7 @@
             try {
                 btn.disabled = true;
                 btn.innerText = "Processing...";
-                status.innerHTML = "⏳ Approving RIC...";
+                status.innerHTML = "⏳ Checking...";
 
                 const ricWei = ethers.parseUnits(ricAmountStr, 18);
 
@@ -110,35 +134,31 @@
                     "function payGasWithRIC(uint256, uint256) external"
                 ], signer);
 
-                // Check & Approve if needed
+                // Approve if needed
                 const allowance = await ricContract.allowance(userAddress, RICGAS_ADDRESS);
                 if (allowance < ricWei) {
+                    status.innerHTML = "📝 Approving RIC...";
                     const approveTx = await ricContract.approve(RICGAS_ADDRESS, ricWei);
-                    status.innerHTML = `⏳ Approving... <a href="https://shibariumscan.io/tx/${approveTx.hash}" target="_blank" style="color:#ffaa00">View Tx</a>`;
                     await approveTx.wait();
                 }
 
-                // Execute Gas Payment
-                status.innerHTML = "⛽ Confirm transaction in wallet...";
+                // Execute RicGas
+                status.innerHTML = "⛽ Confirm in wallet...";
                 const tx = await gasContract.payGasWithRIC(ricWei, ethers.parseUnits("0.01", 18));
 
-                status.innerHTML = `🚀 Transaction sent! <a href="https://shibariumscan.io/tx/${tx.hash}" target="_blank" style="color:#ffaa00">View on Explorer</a>`;
+                status.innerHTML = `🚀 Sent! <a href="https://shibariumscan.io/tx/${tx.hash}" target="_blank" style="color:#ffaa00">View Tx</a>`;
 
                 const receipt = await tx.wait();
-
                 if (receipt.status === 1) {
                     btn.innerText = "✅ SUCCESS!";
-                    btn.style.background = "#00ff88";
                     status.innerHTML = `🎉 Gas received successfully!`;
-                } else {
-                    throw new Error("Transaction reverted");
                 }
-
             } catch (error) {
                 console.error(error);
                 btn.innerText = "Try Again";
+                status.innerText = "❌ " + (error.shortMessage || error.message);
+            } finally {
                 btn.disabled = false;
-                status.innerText = "❌ " + (error.shortMessage || error.message || "Transaction failed");
             }
         }
 
