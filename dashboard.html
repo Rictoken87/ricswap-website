@@ -27,6 +27,11 @@
         
         .burn-card { background: linear-gradient(135deg, #2a0000, #110000); border: 2px solid #ff5555; }
         .burn-card .stat-number { color: #ff7777; }
+
+        .update-panel { 
+            background: #111; border: 2px solid var(--gold); border-radius: 20px; 
+            padding: 40px; margin: 40px auto; max-width: 800px; display: none; 
+        }
     </style>
 </head>
 <body>
@@ -45,40 +50,51 @@
 
     <div style="padding:80px 20px; text-align:center; background: radial-gradient(circle at center, #1a0f00 0%, var(--obsidian) 70%);">
         <h1 style="font-size: 3.5rem; margin:0;">Ecosystem Burn Stats</h1>
-        <p style="color:#888; font-size: 1.2rem;">Permanent Deflation Engine</p>
+        <p style="color:#888; font-size: 1.2rem;">Permanent Deflation & Liquidity Tracking</p>
     </div>
 
     <div class="dashboard-grid" id="dashboardGrid"></div>
 
     <!-- Master Update Panel -->
-    <div class="update-panel" id="updatePanel" style="display:none; background:#111; border:2px solid var(--gold); border-radius:20px; padding:40px; margin:40px auto; max-width:800px;">
-        <h2 style="color:var(--gold);">🔥 Master Update Burn Stats</h2>
+    <div class="update-panel" id="updatePanel">
+        <h2 style="color:var(--gold);">🔥 Master Control - Update Burn Stats</h2>
         <label>RIC Tokens Burned So Far</label>
         <input type="number" id="ricBurnInput" value="4000000">
         <label>LP Tokens Burned</label>
         <input type="number" id="lpBurnInput" value="0">
-        <label>RIC Locked in Burned LP</label>
+        <label>RIC Locked in LP</label>
         <input type="number" id="ricLockedInput" value="0">
-        <button onclick="updateBurnStats()" style="background:var(--magma); color:black; padding:16px; width:100%; border:none; border-radius:12px; font-weight:bold; margin-top:20px;">Save & Update Live Dashboard</button>
+        <button onclick="updateBurnStats()" style="background:var(--magma); color:black; padding:16px; width:100%; border:none; border-radius:12px; font-weight:bold; margin-top:20px;">Save & Update Dashboard</button>
     </div>
 
     <script>
         const MASTER_OWNER = "0x5e5ae526d45d69991039901a29148029a4889102".toLowerCase();
         let userAddress = "";
 
-        const firebaseConfig = { /* Paste your Firebase config here */ };
+        const firebaseConfig = { /* Your Firebase config here */ };
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
         async function connectWallet() {
-            if (!window.ethereum) return alert("Install MetaMask or Rabby");
-            const provider = new ethers.BrowserProvider(window.ethereum);
-            const accounts = await provider.send("eth_requestAccounts", []);
-            userAddress = accounts[0].toLowerCase();
-            document.getElementById("connectBtn").textContent = userAddress.slice(0,6) + "..." + userAddress.slice(-4);
-            
-            if (userAddress === MASTER_OWNER) {
-                document.getElementById("updatePanel").style.display = "block";
+            if (!window.ethereum) return alert("Please install MetaMask or Rabby Wallet");
+
+            try {
+                const provider = new ethers.BrowserProvider(window.ethereum);
+                const accounts = await provider.send("eth_requestAccounts", []);
+                userAddress = accounts[0].toLowerCase();
+
+                document.getElementById("connectBtn").textContent = userAddress.slice(0,6) + "..." + userAddress.slice(-4);
+
+                // Show panel immediately if master
+                if (userAddress === MASTER_OWNER) {
+                    document.getElementById("updatePanel").style.display = "block";
+                    console.log("✅ Master wallet detected - Update panel shown");
+                } else {
+                    console.log("Wallet connected but not master");
+                }
+            } catch (e) {
+                console.error(e);
+                alert("Connection failed. Please try again.");
             }
         }
 
@@ -88,7 +104,8 @@
                 <div class="stat-card burn-card">
                     <div class="stat-number" id="ricBurned">4,000,000</div>
                     <div class="stat-label">RIC Tokens Burned So Far 🔥</div>
-                    <a href="https://shibariumscan.io/tx/0x2d8b95cc831e5ef88275533c5de8578ce0940f748dab62c26eb966f076adf3d9" target="_blank" style="color:#ffaaaa; display:block; margin-top:10px;">View Burn Tx →</a>
+                    <a href="https://shibariumscan.io/tx/0x2d8b95cc831e5ef88275533c5de8578ce0940f748dab62c26eb966f076adf3d9" 
+                       target="_blank" style="color:#ffaaaa; margin-top:10px; display:block;">View Burn Tx →</a>
                 </div>
                 <div class="stat-card burn-card">
                     <div class="stat-number" id="lpBurned">0</div>
@@ -100,7 +117,7 @@
                 </div>
             `;
 
-            // Real-time from Firebase
+            // Real-time listeners
             db.ref('stats').on('value', (snap) => {
                 const s = snap.val() || {};
                 document.getElementById('ricBurned').textContent = (s.ricBurn || 4000000).toLocaleString();
@@ -114,11 +131,15 @@
                 ricBurn: parseInt(document.getElementById('ricBurnInput').value) || 4000000,
                 lpBurn: parseInt(document.getElementById('lpBurnInput').value) || 0,
                 ricLocked: parseInt(document.getElementById('ricLockedInput').value) || 0
+            }).then(() => {
+                alert("✅ Stats updated successfully for everyone!");
             });
-            alert("✅ Updated successfully for all visitors!");
         }
 
-        window.onload = initDashboard;
+        // Start
+        window.onload = () => {
+            initDashboard();
+        };
     </script>
 </body>
 </html>
