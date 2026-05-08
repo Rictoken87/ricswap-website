@@ -5,37 +5,29 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>RicSwap | Rewards Store</title>
     <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.0/dist/ethers.umd.min.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    
     <style>
         :root { --obsidian: #080808; --card: #121212; --gold: #ffd700; --magma: linear-gradient(135deg, #ff4d00, #ff8c00); }
         body { background: var(--obsidian); color: white; font-family: system-ui, sans-serif; margin:0; padding:0; }
+        
         .nav { padding: 15px 40px; display: flex; align-items: center; border-bottom: 1px solid rgba(255,215,0,0.1); background: rgba(8,8,8,0.95); position: sticky; top: 0; z-index: 100; }
         .logo { font-size: 24px; font-weight: 800; color: var(--gold); text-decoration: none; }
         .nav-links { display: flex; gap: 25px; margin-left: 40px; }
         .nav-links a { color: #888; text-decoration: none; font-weight: 500; }
         .nav-links a:hover, .nav-links a.active { color: var(--gold); }
         .connect-btn, .admin-btn { background: #1a1a1a; color: white; border: 1.5px solid #333; padding: 6px 16px; border-radius: 9999px; font-size: 13px; font-weight: 600; cursor: pointer; margin-left: auto; }
-        .rewards-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 25px; padding: 40px; max-width: 1400px; margin: 0 auto; }
-        .reward-card { background: var(--card); border-radius: 20px; overflow: hidden; border: 1px solid #222; }
-
-        /* Beautiful Admin Panel */
-        #adminOverlay {
-            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.95); z-index: 1000; padding: 40px; overflow: auto;
-        }
-        .admin-panel {
-            background: var(--card); border-radius: 24px; padding: 40px; max-width: 900px; margin: 0 auto;
-            border: 1px solid #333; box-shadow: 0 20px 40px rgba(0,0,0,0.8);
-        }
-        .admin-section { margin-bottom: 40px; }
-        .admin-section h3 { color: var(--gold); margin-bottom: 15px; border-bottom: 1px solid #333; padding-bottom: 10px; }
-        input { width: 100%; padding: 14px; margin: 8px 0; background: #0a0a0a; border: 1px solid #444; border-radius: 12px; color: white; }
-        button { padding: 12px 20px; border: none; border-radius: 12px; cursor: pointer; font-weight: 600; }
-        .btn-gold { background: var(--gold); color: black; }
-        .btn-red { background: #ff3333; color: white; }
-        .list-item { 
-            padding: 12px; background: #1a1a1a; margin: 8px 0; border-radius: 12px; 
-            display: flex; justify-content: space-between; align-items: center; 
-        }
+        .rewards-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 30px; padding: 40px; max-width: 1400px; margin: 0 auto; }
+        .reward-card { background: var(--card); border-radius: 24px; overflow: hidden; border: 1px solid #222; transition: 0.3s; }
+        .reward-card:hover { transform: translateY(-5px); }
+        .reward-card img { width: 100%; height: 220px; object-fit: cover; }
+        
+        #adminOverlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.96); z-index: 1000; padding: 40px; overflow: auto; }
+        .admin-box { max-width: 700px; margin: auto; background: var(--card); padding: 35px; border-radius: 24px; border: 1px solid #333; }
+        input { width: 100%; padding: 14px; margin: 10px 0; background: #080808; border: 1px solid #333; border-radius: 12px; color: white; }
+        .btn-main { background: var(--magma); color: white; border: none; padding: 16px; border-radius: 14px; font-weight: 800; cursor: pointer; width: 100%; }
+        .list-item { display: flex; justify-content: space-between; align-items: center; padding: 12px; background: #000; margin-top: 8px; border-radius: 10px; border: 1px solid #222; }
     </style>
 </head>
 <body>
@@ -53,174 +45,123 @@
         <button onclick="openAdminPanel()" class="admin-btn" style="margin-left:10px;">Staff Admin</button>
     </div>
 
-    <div style="padding:60px 20px; text-align:center;">
-        <h1>Rewards Store</h1>
-        <p>Redeem $RIC for real products</p>
+    <div style="padding:80px 20px; text-align:center; background: radial-gradient(circle at center, #1a0f00 0%, var(--obsidian) 70%);">
+        <h1>Global Rewards Store</h1>
+        <p>Live products synced across all devices</p>
     </div>
 
-    <div class="rewards-grid" id="rewardsGrid"></div>
+    <main class="rewards-grid" id="rewardsGrid"></main>
 
-    <!-- BEAUTIFUL ADMIN PANEL -->
+    <!-- ADMIN PANEL -->
     <div id="adminOverlay">
-        <div class="admin-panel">
-            <h2 style="color:var(--gold); text-align:center;">Staff Admin Panel</h2>
-            <button onclick="closeAdminPanel()" style="float:right; background:#ff3333; color:white; padding:8px 16px; border-radius:12px;">Close</button>
-
-            <div class="admin-section">
-                <h3>👥 Appoint New Staff (Master Only)</h3>
-                <input type="text" id="staffWallet" placeholder="0x... Staff Address">
-                <button onclick="addStaff()" class="btn-gold">Add Staff</button>
-            </div>
-
-            <div class="admin-section">
-                <h3>Current Staff</h3>
-                <div id="staffList"></div>
-            </div>
-
-            <div class="admin-section">
-                <h3>➕ Add New Product</h3>
+        <div class="admin-box">
+            <button onclick="closeAdminPanel()" style="float:right; background:transparent; color:#666; border:none; cursor:pointer; font-weight:bold;">[ CLOSE ]</button>
+            <h2 style="color:var(--gold);">Staff Admin Panel</h2>
+            
+            <div style="margin-bottom:30px;">
+                <h3>➕ Add New Global Product</h3>
                 <input type="text" id="pName" placeholder="Product Name">
                 <input type="number" id="pPrice" placeholder="Price in RIC">
                 <input type="text" id="pImage" placeholder="Image URL">
-                <input type="number" id="pStock" placeholder="Stock" value="50">
-                <button onclick="addProduct()" class="btn-gold">Add Product</button>
+                <button onclick="addProduct()" class="btn-main">Add to Global Store</button>
             </div>
-
-            <div class="admin-section">
-                <h3>📦 Current Products</h3>
-                <div id="productList"></div>
-            </div>
+            
+            <h3>📦 Manage Products</h3>
+            <div id="productList"></div>
         </div>
     </div>
 
     <script>
+        // === YOUR FIREBASE CONFIG ===
+        const firebaseConfig = {
+            apiKey: "AIzaSyDoBXIlLCd0AXKU0pPtueTOnxUENqF1lmU",
+            authDomain: "ricswap-bdc61.firebaseapp.com",
+            databaseURL: "https://ricswap-bdc61-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "ricswap-bdc61",
+            storageBucket: "ricswap-bdc61.firebasestorage.app",
+            messagingSenderId: "923007784555",
+            appId: "1:923007784555:web:115c1a2d2871555918832e"
+        };
+       
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
         const MASTER_OWNER = "0x5e5ae526d45d69991039901a29148029a4889102".toLowerCase();
         let userAddress = "";
-        let products = [];
-        let staffWallets = [];
+
+        // Real-time Global Sync
+        db.ref('products').on('value', (snapshot) => {
+            const data = snapshot.val();
+            const products = data ? Object.keys(data).map(key => ({ id: key, ...data[key] })) : [];
+            renderProducts(products);
+            renderAdminList(products);
+        });
 
         async function connectWallet() {
             if (!window.ethereum) return alert("Please install MetaMask or Rabby");
             const provider = new ethers.BrowserProvider(window.ethereum);
-            const signer = await provider.getSigner();
-            userAddress = (await signer.getAddress()).toLowerCase();
-            document.getElementById("connectBtn").textContent = userAddress.slice(0,6) + "..." + userAddress.slice(-4);
-            loadData();
+            const accounts = await provider.send("eth_requestAccounts", []);
+            userAddress = accounts[0].toLowerCase();
+            document.getElementById("connectBtn").textContent = userAddress.slice(0,6) + "...";
         }
 
-        function isMaster() { return userAddress === MASTER_OWNER; }
-        function isStaff() { return isMaster() || staffWallets.some(s => s.toLowerCase() === userAddress); }
-
-        function loadData() {
-            products = JSON.parse(localStorage.getItem('ricGlobalProducts') || '[]');
-            staffWallets = JSON.parse(localStorage.getItem('ricStaff') || '[]');
-            renderProducts();
-        }
-
-        function renderProducts() {
+        function renderProducts(products) {
             const grid = document.getElementById('rewardsGrid');
-            if (products.length === 0) {
-                grid.innerHTML = `<p style="text-align:center; color:#666; padding:80px;">No products available yet.</p>`;
-                return;
-            }
             grid.innerHTML = products.map(p => `
                 <div class="reward-card">
-                    <img src="${p.image}" alt="${p.name}">
-                    <div style="padding:15px;">
+                    <img src="${p.image || 'https://picsum.photos/300/200'}" alt="${p.name}">
+                    <div style="padding:24px;">
                         <h3>${p.name}</h3>
-                        <p><strong>${p.price} $RIC</strong> • Stock: ${p.stock}</p>
-                        <button onclick="redeemProduct(${p.id})" style="width:100%; padding:12px; background:var(--magma);">Redeem Now</button>
+                        <p style="color:var(--gold); font-size:1.6rem; font-weight:900;">${p.price} RIC</p>
+                        <button onclick="redeem('${p.id}')" style="width:100%; padding:12px; background:var(--magma);">Redeem Now</button>
                     </div>
+                </div>
+            `).join('');
+        }
+
+        function addProduct() {
+            const name = document.getElementById('pName').value.trim();
+            const price = parseInt(document.getElementById('pPrice').value);
+            const image = document.getElementById('pImage').value.trim() || 'https://picsum.photos/300/200';
+            
+            if (!name || !price) return alert("Name and Price are required.");
+            
+            db.ref('products').push({ name, price, image });
+            
+            document.getElementById('pName').value = '';
+            document.getElementById('pPrice').value = '';
+            document.getElementById('pImage').value = '';
+        }
+
+        function deleteProduct(id) {
+            if (confirm("Delete this product from global store?")) {
+                db.ref('products/' + id).remove();
+            }
+        }
+
+        function renderAdminList(products) {
+            const list = document.getElementById('productList');
+            list.innerHTML = products.map(p => `
+                <div class="list-item">
+                    <span>${p.name} — ${p.price} RIC</span>
+                    <button onclick="deleteProduct('${p.id}')" style="color:#ff4d4d;">DELETE</button>
                 </div>
             `).join('');
         }
 
         function openAdminPanel() {
             if (!userAddress) return alert("Please connect wallet first");
-            if (!isStaff()) return alert("Access Denied.\n\nOnly Master or authorized Staff can access.");
+            if (userAddress !== MASTER_OWNER) return alert("Only Master Owner can access Admin.");
             document.getElementById('adminOverlay').style.display = 'block';
-            renderAdmin();
         }
 
         function closeAdminPanel() {
             document.getElementById('adminOverlay').style.display = 'none';
         }
 
-        function renderAdmin() {
-            // Staff List
-            let sHtml = staffWallets.map((addr, i) => `
-                <div class="list-item">
-                    ${addr}
-                    ${isMaster() ? `<button onclick="removeStaff(${i})" class="btn-red">Remove</button>` : ''}
-                </div>
-            `).join('');
-            document.getElementById('staffList').innerHTML = sHtml || "<p>No staff appointed yet.</p>";
-
-            // Product List
-            let pHtml = products.map((p, i) => `
-                <div class="list-item">
-                    <span>${p.name} — ${p.price} RIC (Stock: ${p.stock})</span>
-                    <button onclick="deleteProduct(${i})" class="btn-red">Delete</button>
-                </div>
-            `).join('');
-            document.getElementById('productList').innerHTML = pHtml || "<p>No products yet.</p>";
+        function redeem(id) {
+            alert("Redemption (on-chain payment) coming soon.");
         }
-
-        function addStaff() {
-            if (!isMaster()) return alert("Only Master can appoint staff");
-            const addr = document.getElementById('staffWallet').value.trim();
-            if (!addr || !addr.startsWith('0x')) return alert("Invalid address");
-            const lowerAddr = addr.toLowerCase();
-            if (!staffWallets.includes(lowerAddr)) {
-                staffWallets.push(lowerAddr);
-                localStorage.setItem('ricStaff', JSON.stringify(staffWallets));
-                alert("✅ Staff added successfully!");
-                renderAdmin();
-            }
-            document.getElementById('staffWallet').value = '';
-        }
-
-        function removeStaff(i) {
-            if (!isMaster()) return;
-            staffWallets.splice(i, 1);
-            localStorage.setItem('ricStaff', JSON.stringify(staffWallets));
-            renderAdmin();
-        }
-
-        function addProduct() {
-            const name = document.getElementById('pName').value.trim();
-            const price = parseInt(document.getElementById('pPrice').value);
-            const image = document.getElementById('pImage').value || 'https://picsum.photos/300/200';
-            const stock = parseInt(document.getElementById('pStock').value) || 50;
-
-            if (!name || isNaN(price)) return alert("Name and Price are required");
-
-            products.push({ id: Date.now(), name, price, image, stock });
-            localStorage.setItem('ricGlobalProducts', JSON.stringify(products));
-
-            alert("✅ Product added successfully!");
-            renderProducts();
-            renderAdmin();
-
-            document.getElementById('pName').value = '';
-            document.getElementById('pPrice').value = '';
-            document.getElementById('pImage').value = '';
-        }
-
-        function deleteProduct(i) {
-            if (confirm("Delete this product?")) {
-                products.splice(i, 1);
-                localStorage.setItem('ricGlobalProducts', JSON.stringify(products));
-                renderProducts();
-                renderAdmin();
-            }
-        }
-
-        function redeemProduct(id) {
-            alert("Redemption feature coming soon.");
-        }
-
-        window.onload = loadData;
     </script>
 </body>
 </html>
