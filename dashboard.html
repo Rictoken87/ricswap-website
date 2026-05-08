@@ -46,8 +46,8 @@
     </nav>
 
     <div style="padding:80px 20px; text-align:center; background: radial-gradient(circle at center, #1a0f00 0%, var(--obsidian) 70%);">
-        <h1 style="font-size: 3.5rem; margin:0;">RicSwap Transparency Dashboard</h1>
-        <p style="color:#888; font-size: 1.2rem;">Fully verifiable on-chain data</p>
+        <h1 style="font-size: 3.5rem; margin:0;">Permanent Burn & Lock Transparency</h1>
+        <p style="color:#888; font-size: 1.2rem;">Fully verifiable on Shibariumscan</p>
     </div>
 
     <div class="dashboard-grid" id="dashboardGrid"></div>
@@ -55,14 +55,12 @@
     <!-- Master Update Panel -->
     <div class="update-panel" id="updatePanel" style="display:none; background:#111; border:2px solid var(--gold); border-radius:20px; padding:40px; margin:40px auto; max-width:800px;">
         <h2 style="color:var(--gold);">🔥 Master Control - Update Stats</h2>
-        <label>Total RIC Supply (Fixed)</label>
-        <input type="number" id="totalSupplyInput" value="21000000" readonly>
         <label>RIC Tokens Burned So Far</label>
         <input type="number" id="ricBurnInput" value="4000000">
         <label>LP Pairs Permanently Locked</label>
         <input type="number" id="lpBurnInput" value="4">
-        <label>RIC Locked in LPs</label>
-        <input type="number" id="ricLockedInput" value="0">
+        <label>RIC Tokens Locked in LPs</label>
+        <input type="number" id="ricLockedInput" value="4300000">
         <button onclick="updateBurnStats()" style="background:var(--magma); color:black; padding:16px; width:100%; border:none; border-radius:12px; font-weight:bold; margin-top:20px;">Save & Update for the World</button>
     </div>
 
@@ -70,7 +68,7 @@
         const MASTER_OWNER = "0x5e5ae526d45d69991039901a29148029a4889102".toLowerCase();
         let userAddress = "";
 
-        const firebaseConfig = { /* Your Firebase config here */ };
+        const firebaseConfig = { /* Your Firebase config */ };
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
@@ -89,44 +87,37 @@
         function initDashboard() {
             const grid = document.getElementById('dashboardGrid');
             grid.innerHTML = `
-                <div class="stat-card">
-                    <div class="stat-number" id="totalSupply">21,000,000</div>
-                    <div class="stat-label">Total RIC Supply</div>
-                </div>
                 <div class="stat-card burn-card">
                     <div class="stat-number" id="ricBurned">4,000,000</div>
                     <div class="stat-label">RIC Tokens Burned So Far 🔥</div>
-                    <a href="https://shibariumscan.io/tx/0x2d8b95cc831e5ef88275533c5de8578ce0940f748dab62c26eb966f076adf3d9" target="_blank" class="tx-link">View Burn Tx →</a>
+                    <a href="https://shibariumscan.io/tx/0x2d8b95cc831e5ef88275533c5de8578ce0940f748dab62c26eb966f076adf3d9" target="_blank" class="tx-link">View Tx →</a>
                 </div>
-                <div class="stat-card burn-card">
-                    <div class="stat-number" id="circulation">17,000,000</div>
-                    <div class="stat-label">Current RIC Circulation</div>
-                </div>
+
                 <div class="stat-card burn-card">
                     <div class="stat-number" id="lpBurned">4</div>
                     <div class="stat-label">LP Pairs Permanently Locked</div>
                 </div>
+
+                <div class="stat-card burn-card">
+                    <div class="stat-number" id="ricLocked">4,300,000</div>
+                    <div class="stat-label">RIC Tokens Locked in LPs</div>
+                </div>
             `;
 
-            // Real-time listener
             db.ref('stats').on('value', (snap) => {
                 const s = snap.val() || {};
-                const burned = s.ricBurn || 4000000;
-                const circulation = 21000000 - burned;
-
-                document.getElementById('ricBurned').textContent = burned.toLocaleString();
-                document.getElementById('circulation').textContent = circulation.toLocaleString();
+                document.getElementById('ricBurned').textContent = (s.ricBurn || 4000000).toLocaleString();
                 document.getElementById('lpBurned').textContent = (s.lpBurn || 4).toLocaleString();
+                document.getElementById('ricLocked').textContent = (s.ricLocked || 4300000).toLocaleString();
             });
         }
 
         function updateBurnStats() {
-            const burned = parseInt(document.getElementById('ricBurnInput').value) || 4000000;
             db.ref('stats').update({
-                ricBurn: burned,
+                ricBurn: parseInt(document.getElementById('ricBurnInput').value) || 4000000,
                 lpBurn: parseInt(document.getElementById('lpBurnInput').value) || 4,
-                ricLocked: parseInt(document.getElementById('ricLockedInput').value) || 0
-            }).then(() => alert("✅ Dashboard updated transparently for everyone!"));
+                ricLocked: parseInt(document.getElementById('ricLockedInput').value) || 4300000
+            }).then(() => alert("✅ Updated transparently for the whole world!"));
         }
 
         window.onload = initDashboard;
