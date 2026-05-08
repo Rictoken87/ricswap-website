@@ -25,9 +25,10 @@
         .reward-card img { width: 100%; height: 220px; object-fit: cover; }
         
         #adminOverlay, #receiptModal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.96); z-index: 1000; padding: 40px; overflow: auto; }
-        .modal-box { max-width: 600px; margin: auto; background: var(--card); padding: 35px; border-radius: 24px; border: 1px solid #333; }
+        .modal-box { max-width: 700px; margin: auto; background: var(--card); padding: 35px; border-radius: 24px; border: 1px solid #333; }
         input, textarea { width: 100%; padding: 14px; margin: 10px 0; background: #080808; border: 1px solid #333; border-radius: 12px; color: white; }
         .btn-main { background: var(--magma); color: white; border: none; padding: 16px; border-radius: 14px; font-weight: 800; cursor: pointer; width: 100%; }
+        .list-item { display: flex; justify-content: space-between; align-items: center; padding: 12px; background: #000; margin-top: 8px; border-radius: 10px; border: 1px solid #222; }
     </style>
 </head>
 <body>
@@ -47,7 +48,7 @@
 
     <div style="padding:80px 20px; text-align:center; background: radial-gradient(circle at center, #1a0f00 0%, var(--obsidian) 70%);">
         <h1>Global Rewards Store</h1>
-        <p>Live • Real-time Inventory</p>
+        <p>Live products • Real-time inventory</p>
     </div>
 
     <main class="rewards-grid" id="rewardsGrid"></main>
@@ -76,7 +77,6 @@
     <div id="receiptModal">
         <div class="modal-box">
             <h2 style="color:var(--gold);">Order Confirmation</h2>
-            <p>Enter your details for shipping:</p>
             <input type="email" id="customerEmail" placeholder="Your Email Address" required>
             <textarea id="shippingAddress" rows="4" placeholder="Full Shipping Address"></textarea>
             <button onclick="sendReceipt()" class="btn-main">Pay with $RIC & Confirm</button>
@@ -104,14 +104,14 @@
         let userAddress = "";
         let currentProduct = null;
 
-        // EmailJS
         emailjs.init("Y5GsSScYku74Bt0LH");
 
-        // Real-time Sync with Inventory
+        // Real-time Sync
         db.ref('products').on('value', (snapshot) => {
             const data = snapshot.val();
             const products = data ? Object.keys(data).map(key => ({ id: key, ...data[key] })) : [];
             renderProducts(products);
+            renderAdminList(products);
         });
 
         async function connectWallet() {
@@ -132,7 +132,7 @@
                         <p style="color:var(--gold); font-size:1.6rem; font-weight:900;">${p.price} RIC</p>
                         <p style="color:${p.stock > 0 ? '#0f0' : '#ff4444'};">Stock: ${p.stock || 0}</p>
                         ${p.stock > 0 ? 
-                            `<button onclick="startRedemption('${p.id}', ${p.price}, '${p.name}', ${p.stock})" style="width:100%; padding:12px; background:var(--magma);">Redeem Now</button>` : 
+                            `<button onclick="startRedemption('${p.id}', ${p.price}, '${p.name}')" style="width:100%; padding:12px; background:var(--magma);">Redeem Now</button>` : 
                             `<button disabled style="width:100%; padding:12px; background:#444;">Out of Stock</button>`
                         }
                     </div>
@@ -140,8 +140,8 @@
             `).join('');
         }
 
-        function startRedemption(id, price, name, stock) {
-            if (stock <= 0) return alert("Out of Stock!");
+        function startRedemption(id, price, name) {
+            if (!userAddress) return alert("Please connect wallet first");
             currentProduct = { id, price, name };
             document.getElementById('receiptModal').style.display = 'block';
         }
@@ -150,7 +150,7 @@
             const email = document.getElementById('customerEmail').value.trim();
             const address = document.getElementById('shippingAddress').value.trim();
 
-            if (!email || !address) return alert("Email and Shipping Address required");
+            if (!email || !address) return alert("Email and Shipping Address are required");
 
             try {
                 const provider = new ethers.BrowserProvider(window.ethereum);
@@ -161,14 +161,12 @@
                 const tx = await ric.transfer(MASTER_OWNER, amountWei);
                 await tx.wait();
 
-                // Decrease Stock in Firebase
-                const productRef = db.ref('products/' + currentProduct.id);
-                productRef.once('value', (snap) => {
-                    const currentStock = snap.val().stock || 0;
-                    productRef.update({ stock: Math.max(0, currentStock - 1) });
+                // Decrease Stock
+                db.ref('products/' + currentProduct.id).update({
+                    stock: firebase.database.ServerValue.increment(-1)
                 });
 
-                // Send Email Receipt
+                // Send Email
                 await emailjs.send("service_577894p", "template_zga1woa", {
                     to_email: email,
                     product_name: currentProduct.name,
@@ -178,7 +176,7 @@
                     user_wallet: userAddress
                 });
 
-                alert("✅ Payment Successful! Receipt sent & Inventory updated.");
+                alert("✅ Payment Successful! Receipt sent.");
                 closeReceiptModal();
             } catch (e) {
                 alert("Transaction failed: " + (e.reason || e.message));
@@ -191,13 +189,13 @@
 
         function addProduct() {
             const name = document.getElementById('pName').value.trim();
-            const price = document.getElementById('pPrice').value;
+            const price = parseInt(document.getElementById('pPrice').value);
             const image = document.getElementById('pImage').value.trim() || 'https://picsum.photos/300/200';
             const stock = parseInt(document.getElementById('pStock').value) || 50;
             
             if (!name || !price) return alert("Name and Price required.");
             
-            db.ref('products').push({ name, price: parseInt(price), image, stock });
+            db.ref('products').push({ name, price, image, stock });
             
             document.getElementById('pName').value = '';
             document.getElementById('pPrice').value = '';
