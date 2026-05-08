@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RicSwap | Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.0/dist/ethers.umd.min.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    
+    <style>
+        :root { --obsidian: #080808; --card: #121212; --gold: #ffd700; --magma: linear-gradient(135deg, #ff4d00, #ff8c00); }
+        body { background: var(--obsidian); color: white; font-family: system-ui, sans-serif; margin:0; padding:0; }
+        
+        .nav { padding: 15px 40px; display: flex; align-items: center; border-bottom: 1px solid rgba(255,215,0,0.1); background: rgba(8,8,8,0.95); position: sticky; top: 0; z-index: 100; }
+        .logo { font-size: 24px; font-weight: 800; color: var(--gold); text-decoration: none; }
+        .nav-links { display: flex; gap: 25px; margin-left: 40px; }
+        .nav-links a { color: #888; text-decoration: none; font-weight: 500; }
+        .nav-links a:hover, .nav-links a.active { color: var(--gold); }
+        .connect-btn { background: #1a1a1a; color: white; border: 1.5px solid #333; padding: 6px 16px; border-radius: 9999px; font-size: 13px; font-weight: 600; cursor: pointer; margin-left: auto; }
+        
+        .dashboard-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 25px; padding: 40px; max-width: 1400px; margin: 0 auto; }
+        .stat-card { background: var(--card); border-radius: 20px; padding: 30px; border: 1px solid #333; text-align: center; transition: 0.3s; }
+        .stat-card:hover { transform: translateY(-5px); border-color: var(--gold); }
+        .stat-number { font-size: 2.8rem; font-weight: 800; color: var(--gold); margin: 10px 0; }
+        .stat-label { color: #888; font-size: 1.1rem; }
+    </style>
+</head>
+<body>
+    <!-- Updated Navigation -->
+    <div class="nav">
+        <div class="logo">RicSwap</div>
+        <div class="nav-links">
+            <a href="index.html">Home</a>
+            <a href="dashboard.html" class="active">Dashboard</a>
+            <a href="swap.html">Swap</a>
+            <a href="pools.html">Pools</a>
+            <a href="liquidity.html">Add Liquidity</a>
+            <a href="reward.html">Rewards</a>
+            <a href="launch.html">Fair Launch</a>
+        </div>
+        <button id="connectBtn" class="connect-btn" onclick="connectWallet()">Connect Wallet</button>
+    </div>
+
+    <div style="padding:80px 20px; text-align:center; background: radial-gradient(circle at center, #1a0f00 0%, var(--obsidian) 70%);">
+        <h1>Dashboard</h1>
+        <p>Real-time Overview of RicSwap</p>
+    </div>
+
+    <div class="dashboard-grid" id="dashboardGrid"></div>
+
+    <script>
+        const firebaseConfig = { /* your firebase config */ };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        async function connectWallet() {
+            if (!window.ethereum) return alert("Please install MetaMask or Rabby");
+            const provider = new ethers.BrowserProvider(window.ethereum);
+            const accounts = await provider.send("eth_requestAccounts", []);
+            const userAddress = accounts[0].toLowerCase();
+            document.getElementById("connectBtn").textContent = userAddress.slice(0,6) + "...";
+        }
+
+        function loadDashboard() {
+            const grid = document.getElementById('dashboardGrid');
+            
+            grid.innerHTML = `
+                <div class="stat-card">
+                    <div class="stat-number" id="totalProducts">0</div>
+                    <div class="stat-label">Total Products</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="totalOrders">0</div>
+                    <div class="stat-label">Total Orders</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">Coming Soon</div>
+                    <div class="stat-label">Total RIC Redeemed</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">100+</div>
+                    <div class="stat-label">RIC Launch Fees Burned</div>
+                </div>
+            `;
+
+            // Real-time counters
+            db.ref('products').on('value', (snap) => {
+                document.getElementById('totalProducts').textContent = snap.val() ? Object.keys(snap.val()).length : 0;
+            });
+
+            db.ref('orders').on('value', (snap) => {
+                document.getElementById('totalOrders').textContent = snap.val() ? Object.keys(snap.val()).length : 0;
+            });
+        }
+
+        window.onload = loadDashboard;
+    </script>
+</body>
+</html>
