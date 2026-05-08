@@ -79,19 +79,12 @@
             loadData();
         }
 
-        function isMaster() {
-            return userAddress === MASTER_OWNER;
-        }
-
-        function isStaff() {
-            return isMaster() || staffWallets.some(s => s.toLowerCase() === userAddress);
-        }
+        function isMaster() { return userAddress === MASTER_OWNER; }
+        function isStaff() { return isMaster() || staffWallets.some(s => s.toLowerCase() === userAddress); }
 
         function loadData() {
             products = JSON.parse(localStorage.getItem('ricGlobalProducts') || '[]');
             staffWallets = JSON.parse(localStorage.getItem('ricStaff') || '[]');
-            console.log("Loaded Staff:", staffWallets); // Debug
-            console.log("Current User:", userAddress); // Debug
             renderProducts();
         }
 
@@ -101,7 +94,6 @@
                 grid.innerHTML = `<p style="text-align:center; color:#666; padding:80px;">No products available yet.</p>`;
                 return;
             }
-            // ... (same as before)
             grid.innerHTML = products.map(p => `
                 <div class="reward-card">
                     <img src="${p.image}" alt="${p.name}">
@@ -116,36 +108,86 @@
 
         function openAdminPanel() {
             if (!userAddress) return alert("Please connect wallet first");
-            
-            console.log("Checking access - Master:", isMaster(), "Staff:", isStaff());
-            
-            if (!isStaff()) {
-                return alert("Access Denied.\n\nOnly Master or authorized Staff can access.");
-            }
-            
+            if (!isStaff()) return alert("Access Denied.\n\nOnly Master or authorized Staff can access.");
             document.getElementById('adminOverlay').style.display = 'block';
             renderAdmin();
         }
 
-        // ... rest of functions (addStaff, removeStaff, addProduct, deleteProduct, etc.) remain the same as previous version ...
+        function closeAdminPanel() {
+            document.getElementById('adminOverlay').style.display = 'none';
+        }
+
+        function renderAdmin() {
+            // Staff List
+            let sHtml = staffWallets.map((addr, i) => `
+                <div style="padding:10px; background:#1a1a1a; margin:5px 0; border-radius:8px;">
+                    ${addr}
+                    ${isMaster() ? `<button onclick="removeStaff(${i})" style="color:red; float:right;">Remove</button>` : ''}
+                </div>
+            `).join('');
+            document.getElementById('staffList').innerHTML = sHtml || "<p>No staff appointed yet.</p>";
+
+            // Product List
+            let pHtml = products.map((p, i) => `
+                <div style="padding:10px; background:#1a1a1a; margin:5px 0; border-radius:8px;">
+                    ${p.name} (${p.price} RIC) - Stock: ${p.stock}
+                    <button onclick="deleteProduct(${i})" style="color:red; float:right;">Delete</button>
+                </div>
+            `).join('');
+            document.getElementById('productList').innerHTML = pHtml || "<p>No products yet.</p>";
+        }
 
         function addStaff() {
             if (!isMaster()) return alert("Only Master can appoint staff");
             const addr = document.getElementById('staffWallet').value.trim();
-            if (addr && addr.startsWith('0x')) {
-                const lowerAddr = addr.toLowerCase();
-                if (!staffWallets.includes(lowerAddr)) {
-                    staffWallets.push(lowerAddr);
-                    localStorage.setItem('ricStaff', JSON.stringify(staffWallets));
-                    alert("Staff added successfully!");
-                    renderAdmin();
-                }
-                document.getElementById('staffWallet').value = '';
+            if (!addr || !addr.startsWith('0x')) return alert("Invalid address");
+            const lowerAddr = addr.toLowerCase();
+            if (!staffWallets.includes(lowerAddr)) {
+                staffWallets.push(lowerAddr);
+                localStorage.setItem('ricStaff', JSON.stringify(staffWallets));
+                alert("Staff added successfully!");
+                renderAdmin();
+            }
+            document.getElementById('staffWallet').value = '';
+        }
+
+        function removeStaff(i) {
+            if (!isMaster()) return;
+            staffWallets.splice(i, 1);
+            localStorage.setItem('ricStaff', JSON.stringify(staffWallets));
+            renderAdmin();
+        }
+
+        function addProduct() {
+            const name = document.getElementById('pName').value.trim();
+            const price = parseInt(document.getElementById('pPrice').value);
+            const image = document.getElementById('pImage').value || 'https://picsum.photos/300/200';
+            const stock = parseInt(document.getElementById('pStock').value) || 50;
+
+            if (!name || !price) return alert("Name and price are required");
+
+            products.push({ id: Date.now(), name, price, image, stock });
+            localStorage.setItem('ricGlobalProducts', JSON.stringify(products));
+
+            renderProducts();
+            renderAdmin();
+            alert("✅ Product added successfully!");
+        }
+
+        function deleteProduct(i) {
+            if (confirm("Delete this product?")) {
+                products.splice(i, 1);
+                localStorage.setItem('ricGlobalProducts', JSON.stringify(products));
+                renderProducts();
+                renderAdmin();
             }
         }
 
-        // Keep other functions (removeStaff, addProduct, deleteProduct, redeemProduct) from previous version
+        function redeemProduct(id) {
+            alert("Redemption feature coming soon.");
+        }
 
+        // Initialize
         window.onload = loadData;
     </script>
 </body>
