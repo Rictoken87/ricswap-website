@@ -19,7 +19,7 @@
         .nav-links a:hover, .nav-links a.active { color: var(--gold); }
         .connect-btn { background: #1a1a1a; color: white; border: 1.5px solid #333; padding: 6px 16px; border-radius: 9999px; font-size: 13px; font-weight: 600; cursor: pointer; margin-left: auto; }
 
-        .dashboard-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 25px; padding: 40px; max-width: 1400px; margin: 0 auto; }
+        .dashboard-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 25px; padding: 40px; max-width: 1400px; margin: 0 auto; }
         .stat-card { background: var(--card); border-radius: 20px; padding: 35px; border: 1px solid #333; text-align: center; transition: 0.3s; }
         .stat-card:hover { transform: translateY(-8px); border-color: var(--gold); }
         .stat-number { font-size: 3rem; font-weight: 900; color: var(--gold); margin: 12px 0; }
@@ -27,6 +27,12 @@
         
         .burn-card { background: linear-gradient(135deg, #2a0000, #110000); border: 2px solid #ff5555; }
         .burn-card .stat-number { color: #ff7777; }
+        .tx-link { color: #ffaaaa; text-decoration: none; font-size: 0.95rem; margin-top: 12px; display: inline-block; }
+        .tx-link:hover { color: #ffdddd; }
+
+        .history-log { background: #111; border-radius: 20px; padding: 30px; margin: 40px auto; max-width: 900px; border: 1px solid #333; }
+        .history-item { padding: 12px 0; border-bottom: 1px solid #222; display: flex; justify-content: space-between; font-size: 0.95rem; }
+        .history-item:last-child { border-bottom: none; }
     </style>
 </head>
 <body>
@@ -44,11 +50,17 @@
     </nav>
 
     <div style="padding:80px 20px; text-align:center; background: radial-gradient(circle at center, #1a0f00 0%, var(--obsidian) 70%);">
-        <h1 style="font-size: 3.5rem; margin:0;">Permanent Burn & Lock</h1>
-        <p style="color:#888; font-size: 1.2rem;">RicSwap Deflation Engine</p>
+        <h1 style="font-size: 3.5rem; margin:0;">Permanent Burn & Lock Transparency</h1>
+        <p style="color:#888; font-size: 1.2rem;">Fully verifiable on Shibarium</p>
     </div>
 
     <div class="dashboard-grid" id="dashboardGrid"></div>
+
+    <!-- Burn History Log -->
+    <div class="history-log">
+        <h2 style="color:var(--gold); margin-top:0;">📜 Burn & Lock History</h2>
+        <div id="historyList"></div>
+    </div>
 
     <!-- Master Update Panel -->
     <div class="update-panel" id="updatePanel" style="display:none; background:#111; border:2px solid var(--gold); border-radius:20px; padding:40px; margin:40px auto; max-width:800px;">
@@ -57,7 +69,7 @@
         <input type="number" id="ricBurnInput" value="4000000">
         <label>LP Tokens Burned</label>
         <input type="number" id="lpBurnInput" value="1">
-        <label>RIC Locked in LP (0x941abcb1...)</label>
+        <label>RIC Locked in LP</label>
         <input type="number" id="ricLockedInput" value="0">
         <button onclick="updateBurnStats()" style="background:var(--magma); color:black; padding:16px; width:100%; border:none; border-radius:12px; font-weight:bold; margin-top:20px;">Save & Update Dashboard</button>
     </div>
@@ -66,7 +78,7 @@
         const MASTER_OWNER = "0x5e5ae526d45d69991039901a29148029a4889102".toLowerCase();
         let userAddress = "";
 
-        const firebaseConfig = { /* Your Firebase config */ };
+        const firebaseConfig = { /* Your Firebase config here */ };
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
@@ -88,12 +100,12 @@
                 <div class="stat-card burn-card">
                     <div class="stat-number" id="ricBurned">4,000,000</div>
                     <div class="stat-label">RIC Tokens Burned So Far 🔥</div>
-                    <a href="https://shibariumscan.io/tx/0x2d8b95cc831e5ef88275533c5de8578ce0940f748dab62c26eb966f076adf3d9" target="_blank" style="color:#ffaaaa; margin-top:10px; display:block;">View Tx →</a>
+                    <a href="https://shibariumscan.io/tx/0x2d8b95cc831e5ef88275533c5de8578ce0940f748dab62c26eb966f076adf3d9" target="_blank" class="tx-link">View Tx →</a>
                 </div>
                 <div class="stat-card burn-card">
                     <div class="stat-number" id="lpBurned">1</div>
-                    <div class="stat-label">LP Pair Burned / Locked</div>
-                    <a href="https://shibariumscan.io/address/0x941abcb1A4278Ff33B50F6Cf9F5A4C8a0888BdeE" target="_blank" style="color:#ffaaaa; margin-top:8px; display:block;">View Locked LP Pair →</a>
+                    <div class="stat-label">LP Pair Burned & Locked</div>
+                    <a href="https://shibariumscan.io/address/0x941abcb1A4278Ff33B50F6Cf9F5A4C8a0888BdeE" target="_blank" class="tx-link">View Locked LP →</a>
                 </div>
                 <div class="stat-card burn-card">
                     <div class="stat-number" id="ricLocked">0</div>
@@ -101,21 +113,52 @@
                 </div>
             `;
 
-            // Real-time from Firebase
+            // Real-time Stats
             db.ref('stats').on('value', (snap) => {
                 const s = snap.val() || {};
                 document.getElementById('ricBurned').textContent = (s.ricBurn || 4000000).toLocaleString();
                 document.getElementById('lpBurned').textContent = (s.lpBurn || 1).toLocaleString();
                 document.getElementById('ricLocked').textContent = (s.ricLocked || 0).toLocaleString();
             });
+
+            // Real-time Burn History
+            db.ref('burnHistory').orderByChild('timestamp').limitToLast(10).on('value', (snap) => {
+                const list = document.getElementById('historyList');
+                list.innerHTML = '';
+                if (!snap.exists()) {
+                    list.innerHTML = '<p style="color:#666; text-align:center;">No updates yet.</p>';
+                    return;
+                }
+                snap.forEach(child => {
+                    const h = child.val();
+                    const date = new Date(h.timestamp).toLocaleString();
+                    list.innerHTML += `
+                        <div class="history-item">
+                            <span>${date}</span>
+                            <span>RIC: ${h.ricBurn.toLocaleString()} | LP: ${h.lpBurn} | Locked: ${h.ricLocked}</span>
+                        </div>
+                    `;
+                });
+            });
         }
 
         function updateBurnStats() {
-            db.ref('stats').update({
+            const data = {
                 ricBurn: parseInt(document.getElementById('ricBurnInput').value) || 4000000,
                 lpBurn: parseInt(document.getElementById('lpBurnInput').value) || 1,
                 ricLocked: parseInt(document.getElementById('ricLockedInput').value) || 0
-            }).then(() => alert("✅ Updated for all visitors!"));
+            };
+
+            // Save current stats
+            db.ref('stats').set(data);
+
+            // Log to history
+            db.ref('burnHistory').push({
+                ...data,
+                timestamp: Date.now()
+            });
+
+            alert("✅ Dashboard + History updated for the whole world!");
         }
 
         window.onload = initDashboard;
