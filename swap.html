@@ -19,10 +19,6 @@
         .card { background:var(--card); border-radius:24px; padding:32px; border:1px solid #222; }
         h2 { color:var(--gold); margin:0 0 20px 0; }
 
-        .tab { display:flex; background:#1a1a1a; border-radius:12px; padding:4px; margin-bottom:25px; }
-        .tab-btn { flex:1; padding:12px; border-radius:10px; text-align:center; font-weight:600; cursor:pointer; transition:0.3s; }
-        .tab-btn.active { background:var(--gold); color:black; }
-
         .swap-box { background:#1a1a1a; padding:20px; border-radius:16px; margin-bottom:15px; }
         .balance { font-size:0.85rem; color:#888; text-align:right; margin-bottom:6px; }
         input { width:100%; background:transparent; border:none; color:white; font-size:1.8rem; font-weight:600; outline:none; }
@@ -49,164 +45,134 @@
         <div class="card">
             <h2>Swap Tokens</h2>
 
-            <div class="tab">
-                <div class="tab-btn active" onclick="switchTab(0)" id="tab0">Normal Swap</div>
-                <div class="tab-btn" onclick="switchTab(1)" id="tab1">Pay Gas with RIC</div>
+            <div class="swap-box">
+                <div class="balance">BONE Balance: <span id="boneBalance">0.0000</span></div>
+                <div class="token-row">
+                    <input type="number" id="fromAmount" placeholder="0.0" oninput="updateQuote()">
+                    <select id="fromToken">
+                        <option value="0xC76F4c819D820369Fb2d7C1531aB3Bb18e6fE8d8">BONE</option>
+                    </select>
+                </div>
             </div>
 
-            <div id="normalSwapTab">
-                <div class="swap-box">
-                    <div class="balance">BONE Balance: <span id="boneBalance">0.0000</span></div>
-                    <div class="token-row">
-                        <input type="number" id="fromAmount" placeholder="0.0" oninput="updateQuote()">
-                        <select id="fromToken">
-                            <option value="0xC76F4c819D820369Fb2d7C1531aB3Bb18e6fE8d8">BONE</option>
-                        </select>
-                    </div>
+            <div class="swap-box">
+                <div class="balance">RIC Balance: <span id="ricBalance">0.0000</span></div>
+                <div class="token-row">
+                    <input type="number" id="toAmount" placeholder="0.0" readonly>
+                    <select id="toToken">
+                        <option value="0x12C94d3A30daa09f81Ea6c037004E6e99A4A3dfc">RIC</option>
+                    </select>
                 </div>
-
-                <div class="swap-box">
-                    <div class="balance">RIC Balance: <span id="ricBalance">0.0000</span></div>
-                    <div class="token-row">
-                        <input type="number" id="toAmount" placeholder="0.0" readonly>
-                        <select id="toToken">
-                            <option value="0x12C94d3A30daa09f81Ea6c037004E6e99A4A3dfc">RIC</option>
-                        </select>
-                    </div>
-                </div>
-
-                <button class="btn-action" onclick="performSwap()">Swap BONE → RIC</button>
-                <div id="normalStatus" class="status"></div>
             </div>
+
+            <button class="btn-action" onclick="performSwap()">Swap BONE → RIC</button>
+            <div id="status" class="status"></div>
         </div>
     </div>
 
     <script>
         let signer, userAddress, provider;
-        const ROUTER_ADDRESS = "0x8BC26741c4B381cF1a8392318133c1cCABb78775";
-        const RIC_ADDRESS = "0x12C94d3A30daa09f81Ea6c037004E6e99A4A3dfc";
-        const BONE_ADDRESS = "0xC76F4c819D820369Fb2d7C1531aB3Bb18e6fE8d8";
-        const PAIR_ADDRESS = "0x941abcb1A4278Ff33B50F6Cf9F5A4C8a0888BdeE";
+        const ROUTER = "0x8BC26741c4B381cF1a8392318133c1cCABb78775";
+        const RIC = "0x12C94d3A30daa09f81Ea6c037004E6e99A4A3dfc";
+        const BONE = "0xC76F4c819D820369Fb2d7C1531aB3Bb18e6fE8d8";
+        const PAIR = "0x941abcb1A4278Ff33B50F6Cf9F5A4C8a0888BdeE";
 
         async function connectWallet() {
-            if (!window.ethereum) return alert("Please install MetaMask or Rabby");
+            if (!window.ethereum) return alert("Install MetaMask or Rabby");
             provider = new ethers.BrowserProvider(window.ethereum);
             await provider.send("eth_requestAccounts", []);
             signer = await provider.getSigner();
             userAddress = await signer.getAddress();
-            
-            document.getElementById("connectBtn").textContent = userAddress.slice(0,6) + "..." + userAddress.slice(-4);
+            document.getElementById("connectBtn").textContent = userAddress.slice(0,6)+"..." + userAddress.slice(-4);
             await loadBalances();
         }
 
         async function loadBalances() {
             if (!signer) return;
-            try {
-                const bone = new ethers.Contract(BONE_ADDRESS, ["function balanceOf(address) view returns (uint256)"], provider);
-                const ric = new ethers.Contract(RIC_ADDRESS, ["function balanceOf(address) view returns (uint256)"], provider);
-
-                const boneBal = await bone.balanceOf(userAddress);
-                const ricBal = await ric.balanceOf(userAddress);
-
-                document.getElementById("boneBalance").textContent = parseFloat(ethers.formatEther(boneBal)).toFixed(4);
-                document.getElementById("ricBalance").textContent = parseFloat(ethers.formatEther(ricBal)).toFixed(4);
-            } catch (e) {
-                console.error(e);
-            }
+            const bone = new ethers.Contract(BONE, ["function balanceOf(address) view returns (uint256)"], provider);
+            const ric = new ethers.Contract(RIC, ["function balanceOf(address) view returns (uint256)"], provider);
+            
+            const b = await bone.balanceOf(userAddress);
+            const r = await ric.balanceOf(userAddress);
+            
+            document.getElementById("boneBalance").textContent = parseFloat(ethers.formatEther(b)).toFixed(4);
+            document.getElementById("ricBalance").textContent = parseFloat(ethers.formatEther(r)).toFixed(4);
         }
 
         async function updateQuote() {
-            const amountStr = document.getElementById("fromAmount").value;
-            if (!amountStr || parseFloat(amountStr) <= 0) {
+            const amt = document.getElementById("fromAmount").value;
+            if (!amt || parseFloat(amt) <= 0) {
                 document.getElementById("toAmount").value = "";
                 return;
             }
-
             try {
-                const pair = new ethers.Contract(PAIR_ADDRESS, [
-                    "function getReserves() view returns (uint112, uint112, uint32)",
+                const pair = new ethers.Contract(PAIR, [
+                    "function getReserves() view returns (uint112 r0, uint112 r1, uint32 ts)",
                     "function token0() view returns (address)"
                 ], provider);
-
+                
                 const [r0, r1] = await pair.getReserves();
-                const token0 = await pair.token0();
-
-                const boneRes = token0 === BONE_ADDRESS ? r0 : r1;
-                const ricRes = token0 === BONE_ADDRESS ? r1 : r0;
-
-                const amountIn = ethers.parseEther(amountStr);
-                const amountOut = (amountIn * ricRes * 997n) / (boneRes * 1000n);
-
-                document.getElementById("toAmount").value = parseFloat(ethers.formatEther(amountOut)).toFixed(6);
-            } catch (e) {
-                console.error(e);
-            }
+                const t0 = await pair.token0();
+                
+                const boneRes = t0 === BONE ? r0 : r1;
+                const ricRes = t0 === BONE ? r1 : r0;
+                
+                const inWei = ethers.parseEther(amt);
+                const outWei = (inWei * ricRes * 997n) / (boneRes * 1000n);
+                
+                document.getElementById("toAmount").value = parseFloat(ethers.formatEther(outWei)).toFixed(6);
+            } catch(e) { console.error(e); }
         }
 
         async function performSwap() {
-            if (!signer) return await connectWallet();
-
-            const status = document.getElementById("normalStatus");
+            const status = document.getElementById("status");
             const amountStr = document.getElementById("fromAmount").value;
-            if (!amountStr) return alert("Enter BONE amount");
+            if (!amountStr) return alert("Enter amount");
+
+            if (!signer) return await connectWallet();
 
             status.innerHTML = "Approving BONE...";
 
             try {
                 const amountIn = ethers.parseEther(amountStr);
 
-                // === 1. Approve Router to spend BONE ===
-                const boneContract = new ethers.Contract(BONE_ADDRESS, [
-                    "function approve(address,uint256) returns (bool)",
-                    "function allowance(address,address) view returns (uint256)"
-                ], signer);
-
-                const allowance = await boneContract.allowance(userAddress, ROUTER_ADDRESS);
+                // 1. Approve
+                const bone = new ethers.Contract(BONE, ["function approve(address,uint256)"], signer);
+                const allowance = await bone.allowance(userAddress, ROUTER);
                 if (allowance < amountIn) {
-                    const txApprove = await boneContract.approve(ROUTER_ADDRESS, amountIn);
-                    await txApprove.wait();
+                    const txApp = await bone.approve(ROUTER, amountIn);
+                    await txApp.wait();
                 }
 
                 status.innerHTML = "Swapping... Confirm in wallet";
 
-                // === 2. Execute Swap ===
-                const router = new ethers.Contract(ROUTER_ADDRESS, [
-                    "function swapExactTokensForTokens(uint256,uint256,address[],address,uint256) external returns (uint256[])"
+                // 2. Swap
+                const router = new ethers.Contract(ROUTER, [
+                    "function swapExactTokensForTokens(uint256 amountIn, uint256 amountOutMin, address[] path, address to, uint256 deadline)"
                 ], signer);
 
-                const path = [BONE_ADDRESS, RIC_ADDRESS];
-                const deadline = Math.floor(Date.now() / 1000) + 600;
+                const path = [BONE, RIC];
+                const deadline = Math.floor(Date.now()/1000) + 600;
 
                 const tx = await router.swapExactTokensForTokens(
                     amountIn,
-                    0,                    // Min output (you can add 0.5% slippage later)
+                    0,
                     path,
                     userAddress,
                     deadline
                 );
 
-                status.innerHTML = `✅ Tx sent → <a href="https://shibariumscan.io/tx/${tx.hash}" target="_blank">View</a>`;
-
+                status.innerHTML = `✅ Tx Sent → <a href="https://shibariumscan.io/tx/${tx.hash}" target="_blank">View</a>`;
                 await tx.wait();
                 status.innerHTML = "🎉 Swap Successful!";
                 await loadBalances();
-
             } catch (e) {
                 console.error(e);
-                status.innerHTML = "❌ " + (e.shortMessage || e.message || "Transaction failed");
+                status.innerHTML = "❌ " + (e.shortMessage || e.message || "Failed");
             }
         }
 
-        function switchTab(tab) {
-            document.getElementById("normalSwapTab").style.display = tab === 0 ? "block" : "none";
-            document.getElementById("ricGasTab").style.display = tab === 1 ? "block" : "none";
-            document.getElementById("tab0").classList.toggle("active", tab === 0);
-            document.getElementById("tab1").classList.toggle("active", tab === 1);
-        }
-
-        window.onload = () => {
-            if (window.ethereum) connectWallet();
-        };
+        window.onload = () => { if(window.ethereum) connectWallet(); };
     </script>
 </body>
 </html>
