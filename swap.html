@@ -62,11 +62,11 @@
         <div class="logo">RicSwap</div>
         <div class="nav-links">
             <div class="dropdown">
-                <a href="index.html" class="dropbtn">Home ▾</a>
-                <div class="dropdown-content">
-                    <a href="dashboard.html" class="active">Dashboard</a>
-                </div>
-            </div>
+    <!-- Changed to button to handle the click -->
+    <button onclick="toggleDropdown()" class="dropbtn">Home ▾</button>
+    <div id="myDropdown" class="dropdown-content">
+        <a href="dashboard.html" class="active">Dashboard</a>
+    </div>
             <a href="swap.html" class="active">Swap</a>
             <a href="pools.html">Pools</a>
             <a href="liquidity.html">Add Liquidity</a>
