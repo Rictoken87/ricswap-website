@@ -116,7 +116,7 @@
 
         emailjs.init("Y5GsSScYku74Bt0LH");
 
-        // Real-time Sync for Products
+        // Real-time Products Sync
         db.ref('products').on('value', (snapshot) => {
             const data = snapshot.val();
             const products = data ? Object.keys(data).map(key => ({ id: key, ...data[key] })) : [];
@@ -124,7 +124,7 @@
             renderAdminList(products);
         });
 
-        // Real-time Sync for Staff List
+        // Real-time Staff Sync
         db.ref('staff').on('value', (snapshot) => {
             window.globalStaff = snapshot.val() ? Object.values(snapshot.val()) : [];
         });
@@ -178,10 +178,8 @@
                 const tx = await ric.transfer(MASTER_OWNER, amountWei);
                 await tx.wait();
 
-                // Decrease Stock
                 db.ref('products/' + currentProduct.id).update({ stock: firebase.database.ServerValue.increment(-1) });
 
-                // Send Email
                 await emailjs.send("service_577894p", "template_zga1woa", {
                     to_email: email,
                     product_name: currentProduct.name,
@@ -204,13 +202,13 @@
 
         function addProduct() {
             const name = document.getElementById('pName').value.trim();
-            const price = parseInt(document.getElementById('pPrice').value);
+            const price = document.getElementById('pPrice').value;
             const image = document.getElementById('pImage').value.trim() || 'https://picsum.photos/300/200';
             const stock = parseInt(document.getElementById('pStock').value) || 50;
             
             if (!name || !price) return alert("Name and Price required.");
             
-            db.ref('products').push({ name, price, image, stock });
+            db.ref('products').push({ name, price: parseInt(price), image, stock });
             
             document.getElementById('pName').value = '';
             document.getElementById('pPrice').value = '';
