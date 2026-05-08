@@ -10,27 +10,23 @@
     
     <style>
         :root { --obsidian: #080808; --card: #121212; --gold: #ffd700; --magma: linear-gradient(135deg, #ff4d00, #ff8c00); }
-        body { background: var(--obsidian); color: white; font-family: 'Inter', system-ui, sans-serif; margin:0; padding:0; }
+        body { background: var(--obsidian); color: white; font-family: system-ui, sans-serif; margin:0; padding:0; }
         
         .nav { padding: 15px 40px; display: flex; align-items: center; border-bottom: 1px solid rgba(255,215,0,0.1); background: rgba(8,8,8,0.95); position: sticky; top: 0; z-index: 100; }
         .logo { font-size: 24px; font-weight: 800; color: var(--gold); text-decoration: none; }
         .nav-links { display: flex; gap: 25px; margin-left: 40px; }
-        .nav-links a { color: #888; text-decoration: none; font-weight: 500; transition: 0.2s; }
+        .nav-links a { color: #888; text-decoration: none; font-weight: 500; }
         .nav-links a:hover, .nav-links a.active { color: var(--gold); }
         .connect-btn { background: #1a1a1a; color: white; border: 1.5px solid #333; padding: 6px 16px; border-radius: 9999px; font-size: 13px; font-weight: 600; cursor: pointer; margin-left: auto; }
 
         .dashboard-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 25px; padding: 40px; max-width: 1400px; margin: 0 auto; }
-        .stat-card { background: var(--card); border-radius: 20px; padding: 30px; border: 1px solid #333; text-align: center; transition: 0.3s; }
-        .stat-card:hover { transform: translateY(-5px); border-color: var(--gold); }
-        .stat-number { font-size: 3rem; font-weight: 900; color: var(--gold); margin: 10px 0; }
-        .stat-label { color: #aaa; font-size: 0.95rem; text-transform: uppercase; letter-spacing: 1px; }
+        .stat-card { background: var(--card); border-radius: 20px; padding: 35px; border: 1px solid #333; text-align: center; transition: 0.3s; }
+        .stat-card:hover { transform: translateY(-8px); border-color: var(--gold); }
+        .stat-number { font-size: 3rem; font-weight: 900; color: var(--gold); margin: 12px 0; }
+        .stat-label { color: #aaa; font-size: 1rem; text-transform: uppercase; letter-spacing: 1px; }
         
-        .burn-card { background: linear-gradient(135deg, #2a0000, #110000); border: 2px solid #ff4444; }
-        .burn-card .stat-number { color: #ff6666; }
-
-        .update-panel { background: #111; border: 2px solid var(--gold); border-radius: 20px; padding: 40px; margin: 40px auto; max-width: 800px; display: none; }
-        input { background: #000; border: 1px solid #444; color: white; padding: 14px; border-radius: 10px; width: 100%; margin: 10px 0; font-size: 1.1rem; }
-        .save-btn { background: var(--magma); color: black; border: none; padding: 16px; border-radius: 12px; font-weight: bold; cursor: pointer; width: 100%; font-size: 1.1rem; }
+        .burn-card { background: linear-gradient(135deg, #2a0000, #110000); border: 2px solid #ff5555; }
+        .burn-card .stat-number { color: #ff7777; }
     </style>
 </head>
 <body>
@@ -48,50 +44,34 @@
     </nav>
 
     <div style="padding:80px 20px; text-align:center; background: radial-gradient(circle at center, #1a0f00 0%, var(--obsidian) 70%);">
-        <h1 style="font-size: 3.5rem; margin:0;">Ecosystem Stats</h1>
-        <p style="color:#888; font-size: 1.2rem;">Real-time tracking of the $RIC deflationary engine</p>
+        <h1 style="font-size: 3.5rem; margin:0;">Ecosystem Burn Stats</h1>
+        <p style="color:#888; font-size: 1.2rem;">Permanent Deflation Engine</p>
     </div>
 
     <div class="dashboard-grid" id="dashboardGrid"></div>
 
-    <!-- Master Control Panel -->
-    <div class="update-panel" id="updatePanel">
-        <h2 style="color:var(--gold); margin-top:0;">🔥 Master Control: Update Burn Stats</h2>
-        
+    <!-- Master Update Panel -->
+    <div class="update-panel" id="updatePanel" style="display:none; background:#111; border:2px solid var(--gold); border-radius:20px; padding:40px; margin:40px auto; max-width:800px;">
+        <h2 style="color:var(--gold);">🔥 Master Update Burn Stats</h2>
         <label>RIC Tokens Burned So Far</label>
-        <input type="number" id="ricBurnInput" placeholder="4000000">
-        
-        <label>LP Tokens Burned / Locked</label>
-        <input type="number" id="lpBurnInput" placeholder="0">
-        
-        <label>Total Products in Store</label>
-        <input type="number" id="productsInput" placeholder="0">
-        
-        <label>Total Orders Fulfilled</label>
-        <input type="number" id="ordersInput" placeholder="0">
-        
-        <button onclick="updateBurnStats()" class="save-btn">Push Update to Live Dashboard</button>
+        <input type="number" id="ricBurnInput" value="4000000">
+        <label>LP Tokens Burned</label>
+        <input type="number" id="lpBurnInput" value="0">
+        <label>RIC Locked in Burned LP</label>
+        <input type="number" id="ricLockedInput" value="0">
+        <button onclick="updateBurnStats()" style="background:var(--magma); color:black; padding:16px; width:100%; border:none; border-radius:12px; font-weight:bold; margin-top:20px;">Save & Update Live Dashboard</button>
     </div>
 
     <script>
         const MASTER_OWNER = "0x5e5ae526d45d69991039901a29148029a4889102".toLowerCase();
         let userAddress = "";
 
-        const firebaseConfig = {
-            apiKey: "AIzaSyDoBXIlLCd0AXKU0pPtueTOnxUENqF1lmU",
-            authDomain: "ricswap-bdc61.firebaseapp.com",
-            databaseURL: "https://ricswap-bdc61-default-rtdb.asia-southeast1.firebasedatabase.app",
-            projectId: "ricswap-bdc61",
-            storageBucket: "ricswap-bdc61.firebasestorage.app",
-            messagingSenderId: "923007784555",
-            appId: "1:923007784555:web:115c1a2d2871555918832e"
-        };
-
+        const firebaseConfig = { /* Paste your Firebase config here */ };
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
         async function connectWallet() {
-            if (!window.ethereum) return alert("Please install MetaMask or Rabby");
+            if (!window.ethereum) return alert("Install MetaMask or Rabby");
             const provider = new ethers.BrowserProvider(window.ethereum);
             const accounts = await provider.send("eth_requestAccounts", []);
             userAddress = accounts[0].toLowerCase();
@@ -106,51 +86,39 @@
             const grid = document.getElementById('dashboardGrid');
             grid.innerHTML = `
                 <div class="stat-card burn-card">
-                    <div class="stat-number" id="ricBurn">0</div>
+                    <div class="stat-number" id="ricBurned">4,000,000</div>
                     <div class="stat-label">RIC Tokens Burned So Far 🔥</div>
-                    <a href="https://shibariumscan.io/tx/0x2d8b95cc831e5ef88275533c5de8578ce0940f748dab62c26eb966f076adf3d9" 
-                       target="_blank" style="color:#ffaaaa; font-size:0.9rem; margin-top:8px; display:block;">
-                       View Burn Tx →
-                    </a>
+                    <a href="https://shibariumscan.io/tx/0x2d8b95cc831e5ef88275533c5de8578ce0940f748dab62c26eb966f076adf3d9" target="_blank" style="color:#ffaaaa; display:block; margin-top:10px;">View Burn Tx →</a>
                 </div>
                 <div class="stat-card burn-card">
-                    <div class="stat-number" id="lpBurn">0</div>
-                    <div class="stat-label">LP Tokens Burned / Locked</div>
+                    <div class="stat-number" id="lpBurned">0</div>
+                    <div class="stat-label">LP Tokens Burned</div>
                 </div>
-                <div class="stat-card">
-                    <div class="stat-number" id="products">0</div>
-                    <div class="stat-label">Products in Store</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-number" id="orders">0</div>
-                    <div class="stat-label">Orders Fulfilled</div>
+                <div class="stat-card burn-card">
+                    <div class="stat-number" id="ricLocked">0</div>
+                    <div class="stat-label">RIC Permanently Locked in LP</div>
                 </div>
             `;
 
-            // Real-time listeners
+            // Real-time from Firebase
             db.ref('stats').on('value', (snap) => {
                 const s = snap.val() || {};
-                document.getElementById('ricBurn').textContent = (s.ricBurn || 0).toLocaleString();
-                document.getElementById('lpBurn').textContent = (s.lpBurn || 0).toLocaleString();
-                document.getElementById('products').textContent = s.products || 0;
-                document.getElementById('orders').textContent = s.orders || 0;
+                document.getElementById('ricBurned').textContent = (s.ricBurn || 4000000).toLocaleString();
+                document.getElementById('lpBurned').textContent = (s.lpBurn || 0).toLocaleString();
+                document.getElementById('ricLocked').textContent = (s.ricLocked || 0).toLocaleString();
             });
         }
 
         function updateBurnStats() {
-            const data = {
-                ricBurn: parseInt(document.getElementById('ricBurnInput').value) || 0,
+            db.ref('stats').update({
+                ricBurn: parseInt(document.getElementById('ricBurnInput').value) || 4000000,
                 lpBurn: parseInt(document.getElementById('lpBurnInput').value) || 0,
-                products: parseInt(document.getElementById('productsInput').value) || 0,
-                orders: parseInt(document.getElementById('ordersInput').value) || 0
-            };
-            db.ref('stats').set(data)
-                .then(() => alert("✅ Stats updated successfully for everyone!"))
-                .catch(err => alert("Error: " + err.message));
+                ricLocked: parseInt(document.getElementById('ricLockedInput').value) || 0
+            });
+            alert("✅ Updated successfully for all visitors!");
         }
 
-        // Initialize
-        initDashboard();
+        window.onload = initDashboard;
     </script>
 </body>
 </html>
