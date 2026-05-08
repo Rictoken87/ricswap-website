@@ -43,7 +43,7 @@
 
     <div class="container">
         <div class="card">
-            <h2>Swap Tokens</h2>
+            <h2>Swap Any Token</h2>
 
             <div class="swap-box">
                 <div class="balance">From Balance: <span id="fromBalance">0.0000</span></div>
@@ -116,7 +116,6 @@
                 const [r0, r1] = await pair.getReserves();
                 const token0 = await pair.token0();
 
-                // Determine correct reserves
                 const fromAddr = document.getElementById("fromToken").value;
                 const reserveIn = (token0 === fromAddr) ? r0 : r1;
                 const reserveOut = (token0 === fromAddr) ? r1 : r0;
@@ -140,23 +139,27 @@
             status.innerHTML = "Approving token...";
 
             try {
-                const fromTokenAddr = document.getElementById("fromToken").value;
+                const fromAddr = document.getElementById("fromToken").value;
                 const amountIn = ethers.parseEther(amountStr);
 
-                // Approve
-                const token = new ethers.Contract(fromTokenAddr, ["function approve(address,uint256)"], signer);
+                // Full ERC20 ABI for safety
+                const token = new ethers.Contract(fromAddr, [
+                    "function approve(address,uint256) returns (bool)",
+                    "function allowance(address,address) view returns (uint256)"
+                ], signer);
+
                 const allowance = await token.allowance(userAddress, ROUTER);
                 if (allowance < amountIn) {
                     await (await token.approve(ROUTER, amountIn)).wait();
                 }
 
-                status.innerHTML = "Swapping...";
+                status.innerHTML = "Swapping... Confirm in wallet";
 
                 const router = new ethers.Contract(ROUTER, [
                     "function swapExactTokensForTokens(uint256 amountIn, uint256 amountOutMin, address[] path, address to, uint256 deadline)"
                 ], signer);
 
-                const path = [fromTokenAddr, document.getElementById("toToken").value];
+                const path = [fromAddr, document.getElementById("toToken").value];
                 const tx = await router.swapExactTokensForTokens(
                     amountIn,
                     0,
@@ -171,7 +174,7 @@
                 await loadTokenInfo('to');
             } catch (e) {
                 console.error(e);
-                status.innerHTML = "❌ " + (e.shortMessage || e.message);
+                status.innerHTML = "❌ " + (e.shortMessage || e.message || "Transaction failed");
             }
         }
 
