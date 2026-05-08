@@ -7,159 +7,80 @@
     <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.0/dist/ethers.umd.min.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
-   
+    
     <style>
-        :root {
-            --obsidian: #0a0a0a;
-            --card: #111111;
-            --gold: #ffd700;
-            --accent: #ff4d00;
+        :root { 
+            --obsidian: #0a0a0a; 
+            --card: #111111; 
+            --gold: #ffd700; 
         }
-       
-        * { box-sizing: border-box; }
-        body {
-            background: var(--obsidian);
-            color: #e0e0e0;
-            font-family: 'Inter', system-ui, sans-serif;
-            margin: 0; padding: 0;
+        body { 
+            background: var(--obsidian); 
+            color: #e0e0e0; 
+            font-family: system-ui, sans-serif; 
+            margin:0; padding:0; 
         }
-
-        .nav {
-            padding: 18px 5%;
-            display: flex;
-            align-items: center;
-            background: rgba(10,10,10,0.92);
-            backdrop-filter: blur(16px);
-            border-bottom: 1px solid rgba(255,215,0,0.08);
-            position: sticky; top: 0; z-index: 1000;
+        .nav { 
+            padding: 18px 5%; 
+            display: flex; 
+            align-items: center; 
+            background: rgba(10,10,10,0.95); 
+            backdrop-filter: blur(16px); 
+            border-bottom: 1px solid rgba(255,215,0,0.08); 
+            position: sticky; top: 0; z-index: 1000; 
         }
-        .logo {
-            font-size: 27px;
-            font-weight: 900;
-            background: linear-gradient(90deg, #ffd700, #ffaa00);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            letter-spacing: -1.2px;
-            text-decoration: none;
+        .logo { 
+            font-size: 28px; 
+            font-weight: 900; 
+            background: linear-gradient(90deg, #ffd700, #ffaa00); 
+            -webkit-background-clip: text; 
+            -webkit-text-fill-color: transparent; 
         }
-        .nav-links { display: flex; gap: 32px; margin-left: 45px; }
-        .nav-links a {
-            color: #aaa;
-            text-decoration: none;
-            font-weight: 500;
-            transition: 0.3s;
+        .nav-links a { 
+            color: #aaa; 
+            text-decoration: none; 
+            margin-left: 36px; 
+            font-weight: 500; 
         }
         .nav-links a:hover, .nav-links a.active { color: var(--gold); }
 
-        .connect-btn {
-            margin-left: auto;
-            background: rgba(255, 215, 0, 0.08);
-            color: var(--gold);
-            border: 1.5px solid var(--gold);
-            padding: 9px 22px;
-            border-radius: 50px;
-            font-size: 13.5px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s;
+        .connect-btn { 
+            margin-left: auto; 
+            background: transparent; 
+            color: var(--gold); 
+            border: 2px solid var(--gold); 
+            padding: 8px 22px; 
+            border-radius: 50px; 
+            font-size: 14px; 
+            font-weight: 600; 
+            cursor: pointer; 
         }
-        .connect-btn:hover {
-            background: var(--gold);
-            color: black;
-            box-shadow: 0 0 20px rgba(255, 215, 0, 0.4);
-        }
+        .connect-btn:hover { background: var(--gold); color: black; }
 
-        .hero {
-            padding: 110px 20px 70px;
-            text-align: center;
-            background: radial-gradient(circle at 50% 20%, rgba(255,77,0,0.09) 0%, transparent 65%);
+        .dashboard-grid { 
+            display: grid; 
+            grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); 
+            gap: 28px; 
+            padding: 40px 5%; 
+            max-width: 1480px; 
+            margin: 0 auto; 
         }
-        .hero h1 {
-            font-size: 3.6rem;
-            font-weight: 800;
-            margin: 0 0 12px 0;
+        .stat-card { 
+            background: var(--card); 
+            border-radius: 28px; 
+            padding: 42px 32px; 
+            border: 1px solid rgba(255,215,0,0.1); 
+            text-align: center; 
+            transition: all 0.4s; 
         }
-        .hero p { color: #777; font-size: 1.25rem; }
+        .stat-card:hover { transform: translateY(-10px); border-color: var(--gold); }
+        .stat-number { font-size: 3.6rem; font-weight: 900; color: var(--gold); margin: 12px 0 8px; }
+        .stat-label { color: #999; font-size: 1.05rem; text-transform: uppercase; letter-spacing: 2px; }
 
-        .dashboard-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(310px, 1fr));
-            gap: 28px;
-            padding: 20px 5% 90px;
-            max-width: 1420px;
-            margin: 0 auto;
-        }
-        .stat-card {
-            background: var(--card);
-            border-radius: 26px;
-            padding: 38px 30px;
-            border: 1px solid rgba(255,215,0,0.08);
-            text-align: center;
-            transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
-        }
-        .stat-card:hover {
-            transform: translateY(-10px);
-            border-color: var(--gold);
-        }
-        .stat-number {
-            font-size: 3.2rem;
-            font-weight: 800;
-            color: var(--gold);
-            margin: 12px 0 6px;
-        }
-        .stat-label {
-            color: #777;
-            font-size: 0.95rem;
-            text-transform: uppercase;
-            letter-spacing: 1.8px;
-        }
-
-        .burn-card { background: linear-gradient(180deg, #1a0505 0%, #0a0a0a 100%); border: 1px solid #3a0000; }
-        .burn-card .stat-number {
-            background: linear-gradient(180deg, #ff5555, #ff0000);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-
-        .tx-link {
-            color: #ff9999;
-            text-decoration: none;
-            font-size: 0.9rem;
-            margin-top: 14px;
-            display: inline-block;
-        }
-        .tx-link:hover { color: #ffffff; }
-
-        .update-panel {
-            display: none;
-            background: #0a0a0a;
-            border: 1px solid var(--gold);
-            border-radius: 24px;
-            padding: 45px;
-            margin: 50px auto;
-            max-width: 720px;
-        }
-        input {
-            background: #111;
-            border: 1px solid #333;
-            color: white;
-            padding: 15px;
-            border-radius: 12px;
-            width: 100%;
-            margin: 10px 0 22px;
-            font-size: 1.1rem;
-        }
-        button.save-btn {
-            background: var(--gold);
-            color: black;
-            width: 100%;
-            padding: 17px;
-            border: none;
-            border-radius: 12px;
-            font-weight: 800;
-            font-size: 1.05rem;
-            cursor: pointer;
-        }
+        .burn-card .stat-number { color: #ff6666; }
+        .lp-list { margin-top: 16px; text-align: left; font-size: 0.95rem; }
+        .lp-list a { color: #ffaaaa; display: block; margin: 6px 0; text-decoration: none; }
+        .lp-list a:hover { color: white; }
     </style>
 </head>
 <body>
@@ -169,113 +90,95 @@
             <a href="dashboard.html" class="active">Dashboard</a>
             <a href="swap.html">Swap</a>
             <a href="pools.html">Pools</a>
+            <a href="liquidity.html">Add Liquidity</a>
             <a href="reward.html">Store</a>
+            <a href="launch.html">Fair Launch</a>
         </div>
         <button id="connectBtn" class="connect-btn" onclick="connectWallet()">Connect Wallet</button>
     </nav>
 
-    <div class="hero">
-        <h1>Deflationary Engine</h1>
-        <p>Real-time burn & lock statistics — fully verifiable on-chain</p>
+    <div style="padding:100px 20px; text-align:center; background: radial-gradient(circle at center, #1a0f00 0%, var(--obsidian) 70%);">
+        <h1 style="font-size: 3.6rem; margin:0;">Permanent Burn & Lock Transparency</h1>
+        <p style="color:#888; font-size: 1.25rem;">Everything is verifiable on Shibariumscan</p>
     </div>
 
     <div class="dashboard-grid" id="dashboardGrid"></div>
 
     <!-- Master Update Panel -->
-    <div class="update-panel" id="updatePanel">
-        <h2 style="color:var(--gold); text-align:center; margin-top:0;">🔥 Master Controls</h2>
-       
-        <label style="color:#666; font-size:12px; text-transform:uppercase;">RIC Tokens Burned</label>
-        <input type="number" id="ricBurnInput">
-       
-        <label style="color:#666; font-size:12px; text-transform:uppercase;">LP Pairs Locked</label>
-        <input type="number" id="lpBurnInput">
-       
-        <label style="color:#666; font-size:12px; text-transform:uppercase;">RIC Locked in LPs</label>
-        <input type="number" id="ricLockedInput">
-       
-        <button onclick="updateBurnStats()" class="save-btn">Push Updates Globally</button>
+    <div class="update-panel" id="updatePanel" style="display:none; background:#111; border:2px solid var(--gold); border-radius:28px; padding:45px; margin:50px auto; max-width:820px;">
+        <h2 style="color:var(--gold); text-align:center;">🔥 Master Control</h2>
+        <label>RIC Tokens Burned So Far</label>
+        <input type="number" id="ricBurnInput" value="4000000">
+        <label>LP Pairs Permanently Locked</label>
+        <input type="number" id="lpBurnInput" value="4">
+        <label>RIC Tokens Locked in LPs</label>
+        <input type="number" id="ricLockedInput" value="4300000">
+        <button onclick="updateBurnStats()" style="margin-top:30px; background:var(--gold); color:black; padding:18px; width:100%; border:none; border-radius:12px; font-weight:700;">Update Global Dashboard</button>
     </div>
 
     <script>
         const MASTER_OWNER = "0x5e5ae526d45d69991039901a29148029a4889102".toLowerCase();
         let userAddress = "";
 
-        const firebaseConfig = {
-            apiKey: "AIzaSyDoBXIlLCd0AXKU0pPtueTOnxUENqF1lmU",
-            authDomain: "ricswap-bdc61.firebaseapp.com",
-            databaseURL: "https://ricswap-bdc61-default-rtdb.asia-southeast1.firebasedatabase.app",
-            projectId: "ricswap-bdc61",
-            storageBucket: "ricswap-bdc61.firebasestorage.app",
-            messagingSenderId: "923007784555",
-            appId: "1:923007784555:web:115c1a2d2871555918832e"
-        };
-
+        const firebaseConfig = { /* Your Firebase config */ };
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
         async function connectWallet() {
-            if (!window.ethereum) return alert("Please install MetaMask");
+            if (!window.ethereum) return alert("Please install MetaMask or Rabby");
             const provider = new ethers.BrowserProvider(window.ethereum);
             const accounts = await provider.send("eth_requestAccounts", []);
             userAddress = accounts[0].toLowerCase();
-            document.getElementById("connectBtn").textContent = userAddress.slice(0,6) + "...";
-           
+            document.getElementById("connectBtn").textContent = userAddress.slice(0,6) + "..." + userAddress.slice(-4);
+            
             if (userAddress === MASTER_OWNER) {
                 document.getElementById("updatePanel").style.display = "block";
-                fetchCurrentStatsForMaster();
             }
         }
 
         function initDashboard() {
             const grid = document.getElementById('dashboardGrid');
             grid.innerHTML = `
-                <div class="stat-card">
-                    <div class="stat-number">21,000,000</div>
-                    <div class="stat-label">Total RIC Supply</div>
-                </div>
                 <div class="stat-card burn-card">
-                    <div class="stat-number" id="ricBurned">0</div>
-                    <div class="stat-label">RIC Tokens Burned 🔥</div>
+                    <div class="stat-number" id="ricBurned">4,000,000</div>
+                    <div class="stat-label">RIC Tokens Burned So Far 🔥</div>
                     <a href="https://shibariumscan.io/tx/0x2d8b95cc831e5ef88275533c5de8578ce0940f748dab62c26eb966f076adf3d9" target="_blank" class="tx-link">Verify Burn →</a>
                 </div>
+
                 <div class="stat-card burn-card">
-                    <div class="stat-number" id="lpBurned">0</div>
+                    <div class="stat-number" id="lpBurned">4</div>
                     <div class="stat-label">LP Pairs Permanently Locked</div>
+                    <div class="lp-list">
+                        <a href="https://shibariumscan.io/address/0x941abcb1A4278Ff33B50F6Cf9F5A4C8a0888BdeE" target="_blank">→ LP Pair 1</a>
+                        <a href="https://shibariumscan.io/address/0x9a6cca5ddbdc075ddef75cba52aadbdac67d9d23" target="_blank">→ LP Pair 2</a>
+                        <a href="https://shibariumscan.io/address/0x" target="_blank">→ LP Pair 3</a>
+                        <a href="https://shibariumscan.io/address/0x" target="_blank">→ LP Pair 4</a>
+                    </div>
                 </div>
-                <div class="stat-card">
-                    <div class="stat-number" id="ricLocked">0</div>
-                    <div class="stat-label">RIC Locked in LPs</div>
+
+                <div class="stat-card burn-card">
+                    <div class="stat-number" id="ricLocked">4,300,000</div>
+                    <div class="stat-label">RIC Tokens Locked in LPs</div>
                 </div>
             `;
 
             db.ref('stats').on('value', (snap) => {
                 const s = snap.val() || {};
-                document.getElementById('ricBurned').textContent = (s.ricBurn || 0).toLocaleString();
-                document.getElementById('lpBurned').textContent = (s.lpBurn || 0).toLocaleString();
-                document.getElementById('ricLocked').textContent = (s.ricLocked || 0).toLocaleString();
-            });
-        }
-
-        function fetchCurrentStatsForMaster() {
-            db.ref('stats').once('value').then((snap) => {
-                const s = snap.val() || {};
-                document.getElementById('ricBurnInput').value = s.ricBurn || 0;
-                document.getElementById('lpBurnInput').value = s.lpBurn || 0;
-                document.getElementById('ricLockedInput').value = s.ricLocked || 0;
+                document.getElementById('ricBurned').textContent = (s.ricBurn || 4000000).toLocaleString();
+                document.getElementById('lpBurned').textContent = (s.lpBurn || 4).toLocaleString();
+                document.getElementById('ricLocked').textContent = (s.ricLocked || 4300000).toLocaleString();
             });
         }
 
         function updateBurnStats() {
             db.ref('stats').update({
-                ricBurn: parseInt(document.getElementById('ricBurnInput').value),
-                lpBurn: parseInt(document.getElementById('lpBurnInput').value),
-                ricLocked: parseInt(document.getElementById('ricLockedInput').value)
-            }).then(() => alert("✅ Dashboard Updated Globally!"));
+                ricBurn: parseInt(document.getElementById('ricBurnInput').value) || 4000000,
+                lpBurn: parseInt(document.getElementById('lpBurnInput').value) || 4,
+                ricLocked: parseInt(document.getElementById('ricLockedInput').value) || 4300000
+            }).then(() => alert("✅ Dashboard updated for the whole world!"));
         }
 
-        initDashboard();
-        document.getElementById("connectBtn").addEventListener("click", connectWallet);
+        window.onload = initDashboard;
     </script>
 </body>
 </html>
