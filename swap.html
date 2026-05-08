@@ -54,7 +54,6 @@
                 <div class="tab-btn" onclick="switchTab(1)" id="tab1">Pay Gas with RIC</div>
             </div>
 
-            <!-- Normal Swap Tab -->
             <div id="normalSwapTab">
                 <div class="swap-box">
                     <div class="balance">BONE Balance: <span id="boneBalance">0.0000</span></div>
@@ -76,13 +75,8 @@
                     </div>
                 </div>
 
-                <button class="btn-action" onclick="performSwap()">Swap Now</button>
+                <button class="btn-action" onclick="performSwap()">Swap BONE → RIC</button>
                 <div id="normalStatus" class="status"></div>
-            </div>
-
-            <!-- RicGas Tab (kept for now) -->
-            <div id="ricGasTab" style="display:none;">
-                <!-- Your RicGas code here -->
             </div>
         </div>
     </div>
@@ -95,7 +89,7 @@
         const PAIR_ADDRESS = "0x941abcb1A4278Ff33B50F6Cf9F5A4C8a0888BdeE";
 
         async function connectWallet() {
-            if (!window.ethereum) return alert("Please install MetaMask or Rabby Wallet");
+            if (!window.ethereum) return alert("Please install MetaMask or Rabby");
             provider = new ethers.BrowserProvider(window.ethereum);
             await provider.send("eth_requestAccounts", []);
             signer = await provider.getSigner();
@@ -106,55 +100,46 @@
         }
 
         async function loadBalances() {
-            if (!signer || !userAddress) return;
-            
+            if (!signer) return;
             try {
-                const boneContract = new ethers.Contract(BONE_ADDRESS, ["function balanceOf(address) view returns (uint256)"], provider);
-                const ricContract = new ethers.Contract(RIC_ADDRESS, ["function balanceOf(address) view returns (uint256)"], provider);
+                const bone = new ethers.Contract(BONE_ADDRESS, ["function balanceOf(address) view returns (uint256)"], provider);
+                const ric = new ethers.Contract(RIC_ADDRESS, ["function balanceOf(address) view returns (uint256)"], provider);
 
-                const boneBal = await boneContract.balanceOf(userAddress);
-                const ricBal = await ricContract.balanceOf(userAddress);
+                const boneBal = await bone.balanceOf(userAddress);
+                const ricBal = await ric.balanceOf(userAddress);
 
                 document.getElementById("boneBalance").textContent = parseFloat(ethers.formatEther(boneBal)).toFixed(4);
                 document.getElementById("ricBalance").textContent = parseFloat(ethers.formatEther(ricBal)).toFixed(4);
             } catch (e) {
-                console.error("Balance load error:", e);
+                console.error(e);
             }
         }
 
         async function updateQuote() {
-            const amountInStr = document.getElementById("fromAmount").value;
-            if (!amountInStr || parseFloat(amountInStr) <= 0) {
+            const amountStr = document.getElementById("fromAmount").value;
+            if (!amountStr || parseFloat(amountStr) <= 0) {
                 document.getElementById("toAmount").value = "";
                 return;
             }
 
             try {
                 const pair = new ethers.Contract(PAIR_ADDRESS, [
-                    "function getReserves() view returns (uint112 reserve0, uint112 reserve1, uint32 blockTimestampLast)",
+                    "function getReserves() view returns (uint112, uint112, uint32)",
                     "function token0() view returns (address)"
                 ], provider);
 
-                const [reserve0, reserve1] = await pair.getReserves();
+                const [r0, r1] = await pair.getReserves();
                 const token0 = await pair.token0();
 
-                let boneReserve, ricReserve;
-                if (token0 === BONE_ADDRESS) {
-                    boneReserve = reserve0;
-                    ricReserve = reserve1;
-                } else {
-                    boneReserve = reserve1;
-                    ricReserve = reserve0;
-                }
+                const boneRes = token0 === BONE_ADDRESS ? r0 : r1;
+                const ricRes = token0 === BONE_ADDRESS ? r1 : r0;
 
-                const amountIn = ethers.parseEther(amountInStr);
-                // 0.3% fee standard AMM formula
-                const amountOut = (amountIn * ricReserve * 997n) / (boneReserve * 1000n);
+                const amountIn = ethers.parseEther(amountStr);
+                const amountOut = (amountIn * ricRes * 997n) / (boneRes * 1000n);
 
                 document.getElementById("toAmount").value = parseFloat(ethers.formatEther(amountOut)).toFixed(6);
             } catch (e) {
-                console.error("Quote error:", e);
-                document.getElementById("toAmount").value = "Error";
+                console.error(e);
             }
         }
 
@@ -162,37 +147,53 @@
             if (!signer) return await connectWallet();
 
             const status = document.getElementById("normalStatus");
-            const amountInStr = document.getElementById("fromAmount").value;
-            if (!amountInStr) return alert("Enter amount");
+            const amountStr = document.getElementById("fromAmount").value;
+            if (!amountStr) return alert("Enter BONE amount");
 
-            status.innerHTML = "Confirm transaction in wallet...";
+            status.innerHTML = "Approving BONE...";
 
             try {
-                const router = new ethers.Contract(ROUTER_ADDRESS, [
-                    "function swapExactTokensForTokens(uint256 amountIn, uint256 amountOutMin, address[] calldata path, address to, uint256 deadline) external returns (uint256[] memory amounts)"
+                const amountIn = ethers.parseEther(amountStr);
+
+                // === 1. Approve Router to spend BONE ===
+                const boneContract = new ethers.Contract(BONE_ADDRESS, [
+                    "function approve(address,uint256) returns (bool)",
+                    "function allowance(address,address) view returns (uint256)"
                 ], signer);
 
-                const amountIn = ethers.parseEther(amountInStr);
+                const allowance = await boneContract.allowance(userAddress, ROUTER_ADDRESS);
+                if (allowance < amountIn) {
+                    const txApprove = await boneContract.approve(ROUTER_ADDRESS, amountIn);
+                    await txApprove.wait();
+                }
+
+                status.innerHTML = "Swapping... Confirm in wallet";
+
+                // === 2. Execute Swap ===
+                const router = new ethers.Contract(ROUTER_ADDRESS, [
+                    "function swapExactTokensForTokens(uint256,uint256,address[],address,uint256) external returns (uint256[])"
+                ], signer);
+
                 const path = [BONE_ADDRESS, RIC_ADDRESS];
-                const deadline = Math.floor(Date.now() / 1000) + 600; // 10 minutes
+                const deadline = Math.floor(Date.now() / 1000) + 600;
 
                 const tx = await router.swapExactTokensForTokens(
                     amountIn,
-                    0,                    // Min output (add slippage later if needed)
+                    0,                    // Min output (you can add 0.5% slippage later)
                     path,
                     userAddress,
                     deadline
                 );
 
-                status.innerHTML = `✅ Transaction sent! <a href="https://shibariumscan.io/tx/${tx.hash}" target="_blank" style="color:#ffaa00">View on Explorer</a>`;
+                status.innerHTML = `✅ Tx sent → <a href="https://shibariumscan.io/tx/${tx.hash}" target="_blank">View</a>`;
 
                 await tx.wait();
-                status.innerHTML = `🎉 Swap completed successfully!`;
-                
-                await loadBalances();   // Refresh balances
+                status.innerHTML = "🎉 Swap Successful!";
+                await loadBalances();
+
             } catch (e) {
                 console.error(e);
-                status.innerHTML = `❌ ${e.shortMessage || e.message}`;
+                status.innerHTML = "❌ " + (e.shortMessage || e.message || "Transaction failed");
             }
         }
 
