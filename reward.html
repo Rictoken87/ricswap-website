@@ -25,7 +25,7 @@
         .reward-card img { width: 100%; height: 220px; object-fit: cover; }
         
         #adminOverlay, #receiptModal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.96); z-index: 1000; padding: 40px; overflow: auto; }
-        .modal-box { max-width: 700px; margin: auto; background: var(--card); padding: 35px; border-radius: 24px; border: 1px solid #333; }
+        .modal-box { max-width: 800px; margin: auto; background: var(--card); padding: 35px; border-radius: 24px; border: 1px solid #333; }
         input, textarea { width: 100%; padding: 14px; margin: 10px 0; background: #080808; border: 1px solid #333; border-radius: 12px; color: white; }
         .btn-main { background: var(--magma); color: white; border: none; padding: 16px; border-radius: 14px; font-weight: 800; cursor: pointer; width: 100%; }
         .list-item { display: flex; justify-content: space-between; align-items: center; padding: 12px; background: #000; margin-top: 8px; border-radius: 10px; border: 1px solid #222; }
@@ -59,6 +59,12 @@
             <button onclick="closeAdminPanel()" style="float:right; background:transparent; color:#666;">[ CLOSE ]</button>
             <h2 style="color:var(--gold);">Staff Admin Panel</h2>
             
+            <!-- ORDER HISTORY (New - Top Section) -->
+            <div style="margin-bottom:40px;">
+                <h3>📜 Recent Orders</h3>
+                <div id="orderHistory" style="max-height:300px; overflow-y:auto;"></div>
+            </div>
+
             <div style="margin-bottom:30px;">
                 <h3>👥 Appoint New Staff (Master Only)</h3>
                 <input type="text" id="staffWallet" placeholder="0x... Staff Address">
@@ -116,7 +122,7 @@
 
         emailjs.init("Y5GsSScYku74Bt0LH");
 
-        // Real-time Products
+        // Real-time Sync
         db.ref('products').on('value', (snapshot) => {
             const data = snapshot.val();
             const products = data ? Object.keys(data).map(key => ({ id: key, ...data[key] })) : [];
@@ -124,11 +130,8 @@
             renderAdminList(products);
         });
 
-        // Real-time Staff List
-        db.ref('staff').on('value', (snapshot) => {
-            window.globalStaff = snapshot.val() ? Object.values(snapshot.val()) : [];
-            renderStaffList();
-        });
+        db.ref('staff').on('value', () => renderStaffList());
+        db.ref('orders').on('value', (snapshot) => renderOrderHistory(snapshot.val()));
 
         async function connectWallet() {
             if (!window.ethereum) return alert("Please install MetaMask or Rabby");
@@ -179,8 +182,21 @@
                 const tx = await ric.transfer(MASTER_OWNER, amountWei);
                 await tx.wait();
 
+                // Save Order History
+                db.ref('orders').push({
+                    product: currentProduct.name,
+                    price: currentProduct.price,
+                    email: email,
+                    address: address,
+                    txHash: tx.hash,
+                    timestamp: new Date().toISOString(),
+                    user: userAddress
+                });
+
+                // Decrease Stock
                 db.ref('products/' + currentProduct.id).update({ stock: firebase.database.ServerValue.increment(-1) });
 
+                // Send Email
                 await emailjs.send("service_577894p", "template_zga1woa", {
                     to_email: email,
                     product_name: currentProduct.name,
@@ -201,15 +217,32 @@
             document.getElementById('receiptModal').style.display = 'none';
         }
 
+        function renderOrderHistory(orders) {
+            const container = document.getElementById('orderHistory');
+            if (!orders) {
+                container.innerHTML = "<p>No orders yet.</p>";
+                return;
+            }
+            let html = '';
+            Object.values(orders).reverse().slice(0, 20).forEach(order => {
+                html += `
+                    <div class="list-item">
+                        <span>${new Date(order.timestamp).toLocaleString()} — ${order.product} (${order.price} RIC)</span>
+                        <small>${order.email}</small>
+                    </div>`;
+            });
+            container.innerHTML = html;
+        }
+
         function addProduct() {
             const name = document.getElementById('pName').value.trim();
-            const price = document.getElementById('pPrice').value;
+            const price = parseInt(document.getElementById('pPrice').value);
             const image = document.getElementById('pImage').value.trim() || 'https://picsum.photos/300/200';
             const stock = parseInt(document.getElementById('pStock').value) || 50;
             
-            if (!name || !price) return alert("Name and Price required.");
+            if (!name || isNaN(price)) return alert("Name and Price required.");
             
-            db.ref('products').push({ name, price: parseInt(price), image, stock });
+            db.ref('products').push({ name, price, image, stock });
             
             document.getElementById('pName').value = '';
             document.getElementById('pPrice').value = '';
@@ -258,7 +291,6 @@
             if (!isMaster()) return alert("Only Master can appoint staff");
             const addr = document.getElementById('staffWallet').value.trim();
             if (!addr || !addr.startsWith('0x')) return alert("Invalid address");
-            
             db.ref('staff').push(addr.toLowerCase());
             alert("✅ Staff added successfully!");
             document.getElementById('staffWallet').value = '';
