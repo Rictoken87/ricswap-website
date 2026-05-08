@@ -5,40 +5,22 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>RicSwap | Rewards Store</title>
     <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.0/dist/ethers.umd.min.js"></script>
-    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
     <style>
-        :root { --obsidian: #080808; --card-bg: #121212; --magma: linear-gradient(135deg, #ff4d00 0%, #ff8c00 100%); --gold: #ffd700; }
-        body { background: var(--obsidian); color: white; font-family: system-ui, sans-serif; margin: 0; padding: 0; }
-        .nav { padding: 20px 40px; display: flex; align-items: center; border-bottom: 1px solid rgba(255,215,0,0.1); }
-        .logo { font-size: 28px; font-weight: bold; color: var(--gold); }
-        .nav-links { display: flex; gap: 30px; margin-left: 40px; }
-        .nav-links a { color: white; text-decoration: none; font-weight: 500; }
+        :root { --obsidian: #080808; --card: #121212; --gold: #ffd700; --magma: linear-gradient(135deg, #ff4d00, #ff8c00); }
+        body { background: var(--obsidian); color: white; font-family: system-ui, sans-serif; margin:0; padding:0; }
+        .nav { padding: 15px 40px; display: flex; align-items: center; border-bottom: 1px solid rgba(255,215,0,0.1); background: rgba(8,8,8,0.95); position: sticky; top: 0; z-index: 100; }
+        .logo { font-size: 24px; font-weight: 800; color: var(--gold); text-decoration: none; }
+        .nav-links { display: flex; gap: 25px; margin-left: 40px; }
+        .nav-links a { color: #888; text-decoration: none; font-weight: 500; }
         .nav-links a:hover, .nav-links a.active { color: var(--gold); }
-        .connect-btn, .admin-btn { background: #222; color: white; border: 1px solid #444; padding: 8px 18px; border-radius: 9999px; margin-left: auto; cursor: pointer; }
-        
-        .rewards-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 30px; padding: 40px; max-width: 1400px; margin: 0 auto; }
-        .reward-card { background: var(--card-bg); border-radius: 20px; overflow: hidden; border: 1px solid #333; transition: 0.3s; }
-        .reward-card:hover { transform: translateY(-8px); }
-        .reward-card img { width: 100%; height: 220px; object-fit: cover; }
-        .reward-info { padding: 24px; }
-        .price-tag { color: var(--gold); font-size: 1.6rem; font-weight: bold; }
-        .redeem-btn { background: var(--magma); color: white; border: none; padding: 14px; width: 100%; border-radius: 12px; cursor: pointer; font-weight: bold; }
-        .out-of-stock { background: #333; color: #888; cursor: not-allowed; }
-        
-        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 2000; align-items: center; justify-content: center; }
-        .modal-content { background: #1a1a1a; padding: 30px; border-radius: 24px; max-width: 500px; width: 90%; }
-        .modal-content input, .modal-content textarea { width: 100%; padding: 14px; margin: 10px 0; background: #222; color: white; border: 1px solid #444; border-radius: 12px; }
-        
-        /* IMPROVED ADMIN PANEL */
-        .admin-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 3000; align-items: center; justify-content: center; }
-        .admin-panel { background: var(--card-bg); padding: 40px; border-radius: 24px; max-width: 1100px; width: 90%; max-height: 92vh; overflow-y: auto; border: 1px solid var(--gold); }
-        .admin-section { background: #1a1a1a; padding: 25px; border-radius: 16px; margin-bottom: 25px; }
-        .list-item { padding: 14px; background: #222; margin: 8px 0; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; }
-        input, textarea { width: 100%; padding: 14px; margin: 8px 0; background: #0f0f0f; color: white; border: 1px solid #444; border-radius: 12px; }
-        button { padding: 12px 20px; border-radius: 12px; cursor: pointer; font-weight: bold; }
+        .connect-btn, .admin-btn { background: #1a1a1a; color: white; border: 1.5px solid #333; padding: 6px 16px; border-radius: 9999px; font-size: 13px; font-weight: 600; cursor: pointer; margin-left: auto; }
+        .rewards-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 25px; padding: 40px; max-width: 1400px; margin: 0 auto; }
+        .reward-card { background: var(--card); border-radius: 20px; overflow: hidden; border: 1px solid #222; }
+        .reward-card img { width: 100%; height: 200px; object-fit: cover; }
     </style>
 </head>
 <body>
+    <!-- YOUR STANDARD NAVIGATION -->
     <div class="nav">
         <div class="logo">RicSwap</div>
         <div class="nav-links">
@@ -47,274 +29,168 @@
             <a href="pools.html">Pools</a>
             <a href="liquidity.html">Add Liquidity</a>
             <a href="reward.html" class="active">Rewards</a>
-            <a href="launch.html">Fair Launch & Burn LP </a>
-
+            <a href="launch.html">Fair Launch</a>
         </div>
-        <button id="connectBtn" class="connect-btn">Connect Wallet</button>
+        <button id="connectBtn" class="connect-btn" onclick="connectWallet()">Connect Wallet</button>
         <button onclick="openAdminPanel()" class="admin-btn" style="margin-left:10px;">Staff Admin</button>
     </div>
 
-    <div style="padding:80px 40px; text-align:center; background:radial-gradient(#1a0f00,var(--obsidian));">
-        <h1>RIC Rewards Store</h1>
-        <p>Redeem $RIC for Real Products</p>
+    <div style="padding:60px 20px; text-align:center;">
+        <h1>Rewards Store</h1>
+        <p>Redeem $RIC for real products</p>
     </div>
 
     <div class="rewards-grid" id="rewardsGrid"></div>
 
-    <!-- REDEMPTION MODAL -->
-    <div id="redeemModal" class="modal">
-        <div class="modal-content">
-            <h2 id="modalTitle"></h2>
-            <p id="modalPrice" style="color:var(--gold); font-size:1.4rem;"></p>
-            <p id="modalStock" style="color:#0f0;"></p>
-            
-            <label>Your Email</label>
-            <input type="email" id="customerEmail" placeholder="you@example.com">
-            
-            <label>Shipping Address</label>
-            <textarea id="shippingAddress" rows="5" placeholder="Full name, street, city, country, phone..."></textarea>
-            
-            <button onclick="confirmRedemption()" style="background:var(--magma); color:white; padding:16px; width:100%; border:none; border-radius:12px; margin-top:15px;">Pay with $RIC</button>
-            <button onclick="closeModal()" style="background:#333; color:white; padding:14px; width:100%; border:none; margin-top:10px;">Cancel</button>
-        </div>
-    </div>
+    <!-- ADMIN OVERLAY -->
+    <div id="adminOverlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.95); z-index:1000; padding:40px; overflow:auto;">
+        <h2 style="color:var(--gold);">Staff Admin Panel</h2>
+        <button onclick="closeAdminPanel()" style="float:right; background:red; color:white; border:none; padding:8px 16px; border-radius:8px;">Close</button>
 
-    <!-- STAFF ADMIN OVERLAY -->
-    <div id="adminOverlay" class="admin-overlay">
-        <div class="admin-panel">
-            <button onclick="closeAdminPanel()" style="float:right; background:#333; padding:10px 20px; border:none; border-radius:12px;">✕ Close</button>
-            <h2 style="color:var(--gold); margin-top:0;">Staff Admin Panel</h2>
-            <p id="adminConnected" style="margin-bottom:25px; opacity:0.8;"></p>
+        <h3>Appoint New Staff</h3>
+        <input type="text" id="staffWallet" placeholder="0x... Staff Address" style="width:70%; padding:10px;">
+        <button onclick="addStaff()">Add Staff</button>
 
-            <!-- Appoint Staff -->
-            <div class="admin-section" id="appointSection">
-                <h3>Appoint New Staff (Master Only)</h3>
-                <input type="text" id="newStaff" placeholder="0xStaffWalletAddress">
-                <button onclick="addStaff()" style="width:100%; margin-top:10px;">Add Staff Wallet</button>
-            </div>
+        <h3>Current Staff</h3>
+        <div id="staffList"></div>
 
-            <!-- Current Staff -->
-            <div class="admin-section">
-                <h3>Current Staff Wallets</h3>
-                <div id="staffList"></div>
-            </div>
+        <h3>Add New Product</h3>
+        <input type="text" id="pName" placeholder="Product Name">
+        <input type="number" id="pPrice" placeholder="Price in RIC">
+        <input type="text" id="pImage" placeholder="Image URL">
+        <input type="number" id="pStock" placeholder="Stock" value="50">
+        <button onclick="addProduct()">Add Product</button>
 
-            <!-- Add Product -->
-            <div class="admin-section">
-                <h3>Add New Product</h3>
-                <input type="text" id="newName" placeholder="Product Name"><br>
-                <input type="number" id="newPrice" placeholder="Price in RIC"><br>
-                <input type="number" id="newStock" placeholder="Initial Stock" value="10"><br>
-                <input type="text" id="newImage" placeholder="Image URL"><br>
-                <textarea id="newDesc" placeholder="Description"></textarea><br>
-                <button onclick="addProduct()" style="width:100%; margin-top:10px;">Add Product</button>
-            </div>
-
-            <!-- Current Products -->
-            <div class="admin-section">
-                <h3>Current Products</h3>
-                <div id="productList"></div>
-            </div>
-
-            <!-- Order History -->
-            <div class="admin-section">
-                <h3>Recent Order History</h3>
-                <div id="historyList"></div>
-            </div>
-        </div>
+        <h3>Current Products</h3>
+        <div id="productList"></div>
     </div>
 
     <script>
-        let products = JSON.parse(localStorage.getItem('ricProducts')) || [
-            { id: 1, name: "Cup Coffee", price: 500, image: "https://picsum.photos/id/201/600/400", desc: "Premium ceramic coffee cup", stock: 50 },
-            { id: 2, name: "RicSwap Hoodie", price: 5000, image: "https://picsum.photos/id/64/600/400", desc: "Limited Edition Gold Hoodie", stock: 20 },
-            { id: 3, name: "Amazon Gift Card", price: 4000, image: "https://picsum.photos/id/180/600/400", desc: "$50 Amazon Gift Card", stock: 30 }
-        ];
-
-        let staffWallets = JSON.parse(localStorage.getItem('ricStaffWallets')) || [];
-        let orderHistory = JSON.parse(localStorage.getItem('ricOrderHistory')) || [];
-        let userAddress = null;
+        const MASTER_OWNER = "0x5e5ae526d45d69991039901a29148029a4889102".toLowerCase();
         const RIC_ADDRESS = "0x12C94d3A30daa09f81Ea6c037004E6e99A4A3dfc";
-        const MASTER_OWNER = "0x5E5aE526D45d69991039901a29148029a4889102";
-
-        emailjs.init("Y5GsSScYku74Bt0LH");
+        let userAddress = "";
+        let products = [];
+        let staffWallets = [];
 
         async function connectWallet() {
-            if (!window.ethereum) return alert("Please install MetaMask or Rabby Wallet");
-            try {
-                const provider = new ethers.BrowserProvider(window.ethereum);
-                await provider.send("eth_requestAccounts", []);
-                const signer = await provider.getSigner();
-                userAddress = await signer.getAddress();
-                document.getElementById("connectBtn").textContent = userAddress.slice(0,6) + "..." + userAddress.slice(-4);
-            } catch (e) { console.error(e); }
+            if (!window.ethereum) return alert("Please install MetaMask or Rabby");
+            const provider = new ethers.BrowserProvider(window.ethereum);
+            const signer = await provider.getSigner();
+            userAddress = (await signer.getAddress()).toLowerCase();
+            document.getElementById("connectBtn").textContent = userAddress.slice(0,6) + "..." + userAddress.slice(-4);
+            loadData();
         }
 
-        function isMaster() { return userAddress && userAddress.toLowerCase() === MASTER_OWNER.toLowerCase(); }
-        function isStaff() { return userAddress && staffWallets.some(a => a.toLowerCase() === userAddress.toLowerCase()); }
+        function isMaster() { return userAddress === MASTER_OWNER; }
+        function isStaff() { return isMaster() || staffWallets.some(s => s.toLowerCase() === userAddress); }
+
+        function loadData() {
+            products = JSON.parse(localStorage.getItem('ricGlobalProducts') || '[]');
+            staffWallets = JSON.parse(localStorage.getItem('ricStaff') || '[]');
+            renderProducts();
+        }
 
         function renderProducts() {
             const grid = document.getElementById('rewardsGrid');
+            if (products.length === 0) {
+                grid.innerHTML = `<p style="text-align:center; color:#666; padding:60px;">No products available yet.</p>`;
+                return;
+            }
             grid.innerHTML = products.map(p => `
                 <div class="reward-card">
-                    <img src="${p.image}">
-                    <div class="reward-info">
+                    <img src="${p.image}" alt="${p.name}">
+                    <div style="padding:15px;">
                         <h3>${p.name}</h3>
-                        <p>${p.desc || ''}</p>
-                        <div class="price-tag">${p.price} RIC ${p.stock <= 0 ? '<span style="color:red;">(Out of Stock)</span>' : ''}</div>
-                        <button class="redeem-btn ${p.stock <= 0 ? 'out-of-stock' : ''}" onclick="openRedeemModal(${p.id})" ${p.stock <= 0 ? 'disabled' : ''}>
-                            ${p.stock <= 0 ? 'Out of Stock' : 'Redeem Now'}
-                        </button>
+                        <p><strong>${p.price} $RIC</strong> • Stock: ${p.stock}</p>
+                        <button onclick="redeemProduct(${p.id})" style="width:100%; padding:10px; background:var(--magma);">Redeem Now</button>
                     </div>
-                </div>`).join('');
+                </div>
+            `).join('');
         }
 
-        function openRedeemModal(id) {
-            window.currentProduct = products.find(p => p.id === id);
-            if (window.currentProduct.stock <= 0) return alert("This product is out of stock!");
-            document.getElementById('modalTitle').textContent = window.currentProduct.name;
-            document.getElementById('modalPrice').textContent = `${window.currentProduct.price} RIC`;
-            document.getElementById('modalStock').textContent = `Stock Left: ${window.currentProduct.stock}`;
-            document.getElementById('redeemModal').style.display = 'flex';
-        }
-
-        function closeModal() {
-            document.getElementById('redeemModal').style.display = 'none';
-        }
-
-        async function confirmRedemption() {
+        async function redeemProduct(id) {
             if (!userAddress) return alert("Please connect wallet first");
-            const email = document.getElementById('customerEmail').value.trim();
-            const shipping = document.getElementById('shippingAddress').value.trim();
-            if (!email || !shipping) return alert("Please fill email and shipping address");
+            const p = products.find(x => x.id === id);
+            if (!p) return;
 
             try {
                 const provider = new ethers.BrowserProvider(window.ethereum);
                 const signer = await provider.getSigner();
                 const ric = new ethers.Contract(RIC_ADDRESS, ["function transfer(address,uint256) returns (bool)"], signer);
-
-                const tx = await ric.transfer(MASTER_OWNER, ethers.parseEther(window.currentProduct.price.toString()));
+                const tx = await ric.transfer(MASTER_OWNER, ethers.parseEther(p.price.toString()));
                 await tx.wait();
-
-                window.currentProduct.stock = (window.currentProduct.stock || 10) - 1;
-                localStorage.setItem('ricProducts', JSON.stringify(products));
-
-                orderHistory.unshift({
-                    time: new Date().toLocaleString(),
-                    customer: email,
-                    product: window.currentProduct.name,
-                    amount: window.currentProduct.price,
-                    tx: tx.hash
-                });
-                if (orderHistory.length > 20) orderHistory.pop();
-                localStorage.setItem('ricOrderHistory', JSON.stringify(orderHistory));
-
-                await emailjs.send("service_577894p", "template_zga1woa", {
-                    to_email: email,
-                    product_name: window.currentProduct.name,
-                    amount_ric: window.currentProduct.price,
-                    shipping_address: shipping,
-                    tx_hash: tx.hash
-                });
-
-                alert(`✅ Success! Receipt sent to ${email}`);
-                closeModal();
-                renderProducts();
+                alert(`✅ Successfully paid ${p.price} RIC for ${p.name}!`);
             } catch (e) {
-                console.error(e);
-                alert("Error: " + (e.reason || e.message));
+                alert("Transaction failed: " + (e.reason || e.message));
             }
         }
 
         function openAdminPanel() {
             if (!userAddress) return alert("Please connect wallet first");
-            if (!isMaster() && !isStaff()) return alert("You are not authorized as staff.");
-
-            document.getElementById('adminOverlay').style.display = 'flex';
-            document.getElementById('adminConnected').innerHTML = `Connected: <strong>${userAddress}</strong>`;
-            renderStaffList();
-            renderProductList();
-            renderHistoryList();
+            if (!isStaff()) return alert("Access Denied. Only Master or Staff allowed.");
+            document.getElementById('adminOverlay').style.display = 'block';
+            renderAdmin();
         }
 
         function closeAdminPanel() {
             document.getElementById('adminOverlay').style.display = 'none';
         }
 
-        function addStaff() {
-            const addr = document.getElementById('newStaff').value.trim();
-            if (addr && addr.length === 42) {
-                if (!staffWallets.includes(addr)) {
-                    staffWallets.push(addr);
-                    localStorage.setItem('ricStaffWallets', JSON.stringify(staffWallets));
-                    renderStaffList();
-                }
-            }
+        function renderAdmin() {
+            document.getElementById('staffList').innerHTML = staffWallets.map((addr, i) => `
+                <div>${addr} ${isMaster() ? `<button onclick="removeStaff(${i})" style="color:red;">Remove</button>` : ''}</div>
+            `).join('') || "<p>No staff yet.</p>";
+
+            document.getElementById('productList').innerHTML = products.map((p, i) => `
+                <div>${p.name} (${p.price} RIC) - Stock: ${p.stock} 
+                    <button onclick="deleteProduct(${i})" style="color:red;">Delete</button>
+                </div>
+            `).join('') || "<p>No products yet.</p>";
         }
 
-        function renderStaffList() {
-            const div = document.getElementById('staffList');
-            div.innerHTML = staffWallets.map((addr, i) => `
-                <div class="list-item">
-                    <span>${addr}</span>
-                    <button onclick="removeStaff(${i})" style="color:red;">Remove</button>
-                </div>
-            `).join('');
+        function addStaff() {
+            if (!isMaster()) return alert("Only Master can add staff");
+            const addr = document.getElementById('staffWallet').value.trim();
+            if (addr && addr.startsWith('0x')) {
+                staffWallets.push(addr);
+                localStorage.setItem('ricStaff', JSON.stringify(staffWallets));
+                renderAdmin();
+                document.getElementById('staffWallet').value = '';
+            }
         }
 
         function removeStaff(i) {
-            if (confirm("Remove this staff?")) {
-                staffWallets.splice(i, 1);
-                localStorage.setItem('ricStaffWallets', JSON.stringify(staffWallets));
-                renderStaffList();
-            }
+            if (!isMaster()) return;
+            staffWallets.splice(i, 1);
+            localStorage.setItem('ricStaff', JSON.stringify(staffWallets));
+            renderAdmin();
         }
 
         function addProduct() {
-            const name = document.getElementById('newName').value;
-            const price = parseFloat(document.getElementById('newPrice').value);
-            const stock = parseInt(document.getElementById('newStock').value) || 10;
-            const image = document.getElementById('newImage').value;
-            const desc = document.getElementById('newDesc').value;
+            const name = document.getElementById('pName').value.trim();
+            const price = parseInt(document.getElementById('pPrice').value);
+            const image = document.getElementById('pImage').value || 'https://picsum.photos/300/200';
+            const stock = parseInt(document.getElementById('pStock').value) || 50;
 
             if (!name || !price) return alert("Name and price required");
 
-            products.push({ id: Date.now(), name, price, image, desc, stock });
-            localStorage.setItem('ricProducts', JSON.stringify(products));
-            renderProductList();
-        }
-
-        function renderProductList() {
-            const div = document.getElementById('productList');
-            div.innerHTML = products.map((p, i) => `
-                <div class="list-item">
-                    <span><strong>${p.name}</strong> — ${p.price} RIC (Stock: ${p.stock})</span>
-                    <button onclick="deleteProduct(${i})" style="color:red;">Delete</button>
-                </div>
-            `).join('');
+            products.push({ id: Date.now(), name, price, image, stock });
+            localStorage.setItem('ricGlobalProducts', JSON.stringify(products));
+            renderProducts();
+            renderAdmin();
+            alert("Product added!");
         }
 
         function deleteProduct(i) {
-            if (confirm("Delete this product?")) {
+            if (confirm("Delete product?")) {
                 products.splice(i, 1);
-                localStorage.setItem('ricProducts', JSON.stringify(products));
-                renderProductList();
+                localStorage.setItem('ricGlobalProducts', JSON.stringify(products));
+                renderProducts();
+                renderAdmin();
             }
         }
 
-        function renderHistoryList() {
-            const div = document.getElementById('historyList');
-            div.innerHTML = orderHistory.map(o => `
-                <div class="list-item">
-                    <span>${o.time} — ${o.customer}<br>${o.product} (${o.amount} RIC)</span>
-                    <span style="color:#0f0; font-size:0.9em;">${o.tx.slice(0,12)}...</span>
-                </div>
-            `).join('');
-        }
-
-        // Initialize
-        renderProducts();
-        document.getElementById("connectBtn").addEventListener("click", connectWallet);
+        window.onload = loadData;
     </script>
 </body>
 </html>
