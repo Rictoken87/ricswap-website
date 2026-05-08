@@ -116,7 +116,7 @@
 
         emailjs.init("Y5GsSScYku74Bt0LH");
 
-        // Real-time Sync
+        // Real-time Products
         db.ref('products').on('value', (snapshot) => {
             const data = snapshot.val();
             const products = data ? Object.keys(data).map(key => ({ id: key, ...data[key] })) : [];
@@ -124,7 +124,11 @@
             renderAdminList(products);
         });
 
-        db.ref('staff').on('value', () => renderStaffList());
+        // Real-time Staff List
+        db.ref('staff').on('value', (snapshot) => {
+            window.globalStaff = snapshot.val() ? Object.values(snapshot.val()) : [];
+            renderStaffList();
+        });
 
         async function connectWallet() {
             if (!window.ethereum) return alert("Please install MetaMask or Rabby");
@@ -199,13 +203,13 @@
 
         function addProduct() {
             const name = document.getElementById('pName').value.trim();
-            const price = parseInt(document.getElementById('pPrice').value);
+            const price = document.getElementById('pPrice').value;
             const image = document.getElementById('pImage').value.trim() || 'https://picsum.photos/300/200';
             const stock = parseInt(document.getElementById('pStock').value) || 50;
             
-            if (!name || isNaN(price)) return alert("Name and Price are required.");
+            if (!name || !price) return alert("Name and Price required.");
             
-            db.ref('products').push({ name, price, image, stock });
+            db.ref('products').push({ name, price: parseInt(price), image, stock });
             
             document.getElementById('pName').value = '';
             document.getElementById('pPrice').value = '';
@@ -254,6 +258,7 @@
             if (!isMaster()) return alert("Only Master can appoint staff");
             const addr = document.getElementById('staffWallet').value.trim();
             if (!addr || !addr.startsWith('0x')) return alert("Invalid address");
+            
             db.ref('staff').push(addr.toLowerCase());
             alert("✅ Staff added successfully!");
             document.getElementById('staffWallet').value = '';
@@ -261,7 +266,7 @@
 
         function removeStaff(addr) {
             if (!isMaster()) return;
-            if (confirm("Remove this staff?")) {
+            if (confirm("Remove this staff member?")) {
                 db.ref('staff').once('value', snapshot => {
                     snapshot.forEach(child => {
                         if (child.val() === addr) child.ref.remove();
