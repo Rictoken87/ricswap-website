@@ -66,9 +66,14 @@
 
     <script>
         const MASTER_OWNER = "0x5e5ae526d45d69991039901a29148029a4889102".toLowerCase();
+        
+        // HARD CODED STAFF WALLETS (Works across all browsers & computers)
+        let staffWallets = [
+            "0x4820d8F67c6fC4ebbe0E2cA3505663D893482e6a".toLowerCase()   // ← Add more staff addresses here
+        ];
+
         let userAddress = "";
         let products = [];
-        let staffWallets = [];
 
         async function connectWallet() {
             if (!window.ethereum) return alert("Please install MetaMask or Rabby");
@@ -76,22 +81,16 @@
             const signer = await provider.getSigner();
             userAddress = (await signer.getAddress()).toLowerCase();
             document.getElementById("connectBtn").textContent = userAddress.slice(0,6) + "..." + userAddress.slice(-4);
-            console.log("✅ Connected as:", userAddress);
             loadData();
         }
 
         function isMaster() { return userAddress === MASTER_OWNER; }
         function isStaff() { 
-            const isS = staffWallets.some(s => s.toLowerCase() === userAddress);
-            console.log("🔍 isStaff check:", isS, "Staff list:", staffWallets);
-            return isMaster() || isS;
+            return isMaster() || staffWallets.some(s => s === userAddress); 
         }
 
         function loadData() {
             products = JSON.parse(localStorage.getItem('ricGlobalProducts') || '[]');
-            staffWallets = JSON.parse(localStorage.getItem('ricStaff') || '[]');
-            console.log("📦 Loaded Products:", products.length);
-            console.log("👥 Loaded Staff:", staffWallets);
             renderProducts();
         }
 
@@ -115,14 +114,9 @@
 
         function openAdminPanel() {
             if (!userAddress) return alert("Please connect wallet first");
-            
-            console.log("🔍 openAdminPanel called - User:", userAddress);
-            console.log("🔍 isMaster:", isMaster(), "isStaff:", isStaff());
-            
             if (!isStaff()) {
-                return alert("Access Denied.\n\nOnly Master or authorized Staff can access.\n\nYour address: " + userAddress);
+                return alert("Access Denied.\n\nYour address is not authorized.\n\nContact Master Owner.");
             }
-            
             document.getElementById('adminOverlay').style.display = 'block';
             renderAdmin();
         }
@@ -156,8 +150,7 @@
             const lowerAddr = addr.toLowerCase();
             if (!staffWallets.includes(lowerAddr)) {
                 staffWallets.push(lowerAddr);
-                localStorage.setItem('ricStaff', JSON.stringify(staffWallets));
-                alert("✅ Staff added successfully!");
+                alert("✅ Staff added!");
                 renderAdmin();
             }
             document.getElementById('staffWallet').value = '';
@@ -166,7 +159,6 @@
         function removeStaff(i) {
             if (!isMaster()) return;
             staffWallets.splice(i, 1);
-            localStorage.setItem('ricStaff', JSON.stringify(staffWallets));
             renderAdmin();
         }
 
