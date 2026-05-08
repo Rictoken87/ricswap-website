@@ -84,7 +84,7 @@
             <button id="swapBtn" class="main-btn">Swap Now</button>
         </div>
 
-        <!-- RicGas -->
+        <!-- Pay Gas with RIC -->
         <div id="gasTab" style="display:none;">
             <div class="input-group">
                 <label>Pay with RIC for Gas</label>
@@ -101,6 +101,7 @@
         const RICGAS_ADDRESS = "0x054Fcc4B7cd11f01735aE4e79131908E3Ff61B59";
         const WBONE = "0xC76F4c819D820369Fb2d7C1531aB3Bb18e6fE8d8";
         const RIC = "0x12C94d3A30daa09f81Ea6c037004E6e99A4A3dfc";
+        const PAIR = "0x941abcb1A4278Ff33B50F6Cf9F5A4C8a0888BdeE";   // ← Your real pool
 
         let provider, signer, userAddress;
 
@@ -119,13 +120,21 @@
             if (!amountIn || isNaN(amountIn) || amountIn <= 0) return;
 
             try {
-                const router = new ethers.Contract(ROUTER_ADDRESS, [
-                    "function getAmountsOut(uint256 amountIn, address[] memory path) public view returns (uint256[] memory amounts)"
+                const pair = new ethers.Contract(PAIR, [
+                    "function getReserves() view returns (uint112 r0, uint112 r1, uint32 ts)",
+                    "function token0() view returns (address)"
                 ], provider);
-                const path = [WBONE, RIC];
-                const amountInWei = ethers.parseEther(amountIn);
-                const amounts = await router.getAmountsOut(amountInWei, path);
-                document.getElementById("toAmount").value = parseFloat(ethers.formatEther(amounts[1])).toFixed(4);
+
+                const [r0, r1] = await pair.getReserves();
+                const token0 = await pair.token0();
+
+                const boneRes = token0 === WBONE ? r0 : r1;
+                const ricRes  = token0 === WBONE ? r1 : r0;
+
+                const inWei = ethers.parseEther(amountIn);
+                const outWei = (inWei * ricRes * 997n) / (boneRes * 1000n);
+
+                document.getElementById("toAmount").value = parseFloat(ethers.formatEther(outWei)).toFixed(4);
             } catch (e) {
                 document.getElementById("toAmount").value = "No Liquidity";
             }
@@ -179,7 +188,7 @@
                 ], signer);
 
                 const ricWei = ethers.parseEther(amount);
-                const tx = await gasContract.payGasWithRIC(ricWei, 1); // min 1 wei
+                const tx = await gasContract.payGasWithRIC(ricWei, 1);
 
                 status.style.color = "#0f0";
                 status.innerHTML = `✅ Gas Paid! <a href="https://shibariumscan.io/tx/${tx.hash}" target="_blank" class="tx-link">View Tx</a>`;
