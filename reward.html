@@ -66,7 +66,6 @@
 
     <script>
         const MASTER_OWNER = "0x5e5ae526d45d69991039901a29148029a4889102".toLowerCase();
-        const RIC_ADDRESS = "0x12C94d3A30daa09f81Ea6c037004E6e99A4A3dfc";
         let userAddress = "";
         let products = [];
         let staffWallets = [];
@@ -77,15 +76,22 @@
             const signer = await provider.getSigner();
             userAddress = (await signer.getAddress()).toLowerCase();
             document.getElementById("connectBtn").textContent = userAddress.slice(0,6) + "..." + userAddress.slice(-4);
+            console.log("✅ Connected as:", userAddress);
             loadData();
         }
 
         function isMaster() { return userAddress === MASTER_OWNER; }
-        function isStaff() { return isMaster() || staffWallets.some(s => s.toLowerCase() === userAddress); }
+        function isStaff() { 
+            const isS = staffWallets.some(s => s.toLowerCase() === userAddress);
+            console.log("🔍 isStaff check:", isS, "Staff list:", staffWallets);
+            return isMaster() || isS;
+        }
 
         function loadData() {
             products = JSON.parse(localStorage.getItem('ricGlobalProducts') || '[]');
             staffWallets = JSON.parse(localStorage.getItem('ricStaff') || '[]');
+            console.log("📦 Loaded Products:", products.length);
+            console.log("👥 Loaded Staff:", staffWallets);
             renderProducts();
         }
 
@@ -101,7 +107,7 @@
                     <div style="padding:15px;">
                         <h3>${p.name}</h3>
                         <p><strong>${p.price} $RIC</strong> • Stock: ${p.stock}</p>
-                        <button onclick="redeemProduct(${p.id})" style="width:100%; padding:12px; background:var(--magma); border:none; border-radius:10px; color:white;">Redeem Now</button>
+                        <button onclick="redeemProduct(${p.id})" style="width:100%; padding:12px; background:var(--magma);">Redeem Now</button>
                     </div>
                 </div>
             `).join('');
@@ -109,7 +115,14 @@
 
         function openAdminPanel() {
             if (!userAddress) return alert("Please connect wallet first");
-            if (!isStaff()) return alert("Access Denied.\n\nOnly Master or authorized Staff allowed.");
+            
+            console.log("🔍 openAdminPanel called - User:", userAddress);
+            console.log("🔍 isMaster:", isMaster(), "isStaff:", isStaff());
+            
+            if (!isStaff()) {
+                return alert("Access Denied.\n\nOnly Master or authorized Staff can access.\n\nYour address: " + userAddress);
+            }
+            
             document.getElementById('adminOverlay').style.display = 'block';
             renderAdmin();
         }
@@ -139,16 +152,15 @@
         function addStaff() {
             if (!isMaster()) return alert("Only Master can appoint staff");
             const addr = document.getElementById('staffWallet').value.trim();
-            if (addr && addr.startsWith('0x')) {
-                const lower = addr.toLowerCase();
-                if (!staffWallets.includes(lower)) {
-                    staffWallets.push(lower);
-                    localStorage.setItem('ricStaff', JSON.stringify(staffWallets));
-                    alert("Staff added successfully!");
-                    renderAdmin();
-                }
-                document.getElementById('staffWallet').value = '';
+            if (!addr || !addr.startsWith('0x')) return alert("Invalid address");
+            const lowerAddr = addr.toLowerCase();
+            if (!staffWallets.includes(lowerAddr)) {
+                staffWallets.push(lowerAddr);
+                localStorage.setItem('ricStaff', JSON.stringify(staffWallets));
+                alert("✅ Staff added successfully!");
+                renderAdmin();
             }
+            document.getElementById('staffWallet').value = '';
         }
 
         function removeStaff(i) {
@@ -166,22 +178,20 @@
 
             if (!name || isNaN(price)) return alert("Name and Price are required");
 
-            const newProduct = { id: Date.now(), name, price, image, stock };
-            products.push(newProduct);
+            products.push({ id: Date.now(), name, price, image, stock });
             localStorage.setItem('ricGlobalProducts', JSON.stringify(products));
 
-            alert("✅ Product added to catalog!");
+            alert("✅ Product added successfully!");
             renderProducts();
             renderAdmin();
 
-            // Clear inputs
             document.getElementById('pName').value = '';
             document.getElementById('pPrice').value = '';
             document.getElementById('pImage').value = '';
         }
 
         function deleteProduct(i) {
-            if (confirm("Are you sure you want to delete this product?")) {
+            if (confirm("Delete this product?")) {
                 products.splice(i, 1);
                 localStorage.setItem('ricGlobalProducts', JSON.stringify(products));
                 renderProducts();
@@ -189,29 +199,8 @@
             }
         }
 
-        async function redeemProduct(id) {
-            if (!userAddress) return alert("Please connect wallet first");
-            const p = products.find(item => item.id === id);
-            if (!p) return alert("Product not found");
-
-            try {
-                const provider = new ethers.BrowserProvider(window.ethereum);
-                const signer = await provider.getSigner();
-                const ric = new ethers.Contract(RIC_ADDRESS, [
-                    "function transfer(address to, uint256 amount) returns (bool)"
-                ], signer);
-
-                const amountWei = ethers.parseUnits(p.price.toString(), 18);
-                alert(`Paying ${p.price} $RIC for ${p.name}...`);
-
-                const tx = await ric.transfer(MASTER_OWNER, amountWei);
-                await tx.wait();
-
-                alert(`✅ Success! Paid ${p.price} $RIC for ${p.name}.\nStaff will process your reward soon.`);
-            } catch (e) {
-                console.error(e);
-                alert("Redemption failed: " + (e.reason || e.message || "Insufficient balance or rejected"));
-            }
+        function redeemProduct(id) {
+            alert("Redemption feature coming soon.");
         }
 
         window.onload = loadData;
