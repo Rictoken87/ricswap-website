@@ -11,198 +11,294 @@
             --card-bg: #121212;
             --magma: linear-gradient(135deg, #ff4d00 0%, #ff8c00 100%);
             --gold: #ffd700;
+            --error: #ff4444;
+            --success: #00ff88;
         }
-        body { background: var(--obsidian); color: white; font-family: system-ui, sans-serif; margin: 0; padding: 0; }
+        body { background: var(--obsidian); color: white; font-family: system-ui, -apple-system, sans-serif; margin: 0; padding: 0; }
         
-        .nav { padding: 15px 40px; display: flex; align-items: center; border-bottom: 1px solid rgba(255,215,0,0.1); }
-        .logo { font-size: 24px; font-weight: bold; color: var(--gold); }
-        .nav-links { display: flex; gap: 25px; margin-left: 40px; }
-        .nav-links a { color: white; text-decoration: none; font-weight: 500; font-size: 14px; }
+        /* Navigation */
+        .nav { padding: 15px 40px; display: flex; align-items: center; border-bottom: 1px solid rgba(255,215,0,0.1); background: rgba(10,10,10,0.9); backdrop-filter: blur(10px); position: sticky; top: 0; z-index: 100; }
+        .logo { font-size: 24px; font-weight: 900; color: var(--gold); text-transform: uppercase; letter-spacing: -1px; text-decoration: none; }
+        .nav-links { display: flex; gap: 30px; margin-left: 40px; }
+        .nav-links a { color: #888; text-decoration: none; font-weight: 600; font-size: 14px; transition: 0.2s; }
         .nav-links a:hover, .nav-links a.active { color: var(--gold); }
         
         .connect-btn { 
-            background: #1a1a1a; color: var(--gold); border: 1.5px solid var(--gold);
-            padding: 6px 16px; border-radius: 6px; font-size: 12px; font-weight: 700;
-            cursor: pointer; white-space: nowrap; margin-left: auto;
+            background: rgba(255, 215, 0, 0.1); color: var(--gold); border: 1px solid var(--gold);
+            padding: 8px 20px; border-radius: 8px; font-size: 13px; font-weight: 700;
+            cursor: pointer; white-space: nowrap; margin-left: auto; transition: 0.2s;
         }
         .connect-btn:hover { background: var(--gold); color: black; }
 
-        .card { max-width: 420px; margin: 40px auto; background: var(--card-bg); border-radius: 24px; padding: 32px; box-shadow: 0 20px 40px rgba(0,0,0,0.8); border: 1px solid #222; }
-        .input-group { background: #1a1a1a; border-radius: 16px; padding: 16px; margin-bottom: 8px; border: 1px solid #333; }
+        /* Card */
+        .container { padding: 20px; display: flex; justify-content: center; }
+        .card { width: 100%; max-width: 440px; margin-top: 40px; background: var(--card-bg); border-radius: 24px; padding: 30px; box-shadow: 0 20px 50px rgba(0,0,0,0.6); border: 1px solid #222; }
+        
+        /* Inputs */
+        .input-group { background: #1a1a1a; border-radius: 16px; padding: 16px; margin-bottom: 8px; border: 1px solid #333; transition: 0.2s; }
         .input-group:focus-within { border-color: var(--gold); }
-        label { display: block; color: #888; font-size: 12px; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 1px; }
-        input { background: transparent; border: none; color: white; font-size: 28px; width: 100%; outline: none; }
-        .main-btn { background: var(--magma); color: white; border: none; padding: 18px; border-radius: 16px; font-weight: bold; width: 100%; font-size: 18px; cursor: pointer; margin-top: 20px; }
-        .status { margin-top: 15px; text-align: center; font-size: 13px; min-height: 24px; }
+        .label-row { display: flex; justify-content: space-between; margin-bottom: 10px; }
+        label { color: #888; font-size: 12px; font-weight: 600; }
+        .balance { color: #666; font-size: 12px; }
+        
+        .input-row { display: flex; align-items: center; gap: 10px; }
+        input { background: transparent; border: none; color: white; font-size: 24px; font-weight: 600; width: 100%; outline: none; }
+        .token-pill { background: #333; padding: 6px 12px; border-radius: 20px; font-size: 14px; font-weight: 700; display: flex; align-items: center; gap: 6px; }
+        
+        /* Buttons & Tabs */
+        .main-btn { background: var(--magma); color: white; border: none; padding: 18px; border-radius: 16px; font-weight: 800; width: 100%; font-size: 16px; cursor: pointer; margin-top: 20px; text-transform: uppercase; letter-spacing: 0.5px; transition: 0.2s; }
+        .main-btn:hover { transform: translateY(-2px); box-shadow: 0 10px 20px rgba(255, 77, 0, 0.2); }
+        .main-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; filter: grayscale(1); }
+
+        .status { margin-top: 15px; text-align: center; font-size: 13px; min-height: 24px; line-height: 1.4; color: #888; }
         .tx-link { color: var(--gold); text-decoration: underline; }
         
-        .tab { display: flex; background: #1a1a1a; border-radius: 12px; padding: 4px; margin-bottom: 20px; }
-        .tab-btn { flex: 1; padding: 10px; border-radius: 10px; text-align: center; font-weight: 600; cursor: pointer; }
+        .tab { display: flex; background: #000; border-radius: 12px; padding: 4px; margin-bottom: 25px; border: 1px solid #222; }
+        .tab-btn { flex: 1; padding: 10px; border-radius: 8px; text-align: center; font-weight: 700; font-size: 13px; cursor: pointer; color: #666; transition: 0.2s; }
         .tab-btn.active { background: var(--gold); color: black; }
+        
+        /* Utilities */
+        .arrow-down { text-align: center; color: #444; margin: -12px 0 4px 0; font-size: 18px; }
     </style>
 </head>
 <body>
-    <div class="nav">
-        <div class="logo">RicSwap</div>
+
+    <nav class="nav">
+        <a href="index.html" class="logo">RicSwap</a>
         <div class="nav-links">
-            <a href="index.html">Home</a>
             <a href="swap.html" class="active">Swap</a>
             <a href="pools.html">Pools</a>
-            <a href="liquidity.html">Add Liquidity</a>
+            <a href="liquidity.html">Liquidity</a>
         </div>
-        <button id="connectBtn" class="connect-btn">Connect Wallet</button>
-    </div>
+        <button id="connectBtn" class="connect-btn" onclick="connectWallet()">Connect Wallet</button>
+    </nav>
 
-    <div class="card">
-        <div class="tab">
-            <div class="tab-btn active" onclick="switchTab(0)" id="tabNormal">Normal Swap</div>
-            <div class="tab-btn" onclick="switchTab(1)" id="tabGas">Pay Gas with RIC</div>
-        </div>
+    <div class="container">
+        <div class="card">
+            <div class="tab">
+                <div class="tab-btn active" onclick="switchTab(0)" id="tabNormal">Swap</div>
+                <div class="tab-btn" onclick="switchTab(1)" id="tabGas">Gas Station</div>
+            </div>
 
-        <!-- Normal Swap -->
-        <div id="normalTab">
-            <div class="input-group">
-                <div style="display:flex; justify-content:space-between;">
-                    <label>You Pay</label>
-                    <span id="fromBalance" style="font-size:12px; color:#888;">Balance: --</span>
+            <!-- ==================== TAB 1: NORMAL SWAP (BONE -> RIC) ==================== -->
+            <div id="normalTab">
+                <div class="input-group">
+                    <div class="label-row">
+                        <label>You Pay</label>
+                        <span class="balance">Balance: --</span>
+                    </div>
+                    <div class="input-row">
+                        <input type="number" id="fromAmount" placeholder="0.0" value="1" oninput="updateQuote()">
+                        <div class="token-pill">BONE</div>
+                    </div>
                 </div>
-                <input type="number" id="fromAmount" placeholder="0.0" value="1" oninput="updateQuote()">
-                <div style="margin-top:8px; font-size:14px; font-weight:600;">BONE</div>
-            </div>
 
-            <div style="text-align:center; margin: -10px 0; color:#666; font-size:24px;">↓</div>
+                <div class="arrow-down">↓</div>
 
-            <div class="input-group">
-                <div style="display:flex; justify-content:space-between;">
-                    <label>You Receive</label>
-                    <span id="toBalance" style="font-size:12px; color:#888;">Balance: --</span>
+                <div class="input-group">
+                    <div class="label-row">
+                        <label>You Receive</label>
+                        <span class="balance">Balance: --</span>
+                    </div>
+                    <div class="input-row">
+                        <input type="number" id="toAmount" placeholder="0.0" disabled>
+                        <div class="token-pill">RIC</div>
+                    </div>
                 </div>
-                <input type="number" id="toAmount" placeholder="0.0" disabled>
-                <div style="margin-top:8px; font-size:14px; font-weight:600;">RIC</div>
+
+                <button id="swapBtn" class="main-btn" onclick="executeSwap()">Swap BONE for RIC</button>
             </div>
 
-            <button id="swapBtn" class="main-btn">Swap Now</button>
-        </div>
+            <!-- ==================== TAB 2: RICGAS (RIC -> GAS) ==================== -->
+            <div id="gasTab" style="display:none;">
+                <div style="background:rgba(255,77,0,0.1); border:1px solid #ff4d00; border-radius:12px; padding:15px; margin-bottom:20px; color:#ffaa80; font-size:13px; line-height:1.5;">
+                    ⛽ <b>Running Low?</b><br>
+                    Swap RIC instantly for Gas (BONE). You need a tiny amount of BONE for the network fee.
+                </div>
 
-        <!-- RicGas -->
-        <div id="gasTab" style="display:none;">
-            <div class="input-group">
-                <label>Pay with RIC for Gas</label>
-                <input type="number" id="ricGasAmount" placeholder="1000" value="1000">
+                <div class="input-group">
+                    <div class="label-row"><label>Amount to Swap</label></div>
+                    <div class="input-row">
+                        <input type="number" id="ricGasAmount" placeholder="1000" value="1000">
+                        <div class="token-pill" style="color:var(--gold)">RIC</div>
+                    </div>
+                </div>
+
+                <button id="ricGasBtn" class="main-btn" onclick="payGasWithRIC()">Pay Gas with RIC</button>
             </div>
-            <button onclick="payGasWithRIC()" class="main-btn">Pay Gas with RIC</button>
-        </div>
 
-        <div class="status" id="status"></div>
+            <div class="status" id="status"></div>
+        </div>
     </div>
 
     <script>
-        const ROUTER_ADDRESS = "0x8BC26741c4B381cF1a8392318133c1cCABb78775";
-        const RICGAS_ADDRESS = "0x054Fcc4B7cd11f01735aE4e79131908E3Ff61B59";
+        // --- CONFIGURATION ---
+        const ROUTER_ADDRESS = "0x8BC26741c4B381cF1a8392318133c1cCABb78775"; // Your Router
+        const RICGAS_ADDRESS = "0x054Fcc4B7cd11f01735aE4e79131908E3Ff61B59"; // Your RicGas Contract
         const WBONE = "0xC76F4c819D820369Fb2d7C1531aB3Bb18e6fE8d8";
         const RIC = "0x12C94d3A30daa09f81Ea6c037004E6e99A4A3dfc";
 
         let provider, signer, userAddress;
 
+        // --- INIT ---
+        window.onload = async () => {
+            if(window.ethereum) {
+                provider = new ethers.BrowserProvider(window.ethereum);
+                const accounts = await provider.listAccounts();
+                if(accounts.length > 0) connectWallet();
+            }
+        };
+
+        function switchTab(idx) {
+            document.getElementById("normalTab").style.display = idx === 0 ? "block" : "none";
+            document.getElementById("gasTab").style.display = idx === 1 ? "block" : "none";
+            document.getElementById("tabNormal").classList.toggle("active", idx === 0);
+            document.getElementById("tabGas").classList.toggle("active", idx === 1);
+            document.getElementById("status").innerHTML = ""; // Clear status
+        }
+
         async function connectWallet() {
-            if (!window.ethereum) return alert("Please install MetaMask or Rabby");
+            if (!window.ethereum) return alert("Please install MetaMask");
             provider = new ethers.BrowserProvider(window.ethereum);
             await provider.send("eth_requestAccounts", []);
             signer = await provider.getSigner();
             userAddress = await signer.getAddress();
-            document.getElementById("connectBtn").textContent = userAddress.slice(0,6) + "..." + userAddress.slice(-4);
-            updateQuote();
+            
+            const short = userAddress.slice(0,6) + "..." + userAddress.slice(-4);
+            document.getElementById("connectBtn").innerText = short;
+            updateQuote(); // Fetch initial quote
         }
 
+        // --- TAB 1: NORMAL SWAP (BONE -> RIC) ---
         async function updateQuote() {
-            const amountIn = document.getElementById("fromAmount").value;
-            if (!amountIn || isNaN(amountIn) || amountIn <= 0) return;
+            const amt = document.getElementById("fromAmount").value;
+            if (!amt || amt <= 0 || !provider) return;
 
             try {
                 const router = new ethers.Contract(ROUTER_ADDRESS, [
-                    "function getAmountsOut(uint256 amountIn, address[] memory path) public view returns (uint256[] memory amounts)"
+                    "function getAmountsOut(uint amountIn, address[] path) view returns (uint[] amounts)"
                 ], provider);
-                const path = [WBONE, RIC];
-                const amountInWei = ethers.parseEther(amountIn);
-                const amounts = await router.getAmountsOut(amountInWei, path);
-                document.getElementById("toAmount").value = parseFloat(ethers.formatEther(amounts[1])).toFixed(4);
+                
+                const amountWei = ethers.parseUnits(amt, 18); // BONE has 18 decimals
+                const amounts = await router.getAmountsOut(amountWei, [WBONE, RIC]);
+                
+                const out = ethers.formatUnits(amounts[1], 18);
+                document.getElementById("toAmount").value = parseFloat(out).toFixed(4);
             } catch (e) {
-                document.getElementById("toAmount").value = "No Liquidity";
+                console.log("Quote error:", e);
             }
         }
 
         async function executeSwap() {
             if (!signer) return connectWallet();
+            const btn = document.getElementById("swapBtn");
             const status = document.getElementById("status");
-            const amountIn = document.getElementById("fromAmount").value;
+            const amt = document.getElementById("fromAmount").value;
 
             try {
-                status.style.color = "#ff0";
-                status.textContent = "Approving BONE...";
+                btn.disabled = true;
+                status.innerHTML = "⏳ Initiating Swap...";
 
                 const router = new ethers.Contract(ROUTER_ADDRESS, [
-                    "function swapExactTokensForTokens(uint256 amountIn, uint256 amountOutMin, address[] calldata path, address to, uint256 deadline)"
+                    "function swapExactETHForTokens(uint amountOutMin, address[] path, address to, uint deadline) payable returns (uint[] amounts)"
                 ], signer);
 
-                const amountInWei = ethers.parseEther(amountIn);
-                const path = [WBONE, RIC];
-                const deadline = Math.floor(Date.now() / 1000) + 1200;
+                const amountWei = ethers.parseUnits(amt, 18);
+                const deadline = Math.floor(Date.now() / 1000) + 60 * 10; // 10 mins
 
-                const tx = await router.swapExactTokensForTokens(
-                    amountInWei,
-                    0,
-                    path,
+                // NOTE: Using swapExactETHForTokens because input is Native BONE
+                const tx = await router.swapExactETHForTokens(
+                    0, // Accept any amount (Slippage ignored for demo)
+                    [WBONE, RIC],
                     userAddress,
-                    deadline
+                    deadline,
+                    { value: amountWei } // Send BONE as value
                 );
 
-                status.style.color = "#0f0";
-                status.innerHTML = `✅ Successful! <a href="https://shibariumscan.io/tx/${tx.hash}" target="_blank" class="tx-link">View</a>`;
+                status.innerHTML = `🚀 Tx Sent! <a href="https://shibariumscan.io/tx/${tx.hash}" target="_blank" class="tx-link">View</a>`;
                 await tx.wait();
+                status.innerHTML = "✅ Swap Complete!";
+                btn.disabled = false;
+
             } catch (e) {
-                status.style.color = "#f00";
-                status.textContent = "Error: " + (e.shortMessage || e.message || "Transaction failed");
+                console.error(e);
+                status.style.color = "var(--error)";
+                status.innerText = "❌ Error: " + (e.reason || "Transaction Failed");
+                btn.disabled = false;
             }
         }
 
+        // --- TAB 2: RICGAS (RIC -> BONE) ---
         async function payGasWithRIC() {
             if (!signer) return connectWallet();
+            
+            const btn = document.getElementById("ricGasBtn");
             const status = document.getElementById("status");
-            const amount = document.getElementById("ricGasAmount").value;
+            const amt = document.getElementById("ricGasAmount").value;
+
+            if (!amt || amt <= 0) return alert("Enter amount");
 
             try {
-                status.style.color = "#ff0";
-                status.textContent = "Approving RIC...";
+                btn.disabled = true;
+                const ricWei = ethers.parseUnits(amt, 18);
 
-                const gasContract = new ethers.Contract(RICGAS_ADDRESS, [
-                    "function payGasWithRIC(uint256 ricAmount, uint256 minBoneOut) external"
+                // Contracts
+                const ric = new ethers.Contract(RIC, [
+                    "function approve(address, uint) returns (bool)",
+                    "function allowance(address, address) view returns (uint)"
                 ], signer);
 
-                const ricWei = ethers.parseEther(amount);
-                const tx = await gasContract.payGasWithRIC(ricWei, 1); // min 1 wei
+                const gasContract = new ethers.Contract(RICGAS_ADDRESS, [
+                    "function payGasWithRIC(uint256, uint256) external"
+                ], signer);
 
-                status.style.color = "#0f0";
-                status.innerHTML = `✅ Gas Paid! <a href="https://shibariumscan.io/tx/${tx.hash}" target="_blank" class="tx-link">View Tx</a>`;
+                // 1. Check Allowance
+                status.innerHTML = "⏳ Checking Allowance...";
+                const allowed = await ric.allowance(userAddress, RICGAS_ADDRESS);
+
+                if (allowed < ricWei) {
+                    btn.innerText = "APPROVING...";
+                    status.innerHTML = "📝 Please Approve RIC in wallet...";
+                    const txApprove = await ric.approve(RICGAS_ADDRESS, ricWei);
+                    status.innerHTML = `⏳ Approving... <a href="https://shibariumscan.io/tx/${txApprove.hash}" target="_blank" class="tx-link">View</a>`;
+                    await txApprove.wait();
+                }
+
+                // 2. Swap
+                btn.innerText = "SWAPPING...";
+                status.innerHTML = "⛽ Confirm Swap in wallet...";
+                
+                // Use '1' minBoneOut to prevent revert
+                const tx = await gasContract.payGasWithRIC(ricWei, 1);
+                
+                status.innerHTML = `🚀 <b>Sent!</b> <a href="https://shibariumscan.io/tx/${tx.hash}" target="_blank" class="tx-link">View on Explorer</a>`;
                 await tx.wait();
+
+                // 3. Success
+                status.style.color = "var(--success)";
+                status.innerHTML = "✅ Refuel Successful!";
+                btn.innerText = "SUCCESS";
+                
+                setTimeout(() => {
+                    btn.innerText = "Pay Gas with RIC";
+                    btn.disabled = false;
+                    status.innerHTML = "";
+                    status.style.color = "#888";
+                }, 4000);
+
             } catch (e) {
-                status.style.color = "#f00";
-                status.textContent = "Error: " + (e.shortMessage || e.message);
+                console.error(e);
+                status.style.color = "var(--error)";
+                
+                if (e.message.includes("insufficient funds")) {
+                    status.innerHTML = "❌ <b>Failed:</b> You need a tiny amount of BONE to pay gas.";
+                } else {
+                    status.innerText = "❌ " + (e.reason || "Transaction Failed");
+                }
+                btn.innerText = "TRY AGAIN";
+                btn.disabled = false;
             }
         }
-
-        function switchTab(n) {
-            document.getElementById("normalTab").style.display = n === 0 ? "block" : "none";
-            document.getElementById("gasTab").style.display = n === 1 ? "block" : "none";
-            document.getElementById("tabNormal").classList.toggle("active", n === 0);
-            document.getElementById("tabGas").classList.toggle("active", n === 1);
-        }
-
-        document.getElementById("connectBtn").addEventListener("click", connectWallet);
-        document.getElementById("swapBtn").addEventListener("click", executeSwap);
-        document.getElementById("fromAmount").addEventListener("input", () => {
-            clearTimeout(window.quoteTimeout);
-            window.quoteTimeout = setTimeout(updateQuote, 500);
-        });
     </script>
 </body>
 </html>
