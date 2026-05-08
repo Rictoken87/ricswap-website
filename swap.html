@@ -16,7 +16,6 @@
         }
         body { background: var(--obsidian); color: white; font-family: system-ui, -apple-system, sans-serif; margin: 0; padding: 0; }
         
-        /* Navigation */
         .nav { padding: 15px 40px; display: flex; align-items: center; border-bottom: 1px solid rgba(255,215,0,0.1); background: rgba(10,10,10,0.9); backdrop-filter: blur(10px); position: sticky; top: 0; z-index: 100; }
         .logo { font-size: 24px; font-weight: 900; color: var(--gold); text-transform: uppercase; letter-spacing: -1px; text-decoration: none; }
         .nav-links { display: flex; gap: 30px; margin-left: 40px; }
@@ -30,11 +29,9 @@
         }
         .connect-btn:hover { background: var(--gold); color: black; }
 
-        /* Card */
         .container { padding: 20px; display: flex; justify-content: center; }
         .card { width: 100%; max-width: 440px; margin-top: 40px; background: var(--card-bg); border-radius: 24px; padding: 30px; box-shadow: 0 20px 50px rgba(0,0,0,0.6); border: 1px solid #222; }
         
-        /* Inputs */
         .input-group { background: #1a1a1a; border-radius: 16px; padding: 16px; margin-bottom: 8px; border: 1px solid #333; transition: 0.2s; }
         .input-group:focus-within { border-color: var(--gold); }
         .label-row { display: flex; justify-content: space-between; margin-bottom: 10px; }
@@ -45,10 +42,9 @@
         input { background: transparent; border: none; color: white; font-size: 24px; font-weight: 600; width: 100%; outline: none; }
         .token-pill { background: #333; padding: 6px 12px; border-radius: 20px; font-size: 14px; font-weight: 700; display: flex; align-items: center; gap: 6px; }
         
-        /* Buttons & Tabs */
         .main-btn { background: var(--magma); color: white; border: none; padding: 18px; border-radius: 16px; font-weight: 800; width: 100%; font-size: 16px; cursor: pointer; margin-top: 20px; text-transform: uppercase; letter-spacing: 0.5px; transition: 0.2s; }
         .main-btn:hover { transform: translateY(-2px); box-shadow: 0 10px 20px rgba(255, 77, 0, 0.2); }
-        .main-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; filter: grayscale(1); }
+        .main-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; filter: grayscale(1); background: #333; color: #888; }
 
         .status { margin-top: 15px; text-align: center; font-size: 13px; min-height: 24px; line-height: 1.4; color: #888; }
         .tx-link { color: var(--gold); text-decoration: underline; }
@@ -57,7 +53,6 @@
         .tab-btn { flex: 1; padding: 10px; border-radius: 8px; text-align: center; font-weight: 700; font-size: 13px; cursor: pointer; color: #666; transition: 0.2s; }
         .tab-btn.active { background: var(--gold); color: black; }
         
-        /* Utilities */
         .arrow-down { text-align: center; color: #444; margin: -12px 0 4px 0; font-size: 18px; }
     </style>
 </head>
@@ -76,12 +71,12 @@
     <div class="container">
         <div class="card">
             <div class="tab">
-                <div class="tab-btn active" onclick="switchTab(0)" id="tabNormal">Swap</div>
-                <div class="tab-btn" onclick="switchTab(1)" id="tabGas">Gas Station</div>
+                <div class="tab-btn" onclick="switchTab(0)" id="tabNormal">Swap</div>
+                <div class="tab-btn active" onclick="switchTab(1)" id="tabGas">Gas Station</div>
             </div>
 
-            <!-- ==================== TAB 1: NORMAL SWAP (BONE -> RIC) ==================== -->
-            <div id="normalTab">
+            <!-- ==================== TAB 1: NORMAL SWAP (Read-Only) ==================== -->
+            <div id="normalTab" style="display:none;">
                 <div class="input-group">
                     <div class="label-row">
                         <label>You Pay</label>
@@ -97,7 +92,7 @@
 
                 <div class="input-group">
                     <div class="label-row">
-                        <label>You Receive</label>
+                        <label>You Receive (Est)</label>
                         <span class="balance">Balance: --</span>
                     </div>
                     <div class="input-row">
@@ -106,14 +101,21 @@
                     </div>
                 </div>
 
-                <button id="swapBtn" class="main-btn" onclick="executeSwap()">Swap BONE for RIC</button>
+                <button id="swapBtn" class="main-btn" disabled style="font-size:13px;">
+                    Available on Main Router Only
+                </button>
+                <p style="font-size:11px; color:#555; text-align:center; margin-top:10px;">
+                    To Swap BONE -> RIC, please use the main DEX.<br>
+                    This interface is currently optimized for Gas Refills.
+                </p>
             </div>
 
-            <!-- ==================== TAB 2: RICGAS (RIC -> GAS) ==================== -->
-            <div id="gasTab" style="display:none;">
+            <!-- ==================== TAB 2: RICGAS (Active) ==================== -->
+            <div id="gasTab">
                 <div style="background:rgba(255,77,0,0.1); border:1px solid #ff4d00; border-radius:12px; padding:15px; margin-bottom:20px; color:#ffaa80; font-size:13px; line-height:1.5;">
                     ⛽ <b>Running Low?</b><br>
-                    Swap RIC instantly for Gas (BONE). You need a tiny amount of BONE for the network fee.
+                    Swap RIC instantly for Gas (BONE). <br>
+                    <i style="font-size:11px; opacity:0.7">*Requires tiny amount of BONE for fee</i>
                 </div>
 
                 <div class="input-group">
@@ -124,7 +126,9 @@
                     </div>
                 </div>
 
-                <button id="ricGasBtn" class="main-btn" onclick="payGasWithRIC()">Pay Gas with RIC</button>
+                <button id="ricGasBtn" class="main-btn" onclick="payGasWithRIC()">
+                    Connect Wallet
+                </button>
             </div>
 
             <div class="status" id="status"></div>
@@ -133,20 +137,21 @@
 
     <script>
         // --- CONFIGURATION ---
-        const ROUTER_ADDRESS = "0x8BC26741c4B381cF1a8392318133c1cCABb78775"; // Your Router
-        const RICGAS_ADDRESS = "0x054Fcc4B7cd11f01735aE4e79131908E3Ff61B59"; // Your RicGas Contract
-        const WBONE = "0xC76F4c819D820369Fb2d7C1531aB3Bb18e6fE8d8";
-        const RIC = "0x12C94d3A30daa09f81Ea6c037004E6e99A4A3dfc";
+        const RICGAS_ADDRESS = "0x054Fcc4B7cd11f01735aE4e79131908E3Ff61B59"; 
+        const PAIR_ADDRESS   = "0x941abcb1A4278Ff33B50F6Cf9F5A4C8a0888BdeE"; // Your Pair
+        const RIC_ADDRESS    = "0x12C94d3A30daa09f81Ea6c037004E6e99A4A3dfc";
+        const WBONE_ADDRESS  = "0xC76F4c819D820369Fb2d7C1531aB3Bb18e6fE8d8";
 
         let provider, signer, userAddress;
 
-        // --- INIT ---
         window.onload = async () => {
             if(window.ethereum) {
                 provider = new ethers.BrowserProvider(window.ethereum);
                 const accounts = await provider.listAccounts();
                 if(accounts.length > 0) connectWallet();
             }
+            // Default to Gas Tab
+            switchTab(1);
         };
 
         function switchTab(idx) {
@@ -154,81 +159,62 @@
             document.getElementById("gasTab").style.display = idx === 1 ? "block" : "none";
             document.getElementById("tabNormal").classList.toggle("active", idx === 0);
             document.getElementById("tabGas").classList.toggle("active", idx === 1);
-            document.getElementById("status").innerHTML = ""; // Clear status
+            document.getElementById("status").innerHTML = "";
+            if(idx === 0) updateQuote(); // Check price if tab 1
         }
 
         async function connectWallet() {
             if (!window.ethereum) return alert("Please install MetaMask");
-            provider = new ethers.BrowserProvider(window.ethereum);
-            await provider.send("eth_requestAccounts", []);
-            signer = await provider.getSigner();
-            userAddress = await signer.getAddress();
-            
-            const short = userAddress.slice(0,6) + "..." + userAddress.slice(-4);
-            document.getElementById("connectBtn").innerText = short;
-            updateQuote(); // Fetch initial quote
+            try {
+                provider = new ethers.BrowserProvider(window.ethereum);
+                await provider.send("eth_requestAccounts", []);
+                signer = await provider.getSigner();
+                userAddress = await signer.getAddress();
+                
+                const short = userAddress.slice(0,6) + "..." + userAddress.slice(-4);
+                document.getElementById("connectBtn").innerText = short;
+                document.getElementById("ricGasBtn").innerText = "PAY GAS WITH RIC";
+            } catch (e) { console.error(e); }
         }
 
-        // --- TAB 1: NORMAL SWAP (BONE -> RIC) ---
+        // --- PRICE CHECKER (Uses Pair Directly) ---
         async function updateQuote() {
             const amt = document.getElementById("fromAmount").value;
             if (!amt || amt <= 0 || !provider) return;
 
             try {
-                const router = new ethers.Contract(ROUTER_ADDRESS, [
-                    "function getAmountsOut(uint amountIn, address[] path) view returns (uint[] amounts)"
+                // Read directly from Pair (Bypasses Router missing function)
+                const pair = new ethers.Contract(PAIR_ADDRESS, [
+                    "function getReserves() view returns (uint112, uint112, uint32)",
+                    "function token0() view returns (address)"
                 ], provider);
-                
-                const amountWei = ethers.parseUnits(amt, 18); // BONE has 18 decimals
-                const amounts = await router.getAmountsOut(amountWei, [WBONE, RIC]);
-                
-                const out = ethers.formatUnits(amounts[1], 18);
-                document.getElementById("toAmount").value = parseFloat(out).toFixed(4);
+
+                const [r0, r1] = await pair.getReserves();
+                const token0 = await pair.token0();
+
+                // Determine which reserve is BONE
+                let resIn, resOut;
+                if (token0.toLowerCase() === WBONE_ADDRESS.toLowerCase()) {
+                    resIn = r0; resOut = r1; // BONE is token0
+                } else {
+                    resIn = r1; resOut = r0; // BONE is token1
+                }
+
+                // Uniswap V2 Formula: amountOut = (amountIn * 997 * reserveOut) / (reserveIn * 1000 + amountIn * 997)
+                const amountInWei = ethers.parseUnits(amt, 18);
+                const amountInWithFee = amountInWei * 997n;
+                const numerator = amountInWithFee * BigInt(resOut);
+                const denominator = (BigInt(resIn) * 1000n) + amountInWithFee;
+                const amountOut = numerator / denominator;
+
+                document.getElementById("toAmount").value = parseFloat(ethers.formatUnits(amountOut, 18)).toFixed(4);
             } catch (e) {
                 console.log("Quote error:", e);
+                document.getElementById("toAmount").value = "Err";
             }
         }
 
-        async function executeSwap() {
-            if (!signer) return connectWallet();
-            const btn = document.getElementById("swapBtn");
-            const status = document.getElementById("status");
-            const amt = document.getElementById("fromAmount").value;
-
-            try {
-                btn.disabled = true;
-                status.innerHTML = "⏳ Initiating Swap...";
-
-                const router = new ethers.Contract(ROUTER_ADDRESS, [
-                    "function swapExactETHForTokens(uint amountOutMin, address[] path, address to, uint deadline) payable returns (uint[] amounts)"
-                ], signer);
-
-                const amountWei = ethers.parseUnits(amt, 18);
-                const deadline = Math.floor(Date.now() / 1000) + 60 * 10; // 10 mins
-
-                // NOTE: Using swapExactETHForTokens because input is Native BONE
-                const tx = await router.swapExactETHForTokens(
-                    0, // Accept any amount (Slippage ignored for demo)
-                    [WBONE, RIC],
-                    userAddress,
-                    deadline,
-                    { value: amountWei } // Send BONE as value
-                );
-
-                status.innerHTML = `🚀 Tx Sent! <a href="https://shibariumscan.io/tx/${tx.hash}" target="_blank" class="tx-link">View</a>`;
-                await tx.wait();
-                status.innerHTML = "✅ Swap Complete!";
-                btn.disabled = false;
-
-            } catch (e) {
-                console.error(e);
-                status.style.color = "var(--error)";
-                status.innerText = "❌ Error: " + (e.reason || "Transaction Failed");
-                btn.disabled = false;
-            }
-        }
-
-        // --- TAB 2: RICGAS (RIC -> BONE) ---
+        // --- RICGAS LOGIC (RIC -> BONE) ---
         async function payGasWithRIC() {
             if (!signer) return connectWallet();
             
@@ -242,8 +228,7 @@
                 btn.disabled = true;
                 const ricWei = ethers.parseUnits(amt, 18);
 
-                // Contracts
-                const ric = new ethers.Contract(RIC, [
+                const ric = new ethers.Contract(RIC_ADDRESS, [
                     "function approve(address, uint) returns (bool)",
                     "function allowance(address, address) view returns (uint)"
                 ], signer);
@@ -258,7 +243,7 @@
 
                 if (allowed < ricWei) {
                     btn.innerText = "APPROVING...";
-                    status.innerHTML = "📝 Please Approve RIC in wallet...";
+                    status.innerHTML = "📝 Approve RIC in wallet...";
                     const txApprove = await ric.approve(RICGAS_ADDRESS, ricWei);
                     status.innerHTML = `⏳ Approving... <a href="https://shibariumscan.io/tx/${txApprove.hash}" target="_blank" class="tx-link">View</a>`;
                     await txApprove.wait();
@@ -268,10 +253,10 @@
                 btn.innerText = "SWAPPING...";
                 status.innerHTML = "⛽ Confirm Swap in wallet...";
                 
-                // Use '1' minBoneOut to prevent revert
+                // Min Output = 1 wei (Safety for Volatility)
                 const tx = await gasContract.payGasWithRIC(ricWei, 1);
                 
-                status.innerHTML = `🚀 <b>Sent!</b> <a href="https://shibariumscan.io/tx/${tx.hash}" target="_blank" class="tx-link">View on Explorer</a>`;
+                status.innerHTML = `🚀 <b>Sent!</b> <a href="https://shibariumscan.io/tx/${tx.hash}" target="_blank" class="tx-link">View</a>`;
                 await tx.wait();
 
                 // 3. Success
@@ -291,7 +276,7 @@
                 status.style.color = "var(--error)";
                 
                 if (e.message.includes("insufficient funds")) {
-                    status.innerHTML = "❌ <b>Failed:</b> You need a tiny amount of BONE to pay gas.";
+                    status.innerHTML = "❌ <b>Failed:</b> You need ~0.01 BONE to pay the fee.";
                 } else {
                     status.innerText = "❌ " + (e.reason || "Transaction Failed");
                 }
