@@ -116,7 +116,7 @@
 
         emailjs.init("Y5GsSScYku74Bt0LH");
 
-        // Real-time Products Sync
+        // Real-time Products
         db.ref('products').on('value', (snapshot) => {
             const data = snapshot.val();
             const products = data ? Object.keys(data).map(key => ({ id: key, ...data[key] })) : [];
@@ -124,9 +124,12 @@
             renderAdminList(products);
         });
 
-        // Real-time Staff Sync
+        // Real-time Staff List
         db.ref('staff').on('value', (snapshot) => {
             window.globalStaff = snapshot.val() ? Object.values(snapshot.val()) : [];
+            if (document.getElementById('adminOverlay').style.display === 'block') {
+                renderStaffList();
+            }
         });
 
         async function connectWallet() {
@@ -231,10 +234,22 @@
             `).join('');
         }
 
+        function renderStaffList() {
+            const list = document.getElementById('staffList');
+            list.innerHTML = window.globalStaff.map((addr, i) => `
+                <div class="list-item">
+                    <span>${addr}</span>
+                    ${isMaster() ? `<button onclick="removeStaff('${addr}')" style="color:red;">Remove</button>` : ''}
+                </div>
+            `).join('') || "<p>No staff appointed yet.</p>";
+        }
+
         function openAdminPanel() {
             if (!userAddress) return alert("Please connect wallet first");
             if (!isStaff()) return alert("Access Denied.\nOnly Master or authorized Staff can access.");
             document.getElementById('adminOverlay').style.display = 'block';
+            renderStaffList();
+            renderAdminList([]); // Will be updated by listener
         }
 
         function closeAdminPanel() { 
@@ -249,6 +264,19 @@
             db.ref('staff').push(addr.toLowerCase());
             alert("✅ Staff added successfully!");
             document.getElementById('staffWallet').value = '';
+        }
+
+        function removeStaff(addr) {
+            if (!isMaster()) return;
+            if (confirm("Remove this staff member?")) {
+                db.ref('staff').once('value', (snapshot) => {
+                    snapshot.forEach(child => {
+                        if (child.val() === addr) {
+                            child.ref.remove();
+                        }
+                    });
+                });
+            }
         }
     </script>
 </body>
