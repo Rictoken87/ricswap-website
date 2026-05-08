@@ -90,7 +90,7 @@
         const RIC_ADDRESS = "0x12C94d3A30daa09f81Ea6c037004E6e99A4A3dfc";
         let userAddress = "";
 
-        // Real-time Global Sync
+        // Real-time Sync
         db.ref('products').on('value', (snapshot) => {
             const data = snapshot.val();
             const products = data ? Object.keys(data).map(key => ({ id: key, ...data[key] })) : [];
@@ -114,13 +114,13 @@
                     <div style="padding:24px;">
                         <h3>${p.name}</h3>
                         <p style="color:var(--gold); font-size:1.6rem; font-weight:900;">${p.price} RIC</p>
-                        <button onclick="redeem('${p.id}')" style="width:100%; padding:12px; background:var(--magma);">Redeem Now</button>
+                        <button onclick="redeem('${p.id}', ${p.price})" style="width:100%; padding:12px; background:var(--magma);">Redeem Now</button>
                     </div>
                 </div>
             `).join('');
         }
 
-        async function redeem(id) {
+        async function redeem(id, price) {
             if (!userAddress) return alert("Please connect wallet first");
             
             try {
@@ -128,13 +128,14 @@
                 const signer = await provider.getSigner();
                 const ric = new ethers.Contract(RIC_ADDRESS, ["function transfer(address,uint256) returns (bool)"], signer);
                 
-                // You can improve this by fetching real price from Firebase if needed
-                const amount = ethers.parseUnits("100", 18); // Example - replace with real product price
+                const amountWei = ethers.parseUnits(price.toString(), 18);
                 
-                const tx = await ric.transfer(MASTER_OWNER, amount);
+                if (!confirm(`Pay ${price} $RIC for this product?`)) return;
+                
+                const tx = await ric.transfer(MASTER_OWNER, amountWei);
                 await tx.wait();
                 
-                alert("✅ Redemption Successful! $RIC sent to treasury.\nStaff will contact you soon.");
+                alert(`✅ Success! Paid ${price} $RIC.\nStaff will process your reward shortly.`);
             } catch (e) {
                 alert("Transaction failed: " + (e.reason || e.message));
             }
