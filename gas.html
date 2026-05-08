@@ -4,321 +4,180 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>RicSwap | Gas Station</title>
-    <!-- Ethers.js Library -->
-    <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.0/dist/ethers.umd.min.js"></script>
+    
+    <!-- PRIMARY CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.13.1/ethers.umd.min.js"></script>
     
     <style>
-        /* --- THEME CONFIG --- */
-        :root { 
-            --gold: #ffd700; 
-            --accent: #ff4d00; 
-            --success: #00ff88;
-            --bg: #0a0a0a; 
-            --card: #111; 
-            --border: #333;
-        }
-
-        body { 
-            background: var(--bg); 
-            color: #e0e0e0; 
-            font-family: 'Inter', system-ui, sans-serif; 
-            display: flex; 
-            justify-content: center; 
-            align-items: center; 
-            min-height: 100vh; 
-            margin: 0; 
-        }
+        :root { --gold: #ffd700; --accent: #ff4d00; --bg: #0a0a0a; --card: #111; --border: #333; }
+        body { background: var(--bg); color: #e0e0e0; font-family: system-ui, -apple-system, sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
         
-        .container { 
-            width: 100%; 
-            max-width: 480px; 
-            padding: 20px; 
-            box-sizing: border-box;
-        }
+        .container { width: 100%; max-width: 480px; padding: 20px; box-sizing: border-box; }
+        .card { background: var(--card); border-radius: 24px; padding: 30px; border: 1px solid var(--border); box-shadow: 0 0 40px rgba(0,0,0,0.5); text-align: center; }
         
-        .card { 
-            background: var(--card); 
-            border-radius: 24px; 
-            padding: 32px; 
-            border: 1px solid var(--border); 
-            box-shadow: 0 0 40px rgba(0,0,0,0.6); 
-            text-align: center;
-        }
+        h2 { color: var(--gold); margin: 0 0 10px 0; text-transform: uppercase; letter-spacing: -1px; }
+        p.subtitle { color: #888; font-size: 0.9rem; margin-bottom: 25px; line-height: 1.5; }
         
-        h2 { 
-            color: var(--gold); 
-            margin: 0 0 10px 0; 
-            font-size: 2rem;
-            text-transform: uppercase;
-            letter-spacing: -1px;
-        }
+        .input-box { background: #1a1a1a; padding: 15px 20px; border-radius: 16px; border: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
         
-        p.subtitle {
-            color: #888; 
-            font-size: 0.95rem; 
-            margin-bottom: 30px; 
-            line-height: 1.5;
-        }
-        
-        .input-group {
-            background: #1a1a1a; 
-            padding: 20px; 
-            border-radius: 16px; 
-            border: 1px solid var(--border);
-            margin-bottom: 20px;
-            text-align: left;
-        }
-        
-        label {
-            font-size: 0.75rem; 
-            font-weight: 700; 
-            color: #666; 
-            letter-spacing: 1px;
-            margin-bottom: 8px;
-            display: block;
-        }
-        
-        .input-row {
-            display: flex; 
-            align-items: center; 
-            justify-content: space-between;
-        }
-
-        input { 
-            width: 70%; 
-            background: transparent; 
-            border: none; 
-            color: white; 
-            font-size: 1.8rem; 
-            font-weight: 600;
-            outline: none; 
-        }
-        input::placeholder { color: #444; }
-
-        .token-badge {
-            font-weight: 800; 
-            color: var(--gold); 
-            background: rgba(255, 215, 0, 0.1);
-            padding: 8px 12px;
-            border-radius: 8px;
-        }
+        input { background: transparent; border: none; color: white; font-size: 1.5rem; font-weight: bold; width: 100%; outline: none; }
+        .badge { color: var(--gold); font-weight: bold; background: rgba(255, 215, 0, 0.1); padding: 5px 10px; border-radius: 6px; }
 
         .btn-action {
             background: linear-gradient(135deg, var(--accent), #cc3d00);
-            color: white; 
-            border: none; 
-            padding: 18px;
-            border-radius: 14px; 
-            font-weight: 800; 
-            font-size: 1.1rem;
-            cursor: pointer; 
-            width: 100%; 
-            transition: all 0.2s ease;
-            text-transform: uppercase; 
-            letter-spacing: 1px;
-            box-shadow: 0 4px 15px rgba(255, 77, 0, 0.2);
+            color: white; border: none; padding: 18px; border-radius: 14px;
+            font-weight: 800; font-size: 1.1rem; cursor: pointer; width: 100%;
+            text-transform: uppercase; letter-spacing: 1px; transition: 0.2s;
         }
-        
-        .btn-action:hover { 
-            transform: translateY(-2px); 
-            box-shadow: 0 6px 20px rgba(255, 77, 0, 0.4); 
-        }
-        
-        .btn-action:disabled { 
-            opacity: 0.6; 
-            cursor: not-allowed; 
-            transform: none;
-            filter: grayscale(1);
-        }
+        .btn-action:active { transform: scale(0.98); }
+        .btn-action:disabled { opacity: 0.5; cursor: not-allowed; filter: grayscale(1); }
 
-        .status-box { 
-            margin-top: 20px; 
-            font-size: 0.9rem; 
-            color: #888; 
-            min-height: 40px; 
-            line-height: 1.4;
-            padding: 10px;
-            border-radius: 8px;
+        #console-log { 
+            margin-top: 20px; font-family: monospace; font-size: 0.85rem; 
+            color: #666; background: #000; padding: 10px; border-radius: 8px; 
+            border: 1px solid #222; min-height: 40px; display: flex; 
+            align-items: center; justify-content: center; flex-direction: column;
         }
         
-        .link { 
-            color: var(--gold); 
-            text-decoration: none; 
-            border-bottom: 1px dotted var(--gold);
-        }
-        .link:hover { border-bottom-style: solid; }
-        
-        .nav-back {
-            display: inline-block;
-            margin-bottom: 20px;
-            color: #666;
-            text-decoration: none;
-            font-weight: 600;
-            font-size: 0.9rem;
-        }
-        .nav-back:hover { color: white; }
-
+        a { color: var(--gold); text-decoration: none; border-bottom: 1px dotted var(--gold); }
     </style>
 </head>
 <body>
 
     <div class="container">
-        <!-- Optional: Link back to main swap -->
-        <a href="index.html" class="nav-back">← Back to RicSwap</a>
-
         <div class="card">
             <h2>⛽ RicGas Station</h2>
-            <p class="subtitle">
-                Stuck with 0 BONE? <br>
-                Swap your <b>$RIC</b> for Gas instantly without needing gas fees to start.
-            </p>
+            <p class="subtitle">Stuck with 0 BONE? Swap RIC for Gas instantly.</p>
             
-            <div class="input-group">
-                <label>AMOUNT TO SWAP</label>
-                <div class="input-row">
-                    <input type="number" id="ricAmount" placeholder="1000" value="1000">
-                    <span class="token-badge">RIC</span>
-                </div>
+            <div class="input-box">
+                <input type="number" id="ricAmount" placeholder="1000" value="1000">
+                <span class="badge">RIC</span>
             </div>
             
-            <button class="btn-action" id="mainBtn" onclick="handleInteraction()">
-                Connect Wallet
+            <button class="btn-action" id="mainBtn" onclick="runGasSequence()">
+                CONNECT WALLET
             </button>
             
-            <div id="status" class="status-box"></div>
+            <!-- Visual Log for Debugging -->
+            <div id="console-log">Waiting for action...</div>
         </div>
     </div>
 
     <script>
-        // ==========================================
-        // CONFIGURATION (DO NOT TOUCH)
-        // ==========================================
+        // --- CONFIGURATION ---
+        // 1. RIC Token Address
         const RIC_ADDRESS = "0x12C94d3A30daa09f81Ea6c037004E6e99A4A3dfc"; 
-        const RICGAS_ADDRESS = "0x054Fcc4B7cd11f01735aE4e79131908E3Ff61B59"; 
         
+        // 2. YOUR RICGAS CONTRACT (Verify this!)
+        const RICGAS_ADDRESS = "0x054Fcc4B7cd11f01735aE4e79131908E3Ff61B59"; 
+
         let provider, signer, userAddress;
 
-        // Auto-Connect on Load
-        window.onload = async () => {
-            if(window.ethereum) {
-                provider = new ethers.BrowserProvider(window.ethereum);
-                const accounts = await provider.listAccounts();
-                if(accounts.length > 0) connectWallet();
-            }
-        };
-
-        async function connectWallet() {
-            if(!window.ethereum) return alert("Please install MetaMask to use this feature.");
-            
-            provider = new ethers.BrowserProvider(window.ethereum);
-            signer = await provider.getSigner();
-            userAddress = await signer.getAddress();
-            
-            const btn = document.getElementById("mainBtn");
-            btn.innerText = "PAY GAS WITH RIC";
-            document.getElementById("status").innerText = "✅ Wallet Connected";
+        // --- UTILITY: LOGGING TO SCREEN ---
+        function log(msg, isError = false) {
+            const el = document.getElementById("console-log");
+            el.innerHTML = msg;
+            el.style.color = isError ? "#ff4444" : "#888";
+            console.log(msg);
         }
 
-        async function handleInteraction() {
+        // --- MAIN SEQUENCE ---
+        async function runGasSequence() {
             const btn = document.getElementById("mainBtn");
-            const status = document.getElementById("status");
-            const inputVal = document.getElementById("ricAmount").value;
-
-            // 1. Connect if needed
-            if (!signer) {
-                await provider.send("eth_requestAccounts", []);
-                await connectWallet();
-                return;
+            
+            // 1. Initialize Ethers
+            if (typeof ethers === 'undefined') {
+                return log("⚠️ Error: Ethers.js failed to load. Check internet.", true);
             }
 
-            if (!inputVal || inputVal <= 0) return alert("Please enter a valid RIC amount.");
+            if (!window.ethereum) {
+                return log("⚠️ MetaMask not found. Please install it.", true);
+            }
 
             try {
-                const ricWei = ethers.parseUnits(inputVal, 18); // RIC has 18 decimals
-                
-                // Contract Interfaces
+                // 2. Connect Wallet (If not already)
+                if (!signer) {
+                    btn.innerText = "CONNECTING...";
+                    provider = new ethers.BrowserProvider(window.ethereum);
+                    await provider.send("eth_requestAccounts", []);
+                    signer = await provider.getSigner();
+                    userAddress = await signer.getAddress();
+                    log(`✅ Connected: ${userAddress.substring(0,6)}...`);
+                }
+
+                // 3. Validate Input
+                const amountVal = document.getElementById("ricAmount").value;
+                if (!amountVal || amountVal <= 0) {
+                    btn.innerText = "PAY GAS WITH RIC";
+                    return log("⚠️ Please enter a valid RIC amount", true);
+                }
+
+                // 4. Setup Contracts
+                const ricWei = ethers.parseUnits(amountVal, 18);
                 const ricContract = new ethers.Contract(RIC_ADDRESS, [
-                    "function approve(address spender, uint256 amount) public returns (bool)",
-                    "function allowance(address owner, address spender) view returns (uint256)"
+                    "function approve(address, uint256) public returns (bool)",
+                    "function allowance(address, address) view returns (uint256)"
                 ], signer);
 
                 const gasContract = new ethers.Contract(RICGAS_ADDRESS, [
-                    "function payGasWithRIC(uint256 ricAmount, uint256 minBoneOut) external"
+                    "function payGasWithRIC(uint256, uint256) external"
                 ], signer);
 
-                // -------------------------------------------
-                // STEP 1: CHECK ALLOWANCE
-                // -------------------------------------------
-                status.innerText = "⏳ Checking allowance...";
-                const currentAllowance = await ricContract.allowance(userAddress, RICGAS_ADDRESS);
+                // 5. Check Allowance
+                log("⏳ Checking RIC Allowance...");
+                const allowed = await ricContract.allowance(userAddress, RICGAS_ADDRESS);
 
-                if (currentAllowance < ricWei) {
-                    btn.innerText = "APPROVING RIC...";
+                if (allowed < ricWei) {
+                    btn.innerText = "APPROVING...";
                     btn.disabled = true;
-                    status.innerHTML = "📝 <b>Step 1/2:</b> Please approve RIC in your wallet...";
+                    log("📝 Please Confirm Approval in Wallet...");
                     
                     const txApprove = await ricContract.approve(RICGAS_ADDRESS, ricWei);
-                    
-                    status.innerHTML = `⏳ Approving... <br><a href="https://shibariumscan.io/tx/${txApprove.hash}" target="_blank" class="link">View Transaction</a>`;
+                    log(`⏳ Approving... <a href='https://shibariumscan.io/tx/${txApprove.hash}' target='_blank'>View TX</a>`);
                     
                     await txApprove.wait();
-                    status.innerHTML = "✅ Approval Confirmed! Preparing swap...";
+                    log("✅ Approved! Preparing to Swap...");
                 }
 
-                // -------------------------------------------
-                // STEP 2: EXECUTE SWAP
-                // -------------------------------------------
-                btn.innerText = "REFUELING...";
+                // 6. Execute Swap
+                btn.innerText = "SWAPPING...";
                 btn.disabled = true;
-                status.innerHTML = "⛽ <b>Step 2/2:</b> Confirm Swap in wallet...";
+                log("⛽ Please Confirm Swap in Wallet...");
 
-                // We use '1' as minBoneOut to prevent slippage errors during emergencies
+                // minBoneOut = 1 to prevent revert
                 const txSwap = await gasContract.payGasWithRIC(ricWei, 1);
                 
-                // SHOW HASH IMMEDIATELY (Fixes the "False Negative" issue)
-                const explorerUrl = `https://shibariumscan.io/tx/${txSwap.hash}`;
-                status.innerHTML = `🚀 <b>Transaction Sent!</b><br>Waiting for confirmation...<br><a href="${explorerUrl}" target="_blank" class="link">View on ShibariumScan</a>`;
+                // INSTANT LINK DISPLAY
+                log(`🚀 <b>Tx Sent!</b> <a href='https://shibariumscan.io/tx/${txSwap.hash}' target='_blank'>View on Explorer</a>`);
                 
-                // Wait for receipt
-                const receipt = await txSwap.wait();
-
-                // -------------------------------------------
-                // STEP 3: SUCCESS
-                // -------------------------------------------
-                if (receipt.status === 1) {
-                    btn.innerText = "REFUEL SUCCESSFUL!";
-                    btn.style.background = "var(--success)";
-                    btn.style.color = "black";
-                    
-                    status.innerHTML = `✅ <b>Refuel Complete!</b><br>Gas has been sent to your wallet.<br><a href="${explorerUrl}" target="_blank" class="link">View Receipt</a>`;
-                } else {
-                    throw new Error("Transaction Reverted on-chain");
-                }
-
-                // Reset Button after 5 seconds
-                setTimeout(() => { 
-                    btn.disabled = false; 
-                    btn.innerText = "PAY GAS WITH RIC"; 
-                    btn.style.background = ""; // reset color
-                    btn.style.color = "";
-                }, 5000);
-
-            } catch (error) {
-                console.error("Transaction Error:", error);
+                await txSwap.wait();
                 
-                btn.innerText = "TRY AGAIN";
+                // 7. Success
+                btn.innerText = "SUCCESS!";
+                btn.style.background = "#00ff88";
+                btn.style.color = "black";
+                log(`✅ <b>Refuel Complete!</b> check your BONE balance.`);
+                
+                // Reset UI after 4 seconds
+                setTimeout(() => {
+                    btn.disabled = false;
+                    btn.innerText = "PAY GAS WITH RIC";
+                    btn.style.background = ""; // Reset gradient
+                    btn.style.color = "white";
+                }, 4000);
+
+            } catch (e) {
+                console.error(e);
                 btn.disabled = false;
-
-                // SMART ERROR MESSAGING
-                if (error.code === 'ACTION_REJECTED') {
-                    status.innerText = "❌ You rejected the transaction.";
-                } else if (error.code === 'TRANSACTION_REPLACED') {
-                    status.innerHTML = `⚠️ <b>Transaction Speed Up Detected.</b><br>Please check your wallet for the final status.`;
-                } else if (error.receipt) {
-                    status.innerText = "❌ Transaction Failed (Reverted by Smart Contract).";
+                btn.innerText = "TRY AGAIN";
+                
+                // Friendly Error Messages
+                if (e.code === "ACTION_REJECTED") {
+                    log("❌ Transaction Rejected by User", true);
+                } else if (e.code === "TRANSACTION_REPLACED") {
+                    log("⚠️ Transaction Speed-Up Detected. Check Wallet.", true);
                 } else {
-                    // This handles the Timeout/RPC Lag issue
-                    status.innerHTML = `⚠️ <b>Network Timeout</b><br>The transaction might have succeeded!<br><a href="https://shibariumscan.io/address/${userAddress}" target="_blank" class="link">Check your Wallet History</a>`;
+                    log("⚠️ " + (e.reason || e.message || "Transaction Error"), true);
                 }
             }
         }
