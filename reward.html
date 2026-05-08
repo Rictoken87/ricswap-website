@@ -19,16 +19,17 @@
         .nav-links a { color: #888; text-decoration: none; font-weight: 500; }
         .nav-links a:hover, .nav-links a.active { color: var(--gold); }
         .connect-btn, .admin-btn { background: #1a1a1a; color: white; border: 1.5px solid #333; padding: 6px 16px; border-radius: 9999px; font-size: 13px; font-weight: 600; cursor: pointer; margin-left: auto; }
+        
         .rewards-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 30px; padding: 40px; max-width: 1400px; margin: 0 auto; }
         .reward-card { background: var(--card); border-radius: 24px; overflow: hidden; border: 1px solid #222; transition: 0.3s; }
-        .reward-card:hover { transform: translateY(-5px); border-color: var(--gold); }
+        .reward-card:hover { transform: translateY(-8px); border-color: var(--gold); box-shadow: 0 10px 30px rgba(255,215,0,0.1); }
         .reward-card img { width: 100%; height: 220px; object-fit: cover; }
         
         #adminOverlay, #receiptModal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.96); z-index: 1000; padding: 40px; overflow: auto; }
-        .modal-box { max-width: 700px; margin: auto; background: var(--card); padding: 35px; border-radius: 24px; border: 1px solid #333; }
+        .modal-box { max-width: 800px; margin: auto; background: var(--card); padding: 35px; border-radius: 24px; border: 1px solid #333; }
         input, textarea { width: 100%; padding: 14px; margin: 10px 0; background: #080808; border: 1px solid #333; border-radius: 12px; color: white; }
         .btn-main { background: var(--magma); color: white; border: none; padding: 16px; border-radius: 14px; font-weight: 800; cursor: pointer; width: 100%; }
-        .list-item { display: flex; justify-content: space-between; align-items: center; padding: 12px; background: #000; margin-top: 8px; border-radius: 10px; border: 1px solid #222; }
+        .list-item { display: flex; justify-content: space-between; align-items: center; padding: 12px; background: #1a1a1a; margin: 8px 0; border-radius: 12px; }
     </style>
 </head>
 <body>
@@ -70,7 +71,7 @@
                 <div id="staffList"></div>
             </div>
 
-            <div>
+            <div style="margin-bottom:30px;">
                 <h3>➕ Add New Global Product</h3>
                 <input type="text" id="pName" placeholder="Product Name">
                 <input type="number" id="pPrice" placeholder="Price in RIC">
@@ -81,6 +82,9 @@
 
             <h3>📦 Current Products</h3>
             <div id="productList"></div>
+
+            <h3>📜 Order History</h3>
+            <div id="orderHistory"></div>
         </div>
     </div>
 
@@ -116,7 +120,7 @@
 
         emailjs.init("Y5GsSScYku74Bt0LH");
 
-        // Real-time Products
+        // Real-time Sync
         db.ref('products').on('value', (snapshot) => {
             const data = snapshot.val();
             const products = data ? Object.keys(data).map(key => ({ id: key, ...data[key] })) : [];
@@ -124,13 +128,8 @@
             renderAdminList(products);
         });
 
-        // Real-time Staff List
-        db.ref('staff').on('value', (snapshot) => {
-            window.globalStaff = snapshot.val() ? Object.values(snapshot.val()) : [];
-            if (document.getElementById('adminOverlay').style.display === 'block') {
-                renderStaffList();
-            }
-        });
+        db.ref('staff').on('value', () => renderStaffList());
+        db.ref('orders').on('value', (snapshot) => renderOrderHistory(snapshot.val()));
 
         async function connectWallet() {
             if (!window.ethereum) return alert("Please install MetaMask or Rabby");
@@ -138,11 +137,6 @@
             const accounts = await provider.send("eth_requestAccounts", []);
             userAddress = accounts[0].toLowerCase();
             document.getElementById("connectBtn").textContent = userAddress.slice(0,6) + "...";
-        }
-
-        function isMaster() { return userAddress === MASTER_OWNER; }
-        function isStaff() { 
-            return isMaster() || (window.globalStaff && window.globalStaff.some(s => s.toLowerCase() === userAddress));
         }
 
         function renderProducts(products) {
@@ -181,6 +175,18 @@
                 const tx = await ric.transfer(MASTER_OWNER, amountWei);
                 await tx.wait();
 
+                // Record Order
+                db.ref('orders').push({
+                    product: currentProduct.name,
+                    price: currentProduct.price,
+                    customer: email,
+                    address: address,
+                    tx: tx.hash,
+                    time: new Date().toISOString(),
+                    user: userAddress
+                });
+
+                // Decrease Stock
                 db.ref('products/' + currentProduct.id).update({ stock: firebase.database.ServerValue.increment(-1) });
 
                 await emailjs.send("service_577894p", "template_zga1woa", {
@@ -202,6 +208,21 @@
         function closeReceiptModal() {
             document.getElementById('receiptModal').style.display = 'none';
         }
+
+        function renderOrderHistory(orders) {
+            const list = document.getElementById('orderHistory') || document.createElement('div');
+            if (!document.getElementById('orderHistory')) return;
+            
+            let html = '';
+            if (orders) {
+                Object.values(orders).reverse().forEach(o => {
+                    html += `<div class="list-item"><span>${o.time.slice(0,10)} - ${o.product} (${o.price} RIC) → ${o.customer}</span></div>`;
+                });
+            }
+            document.getElementById('orderHistory').innerHTML = html || "<p>No orders yet.</p>";
+        }
+
+        // ... (addProduct, deleteProduct, renderAdminList, openAdminPanel, addStaff functions remain the same as previous version)
 
         function addProduct() {
             const name = document.getElementById('pName').value.trim();
@@ -234,22 +255,10 @@
             `).join('');
         }
 
-        function renderStaffList() {
-            const list = document.getElementById('staffList');
-            list.innerHTML = window.globalStaff.map((addr, i) => `
-                <div class="list-item">
-                    <span>${addr}</span>
-                    ${isMaster() ? `<button onclick="removeStaff('${addr}')" style="color:red;">Remove</button>` : ''}
-                </div>
-            `).join('') || "<p>No staff appointed yet.</p>";
-        }
-
         function openAdminPanel() {
             if (!userAddress) return alert("Please connect wallet first");
-            if (!isStaff()) return alert("Access Denied.\nOnly Master or authorized Staff can access.");
+            if (!isStaff()) return alert("Access Denied.");
             document.getElementById('adminOverlay').style.display = 'block';
-            renderStaffList();
-            renderAdminList([]); // Will be updated by listener
         }
 
         function closeAdminPanel() { 
@@ -260,24 +269,14 @@
             if (!isMaster()) return alert("Only Master can appoint staff");
             const addr = document.getElementById('staffWallet').value.trim();
             if (!addr || !addr.startsWith('0x')) return alert("Invalid address");
-            
             db.ref('staff').push(addr.toLowerCase());
-            alert("✅ Staff added successfully!");
+            alert("✅ Staff added!");
             document.getElementById('staffWallet').value = '';
         }
 
-        function removeStaff(addr) {
-            if (!isMaster()) return;
-            if (confirm("Remove this staff member?")) {
-                db.ref('staff').once('value', (snapshot) => {
-                    snapshot.forEach(child => {
-                        if (child.val() === addr) {
-                            child.ref.remove();
-                        }
-                    });
-                });
-            }
-        }
+        window.onload = () => {
+            loadData();
+        };
     </script>
 </body>
 </html>
