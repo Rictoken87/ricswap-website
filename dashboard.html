@@ -27,11 +27,6 @@
         
         .burn-card { background: linear-gradient(135deg, #2a0000, #110000); border: 2px solid #ff5555; }
         .burn-card .stat-number { color: #ff7777; }
-
-        .update-panel { 
-            background: #111; border: 2px solid var(--gold); border-radius: 20px; 
-            padding: 40px; margin: 40px auto; max-width: 800px; display: none; 
-        }
     </style>
 </head>
 <body>
@@ -49,20 +44,20 @@
     </nav>
 
     <div style="padding:80px 20px; text-align:center; background: radial-gradient(circle at center, #1a0f00 0%, var(--obsidian) 70%);">
-        <h1 style="font-size: 3.5rem; margin:0;">Ecosystem Burn Stats</h1>
-        <p style="color:#888; font-size: 1.2rem;">Permanent Deflation & Liquidity Tracking</p>
+        <h1 style="font-size: 3.5rem; margin:0;">Permanent Burn & Lock</h1>
+        <p style="color:#888; font-size: 1.2rem;">RicSwap Deflation Engine</p>
     </div>
 
     <div class="dashboard-grid" id="dashboardGrid"></div>
 
     <!-- Master Update Panel -->
-    <div class="update-panel" id="updatePanel">
-        <h2 style="color:var(--gold);">🔥 Master Control - Update Burn Stats</h2>
+    <div class="update-panel" id="updatePanel" style="display:none; background:#111; border:2px solid var(--gold); border-radius:20px; padding:40px; margin:40px auto; max-width:800px;">
+        <h2 style="color:var(--gold);">🔥 Master Control - Update Stats</h2>
         <label>RIC Tokens Burned So Far</label>
         <input type="number" id="ricBurnInput" value="4000000">
         <label>LP Tokens Burned</label>
-        <input type="number" id="lpBurnInput" value="0">
-        <label>RIC Locked in LP</label>
+        <input type="number" id="lpBurnInput" value="1">
+        <label>RIC Locked in LP (0x941abcb1...)</label>
         <input type="number" id="ricLockedInput" value="0">
         <button onclick="updateBurnStats()" style="background:var(--magma); color:black; padding:16px; width:100%; border:none; border-radius:12px; font-weight:bold; margin-top:20px;">Save & Update Dashboard</button>
     </div>
@@ -71,30 +66,19 @@
         const MASTER_OWNER = "0x5e5ae526d45d69991039901a29148029a4889102".toLowerCase();
         let userAddress = "";
 
-        const firebaseConfig = { /* Your Firebase config here */ };
+        const firebaseConfig = { /* Your Firebase config */ };
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
         async function connectWallet() {
-            if (!window.ethereum) return alert("Please install MetaMask or Rabby Wallet");
-
-            try {
-                const provider = new ethers.BrowserProvider(window.ethereum);
-                const accounts = await provider.send("eth_requestAccounts", []);
-                userAddress = accounts[0].toLowerCase();
-
-                document.getElementById("connectBtn").textContent = userAddress.slice(0,6) + "..." + userAddress.slice(-4);
-
-                // Show panel immediately if master
-                if (userAddress === MASTER_OWNER) {
-                    document.getElementById("updatePanel").style.display = "block";
-                    console.log("✅ Master wallet detected - Update panel shown");
-                } else {
-                    console.log("Wallet connected but not master");
-                }
-            } catch (e) {
-                console.error(e);
-                alert("Connection failed. Please try again.");
+            if (!window.ethereum) return alert("Please install MetaMask or Rabby");
+            const provider = new ethers.BrowserProvider(window.ethereum);
+            const accounts = await provider.send("eth_requestAccounts", []);
+            userAddress = accounts[0].toLowerCase();
+            document.getElementById("connectBtn").textContent = userAddress.slice(0,6) + "..." + userAddress.slice(-4);
+            
+            if (userAddress === MASTER_OWNER) {
+                document.getElementById("updatePanel").style.display = "block";
             }
         }
 
@@ -104,12 +88,12 @@
                 <div class="stat-card burn-card">
                     <div class="stat-number" id="ricBurned">4,000,000</div>
                     <div class="stat-label">RIC Tokens Burned So Far 🔥</div>
-                    <a href="https://shibariumscan.io/tx/0x2d8b95cc831e5ef88275533c5de8578ce0940f748dab62c26eb966f076adf3d9" 
-                       target="_blank" style="color:#ffaaaa; margin-top:10px; display:block;">View Burn Tx →</a>
+                    <a href="https://shibariumscan.io/tx/0x2d8b95cc831e5ef88275533c5de8578ce0940f748dab62c26eb966f076adf3d9" target="_blank" style="color:#ffaaaa; margin-top:10px; display:block;">View Tx →</a>
                 </div>
                 <div class="stat-card burn-card">
-                    <div class="stat-number" id="lpBurned">0</div>
-                    <div class="stat-label">LP Tokens Burned</div>
+                    <div class="stat-number" id="lpBurned">1</div>
+                    <div class="stat-label">LP Pair Burned / Locked</div>
+                    <a href="https://shibariumscan.io/address/0x941abcb1A4278Ff33B50F6Cf9F5A4C8a0888BdeE" target="_blank" style="color:#ffaaaa; margin-top:8px; display:block;">View Locked LP Pair →</a>
                 </div>
                 <div class="stat-card burn-card">
                     <div class="stat-number" id="ricLocked">0</div>
@@ -117,11 +101,11 @@
                 </div>
             `;
 
-            // Real-time listeners
+            // Real-time from Firebase
             db.ref('stats').on('value', (snap) => {
                 const s = snap.val() || {};
                 document.getElementById('ricBurned').textContent = (s.ricBurn || 4000000).toLocaleString();
-                document.getElementById('lpBurned').textContent = (s.lpBurn || 0).toLocaleString();
+                document.getElementById('lpBurned').textContent = (s.lpBurn || 1).toLocaleString();
                 document.getElementById('ricLocked').textContent = (s.ricLocked || 0).toLocaleString();
             });
         }
@@ -129,17 +113,12 @@
         function updateBurnStats() {
             db.ref('stats').update({
                 ricBurn: parseInt(document.getElementById('ricBurnInput').value) || 4000000,
-                lpBurn: parseInt(document.getElementById('lpBurnInput').value) || 0,
+                lpBurn: parseInt(document.getElementById('lpBurnInput').value) || 1,
                 ricLocked: parseInt(document.getElementById('ricLockedInput').value) || 0
-            }).then(() => {
-                alert("✅ Stats updated successfully for everyone!");
-            });
+            }).then(() => alert("✅ Updated for all visitors!"));
         }
 
-        // Start
-        window.onload = () => {
-            initDashboard();
-        };
+        window.onload = initDashboard;
     </script>
 </body>
 </html>
