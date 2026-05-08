@@ -28,9 +28,10 @@
         
         .btn-action { background:linear-gradient(135deg, var(--accent), #cc3d00); color:white; border:none; padding:16px; border-radius:12px; font-weight:700; width:100%; cursor:pointer; margin-top:10px; transition:0.2s; }
         .btn-action:hover { transform:scale(1.02); }
-        .btn-action:disabled { opacity:0.5; cursor:not-allowed; filter:grayscale(1); }
-        
+        .btn-action:disabled { opacity:0.5; cursor:not-allowed; }
+       
         .ric-gas { margin-top:30px; padding-top:25px; border-top:1px solid #333; }
+        .status { margin-top:15px; font-size:0.95rem; min-height:24px; }
     </style>
 </head>
 <body>
@@ -49,20 +50,10 @@
         <div class="card">
             <h2>Swap Tokens</h2>
             
-            <!-- Normal Swap -->
-            <div id="normalSwap">
-                <!-- Your existing swap form UI -->
-                <div style="padding:20px; text-align:center; border:1px dashed #333; margin-bottom:20px; border-radius:12px;">
-                   (Standard Swap UI Placeholder)
-                </div>
-            </div>
-
             <!-- RicGas Section -->
             <div class="ric-gas">
-                <h3 style="color:var(--accent); margin-bottom:10px;">⛽ Pay Gas with RIC</h3>
-                <p style="color:#888; font-size:0.9rem; margin-bottom:20px;">
-                    Stuck with 0 BONE? Swap RIC directly for gas.
-                </p>
+                <h3 style="color:var(--accent);">⛽ Pay Gas with RIC</h3>
+                <p style="color:#888; font-size:0.9rem;">No BONE? Swap RIC directly for gas.</p>
                 
                 <input type="number" id="ricAmount" placeholder="Enter RIC amount" value="1000">
                 
@@ -70,7 +61,7 @@
                     Pay Gas with RIC
                 </button>
                 
-                <div id="status" style="margin-top:15px; font-size:0.9rem; color:#aaa; text-align:center; min-height:20px; line-height:1.4;"></div>
+                <div id="status" class="status"></div>
             </div>
         </div>
     </div>
@@ -81,31 +72,35 @@
         const RICGAS_ADDRESS = "0x054Fcc4B7cd11f01735aE4e79131908E3Ff61B59";
 
         async function connectWallet() {
-            if (!window.ethereum) return alert("Please install MetaMask");
+            if (!window.ethereum) return alert("Please install MetaMask or Rabby");
             const provider = new ethers.BrowserProvider(window.ethereum);
             await provider.send("eth_requestAccounts", []);
             signer = await provider.getSigner();
             userAddress = await signer.getAddress();
             document.getElementById("connectBtn").textContent = userAddress.slice(0,6) + "..." + userAddress.slice(-4);
-            return true;
         }
 
         async function payWithRIC() {
             const btn = document.getElementById("ricGasBtn");
             const status = document.getElementById("status");
             
-            // 1. Ensure Connected
             if (!signer) {
                 await connectWallet();
+                return;
             }
 
-            const ricAmount = document.getElementById("ricAmount").value;
-            if (!ricAmount || ricAmount <= 0) return alert("Please enter a valid amount");
+            const ricAmountStr = document.getElementById("ricAmount").value;
+            if (!ricAmountStr || parseFloat(ricAmountStr) <= 0) {
+                return alert("Please enter a valid RIC amount");
+            }
 
             try {
-                const ricWei = ethers.parseUnits(ricAmount, 18);
-                
-                // --- CONTRACT SETUP ---
+                btn.disabled = true;
+                btn.innerText = "Processing...";
+                status.innerHTML = "⏳ Approving RIC...";
+
+                const ricWei = ethers.parseUnits(ricAmountStr, 18);
+
                 const ricContract = new ethers.Contract(RIC_ADDRESS, [
                     "function approve(address, uint256) public returns (bool)",
                     "function allowance(address, address) view returns (uint256)"
@@ -115,59 +110,41 @@
                     "function payGasWithRIC(uint256, uint256) external"
                 ], signer);
 
-                // --- STEP 1: APPROVE ---
-                status.innerText = "⏳ Checking allowance...";
-                const allowed = await ricContract.allowance(userAddress, RICGAS_ADDRESS);
-
-                if (allowed < ricWei) {
-                    btn.innerText = "APPROVING...";
-                    btn.disabled = true;
-                    status.innerText = "📝 Check wallet to Approve RIC...";
-                    
-                    const txApprove = await ricContract.approve(RICGAS_ADDRESS, ricWei);
-                    status.innerHTML = `⏳ Approving... <a href="https://shibariumscan.io/tx/${txApprove.hash}" target="_blank" style="color:#ffaa00">View Tx</a>`;
-                    await txApprove.wait();
+                // Check & Approve if needed
+                const allowance = await ricContract.allowance(userAddress, RICGAS_ADDRESS);
+                if (allowance < ricWei) {
+                    const approveTx = await ricContract.approve(RICGAS_ADDRESS, ricWei);
+                    status.innerHTML = `⏳ Approving... <a href="https://shibariumscan.io/tx/${approveTx.hash}" target="_blank" style="color:#ffaa00">View Tx</a>`;
+                    await approveTx.wait();
                 }
 
-                // --- STEP 2: SWAP ---
-                btn.innerText = "SWAPPING...";
-                btn.disabled = true;
-                status.innerText = "⛽ Check wallet to Confirm Swap...";
+                // Execute Gas Payment
+                status.innerHTML = "⛽ Confirm transaction in wallet...";
+                const tx = await gasContract.payGasWithRIC(ricWei, ethers.parseUnits("0.01", 18));
 
-                // Use '1' wei to prevent slippage failure in emergencies
-                const tx = await gasContract.payGasWithRIC(ricWei, 1);
-                
-                status.innerHTML = `🚀 <b>Sent!</b> <a href="https://shibariumscan.io/tx/${tx.hash}" target="_blank" style="color:#ffaa00">View on Explorer</a>`;
-                
-                await tx.wait();
-                
-                btn.innerText = "SUCCESS!";
-                btn.style.background = "#00ff88";
-                btn.style.color = "black";
-                status.innerHTML = `✅ <b>Success!</b> Gas received.`;
-                
-                setTimeout(() => {
-                    btn.innerText = "Pay Gas with RIC";
-                    btn.disabled = false;
-                    btn.style.background = "";
-                    btn.style.color = "";
-                }, 4000);
+                status.innerHTML = `🚀 Transaction sent! <a href="https://shibariumscan.io/tx/${tx.hash}" target="_blank" style="color:#ffaa00">View on Explorer</a>`;
 
-            } catch (e) {
-                console.error(e);
-                btn.innerText = "TRY AGAIN";
+                const receipt = await tx.wait();
+
+                if (receipt.status === 1) {
+                    btn.innerText = "✅ SUCCESS!";
+                    btn.style.background = "#00ff88";
+                    status.innerHTML = `🎉 Gas received successfully!`;
+                } else {
+                    throw new Error("Transaction reverted");
+                }
+
+            } catch (error) {
+                console.error(error);
+                btn.innerText = "Try Again";
                 btn.disabled = false;
-                status.innerText = "❌ Error: " + (e.reason || e.shortMessage || "Transaction Failed");
+                status.innerText = "❌ " + (error.shortMessage || error.message || "Transaction failed");
             }
         }
 
-        // Auto connect if previously connected
-        window.onload = async () => { 
-            if (window.ethereum) {
-                const provider = new ethers.BrowserProvider(window.ethereum);
-                const accounts = await provider.listAccounts();
-                if (accounts.length > 0) connectWallet();
-            }
+        // Auto connect
+        window.onload = () => {
+            if (window.ethereum) connectWallet();
         };
     </script>
 </body>
