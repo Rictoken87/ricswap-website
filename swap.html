@@ -6,84 +6,16 @@
     <title>RicSwap | Swap</title>
     <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.0/dist/ethers.umd.min.js"></script>
     <style>
-        :root {
-            --obsidian: #080808;
-            --card-bg: #121212;
-            --magma: linear-gradient(135deg, #ff4d00 0%, #ff8c00 100%);
-            --gold: #ffd700;
-        }
-        body { 
-            background: var(--obsidian); 
-            color: white; 
-            font-family: system-ui, sans-serif; 
-            margin: 0; 
-            padding: 0; 
-        }
-        .nav { 
-            padding: 20px 40px; 
-            display: flex; 
-            align-items: center; 
-            border-bottom: 1px solid rgba(255,215,0,0.1); 
-        }
-        .logo { 
-            font-size: 26px; 
-            font-weight: 800; 
-            color: var(--gold); 
-            letter-spacing: -1px; 
-        }
-        .connect-btn { 
-            background: rgba(255,215,0,0.1); 
-            color: var(--gold); 
-            border: 1px solid var(--gold); 
-            padding: 8px 22px; 
-            border-radius: 9999px; 
-            font-weight: 600; 
-            cursor: pointer; 
-            margin-left: auto; 
-        }
-        .card { 
-            max-width: 440px; 
-            margin: 60px auto; 
-            background: var(--card-bg); 
-            border-radius: 24px; 
-            padding: 32px; 
-            box-shadow: 0 20px 60px rgba(0,0,0,0.7); 
-            border: 1px solid #222; 
-        }
-        .input-group { 
-            background: #1a1a1a; 
-            border-radius: 16px; 
-            padding: 18px; 
-            margin-bottom: 12px; 
-            border: 1px solid #333; 
-        }
-        input { 
-            background: transparent; 
-            border: none; 
-            color: white; 
-            font-size: 32px; 
-            width: 100%; 
-            outline: none; 
-            font-weight: 700; 
-        }
-        button { 
-            background: var(--magma); 
-            color: white; 
-            border: none; 
-            padding: 18px; 
-            border-radius: 16px; 
-            font-weight: 800; 
-            width: 100%; 
-            margin-top: 20px; 
-            cursor: pointer; 
-            font-size: 17px; 
-        }
-        .status { 
-            margin-top: 16px; 
-            text-align: center; 
-            font-size: 14px; 
-            min-height: 28px; 
-        }
+        :root { --obsidian: #080808; --card-bg: #121212; --magma: linear-gradient(135deg, #ff4d00 0%, #ff8c00 100%); --gold: #ffd700; }
+        body { background: var(--obsidian); color: white; font-family: system-ui, sans-serif; margin: 0; padding: 0; }
+        .nav { padding: 20px 40px; display: flex; align-items: center; border-bottom: 1px solid rgba(255,215,0,0.1); }
+        .logo { font-size: 26px; font-weight: 800; color: var(--gold); }
+        .connect-btn { background: rgba(255,215,0,0.1); color: var(--gold); border: 1px solid var(--gold); padding: 8px 22px; border-radius: 9999px; font-weight: 600; cursor: pointer; margin-left: auto; }
+        .card { max-width: 440px; margin: 60px auto; background: var(--card-bg); border-radius: 24px; padding: 32px; box-shadow: 0 20px 60px rgba(0,0,0,0.7); border: 1px solid #222; }
+        .input-group { background: #1a1a1a; border-radius: 16px; padding: 18px; margin-bottom: 12px; border: 1px solid #333; }
+        input { background: transparent; border: none; color: white; font-size: 32px; width: 100%; outline: none; font-weight: 700; }
+        button { background: var(--magma); color: white; border: none; padding: 18px; border-radius: 16px; font-weight: 800; width: 100%; margin-top: 20px; cursor: pointer; font-size: 17px; }
+        .status { margin-top: 16px; text-align: center; font-size: 14px; min-height: 28px; }
     </style>
 </head>
 <body>
@@ -100,7 +32,7 @@
                 <span>You Pay</span>
                 <span>Balance: <span id="boneBalance">0.0000</span> BONE</span>
             </div>
-            <input type="number" id="fromAmount" placeholder="0.0" value="1" step="0.01">
+            <input type="number" id="fromAmount" placeholder="0.0" value="0.1" step="0.01">
         </div>
 
         <div class="input-group">
@@ -120,18 +52,10 @@
         const ROUTER_ADDRESS = "0x1b44f3b678EA3051f7874641bd2F962102e2e683";
         const WBONE = "0xC76F4c819D820369Fb2d7C1531aB3Bb18e6fE8d8";
         const RIC = "0x12C94d3A30daa09f81Ea6c037004E6e99A4A3dfc";
-        const PAIR_ADDRESS = "0x941abcb1A4278Ff33B50F6Cf9F5A4C8a0888BdeE";
 
         let provider, signer, userAddress;
 
-        const ROUTER_ABI = [
-            "function swapExactETHForTokens(uint amountOutMin, address[] calldata path, address to, uint deadline) external payable returns (uint[] memory amounts)"
-        ];
-
-        const PAIR_ABI = [
-            "function getReserves() view returns (uint112 reserve0, uint112 reserve1, uint32 blockTimestampLast)",
-            "function token0() view returns (address)"
-        ];
+        const ROUTER_ABI = ["function swapExactETHForTokens(uint amountOutMin, address[] calldata path, address to, uint deadline) external payable returns (uint[] memory amounts)"];
 
         async function connectWallet() {
             provider = new ethers.JsonRpcProvider(RPC);
@@ -151,29 +75,8 @@
 
         async function updateQuote() {
             const amountIn = parseFloat(document.getElementById("fromAmount").value || 0);
-            if (amountIn <= 0) {
-                document.getElementById("toAmount").value = "";
-                return;
-            }
-
-            try {
-                const pair = new ethers.Contract(PAIR_ADDRESS, PAIR_ABI, provider);
-                const [r0, r1] = await pair.getReserves();
-                const token0 = await pair.token0();
-
-                const boneRes = token0 === WBONE ? Number(r0) : Number(r1);
-                const ricRes  = token0 === WBONE ? Number(r1) : Number(r0);
-
-                if (boneRes === 0 || ricRes === 0) {
-                    document.getElementById("toAmount").value = "No Liquidity";
-                    return;
-                }
-
-                const outAmount = (amountIn * ricRes * 997) / (boneRes * 1000);
-                document.getElementById("toAmount").value = outAmount.toFixed(4);
-            } catch (e) {
-                document.getElementById("toAmount").value = "—";
-            }
+            if (amountIn <= 0) return;
+            document.getElementById("toAmount").value = "Calculating...";
         }
 
         async function executeSwap() {
@@ -185,20 +88,19 @@
             try {
                 btn.disabled = true;
                 btn.textContent = "CONFIRMING...";
-                status.textContent = "⛽ Confirm in wallet...";
+                status.textContent = "Sending transaction...";
 
                 const router = new ethers.Contract(ROUTER_ADDRESS, ROUTER_ABI, signer);
                 const amountInWei = ethers.parseEther(amountInStr);
-                const path = [WBONE, RIC];
 
                 const tx = await router.swapExactETHForTokens(
                     0,
-                    path,
+                    [WBONE, RIC],
                     userAddress,
                     Math.floor(Date.now() / 1000) + 600,
                     { 
                         value: amountInWei, 
-                        gasLimit: 1800000 
+                        gasLimit: 2000000 
                     }
                 );
 
@@ -209,7 +111,7 @@
                 loadBalances();
             } catch (e) {
                 console.error(e);
-                status.textContent = "❌ " + (e.reason || e.shortMessage || "Transaction Failed");
+                status.textContent = "❌ REVERTED: " + (e.reason || e.shortMessage || e.message || "Unknown");
             } finally {
                 btn.disabled = false;
                 btn.textContent = "SWAP NOW";
@@ -217,7 +119,6 @@
         }
 
         document.getElementById("connectBtn").addEventListener("click", connectWallet);
-        document.getElementById("fromAmount").addEventListener("input", updateQuote);
         document.getElementById("swapBtn").addEventListener("click", executeSwap);
     </script>
 </body>
