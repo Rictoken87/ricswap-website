@@ -7,7 +7,7 @@
     <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.0/dist/ethers.umd.min.js"></script>
     <style>
         :root { --obsidian: #080808; --card: #121212; --gold: #ffd700; --accent: #ff4d00; }
-        body { background: var(--obsidian); color: white; font-family: system-ui, -apple-system, sans-serif; display: flex; justify-content: center; padding-top: 50px; margin: 0; }
+        body { background: var(--obsidian); color: white; font-family: system-ui, sans-serif; display: flex; justify-content: center; padding-top: 50px; margin: 0; }
        
         .card { width: 100%; max-width: 420px; background: var(--card); border-radius: 24px; padding: 25px; border: 1px solid #222; box-shadow: 0 10px 40px rgba(0,0,0,0.5); }
        
@@ -23,14 +23,14 @@
         .pill { background: #333; padding: 6px 12px; border-radius: 20px; font-size: 14px; font-weight: 700; white-space: nowrap; }
         .btn { background: linear-gradient(135deg, var(--accent), #cc3d00); color: white; border: none; padding: 16px; border-radius: 14px; font-weight: 800; width: 100%; font-size: 16px; cursor: pointer; margin-top: 20px; text-transform: uppercase; }
         .btn:disabled { opacity: 0.5; cursor: not-allowed; filter: grayscale(1); }
-        .status { margin-top: 15px; text-align: center; font-size: 13px; min-height: 20px; word-break: break-all; color: #888; }
+        .status { margin-top: 15px; text-align: center; font-size: 13px; min-height: 20px; }
     </style>
 </head>
 <body>
     <div class="card">
         <h3>
             <span>Universal Swap</span>
-            <span class="badge">0.5% Slippage</span>
+            <span class="badge">Any Token</span>
         </h3>
         
         <!-- FROM (WBONE) -->
@@ -55,10 +55,9 @@
             </div>
             <div class="row">
                 <input type="number" id="amountOut" placeholder="0.0" disabled>
-                <div class="pill" id="tokenSymbol">RIC</div>
+                <div class="pill" id="tokenSymbol">Enter Address</div>
             </div>
-            <!-- DEFAULT: RIC ADDRESS -->
-            <input type="text" id="tokenAddr" class="addr" placeholder="Paste Token Address (0x...)" value="0x12C94d3A30daa09f81Ea6c037004E6e99A4A3dfc" oninput="handleTokenInput()">
+            <input type="text" id="tokenAddr" class="addr" placeholder="Paste Any Token Address (0x...)" onblur="handleTokenInput()">
         </div>
 
         <button id="mainBtn" class="btn" onclick="runSwap()">Connect Wallet</button>
@@ -66,13 +65,12 @@
     </div>
 
     <script>
-        // CONFIGURATION
-        const ROUTER = "0x8BC26741c4B381cF1a8392318133c1cCABb78775"; 
+        const ROUTER = "0x8BC26741c4B381cF1a8392318133c1cCABb78775";
         const WBONE = "0xC76F4c819D820369Fb2d7C1531aB3Bb18e6fE8d8";
-        
+
         let provider, signer, userAddress;
         let toDecimals = 18;
-        let toSymbol = "RIC";
+        let toSymbol = "...";
 
         const ERC20_ABI = [
             "function balanceOf(address) view returns (uint256)",
@@ -87,26 +85,18 @@
             "function swapExactTokensForTokens(uint256 amountIn, uint256 amountOutMin, address[] path, address to, uint256 deadline) returns (uint256[] amounts)"
         ];
 
-        window.onload = async () => {
-            if (window.ethereum) {
-                provider = new ethers.BrowserProvider(window.ethereum);
-                const accounts = await provider.listAccounts();
-                if(accounts.length > 0) connectWallet();
-            }
+        window.onload = () => {
+            if (window.ethereum) connectWallet();
         };
 
         async function connectWallet() {
-            if (!window.ethereum) return alert("Please install MetaMask");
             provider = new ethers.BrowserProvider(window.ethereum);
             await provider.send("eth_requestAccounts", []);
             signer = await provider.getSigner();
             userAddress = await signer.getAddress();
-            
-            document.getElementById("mainBtn").innerText = "SWAP NOW";
-            
-            // Load data
+            document.getElementById("mainBtn").innerText = "Swap Now";
             loadWBONEBalance();
-            handleTokenInput();
+            handleTokenInput(); // Load default or current address
         }
 
         async function loadWBONEBalance() {
@@ -119,125 +109,87 @@
 
         async function handleTokenInput() {
             const addr = document.getElementById("tokenAddr").value.trim();
-            if (!ethers.isAddress(addr)) return;
-            if (!provider) return;
+            if (!ethers.isAddress(addr)) {
+                document.getElementById("tokenSymbol").innerText = "Invalid Address";
+                return;
+            }
 
             try {
                 const token = new ethers.Contract(addr, ERC20_ABI, provider);
-                
-                // 1. Fetch Token Details
                 const [decimals, symbol, bal] = await Promise.all([
-                    token.decimals(),
-                    token.symbol(),
+                    token.decimals().catch(() => 18),
+                    token.symbol().catch(() => "UNKNOWN"),
                     token.balanceOf(userAddress).catch(() => 0n)
                 ]);
-                
-                // 2. Update State
+
                 toDecimals = Number(decimals);
                 toSymbol = symbol;
-                
-                // 3. Update UI
                 document.getElementById("tokenSymbol").innerText = symbol;
                 document.getElementById("tokenBal").innerText = parseFloat(ethers.formatUnits(bal, toDecimals)).toFixed(4);
                 
-                updateQuote();
+                updateQuote(); // Refresh quote with new token
             } catch(e) {
+                document.getElementById("tokenSymbol").innerText = "Error";
                 console.error(e);
-                document.getElementById("tokenSymbol").innerText = "???";
             }
         }
 
         async function updateQuote() {
             const amt = document.getElementById("amountIn").value;
-            const addr = document.getElementById("tokenAddr").value;
-            
-            if (!amt || !ethers.isAddress(addr) || !provider) return;
-            
+            const toAddr = document.getElementById("tokenAddr").value.trim();
+            if (!amt || !ethers.isAddress(toAddr)) return;
+
             try {
                 const router = new ethers.Contract(ROUTER, ROUTER_ABI, provider);
-                const path = [WBONE, addr];
-                const weiIn = ethers.parseEther(amt);
-                
-                const amounts = await router.getAmountsOut(weiIn, path);
-                
-                // Format using dynamic decimals
-                const out = ethers.formatUnits(amounts[1], toDecimals);
-                document.getElementById("amountOut").value = parseFloat(out).toFixed(6);
+                const path = [WBONE, toAddr];
+                const amounts = await router.getAmountsOut(ethers.parseEther(amt), path);
+                document.getElementById("amountOut").value = parseFloat(ethers.formatUnits(amounts[1], toDecimals)).toFixed(4);
             } catch(e) {
-                document.getElementById("amountOut").value = "No Liq";
+                document.getElementById("amountOut").value = "No Liquidity";
             }
         }
 
         async function runSwap() {
             if (!signer) return connectWallet();
-            
             const btn = document.getElementById("mainBtn");
             const status = document.getElementById("status");
             const amtIn = document.getElementById("amountIn").value;
-            const toAddr = document.getElementById("tokenAddr").value;
+            const toAddr = document.getElementById("tokenAddr").value.trim();
 
-            if (!amtIn || !ethers.isAddress(toAddr)) return alert("Invalid Input");
+            if (!amtIn || !ethers.isAddress(toAddr)) return alert("Please enter valid token address");
 
             try {
                 btn.disabled = true;
-                btn.innerText = "PROCESSING...";
                 const amountIn = ethers.parseEther(amtIn);
 
-                // 1. Check Approval
-                status.innerText = "⏳ Checking WBONE Allowance...";
+                // Approve WBONE
                 const wbone = new ethers.Contract(WBONE, ERC20_ABI, signer);
-                const allowance = await wbone.allowance(userAddress, ROUTER);
-
-                if (allowance < amountIn) {
-                    btn.innerText = "APPROVING WBONE...";
-                    status.innerHTML = "📝 Please approve WBONE transaction...";
-                    const txApprove = await wbone.approve(ROUTER, amountIn);
-                    status.innerHTML = `⏳ Approving... <a href="https://shibariumscan.io/tx/${txApprove.hash}" target="_blank" style="color:gold">View Tx</a>`;
-                    await txApprove.wait();
+                if ((await wbone.allowance(userAddress, ROUTER)) < amountIn) {
+                    status.innerText = "Approving WBONE...";
+                    await (await wbone.approve(ROUTER, amountIn)).wait();
                 }
 
-                // 2. Swap
-                btn.innerText = "SWAPPING...";
-                status.innerHTML = "⛽ Confirm Swap...";
+                // Swap
                 const router = new ethers.Contract(ROUTER, ROUTER_ABI, signer);
                 const path = [WBONE, toAddr];
-                const deadline = Math.floor(Date.now() / 1000) + 1200;
-
-                // Re-calc min output for safety
                 const amounts = await router.getAmountsOut(amountIn, path);
-                const minOut = (amounts[1] * 995n) / 1000n; // 0.5% Slippage
+                const minOut = (amounts[1] * 995n) / 1000n; // 0.5% slippage
 
                 const tx = await router.swapExactTokensForTokens(
                     amountIn,
                     minOut,
                     path,
                     userAddress,
-                    deadline
+                    Math.floor(Date.now()/1000) + 600,
+                    { gasLimit: 700000 }
                 );
 
-                status.innerHTML = `🚀 Tx Sent! <a href="https://shibariumscan.io/tx/${tx.hash}" target="_blank" style="color:gold">View on Explorer</a>`;
-                
+                status.innerHTML = `✅ Success! <a href="https://shibariumscan.io/tx/${tx.hash}" target="_blank" class="tx-link">View Tx</a>`;
                 await tx.wait();
-                
-                status.innerHTML = "✅ Swap Confirmed!";
-                status.style.color = "#00ff88";
-                btn.innerText = "SUCCESS";
-
-                setTimeout(() => {
-                    btn.disabled = false;
-                    btn.innerText = "SWAP NOW";
-                    status.innerHTML = "";
-                    status.style.color = "#888";
-                    loadWBONEBalance();
-                    handleTokenInput();
-                }, 3000);
-
-            } catch(e) {
-                console.error(e);
+            } catch (e) {
+                status.innerHTML = "❌ " + (e.shortMessage || e.message);
+            } finally {
                 btn.disabled = false;
-                btn.innerText = "TRY AGAIN";
-                status.innerHTML = "❌ Error: " + (e.shortMessage || "Transaction Failed");
-                status.style.color = "#ff4444";
             }
         }
     </script>
