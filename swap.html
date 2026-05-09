@@ -6,20 +6,35 @@
     <title>RicSwap | Swap</title>
     <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.0/dist/ethers.umd.min.js"></script>
     <style>
-        :root { --obsidian: #080808; --card-bg: #121212; --magma: linear-gradient(135deg, #ff4d00 0%, #ff8c00 100%); --gold: #ffd700; }
+        :root {
+            --obsidian: #080808;
+            --card-bg: #121212;
+            --magma: linear-gradient(135deg, #ff4d00 0%, #ff8c00 100%);
+            --gold: #ffd700;
+        }
         body { background: var(--obsidian); color: white; font-family: system-ui, sans-serif; margin: 0; padding: 0; }
+        
         .nav { padding: 15px 40px; display: flex; align-items: center; border-bottom: 1px solid rgba(255,215,0,0.1); }
         .logo { font-size: 24px; font-weight: bold; color: var(--gold); }
         .nav-links { display: flex; gap: 25px; margin-left: 40px; }
         .nav-links a { color: white; text-decoration: none; font-weight: 500; font-size: 14px; }
         .nav-links a:hover, .nav-links a.active { color: var(--gold); }
-        .connect-btn { background: #1a1a1a; color: var(--gold); border: 1.5px solid var(--gold); padding: 6px 16px; border-radius: 6px; font-size: 12px; font-weight: 700; cursor: pointer; margin-left: auto; }
+        
+        .connect-btn { 
+            background: #1a1a1a; color: var(--gold); border: 1.5px solid var(--gold);
+            padding: 6px 16px; border-radius: 6px; font-size: 12px; font-weight: 700;
+            cursor: pointer; white-space: nowrap; margin-left: auto;
+        }
+        .connect-btn:hover { background: var(--gold); color: black; }
+
         .card { max-width: 420px; margin: 40px auto; background: var(--card-bg); border-radius: 24px; padding: 32px; box-shadow: 0 20px 40px rgba(0,0,0,0.8); border: 1px solid #222; }
         .input-group { background: #1a1a1a; border-radius: 16px; padding: 16px; margin-bottom: 8px; border: 1px solid #333; }
-        label { display: block; color: #888; font-size: 12px; margin-bottom: 8px; }
+        .input-group:focus-within { border-color: var(--gold); }
+        label { display: block; color: #888; font-size: 12px; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 1px; }
         input { background: transparent; border: none; color: white; font-size: 28px; width: 100%; outline: none; }
         .main-btn { background: var(--magma); color: white; border: none; padding: 18px; border-radius: 16px; font-weight: bold; width: 100%; font-size: 18px; cursor: pointer; margin-top: 20px; }
         .status { margin-top: 15px; text-align: center; font-size: 13px; min-height: 24px; }
+        .tx-link { color: var(--gold); text-decoration: underline; }
     </style>
 </head>
 <body>
@@ -35,20 +50,29 @@
     </div>
 
     <div class="card">
-        <h3 style="margin:0 0 20px 0;">Swap BONE → RIC</h3>
-
-        <div class="input-group">
-            <label>You Pay</label>
-            <input type="number" id="fromAmount" placeholder="0.0" value="1" oninput="updateQuote()">
-            <div style="margin-top:8px; font-size:14px;">BONE</div>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+            <h3 style="margin:0;">Swap</h3>
+            <span style="color:#888; font-size:13px;">Permanent LP Locked</span>
         </div>
 
-        <div style="text-align:center; margin:10px 0; color:#666; font-size:24px;">↓</div>
+        <div class="input-group">
+            <div style="display:flex; justify-content:space-between;">
+                <label>You Pay</label>
+                <span id="fromBalance" style="font-size:12px; color:#888;">Balance: --</span>
+            </div>
+            <input type="number" id="fromAmount" placeholder="0.0" value="1" oninput="updateQuote()">
+            <div style="margin-top:8px; font-size:14px; font-weight:600;">BONE</div>
+        </div>
+
+        <div style="text-align:center; margin: -10px 0; color:#666; font-size:24px;">↓</div>
 
         <div class="input-group">
-            <label>You Receive</label>
+            <div style="display:flex; justify-content:space-between;">
+                <label>You Receive</label>
+                <span id="toBalance" style="font-size:12px; color:#888;">Balance: --</span>
+            </div>
             <input type="number" id="toAmount" placeholder="0.0" disabled>
-            <div style="margin-top:8px; font-size:14px;">RIC</div>
+            <div style="margin-top:8px; font-size:14px; font-weight:600;">RIC</div>
         </div>
 
         <button id="swapBtn" class="main-btn">Swap Now</button>
@@ -73,15 +97,18 @@
         }
 
         async function updateQuote() {
-            const amt = document.getElementById("fromAmount").value;
-            if (!amt || amt <= 0) return;
+            const amountIn = document.getElementById("fromAmount").value;
+            if (!amountIn || isNaN(amountIn) || amountIn <= 0) return;
+
             try {
                 const router = new ethers.Contract(ROUTER_ADDRESS, [
-                    "function getAmountsOut(uint256 amountIn, address[] path) view returns (uint256[] amounts)"
+                    "function getAmountsOut(uint256 amountIn, address[] memory path) public view returns (uint256[] memory amounts)"
                 ], signer.provider);
-                const amounts = await router.getAmountsOut(ethers.parseEther(amt), [WBONE, RIC]);
+                const path = [WBONE, RIC];
+                const amountInWei = ethers.parseEther(amountIn);
+                const amounts = await router.getAmountsOut(amountInWei, path);
                 document.getElementById("toAmount").value = parseFloat(ethers.formatEther(amounts[1])).toFixed(4);
-            } catch(e) {
+            } catch (e) {
                 document.getElementById("toAmount").value = "No Liquidity";
             }
         }
@@ -89,20 +116,21 @@
         async function executeSwap() {
             if (!signer) return connectWallet();
             const status = document.getElementById("status");
-            const amtStr = document.getElementById("fromAmount").value;
-            if (!amtStr) return alert("Enter amount");
+            const amountInStr = document.getElementById("fromAmount").value;
+            if (!amountInStr) return alert("Enter amount");
 
             try {
+                status.style.color = "#ff0";
                 status.textContent = "Approving BONE...";
-                const amountIn = ethers.parseEther(amtStr);
 
-                // Full ERC20 ABI for WBONE
+                const amountIn = ethers.parseEther(amountInStr);
+
+                // 1. Approve BONE
                 const wbone = new ethers.Contract(WBONE, [
                     "function approve(address,uint256) returns (bool)",
                     "function allowance(address,address) view returns (uint256)"
                 ], signer);
 
-                // Check and approve if needed
                 const allowance = await wbone.allowance(userAddress, ROUTER_ADDRESS);
                 if (allowance < amountIn) {
                     await (await wbone.approve(ROUTER_ADDRESS, amountIn)).wait();
@@ -110,8 +138,9 @@
 
                 status.textContent = "Swapping...";
 
+                // 2. Execute Swap
                 const router = new ethers.Contract(ROUTER_ADDRESS, [
-                    "function swapExactTokensForTokens(uint256 amountIn, uint256 amountOutMin, address[] path, address to, uint256 deadline)"
+                    "function swapExactTokensForTokens(uint256 amountIn, uint256 amountOutMin, address[] calldata path, address to, uint256 deadline)"
                 ], signer);
 
                 const tx = await router.swapExactTokensForTokens(
@@ -119,21 +148,26 @@
                     0,
                     [WBONE, RIC],
                     userAddress,
-                    Math.floor(Date.now()/1000) + 600,
-                    { gasLimit: 700000 }
+                    Math.floor(Date.now() / 1000) + 600,
+                    { gasLimit: 800000 }
                 );
 
-                status.innerHTML = `✅ Tx Sent! <a href="https://shibariumscan.io/tx/${tx.hash}" target="_blank">View Tx</a>`;
+                status.style.color = "#0f0";
+                status.innerHTML = `✅ Successful! <a href="https://shibariumscan.io/tx/${tx.hash}" target="_blank" class="tx-link">View Tx</a>`;
                 await tx.wait();
-                status.innerHTML = "🎉 Swap Successful!";
             } catch (e) {
                 console.error(e);
-                status.innerHTML = "❌ " + (e.shortMessage || e.message || "Transaction reverted");
+                status.style.color = "#f00";
+                status.textContent = "Error: " + (e.shortMessage || e.message || "Transaction reverted");
             }
         }
 
         document.getElementById("connectBtn").addEventListener("click", connectWallet);
-        document.getElementById("fromAmount").addEventListener("input", updateQuote);
+        document.getElementById("swapBtn").addEventListener("click", executeSwap);
+        document.getElementById("fromAmount").addEventListener("input", () => {
+            clearTimeout(window.quoteTimeout);
+            window.quoteTimeout = setTimeout(updateQuote, 500);
+        });
     </script>
 </body>
 </html>
