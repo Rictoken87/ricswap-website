@@ -3,14 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RicSwap | Swap</title>
+    <title>RicSwap | Buy RIC</title>
     <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.0/dist/ethers.umd.min.js"></script>
     <style>
         :root { --obsidian: #080808; --card-bg: #121212; --magma: linear-gradient(135deg, #ff4d00 0%, #ff8c00 100%); --gold: #ffd700; }
         body { background: var(--obsidian); color: white; font-family: system-ui, sans-serif; margin: 0; padding: 0; }
         .nav { padding: 20px 40px; display: flex; align-items: center; border-bottom: 1px solid rgba(255,215,0,0.1); }
         .logo { font-size: 24px; font-weight: 800; color: var(--gold); }
-        .connect-btn { background: rgba(255,215,0,0.1); color: var(--gold); border: 1px solid var(--gold); padding: 8px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; margin-left: auto; }
+        .connect-btn { background: rgba(255, 215, 0, 0.1); color: var(--gold); border: 1px solid var(--gold); padding: 8px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; margin-left: auto; }
         .card { max-width: 420px; margin: 60px auto; background: var(--card-bg); border-radius: 24px; padding: 30px; box-shadow: 0 20px 50px rgba(0,0,0,0.6); border: 1px solid #222; }
         .input-group { background: #1a1a1a; border-radius: 16px; padding: 16px; margin-bottom: 12px; border: 1px solid #333; }
         input { background: transparent; border: none; color: white; font-size: 28px; width: 100%; outline: none; font-weight: 700; }
@@ -54,28 +54,50 @@
 
         let provider, signer, userAddress;
 
+        // 🟢 Added ERC20 ABI for Balance Check
+        const ERC20_ABI = [
+            "function balanceOf(address) view returns (uint256)"
+        ];
+
         const ROUTER_ABI = [
             "function swapExactETHForTokens(uint amountOutMin, address[] calldata path, address to, uint deadline) external payable returns (uint[] memory amounts)",
             "function getAmountsOut(uint amountIn, address[] memory path) public view returns (uint[] memory amounts)"
         ];
 
         async function connectWallet() {
+            if (!window.ethereum) return alert("Please install MetaMask");
             provider = new ethers.BrowserProvider(window.ethereum);
             signer = await provider.getSigner();
             userAddress = await signer.getAddress();
-            document.getElementById("connectBtn").textContent = userAddress.slice(0,6) + "..." + userAddress.slice(-4);
+            
+            const shortAddr = userAddress.slice(0,6) + "..." + userAddress.slice(-4);
+            document.getElementById("connectBtn").textContent = shortAddr;
+            
             loadBalances();
             updateQuote();
         }
 
         async function loadBalances() {
+            if (!userAddress) return;
+            
+            // 1. Native BONE Balance
             const boneBal = await provider.getBalance(userAddress);
-            document.getElementById("boneBalance").textContent = parseFloat(ethers.formatEther(boneBal)).toFixed(4);
+            document.getElementById("boneBalance").textContent = parseFloat(ethers.formatEther(boneBal)).toFixed(3);
+
+            // 2. 🟢 RIC Token Balance (Added this)
+            try {
+                const ricContract = new ethers.Contract(RIC, ERC20_ABI, provider);
+                const ricBal = await ricContract.balanceOf(userAddress);
+                document.getElementById("ricBalance").textContent = parseFloat(ethers.formatEther(ricBal)).toFixed(3);
+            } catch(e) {
+                console.log("Error fetching RIC balance", e);
+            }
         }
 
         async function updateQuote() {
             const amountIn = document.getElementById("fromAmount").value;
             if (!amountIn || amountIn <= 0) return;
+
             try {
                 const router = new ethers.Contract(ROUTER_ADDRESS, ROUTER_ABI, provider);
                 const path = [WBONE, RIC];
@@ -93,6 +115,8 @@
             const btn = document.getElementById("swapBtn");
             const amountIn = document.getElementById("fromAmount").value;
 
+            if (!amountIn || amountIn <= 0) return;
+
             try {
                 btn.disabled = true;
                 btn.textContent = "CONFIRMING...";
@@ -101,28 +125,38 @@
                 const router = new ethers.Contract(ROUTER_ADDRESS, ROUTER_ABI, signer);
                 const amountInWei = ethers.parseEther(amountIn);
                 const path = [WBONE, RIC];
+                
+                // Get Quote for Slippage
                 const amounts = await router.getAmountsOut(amountInWei, path);
-                const minOut = (amounts[1] * 985n) / 1000n; // 1.5% slippage (safer)
+                const minOut = (amounts[1] * 990n) / 1000n; // 1% slippage
 
                 const tx = await router.swapExactETHForTokens(
                     minOut,
                     path,
                     userAddress,
                     Math.floor(Date.now() / 1000) + 1200,
-                    { value: amountInWei, gasLimit: 850000 }
+                    { 
+                        value: amountInWei,
+                        gasLimit: 800000 // Safety for Shibarium
+                    }
                 );
 
                 status.innerHTML = `🚀 Tx Sent → <a href="https://shibariumscan.io/tx/${tx.hash}" target="_blank" style="color:#ffd700">View</a>`;
                 await tx.wait();
+                
                 status.innerHTML = "✅ Swap Successful!";
                 status.style.color = "#00ff88";
+                btn.textContent = "SUCCESS";
                 loadBalances();
             } catch (e) {
                 console.error(e);
                 status.textContent = "❌ " + (e.reason || e.shortMessage || "Transaction Failed");
+                btn.textContent = "TRY AGAIN";
             } finally {
-                btn.disabled = false;
-                btn.textContent = "SWAP NOW";
+                setTimeout(() => {
+                    btn.disabled = false;
+                    if(btn.textContent === "SUCCESS") btn.textContent = "SWAP NOW";
+                }, 3000);
             }
         }
 
