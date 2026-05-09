@@ -65,7 +65,7 @@
             <!-- Settings / Slippage Toggle -->
             <div class="settings">
                 <span>Mode: <b>Buy RIC (Native)</b></span>
-                <span id="slipLabel">Slippage: <b>1% (Safe)</b></span>
+                <span id="slipLabel">Slippage: <b>0.3% (Standard)</b></span>
                 <span class="toggle-btn" onclick="toggleSlippage()">[Change]</span>
             </div>
             
@@ -106,14 +106,14 @@
         // ============================================================
         // ⚙️ CONFIGURATION
         // ============================================================
-        const ROUTER_ADDRESS = "0x1b44f3b678EA3051f7874641bd2F962102e2e683"; // Your New Router
+        const ROUTER_ADDRESS = "0x1b44f3b678EA3051f7874641bd2F962102e2e683"; 
         const WBONE = "0xC76F4c819D820369Fb2d7C1531aB3Bb18e6fE8d8";
         const RIC = "0x12C94d3A30daa09f81Ea6c037004E6e99A4A3dfc";
 
         // ============================================================
         
         let provider, signer, userAddress;
-        let highSlippage = false; // Default to Safe Mode
+        let highSlippage = false; // Default to Standard 0.3%
 
         const ERC20_ABI = ["function balanceOf(address) view returns (uint256)"];
         
@@ -128,11 +128,11 @@
             const label = document.getElementById("slipLabel");
             if(highSlippage) {
                 label.innerHTML = "Slippage: <b style='color:#ff4444'>100% (Force)</b>";
-                alert("⚠️ High Slippage Enabled! This guarantees the transaction will pass, but you might get a bad price if liquidity is low.");
             } else {
-                label.innerHTML = "Slippage: <b>1% (Safe)</b>";
+                // 🟢 UPDATED: Standard 0.3% Label
+                label.innerHTML = "Slippage: <b>0.3% (Standard)</b>";
             }
-            updateQuote(); // Refresh quote
+            updateQuote();
         }
 
         // --- Wallet Connection ---
@@ -208,10 +208,12 @@
                 let minOut = 0n;
                 if (!highSlippage) {
                     const amounts = await router.getAmountsOut(amountInWei, path);
-                    // 1% Slippage Protection (99%)
-                    minOut = (amounts[1] * 990n) / 1000n; 
+                    
+                    // 🟢 UPDATED: 0.3% Slippage Calculation
+                    // 997 / 1000 = 99.7% (0.3% tolerance)
+                    minOut = (amounts[1] * 997n) / 1000n; 
                 } else {
-                    // Force Mode: Accept 0 tokens (prevents revert on price impact)
+                    // Force Mode: Accept 0 tokens
                     minOut = 0n; 
                 }
 
@@ -241,7 +243,11 @@
             } catch (e) {
                 console.error(e);
                 let msg = e.reason || e.shortMessage || "Transaction Failed";
-                if (msg.includes("INSUFFICIENT_OUTPUT")) msg = "Price moved! Enable High Slippage.";
+                
+                // Detect Slippage Error
+                if (msg.includes("INSUFFICIENT_OUTPUT")) {
+                    msg = "Price Impact too high! Try increasing slippage.";
+                }
                 
                 showStatus("❌ " + msg, "error");
                 btn.textContent = "TRY AGAIN";
