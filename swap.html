@@ -3,145 +3,267 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RicSwap | Swap</title>
+    <title>RicSwap | Universal Exchange</title>
     <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.0/dist/ethers.umd.min.js"></script>
     <style>
-        :root { --obsidian: #080808; --card-bg: #121212; --magma: linear-gradient(135deg, #ff4d00 0%, #ff8c00 100%); --gold: #ffd700; }
-        body { background: var(--obsidian); color: white; font-family: system-ui, sans-serif; margin: 0; padding: 0; }
+        :root {
+            --obsidian: #080808;
+            --card-bg: #121212;
+            --magma: linear-gradient(135deg, #ff4d00 0%, #ff8c00 100%);
+            --gold: #ffd700;
+            --error: #ff4444;
+            --success: #00ff88;
+        }
+        body { background: var(--obsidian); color: white; font-family: 'Inter', system-ui, sans-serif; margin: 0; padding: 0; display: flex; flex-direction: column; min-height: 100vh; }
+        
+        /* Nav */
         .nav { padding: 20px 40px; display: flex; align-items: center; border-bottom: 1px solid rgba(255,215,0,0.1); }
-        .logo { font-size: 24px; font-weight: 800; color: var(--gold); }
-        .connect-btn { background: rgba(255,215,0,0.1); color: var(--gold); border: 1px solid var(--gold); padding: 8px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; margin-left: auto; }
-        .card { max-width: 420px; margin: 60px auto; background: var(--card-bg); border-radius: 24px; padding: 30px; box-shadow: 0 20px 50px rgba(0,0,0,0.6); border: 1px solid #222; }
-        .input-group { background: #1a1a1a; border-radius: 16px; padding: 16px; margin-bottom: 12px; border: 1px solid #333; }
-        input { background: transparent; border: none; color: white; font-size: 28px; width: 100%; outline: none; font-weight: 700; }
-        button { background: var(--magma); color: white; border: none; padding: 18px; border-radius: 14px; font-weight: 800; width: 100%; margin-top: 20px; cursor: pointer; }
-        .status { margin-top: 15px; text-align: center; font-size: 14px; min-height: 24px; }
+        .logo { font-size: 24px; font-weight: 800; color: var(--gold); letter-spacing: -1px; }
+        .connect-btn { background: rgba(255, 215, 0, 0.1); color: var(--gold); border: 1px solid var(--gold); padding: 8px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; margin-left: auto; transition: 0.2s; }
+        .connect-btn:hover { background: var(--gold); color: black; }
+
+        /* Card */
+        .container { flex: 1; display: flex; justify-content: center; align-items: center; padding: 20px; }
+        .card { width: 100%; max-width: 420px; background: var(--card-bg); border-radius: 24px; padding: 30px; box-shadow: 0 20px 60px rgba(0,0,0,0.6); border: 1px solid #222; }
+        
+        /* Settings Bar */
+        .settings { display: flex; justify-content: space-between; margin-bottom: 20px; font-size: 12px; color: #666; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+        .toggle-btn { cursor: pointer; color: var(--gold); text-decoration: underline; }
+        .toggle-btn:hover { color: white; }
+
+        /* Inputs */
+        .input-group { background: #1a1a1a; border-radius: 16px; padding: 16px; margin-bottom: 8px; border: 1px solid #333; transition: 0.2s; }
+        .input-group:focus-within { border-color: var(--gold); }
+        
+        .row { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 13px; color: #888; }
+        
+        input { background: transparent; border: none; color: white; font-size: 28px; width: 100%; outline: none; font-weight: 700; font-family: 'Inter', sans-serif; }
+        input::placeholder { color: #444; }
+
+        .token-badge { background: #333; padding: 6px 12px; border-radius: 12px; color: white; font-weight: bold; font-size: 14px; display: flex; align-items: center; gap: 6px; }
+        
+        /* Action Button */
+        button#swapBtn { background: var(--magma); color: white; border: none; padding: 18px; border-radius: 14px; font-weight: 800; width: 100%; margin-top: 20px; cursor: pointer; font-size: 16px; text-transform: uppercase; letter-spacing: 1px; transition: transform 0.1s; }
+        button#swapBtn:active { transform: scale(0.98); }
+        button:disabled { filter: grayscale(1); opacity: 0.5; cursor: not-allowed; transform: none; }
+
+        /* Status Log */
+        .status { margin-top: 20px; text-align: center; font-size: 13px; min-height: 24px; line-height: 1.5; color: #888; font-family: monospace; background: #000; padding: 10px; border-radius: 8px; border: 1px solid #222; display: none; }
+        .status.visible { display: block; }
+        .status a { color: var(--gold); }
     </style>
 </head>
 <body>
+
     <nav class="nav">
         <div class="logo">RicSwap</div>
-        <button id="connectBtn" class="connect-btn">Connect Wallet</button>
+        <button id="connectBtn" onclick="connectWallet()">Connect Wallet</button>
     </nav>
 
-    <div class="card">
-        <h2>Swap BONE → RIC</h2>
-        
-        <div class="input-group">
-            <div style="display:flex;justify-content:space-between;margin-bottom:8px;">
-                <span>You Pay</span>
-                <span>Bal: <span id="boneBalance">--</span> BONE</span>
+    <div class="container">
+        <div class="card">
+            <!-- Settings / Slippage Toggle -->
+            <div class="settings">
+                <span>Mode: <b>Buy RIC (Native)</b></span>
+                <span id="slipLabel">Slippage: <b>1% (Safe)</b></span>
+                <span class="toggle-btn" onclick="toggleSlippage()">[Change]</span>
             </div>
-            <input type="number" id="fromAmount" placeholder="0.0" value="1">
-        </div>
-
-        <div class="input-group">
-            <div style="display:flex;justify-content:space-between;margin-bottom:8px;">
-                <span>You Receive</span>
-                <span>Bal: <span id="ricBalance">--</span> RIC</span>
+            
+            <!-- Input: BONE -->
+            <div class="input-group">
+                <div class="row">
+                    <span>You Pay</span>
+                    <span>Bal: <span id="boneBalance">--</span></span>
+                </div>
+                <div style="display:flex; align-items:center;">
+                    <input type="number" id="fromAmount" placeholder="0.0" value="1" oninput="updateQuote()">
+                    <span class="token-badge">BONE</span>
+                </div>
             </div>
-            <input type="number" id="toAmount" placeholder="0.0" readonly>
-        </div>
 
-        <button id="swapBtn">SWAP NOW</button>
-        <div class="status" id="status"></div>
+            <!-- Arrow -->
+            <div style="text-align:center; color:#444; margin:-10px 0;">↓</div>
+
+            <!-- Output: RIC -->
+            <div class="input-group">
+                <div class="row">
+                    <span>You Receive</span>
+                    <span>Bal: <span id="ricBalance">--</span></span>
+                </div>
+                <div style="display:flex; align-items:center;">
+                    <input type="number" id="toAmount" placeholder="0.0" readonly>
+                    <span class="token-badge">RIC</span>
+                </div>
+            </div>
+
+            <button id="swapBtn" onclick="executeSwap()">Connect Wallet</button>
+            
+            <div class="status" id="status"></div>
+        </div>
     </div>
 
     <script>
-        const ROUTER_ADDRESS = "0x1b44f3b678EA3051f7874641bd2F962102e2e683";
+        // ============================================================
+        // ⚙️ CONFIGURATION
+        // ============================================================
+        const ROUTER_ADDRESS = "0x1b44f3b678EA3051f7874641bd2F962102e2e683"; // Your New Router
         const WBONE = "0xC76F4c819D820369Fb2d7C1531aB3Bb18e6fE8d8";
         const RIC = "0x12C94d3A30daa09f81Ea6c037004E6e99A4A3dfc";
-        const PAIR_ADDRESS = "0x941abcb1A4278Ff33B50F6Cf9F5A4C8a0888BdeE";  // Confirmed your LP
 
+        // ============================================================
+        
         let provider, signer, userAddress;
+        let highSlippage = false; // Default to Safe Mode
 
+        const ERC20_ABI = ["function balanceOf(address) view returns (uint256)"];
+        
         const ROUTER_ABI = [
-            "function swapExactETHForTokens(uint amountOutMin, address[] calldata path, address to, uint deadline) external payable returns (uint[] memory amounts)"
+            "function swapExactETHForTokens(uint amountOutMin, address[] calldata path, address to, uint deadline) external payable returns (uint[] memory amounts)",
+            "function getAmountsOut(uint amountIn, address[] memory path) public view returns (uint[] memory amounts)"
         ];
 
-        const PAIR_ABI = [
-            "function getReserves() view returns (uint112 reserve0, uint112 reserve1, uint32 blockTimestampLast)",
-            "function token0() view returns (address)"
-        ];
+        // --- Toggle Logic ---
+        function toggleSlippage() {
+            highSlippage = !highSlippage;
+            const label = document.getElementById("slipLabel");
+            if(highSlippage) {
+                label.innerHTML = "Slippage: <b style='color:#ff4444'>100% (Force)</b>";
+                alert("⚠️ High Slippage Enabled! This guarantees the transaction will pass, but you might get a bad price if liquidity is low.");
+            } else {
+                label.innerHTML = "Slippage: <b>1% (Safe)</b>";
+            }
+            updateQuote(); // Refresh quote
+        }
 
+        // --- Wallet Connection ---
         async function connectWallet() {
+            if (!window.ethereum) return alert("Please install MetaMask");
             provider = new ethers.BrowserProvider(window.ethereum);
             signer = await provider.getSigner();
             userAddress = await signer.getAddress();
+            
             document.getElementById("connectBtn").textContent = userAddress.slice(0,6) + "..." + userAddress.slice(-4);
+            document.getElementById("swapBtn").textContent = "SWAP BONE FOR RIC";
+            
             loadBalances();
             updateQuote();
         }
 
         async function loadBalances() {
-            const boneBal = await provider.getBalance(userAddress);
-            document.getElementById("boneBalance").textContent = parseFloat(ethers.formatEther(boneBal)).toFixed(4);
+            if (!userAddress) return;
+            try {
+                // 1. Native BONE Balance
+                const boneBal = await provider.getBalance(userAddress);
+                document.getElementById("boneBalance").textContent = parseFloat(ethers.formatEther(boneBal)).toFixed(3);
+
+                // 2. RIC Token Balance
+                const ricContract = new ethers.Contract(RIC, ERC20_ABI, provider);
+                const ricBal = await ricContract.balanceOf(userAddress);
+                document.getElementById("ricBalance").textContent = parseFloat(ethers.formatEther(ricBal)).toFixed(3);
+            } catch(e) { 
+                console.error("Balance Error", e);
+            }
         }
 
         async function updateQuote() {
-            const amountIn = parseFloat(document.getElementById("fromAmount").value || 0);
-            if (amountIn <= 0) {
-                document.getElementById("toAmount").value = "";
-                return;
-            }
+            const amountIn = document.getElementById("fromAmount").value;
+            if (!amountIn || amountIn <= 0 || !provider) return;
 
             try {
-                const pair = new ethers.Contract(PAIR_ADDRESS, PAIR_ABI, provider);
-                const reserves = await pair.getReserves();
-                const token0 = await pair.token0();
-
-                const boneRes = token0 === WBONE ? reserves[0] : reserves[1];
-                const ricRes  = token0 === WBONE ? reserves[1] : reserves[0];
-
-                const outAmount = (amountIn * Number(ricRes) * 997) / (Number(boneRes) * 1000);
-                document.getElementById("toAmount").value = outAmount.toFixed(4);
+                const router = new ethers.Contract(ROUTER_ADDRESS, ROUTER_ABI, provider);
+                const path = [WBONE, RIC];
+                const amountInWei = ethers.parseEther(amountIn);
+                
+                const amounts = await router.getAmountsOut(amountInWei, path);
+                const out = ethers.formatEther(amounts[1]);
+                document.getElementById("toAmount").value = parseFloat(out).toFixed(6);
+                
+                // If quote succeeds, liquidity exists
+                document.getElementById("status").classList.remove("visible");
             } catch (e) {
-                console.error("Quote failed:", e);
-                document.getElementById("toAmount").value = "Error loading price";
+                console.log("Quote Error:", e);
+                document.getElementById("toAmount").value = "0.00";
+                showStatus("⚠️ No Liquidity Pool Found", "error");
             }
         }
 
         async function executeSwap() {
             if (!signer) return connectWallet();
-            const status = document.getElementById("status");
+            
             const btn = document.getElementById("swapBtn");
-            const amountInStr = document.getElementById("fromAmount").value;
+            const amountIn = document.getElementById("fromAmount").value;
+
+            if (!amountIn || amountIn <= 0) return;
 
             try {
                 btn.disabled = true;
                 btn.textContent = "CONFIRMING...";
-                status.textContent = "⛽ Confirm in wallet...";
+                showStatus("⛽ Please confirm transaction in your wallet...", "normal");
 
                 const router = new ethers.Contract(ROUTER_ADDRESS, ROUTER_ABI, signer);
-                const amountInWei = ethers.parseEther(amountInStr);
+                const amountInWei = ethers.parseEther(amountIn);
                 const path = [WBONE, RIC];
-                const minOut = 0; // Test with 0 first
+                
+                // --- SLIPPAGE CALCULATION ---
+                let minOut = 0n;
+                if (!highSlippage) {
+                    const amounts = await router.getAmountsOut(amountInWei, path);
+                    // 1% Slippage Protection (99%)
+                    minOut = (amounts[1] * 990n) / 1000n; 
+                } else {
+                    // Force Mode: Accept 0 tokens (prevents revert on price impact)
+                    minOut = 0n; 
+                }
 
+                // --- EXECUTE NATIVE SWAP ---
                 const tx = await router.swapExactETHForTokens(
                     minOut,
                     path,
                     userAddress,
-                    Math.floor(Date.now() / 1000) + 1200,
-                    { value: amountInWei, gasLimit: 900000 }
+                    Math.floor(Date.now() / 1000) + 1200, // 20 mins deadline
+                    { 
+                        value: amountInWei,
+                        gasLimit: 500000 // Safe limit for Shibarium
+                    }
                 );
 
-                status.innerHTML = `🚀 Tx Sent → <a href="https://shibariumscan.io/tx/${tx.hash}" target="_blank" style="color:#ffd700">View</a>`;
+                showStatus(`🚀 Transaction Sent! <a href="https://shibariumscan.io/tx/${tx.hash}" target="_blank">View on Explorer</a>`, "normal");
+                
                 await tx.wait();
-                status.innerHTML = "✅ Swap Successful!";
-                status.style.color = "#00ff88";
-                loadBalances();
+                
+                showStatus("✅ SWAP SUCCESSFUL!", "success");
+                btn.textContent = "SUCCESS";
+                btn.style.background = "var(--success)";
+                btn.style.color = "black";
+                
+                loadBalances(); // Update UI
+
             } catch (e) {
                 console.error(e);
-                status.textContent = "❌ " + (e.reason || e.shortMessage || "Transaction Failed");
+                let msg = e.reason || e.shortMessage || "Transaction Failed";
+                if (msg.includes("INSUFFICIENT_OUTPUT")) msg = "Price moved! Enable High Slippage.";
+                
+                showStatus("❌ " + msg, "error");
+                btn.textContent = "TRY AGAIN";
             } finally {
-                btn.disabled = false;
-                btn.textContent = "SWAP NOW";
+                setTimeout(() => {
+                    btn.disabled = false;
+                    if(btn.textContent === "SUCCESS" || btn.textContent === "TRY AGAIN") {
+                        btn.textContent = "SWAP BONE FOR RIC";
+                        btn.style.background = "";
+                        btn.style.color = "";
+                    }
+                }, 4000);
             }
         }
 
-        document.getElementById("connectBtn").addEventListener("click", connectWallet);
-        document.getElementById("fromAmount").addEventListener("input", updateQuote);
-        document.getElementById("swapBtn").addEventListener("click", executeSwap);
+        function showStatus(msg, type) {
+            const el = document.getElementById("status");
+            el.innerHTML = msg;
+            el.className = "status visible";
+            el.style.color = type === "error" ? "var(--error)" : (type === "success" ? "var(--success)" : "#888");
+        }
+
     </script>
 </body>
 </html>
