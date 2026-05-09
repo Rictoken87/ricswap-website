@@ -10,9 +10,6 @@
         body { background: var(--obsidian); color: white; font-family: system-ui, sans-serif; margin: 0; padding: 0; }
         .nav { padding: 15px 40px; display: flex; align-items: center; border-bottom: 1px solid rgba(255,215,0,0.1); }
         .logo { font-size: 24px; font-weight: bold; color: var(--gold); }
-        .nav-links { display: flex; gap: 25px; margin-left: 40px; }
-        .nav-links a { color: white; text-decoration: none; font-weight: 500; font-size: 14px; }
-        .nav-links a:hover, .nav-links a.active { color: var(--gold); }
         .connect-btn { background: #1a1a1a; color: var(--gold); border: 1.5px solid var(--gold); padding: 6px 16px; border-radius: 6px; font-size: 12px; font-weight: 700; cursor: pointer; margin-left: auto; }
         .card { max-width: 420px; margin: 40px auto; background: var(--card-bg); border-radius: 24px; padding: 32px; box-shadow: 0 20px 40px rgba(0,0,0,0.8); border: 1px solid #222; }
         .input-group { background: #1a1a1a; border-radius: 16px; padding: 16px; margin-bottom: 8px; border: 1px solid #333; }
@@ -25,30 +22,24 @@
 <body>
     <div class="nav">
         <div class="logo">RicSwap</div>
-        <div class="nav-links">
-            <a href="index.html">Home</a>
-            <a href="swap.html" class="active">Swap</a>
-            <a href="pools.html">Pools</a>
-            <a href="liquidity.html">Add Liquidity</a>
-        </div>
         <button id="connectBtn" class="connect-btn">Connect Wallet</button>
     </div>
 
     <div class="card">
-        <h3 style="margin:0 0 20px 0;">Swap BONE → RIC</h3>
+        <h3>Swap BONE → RIC</h3>
 
         <div class="input-group">
             <label>You Pay</label>
             <input type="number" id="fromAmount" placeholder="0.0" value="1" oninput="updateQuote()">
-            <div style="margin-top:8px; font-size:14px;">BONE</div>
+            <div style="margin-top:8px;">BONE</div>
         </div>
 
-        <div style="text-align:center; margin:10px 0; color:#666; font-size:24px;">↓</div>
+        <div style="text-align:center; margin:10px 0; font-size:24px; color:#666;">↓</div>
 
         <div class="input-group">
             <label>You Receive</label>
             <input type="number" id="toAmount" placeholder="0.0" disabled>
-            <div style="margin-top:8px; font-size:14px;">RIC</div>
+            <div style="margin-top:8px;">RIC</div>
         </div>
 
         <button id="swapBtn" class="main-btn" onclick="executeSwap()">Swap Now</button>
@@ -77,8 +68,7 @@
             if (!amt || amt <= 0) return;
             try {
                 const router = new ethers.Contract(ROUTER, ["function getAmountsOut(uint256, address[]) view returns (uint256[])"], signer.provider);
-                const path = [WBONE, RIC];
-                const amounts = await router.getAmountsOut(ethers.parseEther(amt), path);
+                const amounts = await router.getAmountsOut(ethers.parseEther(amt), [WBONE, RIC]);
                 document.getElementById("toAmount").value = parseFloat(ethers.formatEther(amounts[1])).toFixed(4);
             } catch(e) {
                 document.getElementById("toAmount").value = "No Liquidity";
@@ -94,20 +84,30 @@
                 status.textContent = "Approving BONE...";
                 const amountIn = ethers.parseEther(amtStr);
 
+                // 1. Approve
                 const wbone = new ethers.Contract(WBONE, ["function approve(address,uint256)"], signer);
-                await (await wbone.approve(ROUTER, amountIn)).wait();
+                if ((await wbone.allowance(userAddress, ROUTER)) < amountIn) {
+                    await (await wbone.approve(ROUTER, amountIn)).wait();
+                }
 
                 status.textContent = "Swapping...";
 
                 const router = new ethers.Contract(ROUTER, ["function swapExactTokensForTokens(uint256,uint256,address[],address,uint256)"], signer);
-                const path = [WBONE, RIC];
-                const tx = await router.swapExactTokensForTokens(amountIn, 0, path, userAddress, Math.floor(Date.now()/1000)+600, { gasLimit: 700000 });
+                const tx = await router.swapExactTokensForTokens(
+                    amountIn,
+                    0,
+                    [WBONE, RIC],
+                    userAddress,
+                    Math.floor(Date.now()/1000) + 600,
+                    { gasLimit: 800000 }
+                );
 
-                status.innerHTML = `✅ Success! <a href="https://shibariumscan.io/tx/${tx.hash}" target="_blank">View Tx</a>`;
+                status.innerHTML = `✅ Tx Sent → <a href="https://shibariumscan.io/tx/${tx.hash}" target="_blank">View</a>`;
                 await tx.wait();
+                status.innerHTML = "🎉 Swap Successful!";
             } catch (e) {
                 console.error(e);
-                status.textContent = "❌ " + (e.shortMessage || "Transaction reverted");
+                status.innerHTML = "❌ " + (e.shortMessage || e.message || "Transaction reverted");
             }
         }
 
