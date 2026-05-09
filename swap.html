@@ -3,57 +3,58 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RicSwap | Universal</title>
+    <title>RicSwap | Universal Auto-Router</title>
     <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.0/dist/ethers.umd.min.js"></script>
     <style>
         :root {
             --bg: #050505;
-            --card: #101010;
+            --card: #111;
             --input: #1a1a1a;
             --gold: #ffd700;
-            --accent: #ff5500;
+            --accent: #ff4d00;
             --text: #e0e0e0;
-            --sub: #666;
+            --sub: #888;
         }
-        body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
+        body { background: var(--bg); color: var(--text); font-family: 'Inter', system-ui, sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
         
-        /* UI Container */
-        .swapper { width: 440px; background: var(--card); border-radius: 24px; padding: 25px; border: 1px solid #222; box-shadow: 0 20px 80px rgba(0,0,0,0.7); }
+        /* Container */
+        .swapper { width: 100%; max-width: 460px; background: var(--card); border-radius: 24px; padding: 24px; border: 1px solid #222; box-shadow: 0 20px 80px rgba(0,0,0,0.8); }
         
         /* Header */
-        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-        .logo { font-weight: 800; font-size: 22px; color: var(--gold); letter-spacing: -0.5px; }
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
+        .logo { font-weight: 800; font-size: 20px; color: var(--gold); letter-spacing: -0.5px; }
         .wallet-btn { background: rgba(255, 215, 0, 0.1); color: var(--gold); border: 1px solid var(--gold); padding: 8px 16px; border-radius: 12px; font-size: 12px; font-weight: 700; cursor: pointer; transition: 0.2s; }
         .wallet-btn:hover { background: var(--gold); color: black; }
 
-        /* Token Cards */
-        .token-card { background: var(--input); border-radius: 18px; padding: 16px; margin-bottom: 6px; border: 1px solid transparent; transition: 0.2s; position: relative; }
+        /* Token Box */
+        .token-card { background: var(--input); border-radius: 16px; padding: 16px; margin-bottom: 4px; border: 1px solid transparent; transition: 0.2s; }
         .token-card:focus-within { border-color: #333; }
         
-        .row-top { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 12px; color: var(--sub); font-weight: 600; }
-        .row-main { display: flex; align-items: center; gap: 10px; }
+        .row-top { display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 12px; color: var(--sub); font-weight: 600; }
+        .row-main { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
         
         /* Inputs */
-        input.amount { background: transparent; border: none; color: white; font-size: 28px; width: 100%; font-weight: 700; outline: none; }
+        input.amount { background: transparent; border: none; color: white; font-size: 32px; width: 100%; font-weight: 600; outline: none; padding: 0; margin: 0; }
         input.amount:disabled { color: #555; cursor: not-allowed; }
         
-        input.address { width: 100%; background: #000; border: 1px solid #333; color: var(--gold); padding: 8px 12px; border-radius: 8px; font-family: monospace; font-size: 11px; margin-top: 10px; outline: none; }
-        input.address:focus { border-color: var(--gold); }
+        input.address { width: 100%; background: #000; border: 1px solid #333; color: #888; padding: 10px; border-radius: 10px; font-family: monospace; font-size: 11px; outline: none; transition: 0.2s; box-sizing: border-box; }
+        input.address:focus { border-color: var(--gold); color: var(--gold); }
 
-        /* Badges */
-        .badge { background: #222; padding: 6px 12px; border-radius: 20px; font-size: 14px; font-weight: 700; color: white; white-space: nowrap; display: flex; align-items: center; gap: 5px; border: 1px solid #333; min-width: 60px; justify-content: center; }
+        /* Badge */
+        .badge { background: #222; padding: 6px 12px; border-radius: 20px; font-size: 15px; font-weight: 700; color: white; border: 1px solid #333; min-width: 70px; text-align: center; }
         
         /* Arrow */
-        .arrow { text-align: center; color: #444; margin: -14px 0 -6px 0; position: relative; z-index: 2; }
-        .arrow span { background: var(--card); padding: 6px; border-radius: 50%; border: 4px solid var(--card); font-size: 14px; cursor: pointer; }
+        .arrow { text-align: center; height: 12px; position: relative; z-index: 2; }
+        .arrow span { background: var(--card); padding: 6px; border-radius: 50%; border: 4px solid var(--card); font-size: 14px; color: #666; cursor: pointer; }
 
-        /* Main Action */
-        .action-btn { background: linear-gradient(135deg, var(--accent), #cc4400); color: white; border: none; width: 100%; padding: 18px; border-radius: 16px; font-size: 16px; font-weight: 800; margin-top: 20px; cursor: pointer; transition: 0.2s; text-transform: uppercase; letter-spacing: 1px; }
-        .action-btn:disabled { filter: grayscale(1); opacity: 0.4; cursor: not-allowed; }
+        /* Button */
+        .action-btn { background: linear-gradient(135deg, var(--accent), #cc3300); color: white; border: none; width: 100%; padding: 20px; border-radius: 16px; font-size: 16px; font-weight: 800; margin-top: 20px; cursor: pointer; transition: 0.2s; text-transform: uppercase; letter-spacing: 1px; }
+        .action-btn:disabled { filter: grayscale(1) opacity(0.5); cursor: not-allowed; }
         .action-btn:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 10px 30px rgba(255, 85, 0, 0.2); }
 
         /* Status */
         .status-line { text-align: center; margin-top: 15px; font-size: 12px; color: var(--sub); font-family: monospace; min-height: 20px; }
+        .route-info { font-size: 11px; color: var(--gold); margin-top: 5px; }
         a { color: var(--gold); text-decoration: none; }
     </style>
 </head>
@@ -61,47 +62,51 @@
 
 <div class="swapper">
     <div class="header">
-        <div class="logo">RicSwap Universal</div>
+        <div class="logo">RicSwap</div>
         <button id="connectBtn" class="wallet-btn" onclick="connectWallet()">Connect Wallet</button>
     </div>
 
-    <!-- CARD 1: PAY -->
+    <!-- INPUT CARD -->
     <div class="token-card">
         <div class="row-top">
-            <span>You Pay</span>
+            <span>Pay</span>
             <span>Bal: <span id="balIn">--</span></span>
         </div>
         <div class="row-main">
             <input type="number" id="amtIn" class="amount" placeholder="0.0" oninput="handleQuote()">
             <div class="badge" id="symIn">BONE</div>
         </div>
-        <input type="text" id="addrIn" class="address" placeholder="Address (or 'BONE')" value="BONE" onchange="loadToken('IN')">
+        <input type="text" id="addrIn" class="address" placeholder="Paste Token Address or 'BONE'" value="BONE" onchange="loadToken('IN')">
     </div>
 
     <div class="arrow"><span>↓</span></div>
 
-    <!-- CARD 2: RECEIVE -->
+    <!-- OUTPUT CARD -->
     <div class="token-card">
         <div class="row-top">
-            <span>You Receive</span>
+            <span>Receive</span>
             <span>Bal: <span id="balOut">--</span></span>
         </div>
         <div class="row-main">
             <input type="number" id="amtOut" class="amount" placeholder="0.0" disabled>
             <div class="badge" id="symOut">RIC</div>
         </div>
-        <input type="text" id="addrOut" class="address" placeholder="Address (or 'BONE')" value="0x12C94d3A30daa09f81Ea6c037004E6e99A4A3dfc" onchange="loadToken('OUT')">
+        <input type="text" id="addrOut" class="address" placeholder="Paste Token Address or 'BONE'" value="0x12C94d3A30daa09f81Ea6c037004E6e99A4A3dfc" onchange="loadToken('OUT')">
     </div>
 
-    <div class="status-line" id="status"></div>
+    <div class="status-line">
+        <div id="status"></div>
+        <div id="route" class="route-info"></div>
+    </div>
+    
     <button id="mainBtn" class="action-btn" onclick="handleAction()">Connect Wallet</button>
 </div>
 
 <script>
-    // --- ⚙️ CONFIG ---
+    // --- ⚙️ CONFIGURATION ---
     const ROUTER = "0x1b44f3b678EA3051f7874641bd2F962102e2e683";
     const WBONE = "0xC76F4c819D820369Fb2d7C1531aB3Bb18e6fE8d8";
-    const RPC = "https://rpc.shibarium.shib.io";
+    const RPC = "https://rpc.shibarium.shib.io"; // Public RPC
 
     // --- STATE ---
     let provider, signer, userAddr;
@@ -109,9 +114,9 @@
         IN: { addr: "BONE", decimals: 18, symbol: "BONE", isNative: true },
         OUT: { addr: "0x12C94d3A30daa09f81Ea6c037004E6e99A4A3dfc", decimals: 18, symbol: "RIC", isNative: false }
     };
+    let activePath = [];
     let needsApproval = false;
 
-    // --- ABIs ---
     const ERC20_ABI = [
         "function symbol() view returns (string)",
         "function decimals() view returns (uint8)",
@@ -128,7 +133,7 @@
 
     // --- INIT ---
     window.onload = () => {
-        loadToken('OUT'); // Load default output token data
+        loadToken('OUT'); // Load defaults
     };
 
     async function connectWallet() {
@@ -140,163 +145,172 @@
         document.getElementById("connectBtn").innerText = userAddr.slice(0,6) + "..";
         document.getElementById("mainBtn").innerText = "ENTER AMOUNT";
         
-        // Refresh Balances
         loadToken('IN');
         loadToken('OUT');
     }
 
-    // --- CORE LOGIC ---
-
+    // --- TOKEN LOGIC ---
     async function loadToken(side) {
         const inputId = side === 'IN' ? 'addrIn' : 'addrOut';
-        const val = document.getElementById(inputId).value.trim();
+        let val = document.getElementById(inputId).value.trim();
         const reader = provider || new ethers.JsonRpcProvider(RPC);
 
-        // Case A: Native
+        // Handle "BONE" text
         if (val.toUpperCase() === "BONE" || val === "") {
             tokens[side] = { addr: "BONE", decimals: 18, symbol: "BONE", isNative: true };
-            document.getElementById(side === 'IN' ? 'symIn' : 'symOut').innerText = "BONE";
+            updateUI(side);
             if (userAddr) {
                 const bal = await reader.getBalance(userAddr);
-                document.getElementById(side === 'IN' ? 'balIn' : 'balOut').innerText = parseFloat(ethers.formatEther(bal)).toFixed(4);
+                document.getElementById(`bal${side}`).innerText = parseFloat(ethers.formatEther(bal)).toFixed(4);
             }
             return;
         }
 
-        // Case B: ERC20
+        // Handle Address
         if (ethers.isAddress(val)) {
             try {
                 const contract = new ethers.Contract(val, ERC20_ABI, reader);
                 const [sym, dec] = await Promise.all([contract.symbol(), contract.decimals()]);
                 
                 tokens[side] = { addr: val, decimals: Number(dec), symbol: sym, isNative: false };
-                document.getElementById(side === 'IN' ? 'symIn' : 'symOut').innerText = sym;
+                updateUI(side);
 
                 if (userAddr) {
                     const bal = await contract.balanceOf(userAddr);
-                    document.getElementById(side === 'IN' ? 'balIn' : 'balOut').innerText = parseFloat(ethers.formatUnits(bal, dec)).toFixed(4);
+                    document.getElementById(`bal${side}`).innerText = parseFloat(ethers.formatUnits(bal, dec)).toFixed(4);
                 }
             } catch (e) {
                 console.error(e);
-                document.getElementById(side === 'IN' ? 'symIn' : 'symOut').innerText = "INVALID";
+                document.getElementById(`sym${side}`).innerText = "???";
             }
         }
-        handleQuote(); // Refresh quote on token change
+        handleQuote();
     }
 
+    function updateUI(side) {
+        document.getElementById(`sym${side}`).innerText = tokens[side].symbol;
+    }
+
+    // --- 🟢 THE AUTO-ROUTER ENGINE 🟢 ---
     async function handleQuote() {
         const amt = document.getElementById("amtIn").value;
+        const status = document.getElementById("status");
+        const route = document.getElementById("route");
+        
         if (!amt || amt <= 0) {
             document.getElementById("mainBtn").innerText = "ENTER AMOUNT";
             return;
         }
 
         try {
-            document.getElementById("status").innerText = "Fetching rate...";
+            status.innerText = "Calculating best route...";
+            route.innerText = "";
             const reader = provider || new ethers.JsonRpcProvider(RPC);
             const router = new ethers.Contract(ROUTER, ROUTER_ABI, reader);
 
-            // Build Path
-            const path = [];
-            path[0] = tokens.IN.isNative ? WBONE : tokens.IN.addr;
-            path[1] = tokens.OUT.isNative ? WBONE : tokens.OUT.addr;
-
-            // Get Quote
+            const addrIn = tokens.IN.isNative ? WBONE : tokens.IN.addr;
+            const addrOut = tokens.OUT.isNative ? WBONE : tokens.OUT.addr;
             const weiIn = ethers.parseUnits(amt, tokens.IN.decimals);
-            const amounts = await router.getAmountsOut(weiIn, path);
-            
-            // Update Output UI
-            const outFmt = ethers.formatUnits(amounts[1], tokens.OUT.decimals);
-            document.getElementById("amtOut").value = parseFloat(outFmt).toFixed(6);
-            document.getElementById("status").innerText = `1 ${tokens.IN.symbol} ≈ ${(amounts[1]/amounts[0]).toFixed(4)} ${tokens.OUT.symbol}`;
 
-            // Check Allowance if Selling Token
+            let amounts;
+            
+            // 1. Try Direct Path
+            try {
+                activePath = [addrIn, addrOut];
+                amounts = await router.getAmountsOut(weiIn, activePath);
+                route.innerText = `Route: ${tokens.IN.symbol} > ${tokens.OUT.symbol}`;
+            } catch(e) {
+                // 2. Try Multi-Hop (via WBONE)
+                if (addrIn.toLowerCase() !== WBONE.toLowerCase() && addrOut.toLowerCase() !== WBONE.toLowerCase()) {
+                    try {
+                        activePath = [addrIn, WBONE, addrOut];
+                        amounts = await router.getAmountsOut(weiIn, activePath);
+                        route.innerText = `Route: ${tokens.IN.symbol} > WBONE > ${tokens.OUT.symbol}`;
+                    } catch(err) { throw new Error("No Liquidity"); }
+                } else { throw e; }
+            }
+
+            // Quote Success
+            const outFmt = ethers.formatUnits(amounts[amounts.length-1], tokens.OUT.decimals);
+            document.getElementById("amtOut").value = parseFloat(outFmt).toFixed(6);
+            status.innerText = `1 ${tokens.IN.symbol} ≈ ${(amounts[amounts.length-1]/amounts[0]).toFixed(4)} ${tokens.OUT.symbol}`;
+
+            // Check Allowance (If selling token)
             if (userAddr && !tokens.IN.isNative) {
                 const token = new ethers.Contract(tokens.IN.addr, ERC20_ABI, signer);
                 const allow = await token.allowance(userAddr, ROUTER);
                 if (allow < weiIn) {
                     needsApproval = true;
                     document.getElementById("mainBtn").innerText = `APPROVE ${tokens.IN.symbol}`;
-                    document.getElementById("mainBtn").style.background = "#444"; // Grey for approve
+                    document.getElementById("mainBtn").style.background = "#444";
                     return;
                 }
             }
 
             needsApproval = false;
             document.getElementById("mainBtn").innerText = "SWAP NOW";
-            document.getElementById("mainBtn").style.background = ""; // Restore Orange
+            document.getElementById("mainBtn").style.background = "";
 
         } catch (e) {
             console.log(e);
             document.getElementById("amtOut").value = "0.0";
-            document.getElementById("status").innerText = "⚠️ No Liquidity found for this pair";
+            status.innerText = "⚠️ No Liquidity Found";
+            route.innerText = "Ensure Pool exists in Factory";
             document.getElementById("mainBtn").innerText = "NO LIQUIDITY";
         }
     }
 
+    // --- EXECUTION ---
     async function handleAction() {
         if (!signer) return connectWallet();
         const btn = document.getElementById("mainBtn");
-        
+
         try {
             btn.disabled = true;
-
-            // --- ACTION 1: APPROVE ---
+            
+            // 1. Approve
             if (needsApproval) {
+                btn.innerText = "APPROVING...";
                 const amt = document.getElementById("amtIn").value;
                 const weiIn = ethers.parseUnits(amt, tokens.IN.decimals);
                 const token = new ethers.Contract(tokens.IN.addr, ERC20_ABI, signer);
-                
-                btn.innerText = "APPROVING...";
                 const tx = await token.approve(ROUTER, weiIn);
                 await tx.wait();
-                
                 needsApproval = false;
-                handleQuote(); // Re-check to flip button to SWAP
+                handleQuote();
                 btn.disabled = false;
                 return;
             }
 
-            // --- ACTION 2: SWAP ---
+            // 2. Swap
             btn.innerText = "SWAPPING...";
             const router = new ethers.Contract(ROUTER, ROUTER_ABI, signer);
             const amt = document.getElementById("amtIn").value;
             const weiIn = ethers.parseUnits(amt, tokens.IN.decimals);
+            const amtOut = document.getElementById("amtOut").value;
+            const weiOutMin = (ethers.parseUnits(amtOut, tokens.OUT.decimals) * 995n) / 1000n; // 0.5% Slippage
             const deadline = Math.floor(Date.now()/1000) + 1200;
-            
-            // Slippage 0.5%
-            const amtOutDisplay = document.getElementById("amtOut").value;
-            const weiOutMin = (ethers.parseUnits(amtOutDisplay, tokens.OUT.decimals) * 995n) / 1000n;
-
-            const path = [
-                tokens.IN.isNative ? WBONE : tokens.IN.addr,
-                tokens.OUT.isNative ? WBONE : tokens.OUT.addr
-            ];
 
             let tx;
-            // SCENARIO A: Native -> Token
+            // Route Logic
             if (tokens.IN.isNative) {
-                tx = await router.swapExactETHForTokens(weiOutMin, path, userAddr, deadline, { value: weiIn });
-            } 
-            // SCENARIO B: Token -> Native
-            else if (tokens.OUT.isNative) {
-                tx = await router.swapExactTokensForETH(weiIn, weiOutMin, path, userAddr, deadline);
-            } 
-            // SCENARIO C: Token -> Token
-            else {
-                tx = await router.swapExactTokensForTokens(weiIn, weiOutMin, path, userAddr, deadline);
+                tx = await router.swapExactETHForTokens(weiOutMin, activePath, userAddr, deadline, { value: weiIn });
+            } else if (tokens.OUT.isNative) {
+                tx = await router.swapExactTokensForETH(weiIn, weiOutMin, activePath, userAddr, deadline);
+            } else {
+                tx = await router.swapExactTokensForTokens(weiIn, weiOutMin, activePath, userAddr, deadline);
             }
 
             document.getElementById("status").innerHTML = `🚀 <a href="https://shibariumscan.io/tx/${tx.hash}" target="_blank">View TX</a>`;
             await tx.wait();
             
             btn.innerText = "SUCCESS!";
-            loadToken('IN'); 
+            loadToken('IN');
             loadToken('OUT');
 
         } catch (e) {
             console.error(e);
-            document.getElementById("status").innerText = "❌ Error: " + (e.reason || "Failed");
+            document.getElementById("status").innerText = "❌ " + (e.reason || "Failed");
         } finally {
             btn.disabled = false;
             if (btn.innerText === "SUCCESS!") setTimeout(() => handleQuote(), 3000);
