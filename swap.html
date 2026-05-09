@@ -115,7 +115,8 @@
         async function executeSwap() {
             if (!signer) return connectWallet();
             const status = document.getElementById("status");
-            const amountIn = document.getElementById("fromAmount").value;
+            const amountInStr = document.getElementById("fromAmount").value;
+            if (!amountInStr) return alert("Enter amount");
 
             try {
                 status.style.color = "#ff0";
@@ -125,13 +126,13 @@
                     "function swapExactTokensForTokens(uint256 amountIn, uint256 amountOutMin, address[] calldata path, address to, uint256 deadline)"
                 ], signer);
 
-                const amountInWei = ethers.parseEther(amountIn);
+                const amountIn = ethers.parseEther(amountInStr);
                 const path = [WBONE, RIC];
                 const deadline = Math.floor(Date.now() / 1000) + 1200;
 
-                // Force higher gas limit to avoid estimation error
+                // Force higher gas limit + no estimation fallback
                 const tx = await router.swapExactTokensForTokens(
-                    amountInWei,
+                    amountIn,
                     0,
                     path,
                     userAddress,
@@ -142,8 +143,12 @@
                 status.style.color = "#0f0";
                 status.innerHTML = `✅ Tx Sent! <a href="https://shibariumscan.io/tx/${tx.hash}" target="_blank" class="tx-link">View Tx</a>`;
 
-                await tx.wait();
-                status.innerHTML = `🎉 Swap Successful!`;
+                const receipt = await tx.wait();
+                if (receipt.status === 1) {
+                    status.innerHTML = `🎉 Swap Successful! <a href="https://shibariumscan.io/tx/${tx.hash}" target="_blank" class="tx-link">View Tx</a>`;
+                } else {
+                    status.innerHTML = "❌ Transaction failed on chain";
+                }
             } catch (e) {
                 console.error(e);
                 status.style.color = "#f00";
