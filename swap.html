@@ -51,7 +51,7 @@
         const ROUTER_ADDRESS = "0x1b44f3b678EA3051f7874641bd2F962102e2e683";
         const WBONE = "0xC76F4c819D820369Fb2d7C1531aB3Bb18e6fE8d8";
         const RIC = "0x12C94d3A30daa09f81Ea6c037004E6e99A4A3dfc";
-        const PAIR_ADDRESS = "0x941abcb1A4278Ff33B50F6Cf9F5A4C8a0888BdeE";   // Your Real LP
+        const PAIR_ADDRESS = "0x941abcb1A4278Ff33B50F6Cf9F5A4C8a0888BdeE";  // Confirmed your LP
 
         let provider, signer, userAddress;
 
@@ -79,26 +79,25 @@
         }
 
         async function updateQuote() {
-            const amountIn = parseFloat(document.getElementById("fromAmount").value);
-            if (!amountIn || amountIn <= 0) {
+            const amountIn = parseFloat(document.getElementById("fromAmount").value || 0);
+            if (amountIn <= 0) {
                 document.getElementById("toAmount").value = "";
                 return;
             }
 
             try {
                 const pair = new ethers.Contract(PAIR_ADDRESS, PAIR_ABI, provider);
-                const [r0, r1] = await pair.getReserves();
+                const reserves = await pair.getReserves();
                 const token0 = await pair.token0();
 
-                const boneRes = (token0 === WBONE) ? r0 : r1;
-                const ricRes  = (token0 === WBONE) ? r1 : r0;
+                const boneRes = token0 === WBONE ? reserves[0] : reserves[1];
+                const ricRes  = token0 === WBONE ? reserves[1] : reserves[0];
 
-                // Accurate AMM calculation
                 const outAmount = (amountIn * Number(ricRes) * 997) / (Number(boneRes) * 1000);
                 document.getElementById("toAmount").value = outAmount.toFixed(4);
             } catch (e) {
-                console.error(e);
-                document.getElementById("toAmount").value = "--";
+                console.error("Quote failed:", e);
+                document.getElementById("toAmount").value = "Error loading price";
             }
         }
 
@@ -116,32 +115,30 @@
                 const router = new ethers.Contract(ROUTER_ADDRESS, ROUTER_ABI, signer);
                 const amountInWei = ethers.parseEther(amountInStr);
                 const path = [WBONE, RIC];
-                const minOut = 0; // For testing. You can increase later
+                const minOut = 0; // Test with 0 first
 
                 const tx = await router.swapExactETHForTokens(
                     minOut,
                     path,
                     userAddress,
                     Math.floor(Date.now() / 1000) + 1200,
-                    { value: amountInWei, gasLimit: 850000 }
+                    { value: amountInWei, gasLimit: 900000 }
                 );
 
-                status.innerHTML = `🚀 Tx Sent → <a href="https://shibariumscan.io/tx/${tx.hash}" target="_blank" style="color:#ffd700">View Tx</a>`;
+                status.innerHTML = `🚀 Tx Sent → <a href="https://shibariumscan.io/tx/${tx.hash}" target="_blank" style="color:#ffd700">View</a>`;
                 await tx.wait();
-                
                 status.innerHTML = "✅ Swap Successful!";
                 status.style.color = "#00ff88";
                 loadBalances();
             } catch (e) {
                 console.error(e);
-                status.textContent = "❌ " + (e.reason || e.shortMessage || "Failed");
+                status.textContent = "❌ " + (e.reason || e.shortMessage || "Transaction Failed");
             } finally {
                 btn.disabled = false;
                 btn.textContent = "SWAP NOW";
             }
         }
 
-        // Listeners
         document.getElementById("connectBtn").addEventListener("click", connectWallet);
         document.getElementById("fromAmount").addEventListener("input", updateQuote);
         document.getElementById("swapBtn").addEventListener("click", executeSwap);
