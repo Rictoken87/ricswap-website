@@ -125,7 +125,7 @@
 
                 const amountIn = ethers.parseEther(amountInStr);
 
-                // 1. Approve BONE
+                // Approve BONE
                 const wbone = new ethers.Contract(WBONE, [
                     "function approve(address,uint256) returns (bool)",
                     "function allowance(address,address) view returns (uint256)"
@@ -138,7 +138,6 @@
 
                 status.textContent = "Swapping...";
 
-                // 2. Execute Swap
                 const router = new ethers.Contract(ROUTER_ADDRESS, [
                     "function swapExactTokensForTokens(uint256 amountIn, uint256 amountOutMin, address[] calldata path, address to, uint256 deadline)"
                 ], signer);
