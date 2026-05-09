@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Factory Finder</title>
+    <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.0/dist/ethers.umd.min.js"></script>
+    <style>body{background:#111;color:#0f0;font-family:monospace;padding:50px;text-align:center} h1{color:#fff} #result{font-size:24px;margin-top:20px;padding:20px;border:1px solid #333;display:inline-block}</style>
+</head>
+<body>
+    <h1>🕵️ Factory Detective</h1>
+    <p>Scanning LP: 0x941abcb1A4278Ff33B50F6Cf9F5A4C8a0888BdeE</p>
+    <div id="result">Scanning...</div>
+
+    <script>
+        const LP = "0x941abcb1A4278Ff33B50F6Cf9F5A4C8a0888BdeE";
+        const RPC = "https://rpc.shibarium.shib.io";
+
+        window.onload = async () => {
+            try {
+                const provider = new ethers.JsonRpcProvider(RPC);
+                // Ask the LP: "Who is your parent?"
+                const contract = new ethers.Contract(LP, ["function factory() view returns (address)"], provider);
+                const factory = await contract.factory();
+                document.getElementById("result").innerHTML = `THE REAL FACTORY IS:<br><br><b style="color:yellow; font-size:30px">${factory}</b><br><br>Copy this address!`;
+            } catch(e) {
+                document.getElementById("result").innerText = "Error: " + e.message;
+            }
+        }
+    </script>
+</body>
+</html>
