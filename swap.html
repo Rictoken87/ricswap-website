@@ -34,7 +34,7 @@
         input { background: transparent; border: none; color: white; font-size: 28px; width: 100%; outline: none; }
         .main-btn { background: var(--magma); color: white; border: none; padding: 18px; border-radius: 16px; font-weight: bold; width: 100%; font-size: 18px; cursor: pointer; margin-top: 20px; }
         .status { margin-top: 15px; text-align: center; font-size: 13px; min-height: 24px; }
-        .tx-link { color: var(--gold); text-decoration: underline; font-size: 13px; }
+        .tx-link { color: var(--gold); text-decoration: underline; }
     </style>
 </head>
 <body>
@@ -52,7 +52,7 @@
     <div class="card">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
             <h3 style="margin:0;">Swap</h3>
-            <span style="color:#888; font-size:13px;">Permanent LP Locked</span>
+            <span style="color:#888; font-size:13px;">Your LP Connected</span>
         </div>
 
         <div class="input-group">
@@ -81,14 +81,15 @@
 
     <script>
         const ROUTER_ADDRESS = "0x8BC26741c4B381cF1a8392318133c1cCABb78775";
+        const PAIR_ADDRESS = "0x941abcb1A4278Ff33B50F6Cf9F5A4C8a0888BdeE"; // Your LP
         const WBONE = "0xC76F4c819D820369Fb2d7C1531aB3Bb18e6fE8d8";
         const RIC = "0x12C94d3A30daa09f81Ea6c037004E6e99A4A3dfc";
 
-        let provider, signer, userAddress;
+        let signer, userAddress;
 
         async function connectWallet() {
             if (!window.ethereum) return alert("Please install MetaMask or Rabby");
-            provider = new ethers.BrowserProvider(window.ethereum);
+            const provider = new ethers.BrowserProvider(window.ethereum);
             await provider.send("eth_requestAccounts", []);
             signer = await provider.getSigner();
             userAddress = await signer.getAddress();
@@ -101,13 +102,21 @@
             if (!amountIn || isNaN(amountIn) || amountIn <= 0) return;
 
             try {
-                const router = new ethers.Contract(ROUTER_ADDRESS, [
-                    "function getAmountsOut(uint256 amountIn, address[] memory path) public view returns (uint256[] memory amounts)"
-                ], provider);
-                const path = [WBONE, RIC];
-                const amountInWei = ethers.parseEther(amountIn);
-                const amounts = await router.getAmountsOut(amountInWei, path);
-                document.getElementById("toAmount").value = parseFloat(ethers.formatEther(amounts[1])).toFixed(4);
+                const pair = new ethers.Contract(PAIR_ADDRESS, [
+                    "function getReserves() view returns (uint112 r0, uint112 r1, uint32 ts)",
+                    "function token0() view returns (address)"
+                ], signer.provider);
+
+                const [r0, r1] = await pair.getReserves();
+                const token0 = await pair.token0();
+
+                const boneRes = token0 === WBONE ? r0 : r1;
+                const ricRes = token0 === WBONE ? r1 : r0;
+
+                const inWei = ethers.parseEther(amountIn);
+                const outWei = (inWei * ricRes * 997n) / (boneRes * 1000n);
+
+                document.getElementById("toAmount").value = parseFloat(ethers.formatEther(outWei)).toFixed(4);
             } catch (e) {
                 document.getElementById("toAmount").value = "No Liquidity";
             }
@@ -125,7 +134,7 @@
 
                 const amountIn = ethers.parseEther(amountInStr);
 
-                // === APPROVAL ===
+                // Approve
                 const wbone = new ethers.Contract(WBONE, [
                     "function approve(address,uint256) returns (bool)",
                     "function allowance(address,address) view returns (uint256)"
@@ -133,27 +142,22 @@
 
                 const allowance = await wbone.allowance(userAddress, ROUTER_ADDRESS);
                 if (allowance < amountIn) {
-                    const approveTx = await wbone.approve(ROUTER_ADDRESS, amountIn);
-                    await approveTx.wait();
+                    await (await wbone.approve(ROUTER_ADDRESS, amountIn)).wait();
                 }
 
-                status.textContent = "Swapping... Confirm in wallet";
+                status.textContent = "Swapping...";
 
-                // === SWAP ===
                 const router = new ethers.Contract(ROUTER_ADDRESS, [
                     "function swapExactTokensForTokens(uint256 amountIn, uint256 amountOutMin, address[] calldata path, address to, uint256 deadline)"
                 ], signer);
 
-                const path = [WBONE, RIC];
-                const deadline = Math.floor(Date.now() / 1000) + 1200;
-
                 const tx = await router.swapExactTokensForTokens(
                     amountIn,
-                    0,                    // We use 0 minOut + slippage in quote
-                    path,
+                    0,
+                    [WBONE, RIC],
                     userAddress,
-                    deadline,
-                    { gasLimit: 700000 }
+                    Math.floor(Date.now() / 1000) + 600,
+                    { gasLimit: 800000 }
                 );
 
                 status.style.color = "#0f0";
