@@ -15,7 +15,7 @@
         .input-group { background: #1a1a1a; border-radius: 16px; padding: 16px; margin-bottom: 12px; border: 1px solid #333; }
         input { background: transparent; border: none; color: white; font-size: 28px; width: 100%; outline: none; font-weight: 700; }
         button { background: var(--magma); color: white; border: none; padding: 18px; border-radius: 14px; font-weight: 800; width: 100%; margin-top: 20px; cursor: pointer; }
-        .status { margin-top: 15px; text-align: center; font-size: 14px; }
+        .status { margin-top: 15px; text-align: center; font-size: 14px; min-height: 24px; }
     </style>
 </head>
 <body>
@@ -25,12 +25,12 @@
     </nav>
 
     <div class="card">
-        <h2>Swap</h2>
+        <h2>Swap BONE → RIC</h2>
         
         <div class="input-group">
             <div style="display:flex;justify-content:space-between;margin-bottom:8px;">
                 <span>You Pay</span>
-                <span id="boneBalance">0.0000 BONE</span>
+                <span>Bal: <span id="boneBalance">--</span> BONE</span>
             </div>
             <input type="number" id="fromAmount" placeholder="0.0" value="1">
         </div>
@@ -38,12 +38,12 @@
         <div class="input-group">
             <div style="display:flex;justify-content:space-between;margin-bottom:8px;">
                 <span>You Receive</span>
-                <span id="ricBalance">0.0000 RIC</span>
+                <span>Bal: <span id="ricBalance">--</span> RIC</span>
             </div>
             <input type="number" id="toAmount" placeholder="0.0" readonly>
         </div>
 
-        <button id="swapBtn">SWAP BONE → RIC</button>
+        <button id="swapBtn">SWAP NOW</button>
         <div class="status" id="status"></div>
     </div>
 
@@ -51,12 +51,13 @@
         const ROUTER_ADDRESS = "0x1b44f3b678EA3051f7874641bd2F962102e2e683";
         const WBONE = "0xC76F4c819D820369Fb2d7C1531aB3Bb18e6fE8d8";
         const RIC = "0x12C94d3A30daa09f81Ea6c037004E6e99A4A3dfc";
-        const PAIR_ADDRESS = "0x941abcb1A4278Ff33B50F6Cf9F5A4C8a0888BdeE";   // ← Your Real LP Pair
 
         let provider, signer, userAddress;
 
-        const ROUTER_ABI = ["function swapExactETHForTokens(uint amountOutMin, address[] calldata path, address to, uint deadline) external payable returns (uint[] memory amounts)"];
-        const PAIR_ABI = ["function getReserves() view returns (uint112 reserve0, uint112 reserve1, uint32 blockTimestampLast)", "function token0() view returns (address)"];
+        const ROUTER_ABI = [
+            "function swapExactETHForTokens(uint amountOutMin, address[] calldata path, address to, uint deadline) external payable returns (uint[] memory amounts)",
+            "function getAmountsOut(uint amountIn, address[] memory path) public view returns (uint[] memory amounts)"
+        ];
 
         async function connectWallet() {
             provider = new ethers.BrowserProvider(window.ethereum);
@@ -73,51 +74,55 @@
         }
 
         async function updateQuote() {
-            const amountIn = parseFloat(document.getElementById("fromAmount").value);
+            const amountIn = document.getElementById("fromAmount").value;
             if (!amountIn || amountIn <= 0) return;
-
             try {
-                const pair = new ethers.Contract(PAIR_ADDRESS, PAIR_ABI, provider);
-                const [r0, r1] = await pair.getReserves();
-                const token0 = await pair.token0();
-
-                const boneRes = token0 === WBONE ? r0 : r1;
-                const ricRes  = token0 === WBONE ? r1 : r0;
-
-                const out = (amountIn * Number(ricRes) * 997) / (Number(boneRes) * 1000);
-                document.getElementById("toAmount").value = out.toFixed(4);
+                const router = new ethers.Contract(ROUTER_ADDRESS, ROUTER_ABI, provider);
+                const path = [WBONE, RIC];
+                const amountInWei = ethers.parseEther(amountIn);
+                const amounts = await router.getAmountsOut(amountInWei, path);
+                document.getElementById("toAmount").value = parseFloat(ethers.formatEther(amounts[1])).toFixed(4);
             } catch (e) {
-                console.error(e);
-                document.getElementById("toAmount").value = "Error";
+                document.getElementById("toAmount").value = "--";
             }
         }
 
         async function executeSwap() {
             if (!signer) return connectWallet();
             const status = document.getElementById("status");
+            const btn = document.getElementById("swapBtn");
             const amountIn = document.getElementById("fromAmount").value;
 
             try {
+                btn.disabled = true;
+                btn.textContent = "CONFIRMING...";
+                status.textContent = "⛽ Confirm in wallet...";
+
                 const router = new ethers.Contract(ROUTER_ADDRESS, ROUTER_ABI, signer);
                 const amountInWei = ethers.parseEther(amountIn);
                 const path = [WBONE, RIC];
-                const minOut = 0; // For testing - you can add slippage later
+                const amounts = await router.getAmountsOut(amountInWei, path);
+                const minOut = (amounts[1] * 985n) / 1000n; // 1.5% slippage (safer)
 
                 const tx = await router.swapExactETHForTokens(
                     minOut,
                     path,
                     userAddress,
                     Math.floor(Date.now() / 1000) + 1200,
-                    { value: amountInWei }
+                    { value: amountInWei, gasLimit: 850000 }
                 );
 
-                status.innerHTML = `✅ Tx Sent → <a href="https://shibariumscan.io/tx/${tx.hash}" target="_blank" style="color:#ffd700">View</a>`;
+                status.innerHTML = `🚀 Tx Sent → <a href="https://shibariumscan.io/tx/${tx.hash}" target="_blank" style="color:#ffd700">View</a>`;
                 await tx.wait();
                 status.innerHTML = "✅ Swap Successful!";
+                status.style.color = "#00ff88";
                 loadBalances();
             } catch (e) {
                 console.error(e);
-                status.textContent = "❌ " + (e.reason || e.message);
+                status.textContent = "❌ " + (e.reason || e.shortMessage || "Transaction Failed");
+            } finally {
+                btn.disabled = false;
+                btn.textContent = "SWAP NOW";
             }
         }
 
