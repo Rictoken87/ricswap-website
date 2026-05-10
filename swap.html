@@ -18,57 +18,67 @@
             --text-mute: #666;
         }
         body { background: var(--obsidian); color: var(--text); font-family: 'Inter', system-ui, sans-serif; margin: 0; display: flex; align-items: center; justify-content: center; min-height: 100vh; }
-       
+        
         .main-card { width: 100%; max-width: 460px; background: var(--card-bg); border-radius: 24px; padding: 24px; border: 1px solid var(--border); box-shadow: 0 0 100px rgba(255, 77, 0, 0.1); position: relative; overflow: hidden; }
-       
+        
         /* Header */
         .nav { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
         .logo { font-size: 22px; font-weight: 900; color: var(--gold); letter-spacing: -0.5px; }
         .connect-btn { background: var(--gold-dim); color: var(--gold); border: 1px solid var(--gold); padding: 8px 18px; border-radius: 99px; font-weight: 600; cursor: pointer; font-size: 13px; transition: 0.2s; }
         .connect-btn:hover { background: var(--gold); color: black; }
+
         /* Input Containers */
         .swap-box { background: var(--input-bg); border: 1px solid var(--border); border-radius: 18px; padding: 16px; position: relative; transition: 0.2s; }
         .swap-box:focus-within { border-color: var(--gold); }
-       
+        
         .box-header { display: flex; justify-content: space-between; font-size: 12px; color: var(--text-mute); margin-bottom: 8px; }
         .balance { color: var(--gold); cursor: pointer; }
+
         .input-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
         input { background: transparent; border: none; color: white; font-size: 28px; width: 100%; outline: none; font-weight: 600; font-family: monospace; padding: 0; }
-       
+        
         /* Token Selector */
         .token-pill { background: #222; padding: 6px 12px; border-radius: 10px; cursor: pointer; display: flex; align-items: center; gap: 8px; min-width: 90px; justify-content: center; border: 1px solid #333; transition: 0.2s; }
         .token-pill:hover { border-color: #555; background: #2a2a2a; }
         .token-name { font-weight: 700; font-size: 15px; }
-        /* Address Input (Hidden by default) */
-        .custom-addr { display: none; width: 100%; background: #000; border: 1px solid #333; color: #888; padding: 8px; border-radius: 8px; margin-top: 10px; font-size: 11px; font-family: monospace; }
+
+        /* Address Input */
+        .custom-addr { display: none; width: 95%; background: #000; border: 1px solid #333; color: #888; padding: 8px; border-radius: 8px; margin-top: 10px; font-size: 11px; font-family: monospace; }
         .custom-addr.show { display: block; }
+
+        /* Quick Reset Link */
+        .quick-reset { font-size: 11px; color: var(--gold); margin-top: 8px; cursor: pointer; display: inline-block; opacity: 0.8; }
+        .quick-reset:hover { text-decoration: underline; opacity: 1; }
+
         /* Middle Arrow */
         .switch-btn { display: flex; justify-content: center; margin: -12px 0; position: relative; z-index: 10; }
         .switch-btn div { background: #222; border: 4px solid var(--card-bg); padding: 8px; border-radius: 50%; cursor: pointer; color: #aaa; transition: 0.2s; }
         .switch-btn div:hover { color: var(--gold); transform: rotate(180deg); }
-        /* Settings (Slippage) */
+
+        /* Settings */
         .settings { display: flex; justify-content: space-between; align-items: center; margin-top: 20px; padding: 0 4px; }
         .slip-label { font-size: 12px; color: var(--text-mute); }
         .slip-opts { display: flex; gap: 6px; }
         .slip-btn { background: #1a1a1a; border: 1px solid #333; color: #666; padding: 4px 10px; border-radius: 6px; cursor: pointer; font-size: 11px; transition: 0.2s; }
         .slip-btn.active { background: var(--gold); color: black; border-color: var(--gold); font-weight: 800; }
-        /* Main Action Button */
+
+        /* Main Button */
         #mainBtn { background: var(--magma); color: white; border: none; width: 100%; padding: 18px; border-radius: 16px; font-size: 16px; font-weight: 800; margin-top: 20px; cursor: pointer; transition: transform 0.1s; box-shadow: 0 4px 15px rgba(255, 77, 0, 0.3); }
         #mainBtn:disabled { background: #222; color: #555; cursor: not-allowed; box-shadow: none; }
         #mainBtn:active { transform: scale(0.98); }
-        /* Info/Status */
+
         .info-row { display: flex; justify-content: space-between; font-size: 12px; color: #666; margin-top: 12px; padding: 0 4px; }
         .status-msg { text-align: center; margin-top: 15px; font-size: 13px; height: 20px; color: #888; }
-        a { color: var(--gold); text-decoration: none; }
     </style>
 </head>
 <body>
+
 <div class="main-card">
-    <!-- Nav -->
     <div class="nav">
         <div class="logo">RicSwap</div>
         <button id="connectBtn" class="connect-btn">Connect Wallet</button>
     </div>
+
     <!-- FROM -->
     <div class="swap-box">
         <div class="box-header">
@@ -81,13 +91,16 @@
                 <span class="token-name" id="symIn">BONE</span> ▾
             </div>
         </div>
-        <div onclick="selectBoneInPay()" style="margin-top:8px; color:var(--gold); font-size:13px; cursor:pointer;">Quick: BONE</div>
+        <!-- YOUR NEW FEATURE IS HERE -->
+        <div class="quick-reset" onclick="resetToBone()">↺ Reset to BONE</div>
+        
         <input type="text" id="addrIn" class="custom-addr" placeholder="Paste Token Address (0x...)" onchange="importToken('in')">
     </div>
-    <!-- Switcher -->
+
     <div class="switch-btn">
         <div onclick="switchSides()">⬇</div>
     </div>
+
     <!-- TO -->
     <div class="swap-box">
         <div class="box-header">
@@ -102,7 +115,7 @@
         </div>
         <input type="text" id="addrOut" class="custom-addr" placeholder="Paste Token Address (0x...)" onchange="importToken('out')">
     </div>
-    <!-- Settings -->
+
     <div class="settings">
         <span class="slip-label">Slippage Tolerance</span>
         <div class="slip-opts">
@@ -111,54 +124,187 @@
             <button class="slip-btn" onclick="setSlippage(2.0)">2.0%</button>
         </div>
     </div>
-    <!-- Quote Info -->
+
     <div class="info-row">
         <span>Min Received:</span>
         <span id="minOutVal">0.00</span>
     </div>
-    <!-- Action -->
+
     <button id="mainBtn">Connect Wallet</button>
     <div id="status" class="status-msg"></div>
 </div>
 
 <script>
-    // === YOUR ORIGINAL WORKING CODE + QUICK BONE FIX ===
+    // --- CONFIGURATION ---
     const CONFIG = {
         RPC: "https://rpc.shibarium.shib.io",
-        ROUTER: "0xcfBF0917F2fCDC4F5170aC991fa26F2Bc3da9Fd4",
+        ROUTER: "0xcfBF0917F2fCDC4F5170aC991fa26F2Bc3da9Fd4", // Matches your deployment
         WBONE: "0xC76F4c819D820369Fb2d7C1531aB3Bb18e6fE8d8",
         RIC: "0x12C94d3A30daa09f81Ea6c037004E6e99A4A3dfc"
     };
 
+    // --- STATE ---
     let state = {
-        provider: null,
-        signer: null,
-        userAddr: null,
-        slippage: 1.0,
+        provider: null, signer: null, userAddr: null, slippage: 1.0,
         tokens: {
-            in: { symbol: "BONE", address: CONFIG.WBONE, decimals: 18, isNative: true },
+            in: { symbol: "BONE", address: "NATIVE", decimals: 18, isNative: true },
             out: { symbol: "RIC", address: CONFIG.RIC, decimals: 18, isNative: false }
         }
     };
 
-    // ... (rest of your original script remains the same) ...
+    const ABIS = {
+        ERC20: ["function balanceOf(address) view returns (uint)", "function decimals() view returns (uint8)", "function symbol() view returns (string)", "function allowance(address, address) view returns (uint)", "function approve(address, uint) returns (bool)"],
+        ROUTER: ["function getAmountsOut(uint amountIn, address[] memory path) view returns (uint[] memory amounts)", "function swapExactETHForTokens(uint amountOutMin, address[] calldata path, address to, uint deadline) payable returns (uint[] memory)", "function swapExactTokensForETH(uint amountIn, uint amountOutMin, address[] calldata path, address to, uint deadline) returns (uint[] memory)", "function swapExactTokensForTokens(uint amountIn, uint amountOutMin, address[] calldata path, address to, uint deadline) returns (uint[] memory)"]
+    };
 
-    // NEW: Quick return to BONE in "You Pay"
-    function selectBoneInPay() {
-        state.tokens.in = { symbol: "BONE", address: CONFIG.WBONE, decimals: 18, isNative: true };
+    // --- LOGIC ---
+    async function init() {
+        if(window.ethereum) {
+            state.provider = new ethers.BrowserProvider(window.ethereum);
+            const accs = await state.provider.listAccounts();
+            if(accs.length > 0) connect();
+        }
+    }
+
+    async function connect() {
+        if(!window.ethereum) return alert("Install Metamask");
+        try {
+            state.provider = new ethers.BrowserProvider(window.ethereum);
+            state.signer = await state.provider.getSigner();
+            state.userAddr = await state.signer.getAddress();
+            document.getElementById("connectBtn").textContent = state.userAddr.slice(0,6) + "...";
+            document.getElementById("mainBtn").textContent = "Enter Amount";
+            refreshBalances();
+        } catch(e) { console.error(e); }
+    }
+
+    // --- YOUR NEW FUNCTION (Integrated Properly) ---
+    function resetToBone() {
+        state.tokens.in = { symbol: "BONE", address: "NATIVE", decimals: 18, isNative: true };
         document.getElementById("symIn").textContent = "BONE";
+        document.getElementById("addrIn").classList.remove("show"); // Hide input if open
+        document.getElementById("addrIn").value = "";
         refreshBalances();
         updateQuote();
     }
 
-    // Initialize
-    window.onload = () => {
-        if (window.ethereum) {
-            window.ethereum.request({ method: 'eth_accounts' }).then(accounts => {
-                if (accounts.length > 0) connect();
-            });
+    async function importToken(side) {
+        const id = side === 'in' ? 'addrIn' : 'addrOut';
+        const val = document.getElementById(id).value.trim();
+        if(!ethers.isAddress(val)) return;
+
+        if(val.toLowerCase() === CONFIG.WBONE.toLowerCase()) {
+            state.tokens[side] = { symbol: "BONE", address: "NATIVE", decimals: 18, isNative: true };
+        } else {
+            try {
+                const c = new ethers.Contract(val, ABIS.ERC20, state.provider);
+                const sym = await c.symbol();
+                const dec = await c.decimals();
+                state.tokens[side] = { symbol: sym, address: val, decimals: dec, isNative: false };
+            } catch(e) { return alert("Invalid Token"); }
         }
-    };
+        document.getElementById(side==='in'?'symIn':'symOut').textContent = state.tokens[side].symbol;
+        document.getElementById(id).classList.remove('show');
+        refreshBalances();
+        updateQuote();
+    }
+
+    async function refreshBalances() {
+        if(!state.userAddr) return;
+        const getBal = async (t) => t.isNative ? ethers.formatEther(await state.provider.getBalance(state.userAddr)) : ethers.formatUnits(await (new ethers.Contract(t.address, ABIS.ERC20, state.provider)).balanceOf(state.userAddr), t.decimals);
+        document.getElementById("balIn").textContent = parseFloat(await getBal(state.tokens.in)).toFixed(4);
+        document.getElementById("balOut").textContent = parseFloat(await getBal(state.tokens.out)).toFixed(4);
+    }
+
+    async function updateQuote() {
+        const btn = document.getElementById("mainBtn");
+        const val = document.getElementById("amountIn").value;
+        if(!val || parseFloat(val)===0) { document.getElementById("amountOut").value = ""; return; }
+        if(!state.userAddr) { btn.textContent = "Connect Wallet"; return; }
+
+        try {
+            btn.disabled = true; btn.textContent = "Loading...";
+            const router = new ethers.Contract(CONFIG.ROUTER, ABIS.ROUTER, state.provider);
+            const amountInWei = ethers.parseUnits(val, state.tokens.in.decimals);
+            const path = [state.tokens.in.isNative ? CONFIG.WBONE : state.tokens.in.address, state.tokens.out.isNative ? CONFIG.WBONE : state.tokens.out.address];
+            
+            const amts = await router.getAmountsOut(amountInWei, path);
+            const outWei = amts[1];
+            document.getElementById("amountOut").value = parseFloat(ethers.formatUnits(outWei, state.tokens.out.decimals)).toFixed(6);
+            
+            const minWei = (outWei * (10000n - BigInt(state.slippage*100))) / 10000n;
+            document.getElementById("minOutVal").textContent = parseFloat(ethers.formatUnits(minWei, state.tokens.out.decimals)).toFixed(6);
+
+            if(!state.tokens.in.isNative) {
+                const allow = await (new ethers.Contract(state.tokens.in.address, ABIS.ERC20, state.provider)).allowance(state.userAddr, CONFIG.ROUTER);
+                if(allow < amountInWei) {
+                    btn.textContent = `Approve ${state.tokens.in.symbol}`;
+                    btn.onclick = doApprove;
+                    btn.disabled = false;
+                    return;
+                }
+            }
+            btn.textContent = "SWAP";
+            btn.onclick = doSwap;
+            btn.disabled = false;
+        } catch(e) { btn.textContent = "No Liquidity"; }
+    }
+
+    async function doApprove() {
+        const btn = document.getElementById("mainBtn");
+        try {
+            btn.textContent = "Approving..."; btn.disabled = true;
+            const tx = await (new ethers.Contract(state.tokens.in.address, ABIS.ERC20, state.signer)).approve(CONFIG.ROUTER, ethers.MaxUint256);
+            await tx.wait();
+            updateQuote();
+        } catch(e) { btn.textContent = "Approve Failed"; btn.disabled = false; }
+    }
+
+    async function doSwap() {
+        const btn = document.getElementById("mainBtn");
+        const status = document.getElementById("status");
+        try {
+            btn.textContent = "Confirming..."; btn.disabled = true;
+            const router = new ethers.Contract(CONFIG.ROUTER, ABIS.ROUTER, state.signer);
+            const amtIn = ethers.parseUnits(document.getElementById("amountIn").value, state.tokens.in.decimals);
+            const minOut = ethers.parseUnits(document.getElementById("minOutVal").textContent, state.tokens.out.decimals);
+            const path = [state.tokens.in.isNative ? CONFIG.WBONE : state.tokens.in.address, state.tokens.out.isNative ? CONFIG.WBONE : state.tokens.out.address];
+            const dl = Math.floor(Date.now()/1000) + 1200;
+
+            let tx;
+            if(state.tokens.in.isNative) tx = await router.swapExactETHForTokens(minOut, path, state.userAddr, dl, {value: amtIn});
+            else if(state.tokens.out.isNative) tx = await router.swapExactTokensForETH(amtIn, minOut, path, state.userAddr, dl);
+            else tx = await router.swapExactTokensForTokens(amtIn, minOut, path, state.userAddr, dl);
+
+            status.innerHTML = `Tx Sent! <a href="https://shibariumscan.io/tx/${tx.hash}" target="_blank">View</a>`;
+            await tx.wait();
+            status.textContent = "Swap Success!";
+            refreshBalances();
+        } catch(e) { status.textContent = "Failed: " + (e.reason || "Error"); }
+        finally { btn.disabled = false; updateQuote(); }
+    }
+
+    function toggleAddr(side) { document.getElementById(side==='in'?'addrIn':'addrOut').classList.toggle('show'); }
+    function switchSides() {
+        const t = state.tokens.in; state.tokens.in = state.tokens.out; state.tokens.out = t;
+        document.getElementById("symIn").textContent = state.tokens.in.symbol;
+        document.getElementById("symOut").textContent = state.tokens.out.symbol;
+        refreshBalances(); updateQuote();
+    }
+    function setSlippage(v) { state.slippage = v; document.querySelectorAll('.slip-btn').forEach(b => b.classList.toggle('active', b.textContent.includes(v))); updateQuote(); }
+    function setMax() {
+        if(state.tokens.in.isNative) {
+            const bal = parseFloat(document.getElementById("balIn").textContent);
+            document.getElementById("amountIn").value = bal > 0.5 ? bal - 0.5 : 0;
+        } else {
+            document.getElementById("amountIn").value = document.getElementById("balIn").textContent;
+        }
+        updateQuote();
+    }
+
+    document.getElementById("connectBtn").addEventListener("click", connect);
+    document.getElementById("amountIn").addEventListener("input", updateQuote);
+    init();
 </script>
 </body>
 </html>
