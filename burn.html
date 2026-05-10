@@ -3,236 +3,253 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RicSwap | Master Burner</title>
+    <title>RicSwap | Ultimate Burner</title>
     <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.0/dist/ethers.umd.min.js"></script>
     <style>
         body { 
             background: #050505; 
             color: #e0e0e0; 
-            font-family: 'Inter', system-ui, -apple-system, sans-serif; 
+            font-family: 'Inter', system-ui, sans-serif; 
             display: flex; 
-            flex-direction: column;
+            flex-direction: column; 
             align-items: center; 
             justify-content: center; 
             min-height: 100vh; 
             margin: 0; 
         }
-        .container {
-            width: 100%;
-            max-width: 480px;
-            padding: 20px;
-        }
-        .header { margin-bottom: 30px; text-align: center; }
-        h1 { color: #ff4444; margin: 0 0 10px 0; font-size: 26px; letter-spacing: -0.5px; }
-        .sub { color: #888; font-size: 14px; }
+        .container { width: 100%; max-width: 500px; padding: 20px; }
         
+        /* Header */
+        .header { text-align: center; margin-bottom: 30px; }
+        h1 { color: #ff4444; margin: 0 0 10px 0; font-size: 28px; letter-spacing: -1px; }
+        .sub { color: #888; font-size: 14px; }
+
         /* Wallet Status */
-        .wallet-box {
+        .status-bar {
             background: #111;
             border: 1px solid #333;
-            padding: 12px;
-            border-radius: 12px;
-            margin-bottom: 24px;
-            text-align: center;
+            padding: 10px;
+            border-radius: 8px;
+            margin-bottom: 20px;
             font-family: monospace;
+            text-align: center;
             font-size: 12px;
             color: #666;
         }
-        .wallet-box.active { border-color: #00ff88; color: #00ff88; background: rgba(0,255,136,0.05); }
+        .status-bar.connected { color: #00ff88; border-color: #00ff88; background: rgba(0,255,136,0.05); }
 
         /* Pool Card */
         .card {
-            background: #0f0f0f; 
-            border: 1px solid #222; 
-            border-radius: 16px; 
-            padding: 20px; 
+            background: #0f0f0f;
+            border: 1px solid #222;
+            border-radius: 16px;
+            padding: 20px;
             margin-bottom: 16px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+            position: relative;
+            overflow: hidden;
         }
-        .card-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
-        .pool-name { font-weight: 700; color: #fff; }
-        .pool-addr { font-family: monospace; font-size: 11px; color: #555; background: #1a1a1a; padding: 4px 8px; border-radius: 6px; }
-        
-        .stat-row { display: flex; justify-content: space-between; margin-bottom: 15px; font-size: 13px; color: #aaa; }
-        .bal-val { color: #fff; font-weight: 600; font-family: monospace; }
+        .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        .pool-title { font-weight: 700; color: white; }
+        .pool-addr { font-family: monospace; font-size: 11px; background: #222; padding: 4px 8px; border-radius: 4px; color: #888; }
 
-        /* Buttons */
-        .burn-btn { 
-            background: #ff4444; 
-            color: white; 
-            border: none; 
-            padding: 14px; 
-            font-size: 15px; 
-            font-weight: 800; 
-            border-radius: 10px; 
-            cursor: pointer; 
-            width: 100%; 
+        .data-row { display: flex; justify-content: space-between; margin-bottom: 15px; font-size: 14px; }
+        .data-val { font-family: monospace; font-weight: 600; color: #fff; }
+        .highlight { color: #ff4444; }
+
+        /* Action Button */
+        .burn-btn {
+            width: 100%;
+            padding: 16px;
+            border: none;
+            border-radius: 10px;
+            font-weight: 800;
+            font-size: 16px;
+            cursor: pointer;
             transition: 0.2s;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
+            background: #222;
+            color: #555;
         }
-        .burn-btn:hover:not(:disabled) { background: #ff0000; box-shadow: 0 0 25px rgba(255,0,0,0.4); transform: scale(1.02); }
-        .burn-btn:disabled { background: #222; color: #555; cursor: not-allowed; box-shadow: none; transform: none; }
+        .burn-btn.active {
+            background: #ff4444;
+            color: white;
+            box-shadow: 0 0 20px rgba(255, 68, 68, 0.4);
+        }
+        .burn-btn.active:hover { background: #ff0000; transform: scale(1.02); }
 
+        /* Logs */
+        .logs { margin-top: 8px; font-size: 11px; color: #666; text-align: center; min-height: 16px; }
+
+        /* Main Connect */
         #connectBtn {
             position: fixed; bottom: 30px;
-            background: #fff; color: #000;
-            padding: 14px 32px; border-radius: 99px;
-            font-weight: 700; border: none;
-            cursor: pointer; box-shadow: 0 0 30px rgba(255,255,255,0.2);
-            transition: 0.2s;
+            background: white; color: black;
+            border: none; padding: 14px 30px;
+            border-radius: 50px; font-weight: 700;
+            cursor: pointer; box-shadow: 0 0 30px rgba(255,255,255,0.15);
         }
-        #connectBtn:hover { transform: scale(1.05); }
-
-        .msg { text-align: center; font-size: 12px; margin-top: 10px; min-height: 18px; }
-        a { color: #888; text-decoration: underline; }
     </style>
 </head>
 <body>
 
 <div class="container">
     <div class="header">
-        <h1>🔥 Liquidity Incinerator</h1>
-        <div class="sub">Permanently lock your pools by burning LP tokens.</div>
+        <h1>🔥 Ultimate Burner</h1>
+        <div class="sub">Direct RPC Connection Mode</div>
     </div>
 
-    <div id="walletStatus" class="wallet-box">Not Connected</div>
+    <div id="walletStatus" class="status-bar">Wallet Not Connected</div>
 
-    <div id="poolList"></div>
+    <div id="poolContainer"></div>
 </div>
 
-<button id="connectBtn" onclick="connect()">Connect Wallet (0x5E5...)</button>
+<button id="connectBtn" onclick="init()">Connect Wallet</button>
 
 <script>
-    // --- CONFIG ---
+    // --- CONFIGURATION ---
     const POOLS = [
         { name: "Pool 1 (Original)", address: "0x941abcb1A4278Ff33B50F6Cf9F5A4C8a0888BdeE" },
         { name: "Pool 2 (New)",      address: "0xA2D4194a094D4663850E6D1Cb1A5c77f63e03118" }
     ];
     const DEAD = "0x000000000000000000000000000000000000dEaD";
-    const SHIBARIUM_CHAIN_ID = "0x6d"; // 109
+    const RPC_URL = "https://rpc.shibarium.shib.io"; // Public Node
+    const CHAIN_ID_HEX = "0x6d"; // 109
 
-    const ERC20_ABI = [
+    const ABI = [
         "function balanceOf(address) view returns (uint256)",
         "function transfer(address to, uint256 amount) returns (bool)",
         "function decimals() view returns (uint8)"
     ];
 
-    let provider, signer, userAddr;
+    let userAddress = null;
+    let browserProvider = null;
 
-    async function connect() {
-        if (!window.ethereum) return alert("Install Rabby or MetaMask");
+    // 1. Connect Wallet
+    async function init() {
+        if (!window.ethereum) return alert("No Wallet Found");
         
-        provider = new ethers.BrowserProvider(window.ethereum);
-        
-        // 1. Force Network Switch
         try {
-            await window.ethereum.request({
-                method: 'wallet_switchEthereumChain',
-                params: [{ chainId: SHIBARIUM_CHAIN_ID }],
-            });
-            provider = new ethers.BrowserProvider(window.ethereum); // Refresh provider
+            browserProvider = new ethers.BrowserProvider(window.ethereum);
+            const signer = await browserProvider.getSigner();
+            userAddress = await signer.getAddress();
+            
+            const statusEl = document.getElementById("walletStatus");
+            statusEl.innerText = "Target: " + userAddress;
+            statusEl.classList.add("connected");
+            document.getElementById("connectBtn").style.display = "none";
+
+            renderCards();
         } catch (e) {
-            return alert("Please switch network to Shibarium.");
+            alert("Connection Failed: " + e.message);
         }
-
-        // 2. Get Account
-        signer = await provider.getSigner();
-        userAddr = await signer.getAddress();
-
-        // 3. Update UI
-        const wBox = document.getElementById("walletStatus");
-        wBox.innerText = "Connected: " + userAddr;
-        wBox.classList.add("active");
-        document.getElementById("connectBtn").style.display = "none";
-
-        renderPools();
     }
 
-    async function renderPools() {
-        const container = document.getElementById("poolList");
+    // 2. Render Interface
+    function renderCards() {
+        const container = document.getElementById("poolContainer");
         container.innerHTML = "";
 
-        for (let i = 0; i < POOLS.length; i++) {
-            const pool = POOLS[i];
-            
-            // Create Card Structure
-            const div = document.createElement("div");
-            div.className = "card";
-            div.innerHTML = `
-                <div class="card-top">
-                    <span class="pool-name">${pool.name}</span>
+        POOLS.forEach((pool, idx) => {
+            const html = `
+            <div class="card">
+                <div class="card-header">
+                    <span class="pool-title">${pool.name}</span>
                     <span class="pool-addr">${pool.address.slice(0,6)}...${pool.address.slice(-4)}</span>
                 </div>
-                <div class="stat-row">
-                    <span>Your Balance:</span>
-                    <span class="bal-val" id="bal-${i}">Loading...</span>
+                <div class="data-row">
+                    <span>Balance:</span>
+                    <span class="data-val" id="bal-${idx}">Loading...</span>
                 </div>
-                <button id="btn-${i}" class="burn-btn" disabled>Scanning...</button>
-                <div id="msg-${i}" class="msg"></div>
-            `;
-            container.appendChild(div);
-
-            // Fetch Data
-            checkPool(i, pool.address);
-        }
+                <button id="btn-${idx}" class="burn-btn" disabled>Scanning RPC...</button>
+                <div id="log-${idx}" class="logs"></div>
+            </div>`;
+            container.insertAdjacentHTML('beforeend', html);
+            
+            // Trigger Fetch immediately
+            fetchBalance(idx, pool.address);
+        });
     }
 
-    async function checkPool(index, address) {
-        const balEl = document.getElementById(`bal-${index}`);
-        const btn = document.getElementById(`btn-${index}`);
-        
+    // 3. Fetch Data using PUBLIC RPC (Bypasses Wallet Errors)
+    async function fetchBalance(idx, address) {
+        const balEl = document.getElementById(`bal-${idx}`);
+        const btn = document.getElementById(`btn-${idx}`);
+        const log = document.getElementById(`log-${idx}`);
+
         try {
-            const contract = new ethers.Contract(address, ERC20_ABI, provider);
-            const rawBal = await contract.balanceOf(userAddr);
+            // Create a Read-Only Provider specifically for data fetching
+            const readProvider = new ethers.JsonRpcProvider(RPC_URL);
+            const contract = new ethers.Contract(address, ABI, readProvider);
+            
+            const rawBal = await contract.balanceOf(userAddress);
             const decimals = await contract.decimals();
-            const fmtBal = parseFloat(ethers.formatUnits(rawBal, decimals)).toFixed(4);
+            const fmt = parseFloat(ethers.formatUnits(rawBal, decimals)).toFixed(4);
 
             if (rawBal > 0n) {
-                balEl.innerText = fmtBal + " LP";
-                balEl.style.color = "#ff4444"; // Highlight valid balance
+                balEl.innerText = fmt + " LP";
+                balEl.classList.add("highlight");
+                
                 btn.innerText = "🔥 BURN FOREVER";
+                btn.classList.add("active");
                 btn.disabled = false;
-                btn.onclick = () => burn(index, address, rawBal);
+                btn.onclick = () => executeBurn(idx, address, rawBal);
+                
+                log.innerText = "Liquidity Found";
             } else {
                 balEl.innerText = "0.0000 LP";
-                btn.innerText = "No Assets Found";
-                btn.style.border = "1px solid #333";
-                btn.style.background = "transparent";
+                btn.innerText = "Empty / Burned";
+                log.innerText = "Safe";
             }
+
         } catch (e) {
             console.error(e);
-            balEl.innerText = "Error";
-            btn.innerText = "Read Error";
+            balEl.innerText = "RPC Error";
+            log.innerText = "Could not fetch data from Shibarium RPC";
+            // Retry logic?
+            setTimeout(() => fetchBalance(idx, address), 3000);
         }
     }
 
-    async function burn(index, address, amount) {
-        if(!confirm("⚠️ FINAL WARNING\n\nYou are about to permanently destroy this liquidity.\nThis action cannot be undone.\n\nClick OK to Burn.")) return;
+    // 4. Execute Burn (Switches back to Wallet)
+    async function executeBurn(idx, address, amount) {
+        const btn = document.getElementById(`btn-${idx}`);
+        const log = document.getElementById(`log-${idx}`);
 
-        const btn = document.getElementById(`btn-${index}`);
-        const msg = document.getElementById(`msg-${index}`);
-        
+        if(!confirm("⚠️ FINAL CONFIRMATION\n\nSending LP tokens to Dead Address.\nThis is irreversible.\n\nProceed?")) return;
+
         try {
             btn.disabled = true;
-            btn.innerText = "Sign in Wallet...";
+            btn.innerText = "Check Wallet...";
             
-            const contract = new ethers.Contract(address, ERC20_ABI, signer);
+            // Force Network Switch
+            const net = await browserProvider.getNetwork();
+            if(Number(net.chainId) !== 109) {
+                await window.ethereum.request({
+                    method: 'wallet_switchEthereumChain',
+                    params: [{ chainId: CHAIN_ID_HEX }],
+                });
+            }
+
+            const signer = await browserProvider.getSigner();
+            const contract = new ethers.Contract(address, ABI, signer);
+            
             const tx = await contract.transfer(DEAD, amount);
             
-            msg.innerHTML = `Burning... <a href="https://shibariumscan.io/tx/${tx.hash}" target="_blank">View TX</a>`;
-            
+            log.innerHTML = `Tx Sent: <a href="https://shibariumscan.io/tx/${tx.hash}" target="_blank" style="color:#fff">View</a>`;
+            btn.innerText = "Burning...";
+
             await tx.wait();
             
-            msg.innerHTML = `<span style="color:#00ff88">✅ SUCCESS: Liquidity Locked!</span>`;
-            btn.innerText = "🔥 BURNED";
-            document.getElementById(`bal-${index}`).innerText = "0.00 LP";
+            btn.innerText = "🔥 BURNED SUCCESS";
+            btn.classList.remove("active");
+            document.getElementById(`bal-${idx}`).innerText = "0.00 LP";
+            log.innerText = "Liquidity Permanently Locked";
 
-        } catch(e) {
+        } catch (e) {
             console.error(e);
-            msg.innerText = "Failed: " + (e.reason || "Rejected");
+            log.innerText = "Error: " + (e.reason || e.message);
             btn.disabled = false;
-            btn.innerText = "🔥 Try Again";
+            btn.innerText = "🔥 Retry Burn";
         }
     }
 </script>
