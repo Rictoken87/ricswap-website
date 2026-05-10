@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RicSwap | Token Injector</title>
+    <style>
+        body { background: #111; color: #fff; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; }
+        button { background: #5865F2; color: white; padding: 20px 40px; font-size: 18px; border: none; border-radius: 12px; cursor: pointer; font-weight: bold; transition: 0.2s; }
+        button:hover { background: #4752C4; transform: scale(1.05); }
+        .addr { margin-top: 20px; color: #666; font-family: monospace; font-size: 12px; }
+    </style>
+</head>
+<body>
+
+    <!-- THE ONE-CLICK BUTTON -->
+    <button onclick="addToken()">🦊 CLICK TO ADD TOKEN TO RABBY</button>
+    
+    <div class="addr">Token: 0x941abcb1A4278Ff33B50F6Cf9F5A4C8a0888BdeE</div>
+
+<script>
+    async function addToken() {
+        if (typeof window.ethereum === 'undefined') return alert("Rabby/MetaMask not installed!");
+
+        const tokenAddress = '0x941abcb1A4278Ff33B50F6Cf9F5A4C8a0888BdeE';
+        const tokenSymbol = 'Ric-LP';
+        const tokenDecimals = 18;
+        const tokenImage = ''; // Optional
+
+        try {
+            // This command forces the wallet to register the token
+            const wasAdded = await window.ethereum.request({
+                method: 'wallet_watchAsset',
+                params: {
+                    type: 'ERC20', 
+                    options: {
+                        address: tokenAddress, 
+                        symbol: tokenSymbol, 
+                        decimals: tokenDecimals, 
+                        image: tokenImage, 
+                    },
+                },
+            });
+
+            if (wasAdded) {
+                alert('✅ SUCCESS! Check your Rabby "Tokens" list.');
+            } else {
+                alert('Action Cancelled.');
+            }
+        } catch (error) {
+            console.log(error);
+            alert("Error: " + error.message);
+        }
+    }
+</script>
+</body>
+</html>
