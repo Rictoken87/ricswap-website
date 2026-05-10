@@ -16,8 +16,9 @@
         button { background: #ff4444; color: white; border: none; padding: 16px 32px; font-size: 17px; font-weight: bold; border-radius: 12px; cursor: pointer; width: 100%; margin-top: 10px; transition: 0.2s; }
         button:hover:not(:disabled) { background: #ff2222; }
         button:disabled { background: #333; color: #666; cursor: not-allowed; }
-        #status { margin-top: 20px; font-size: 14px; min-height: 24px; color: #ff8888; }
+        #status { margin-top: 20px; font-size: 14px; min-height: 24px; line-height: 1.5; }
         .success { color: #00ff88; }
+        .error { color: #ff6666; }
     </style>
 </head>
 <body>
@@ -53,7 +54,7 @@
         signer = await provider.getSigner();
         userAddr = await signer.getAddress();
 
-        document.getElementById("burnBtn").innerText = "Checking...";
+        document.getElementById("burnBtn").innerText = "Checking Balance...";
         checkBalance();
     }
 
@@ -63,18 +64,14 @@
         const balDisplay = document.getElementById("lpBal");
 
         if (!ethers.isAddress(lpAddress)) {
-            status.innerText = "❌ Invalid Address";
+            status.innerText = "❌ Invalid LP Address";
             return;
         }
 
         try {
             const contract = new ethers.Contract(lpAddress, ERC20_ABI, provider);
-            
             const bal = await contract.balanceOf(userAddr);
-            let decimals = 18;
-            try {
-                decimals = await contract.decimals();
-            } catch(e) {}
+            const decimals = await contract.decimals();
 
             const formatted = parseFloat(ethers.formatUnits(bal, decimals)).toFixed(6);
             balDisplay.innerText = formatted + " LP";
@@ -82,20 +79,20 @@
             const btn = document.getElementById("burnBtn");
             if (bal > 0n) {
                 btn.innerText = "🔥 BURN THIS LP FOREVER";
-                btn.onclick = () => burnLP(lpAddress, bal, decimals);
+                btn.onclick = () => burnLP(lpAddress, bal);
             } else {
-                btn.innerText = "No Balance";
+                btn.innerText = "No Balance in this LP";
                 btn.disabled = true;
+                status.innerText = "This wallet has 0 LP tokens in this pool.";
             }
-            status.innerText = "";
         } catch (e) {
             console.error(e);
-            status.innerText = "❌ Error reading LP contract. Check address or network.";
+            status.innerText = "❌ Cannot read LP contract.\nMake sure you are on Shibarium network.";
         }
     }
 
-    async function burnLP(lpAddress, amount, decimals) {
-        if (!confirm("⚠️ FINAL WARNING\n\nYou are about to permanently BURN this LP.\n\nThis cannot be undone.\n\nContinue?")) return;
+    async function burnLP(lpAddress, amount) {
+        if (!confirm("⚠️ FINAL WARNING\n\nYou are about to permanently BURN this LP.\n\nThis action is IRREVERSIBLE.\n\nContinue?")) return;
 
         const btn = document.getElementById("burnBtn");
         const status = document.getElementById("status");
@@ -103,6 +100,7 @@
         try {
             btn.disabled = true;
             btn.innerText = "Burning...";
+            status.innerText = "Please confirm transaction in wallet...";
 
             const contract = new ethers.Contract(lpAddress, ERC20_ABI, signer);
             const tx = await contract.transfer(DEAD_ADDRESS, amount);
@@ -111,12 +109,15 @@
 
             await tx.wait();
 
-            status.innerHTML = `<span class="success">✅ Successfully Burned Forever!</span>`;
+            status.innerHTML = `<span class="success">✅ LP Successfully Burned Forever!</span>`;
             btn.innerText = "BURN COMPLETE";
             document.getElementById("lpBal").innerText = "0.000000 LP";
         } catch (e) {
             console.error(e);
-            status.innerText = "❌ " + (e.reason || "Burn Failed");
+            let msg = e.reason || e.message || "Unknown error";
+            if (msg.includes("rejected")) msg = "Transaction rejected by user";
+            if (msg.includes("insufficient")) msg = "Insufficient LP balance";
+            status.innerHTML = `<span class="error">❌ Burn Failed<br>${msg}</span>`;
             btn.disabled = false;
             btn.innerText = "Try Again";
         }
