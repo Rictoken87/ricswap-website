@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RicSwap | Detective</title>
+    <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.0/dist/ethers.umd.min.js"></script>
+    <style>
+        body { background: #050505; color: #e0e0e0; font-family: 'Inter', sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; margin: 0; }
+        .container { width: 100%; max-width: 550px; padding: 20px; }
+        
+        h1 { color: #ffcc00; margin: 0 0 20px 0; text-align: center; font-size: 24px; letter-spacing: -0.5px; }
+        
+        .card { background: #111; border: 1px solid #333; border-radius: 16px; padding: 25px; box-shadow: 0 4px 30px rgba(0,0,0,0.3); }
+        
+        .input-group { margin-bottom: 20px; }
+        label { display: block; color: #888; font-size: 12px; margin-bottom: 8px; text-transform: uppercase; font-weight: 700; }
+        input { width: 100%; background: #000; border: 1px solid #444; color: #fff; padding: 14px; border-radius: 8px; font-family: monospace; font-size: 14px; box-sizing: border-box; }
+        input:focus { border-color: #ffcc00; outline: none; }
+
+        .btn { width: 100%; background: #ffcc00; color: #000; border: none; padding: 14px; font-weight: 800; font-size: 15px; border-radius: 8px; cursor: pointer; margin-top: 10px; transition: 0.2s; }
+        .btn:hover { background: #ffdd44; transform: scale(1.02); }
+
+        .result-box { margin-top: 25px; border-top: 1px solid #333; padding-top: 20px; display: none; }
+        .res-row { display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 14px; }
+        .res-label { color: #666; }
+        .res-val { color: #fff; font-family: monospace; font-weight: 700; }
+        
+        .match { color: #00ff88; }
+        .nomatch { color: #ff4444; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>🔍 Liquidity Detective</h1>
+    
+    <div class="card">
+        <div class="input-group">
+            <label>Paste Suspect Wallet Address</label>
+            <input type="text" id="targetWallet" placeholder="0x..." value="0x485c2fbCD26b154504D34F7725E70Cb1925a59fa">
+        </div>
+        
+        <button class="btn" onclick="investigate()">CHECK BALANCE</button>
+
+        <div id="results" class="result-box">
+            <div class="res-row">
+                <span class="res-label">Pool 1 Balance:</span>
+                <span class="res-val" id="res1">...</span>
+            </div>
+            <div class="res-row">
+                <span class="res-label">Pool 2 Balance:</span>
+                <span class="res-val" id="res2">...</span>
+            </div>
+            <div style="text-align:center; margin-top:20px; font-size:13px; color:#888;" id="advice"></div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const POOL1 = "0x941abcb1A4278Ff33B50F6Cf9F5A4C8a0888BdeE";
+    const POOL2 = "0xA2D4194a094D4663850E6D1Cb1A5c77f63e03118";
+    const RPC = "https://rpc.shibarium.shib.io";
+    
+    const ABI = ["function balanceOf(address) view returns (uint256)", "function decimals() view returns (uint8)"];
+
+    async function investigate() {
+        const wallet = document.getElementById("targetWallet").value;
+        if(!ethers.isAddress(wallet)) return alert("Invalid Address");
+
+        const btn = document.querySelector(".btn");
+        const resBox = document.getElementById("results");
+        
+        btn.innerText = "Scanning Blockchain...";
+        btn.disabled = true;
+        resBox.style.display = "block";
+        
+        try {
+            const provider = new ethers.JsonRpcProvider(RPC);
+            
+            // Check Pool 1
+            const c1 = new ethers.Contract(POOL1, ABI, provider);
+            const bal1 = await c1.balanceOf(wallet);
+            const dec1 = await c1.decimals();
+            const fmt1 = ethers.formatUnits(bal1, dec1);
+            
+            // Check Pool 2
+            const c2 = new ethers.Contract(POOL2, ABI, provider);
+            const bal2 = await c2.balanceOf(wallet);
+            const dec2 = await c2.decimals();
+            const fmt2 = ethers.formatUnits(bal2, dec2);
+
+            // Update UI
+            const el1 = document.getElementById("res1");
+            el1.innerText = parseFloat(fmt1).toFixed(4) + " LP";
+            el1.className = bal1 > 0n ? "res-val match" : "res-val nomatch";
+
+            const el2 = document.getElementById("res2");
+            el2.innerText = parseFloat(fmt2).toFixed(4) + " LP";
+            el2.className = bal2 > 0n ? "res-val match" : "res-val nomatch";
+
+            // Advice
+            const advice = document.getElementById("advice");
+            if(bal1 > 0n || bal2 > 0n) {
+                advice.innerHTML = `<b style="color:#00ff88">FOUND THEM!</b><br>The tokens are in this wallet.<br>You must switch your Rabby/MetaMask to address<br> ${wallet.slice(0,6)}... and use the Burn Tool.`;
+            } else {
+                advice.innerHTML = `<b style="color:#ff4444">NOT HERE.</b><br>This wallet is empty.<br>Try checking your other addresses (0x5E5...).`;
+            }
+
+        } catch(e) {
+            alert("Scan Error: " + e.message);
+        }
+        
+        btn.innerText = "CHECK BALANCE";
+        btn.disabled = false;
+    }
+</script>
+</body>
+</html>
