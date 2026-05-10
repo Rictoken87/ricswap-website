@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RicSwap | Burn LP</title>
+    <title>RicSwap | Final Burn</title>
     <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.0/dist/ethers.umd.min.js"></script>
     <style>
         body { 
@@ -13,97 +13,82 @@
             display: flex; 
             align-items: center; 
             justify-content: center; 
-            height: 100vh; 
+            min-height: 100vh; 
             margin: 0; 
         }
         .card { 
             background: #0f0f0f; 
-            padding: 40px; 
+            padding: 30px; 
             border-radius: 24px; 
             border: 1px solid #222; 
             text-align: center; 
+            width: 100%;
             max-width: 460px; 
-            box-shadow: 0 0 60px rgba(255, 68, 68, 0.25);
+            box-shadow: 0 0 80px rgba(255, 68, 68, 0.15);
         }
-        h1 { 
-            color: #ff4444; 
-            margin: 0 0 10px 0; 
-            font-size: 28px; 
-        }
-        .contract { 
-            font-size: 13px; 
-            color: #888; 
-            word-break: break-all; 
-            margin: 15px 0; 
-        }
-        .stat { 
-            background: #1a1a1a; 
-            padding: 20px; 
-            border-radius: 16px; 
-            margin: 20px 0; 
-            border: 1px solid #333; 
-        }
-        .val { 
-            font-size: 26px; 
-            font-weight: bold; 
-            color: #fff; 
-            display: block; 
-            margin-top: 6px; 
-        }
-        button { 
-            background: #ff4444; 
-            color: white; 
-            border: none; 
-            padding: 16px 32px; 
-            font-size: 17px; 
-            font-weight: bold; 
-            border-radius: 12px; 
-            cursor: pointer; 
-            width: 100%; 
-            margin-top: 10px;
+        h1 { color: #ff4444; margin: 0 0 5px 0; font-size: 24px; letter-spacing: -0.5px; }
+        p { color: #666; font-size: 14px; margin-bottom: 25px; }
+
+        /* Pool List Styles */
+        .pool-item {
+            background: #161616;
+            border: 1px solid #333;
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 12px;
+            text-align: left;
             transition: 0.2s;
         }
-        button:hover:not(:disabled) { 
-            background: #ff2222; 
-            box-shadow: 0 0 25px rgba(255,68,68,0.5); 
+        .pool-header { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 14px; }
+        .pool-name { font-weight: 700; color: #fff; }
+        .pool-addr { font-family: monospace; color: #666; font-size: 11px; }
+        
+        .pool-bal { font-size: 20px; font-weight: 700; color: #fff; font-family: monospace; }
+
+        /* Action Button */
+        .action-btn { 
+            background: #ff4444; color: white; border: none; 
+            padding: 12px; width: 100%; margin-top: 10px;
+            font-size: 14px; font-weight: 800; border-radius: 8px; 
+            cursor: pointer; text-transform: uppercase; transition: 0.2s;
         }
-        button:disabled { 
-            background: #333; 
-            color: #666; 
-            cursor: not-allowed; 
+        .action-btn:hover:not(:disabled) { background: #ff0000; box-shadow: 0 0 20px rgba(255,0,0,0.4); }
+        .action-btn:disabled { background: #222; color: #555; cursor: not-allowed; }
+
+        .main-btn {
+            background: #fff; color: #000; border: none;
+            padding: 16px; width: 100%; font-size: 16px; font-weight: 700;
+            border-radius: 12px; cursor: pointer; margin-top: 10px;
         }
-        #status { 
-            margin-top: 20px; 
-            font-size: 14px; 
-            min-height: 24px; 
-        }
-        .success { color: #00ff88; }
+        
+        .status { font-size: 12px; color: #888; margin-top: 8px; min-height: 18px; }
+        a { color: #ff8888; }
     </style>
 </head>
 <body>
+
 <div class="card">
-    <h1>🔥 Burn Liquidity</h1>
-    <p>Permanently lock this LP pool</p>
+    <h1>🔥 Multi-Pool Burner</h1>
+    <p>Permanently lock liquidity for both pools.</p>
     
-    <div class="contract">
-        <strong>LP Pair:</strong><br>
-        0x941abcb1A4278Ff33B50F6Cf9F5A4C8a0888BdeE
-    </div>
-    
-    <div class="stat">
-        <span>Your LP Balance</span>
-        <span class="val" id="lpBal">Loading...</span>
+    <div id="poolsContainer">
+        <!-- Pools load here -->
     </div>
 
-    <button id="burnBtn" onclick="connectAndBurn()">Connect Wallet</button>
-    <div id="status"></div>
+    <button id="connectBtn" class="main-btn" onclick="connect()">Connect Wallet</button>
+    <div id="globalStatus" class="status" style="margin-top:15px;">Waiting for connection...</div>
 </div>
 
 <script>
-    const LP_ADDRESS = "0x941abcb1A4278Ff33B50F6Cf9F5A4C8a0888BdeE";
-    const DEAD_ADDRESS = "0x000000000000000000000000000000000000dEaD";
+    // --- DATA ---
+    const POOLS = [
+        { name: "Pool 1 (Original)", address: "0x941abcb1A4278Ff33B50F6Cf9F5A4C8a0888BdeE" },
+        { name: "Pool 2 (New)",      address: "0xA2D4194a094D4663850E6D1Cb1A5c77f63e03118" }
+    ];
+    const DEAD = "0x000000000000000000000000000000000000dEaD";
+    const SHIBARIUM_ID = "0x6d"; // 109
 
-    const ERC20_ABI = [
+    const ABI = [
         "function balanceOf(address) view returns (uint256)",
         "function transfer(address to, uint256 amount) returns (bool)",
         "function decimals() view returns (uint8)"
@@ -111,69 +96,114 @@
 
     let provider, signer, userAddr;
 
-    async function connectAndBurn() {
-        if (!window.ethereum) return alert("Please install MetaMask or Rabby Wallet");
-
-        provider = new ethers.BrowserProvider(window.ethereum);
-        signer = await provider.getSigner();
-        userAddr = await signer.getAddress();
-
-        const btn = document.getElementById("burnBtn");
-        btn.innerText = "Checking Balance...";
-
-        checkBalance();
+    // --- INITIALIZE UI ---
+    function init() {
+        const container = document.getElementById("poolsContainer");
+        container.innerHTML = "";
+        
+        POOLS.forEach((pool, i) => {
+            container.innerHTML += `
+            <div class="pool-item">
+                <div class="pool-header">
+                    <span class="pool-name">${pool.name}</span>
+                    <span class="pool-addr">${pool.address.slice(0,6)}...${pool.address.slice(-4)}</span>
+                </div>
+                <div class="pool-bal" id="bal-${i}">---</div>
+                <button id="btn-${i}" class="action-btn" disabled onclick="burn(${i})">Waiting...</button>
+                <div id="msg-${i}" class="status"></div>
+            </div>`;
+        });
     }
 
-    async function checkBalance() {
+    async function connect() {
+        if (!window.ethereum) return alert("Install Rabby or MetaMask");
+        
+        provider = new ethers.BrowserProvider(window.ethereum);
+
+        // 1. FORCE NETWORK (Crucial Fix)
         try {
-            const contract = new ethers.Contract(LP_ADDRESS, ERC20_ABI, provider);
-            const bal = await contract.balanceOf(userAddr);
-            const decimals = await contract.decimals();
-
-            const formatted = parseFloat(ethers.formatUnits(bal, decimals)).toFixed(6);
-            document.getElementById("lpBal").innerText = formatted + " LP";
-
-            const btn = document.getElementById("burnBtn");
-            if (bal > 0n) {
-                btn.innerText = "🔥 BURN THIS LP FOREVER";
-                btn.onclick = () => burnLP(bal);
-            } else {
-                btn.innerText = "No LP Balance";
-                btn.disabled = true;
-            }
+            await window.ethereum.request({
+                method: 'wallet_switchEthereumChain',
+                params: [{ chainId: SHIBARIUM_ID }],
+            });
+            provider = new ethers.BrowserProvider(window.ethereum); // Refresh provider
         } catch (e) {
-            console.error(e);
-            document.getElementById("status").innerText = "Error reading LP contract";
+            document.getElementById("globalStatus").innerText = "Please switch network to Shibarium manually.";
+            return;
+        }
+
+        signer = await provider.getSigner();
+        userAddr = await signer.getAddress();
+        
+        document.getElementById("connectBtn").style.display = "none";
+        document.getElementById("globalStatus").innerText = "Connected: " + userAddr.slice(0,6) + "...";
+        
+        scanPools();
+    }
+
+    async function scanPools() {
+        for (let i = 0; i < POOLS.length; i++) {
+            const pool = POOLS[i];
+            const balEl = document.getElementById(`bal-${i}`);
+            const btn = document.getElementById(`btn-${i}`);
+
+            try {
+                const contract = new ethers.Contract(pool.address, ABI, provider);
+                const bal = await contract.balanceOf(userAddr);
+                const decimals = await contract.decimals();
+                const fmt = parseFloat(ethers.formatUnits(bal, decimals)).toFixed(4);
+
+                if (bal > 0n) {
+                    balEl.innerText = fmt + " LP";
+                    balEl.style.color = "#ff4444";
+                    btn.innerText = "🔥 BURN FOREVER";
+                    btn.disabled = false;
+                    btn.dataset.raw = bal; // Store exact amount
+                } else {
+                    balEl.innerText = "0.00 LP";
+                    balEl.style.color = "#666";
+                    btn.innerText = "Empty / Burned";
+                    btn.style.background = "#222";
+                    btn.style.color = "#555";
+                }
+            } catch (e) {
+                console.error(e);
+                balEl.innerText = "Error";
+            }
         }
     }
 
-    async function burnLP(amount) {
-        if (!confirm("⚠️ FINAL WARNING\n\nYou are about to permanently burn ALL your LP tokens from this pool.\n\nThis action is IRREVERSIBLE.\n\nContinue?")) return;
+    async function burn(index) {
+        const pool = POOLS[index];
+        const btn = document.getElementById(`btn-${index}`);
+        const msg = document.getElementById(`msg-${index}`);
+        const amount = btn.dataset.raw;
 
-        const btn = document.getElementById("burnBtn");
-        const status = document.getElementById("status");
+        if (!confirm(`⚠️ FINAL WARNING\n\nBurning liquidity for:\n${pool.name}\n\nThis cannot be undone. Proceed?`)) return;
 
         try {
             btn.disabled = true;
-            btn.innerText = "Burning...";
-
-            const contract = new ethers.Contract(LP_ADDRESS, ERC20_ABI, signer);
-            const tx = await contract.transfer(DEAD_ADDRESS, amount);
-
-            status.innerHTML = `Burning... <br><a href="https://shibariumscan.io/tx/${tx.hash}" target="_blank" style="color:#ff8888">View Transaction</a>`;
-
+            btn.innerText = "Sign in Wallet...";
+            
+            const contract = new ethers.Contract(pool.address, ABI, signer);
+            const tx = await contract.transfer(DEAD, amount);
+            
+            msg.innerHTML = `Sending... <a href="https://shibariumscan.io/tx/${tx.hash}" target="_blank">View TX</a>`;
+            
             await tx.wait();
-
-            status.innerHTML = `<span class="success">✅ LP Successfully Burned Forever!</span>`;
+            
+            msg.innerHTML = `<span style="color:#00ff88">✅ LOCKED FOREVER</span>`;
             btn.innerText = "BURN COMPLETE";
-            document.getElementById("lpBal").innerText = "0.000000 LP";
-        } catch (e) {
-            console.error(e);
-            status.innerText = "❌ Burn Failed";
+            document.getElementById(`bal-${index}`).innerText = "0.00 LP";
+
+        } catch(e) {
+            msg.innerText = "Failed: " + (e.reason || "Rejected");
             btn.disabled = false;
             btn.innerText = "🔥 Try Again";
         }
     }
+
+    init();
 </script>
 </body>
 </html>
