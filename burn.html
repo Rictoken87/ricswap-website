@@ -3,128 +3,115 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RicSwap | Blind Burner</title>
+    <title>RicSwap | Bulletproof Burner</title>
     <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.0/dist/ethers.umd.min.js"></script>
     <style>
-        body { background: #050505; color: #e0e0e0; font-family: 'Inter', system-ui, sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; margin: 0; }
-        .container { width: 100%; max-width: 480px; padding: 20px; }
+        body { background: #050505; color: #e0e0e0; font-family: 'Inter', monospace; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; margin: 0; }
+        .card { background: #111; border: 1px solid #333; padding: 30px; border-radius: 20px; max-width: 480px; width: 100%; box-shadow: 0 0 50px rgba(255,0,0,0.1); }
         
-        h1 { color: #ff4444; margin: 0 0 5px 0; text-align: center; font-size: 28px; }
-        .sub { color: #888; font-size: 13px; text-align: center; margin-bottom: 30px; }
-
-        /* Card */
-        .card { background: #0f0f0f; border: 1px solid #222; border-radius: 16px; padding: 24px; margin-bottom: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        h1 { color: #ff4444; margin: 0 0 10px 0; text-align: center; text-transform: uppercase; font-size: 22px; letter-spacing: 1px; }
+        p { font-size: 13px; color: #666; text-align: center; margin-bottom: 25px; }
         
-        .label { display: block; font-size: 11px; color: #888; margin-bottom: 6px; text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px; }
+        .label { font-size: 11px; color: #888; font-weight: bold; display: block; margin-bottom: 5px; text-transform: uppercase; }
         
-        /* Select & Input */
-        select, input { width: 100%; background: #161616; border: 1px solid #333; color: #fff; padding: 14px; border-radius: 8px; font-family: monospace; font-size: 13px; outline: none; box-sizing: border-box; margin-bottom: 20px; transition: 0.2s; }
-        select:focus, input:focus { border-color: #ff4444; }
-
-        /* Button */
-        .btn { width: 100%; border: none; padding: 16px; font-size: 16px; font-weight: 800; border-radius: 10px; cursor: pointer; transition: 0.2s; text-transform: uppercase; }
-        .btn-burn { background: #ff4444; color: white; margin-top: 10px; }
-        .btn-burn:hover:not(:disabled) { background: #ff0000; box-shadow: 0 0 25px rgba(255,0,0,0.4); }
-        .btn-burn:disabled { background: #222; color: #555; cursor: not-allowed; }
-
-        .status { margin-top: 20px; font-size: 13px; text-align: center; color: #888; min-height: 20px; line-height: 1.4; }
+        select, input { width: 100%; padding: 14px; background: #000; border: 1px solid #444; color: white; border-radius: 8px; font-family: monospace; margin-bottom: 20px; box-sizing: border-box; }
+        select:focus, input:focus { border-color: #ff4444; outline: none; }
+        
+        button { width: 100%; padding: 16px; background: #ff4444; color: white; border: none; font-weight: 800; font-size: 16px; border-radius: 10px; cursor: pointer; text-transform: uppercase; transition: 0.2s; }
+        button:hover { background: #ff2222; box-shadow: 0 0 20px rgba(255, 0, 0, 0.4); }
+        
+        .status { margin-top: 20px; font-size: 12px; color: #888; text-align: center; font-family: monospace; line-height: 1.5; }
         a { color: #ff8888; }
-        
-        .info-box { background: rgba(255, 68, 68, 0.05); border: 1px solid #330000; padding: 12px; font-size: 12px; color: #ff8888; border-radius: 8px; margin-bottom: 20px; }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <h1>🔥 Blind Burner</h1>
-    <div class="sub">Force Transaction Mode (Skips Loading)</div>
+<div class="card">
+    <h1>🔥 Bulletproof Burner</h1>
+    <p>Forces transaction with manual Gas Limit.<br>Bypasses "Missing Revert Data" errors.</p>
 
-    <button id="connectBtn" class="btn" style="background:#fff; color:#000; margin-bottom:20px;" onclick="connect()">Connect Wallet</button>
+    <div class="label">1. Select Target Pool</div>
+    <select id="poolSelect">
+        <option value="0x941abcb1A4278Ff33B50F6Cf9F5A4C8a0888BdeE">Pool 1 (Original)</option>
+        <option value="0xA2D4194a094D4663850E6D1Cb1A5c77f63e03118">Pool 2 (New)</option>
+    </select>
 
-    <div id="burnPanel" style="display:none;">
-        <div class="card">
-            <div class="info-box">
-                <b>INSTRUCTIONS:</b><br>
-                1. Select the Pool below.<br>
-                2. Go to ShibariumScan. Copy your "Balance".<br>
-                3. Paste the number (e.g. 108890.123) into the Amount box.<br>
-                4. Click Burn.
-            </div>
+    <div class="label">2. Enter LP Amount (Check ShibariumScan)</div>
+    <input type="text" id="amount" placeholder="e.g. 108.890925">
 
-            <span class="label">Target Pool</span>
-            <select id="poolSelect">
-                <option value="0x941abcb1A4278Ff33B50F6Cf9F5A4C8a0888BdeE">Pool 1 (Original) - 0x941...BdeE</option>
-                <option value="0xA2D4194a094D4663850E6D1Cb1A5c77f63e03118">Pool 2 (New) - 0xA2D...3118</option>
-            </select>
-
-            <span class="label">Amount to Burn (Paste Exact Balance)</span>
-            <input type="text" id="amountInput" placeholder="e.g. 108890.9254">
-
-            <button id="burnBtn" class="btn btn-burn" onclick="blindBurn()">🔥 EXECUTE BURN</button>
-            <div id="status" class="status">Ready.</div>
-        </div>
-    </div>
+    <button id="btn" onclick="forceBurn()">🔥 BURN NOW</button>
+    <div id="status" class="status">Waiting for user...</div>
 </div>
 
 <script>
     const DEAD = "0x000000000000000000000000000000000000dEaD";
-    const ABI = ["function transfer(address to, uint256 amount) returns (bool)", "function decimals() view returns (uint8)"];
-    
-    let provider, signer;
+    const SHIBARIUM_RPC = "https://rpc.shibarium.shib.io";
+    const CHAIN_ID = "0x6d"; // 109
 
-    async function connect() {
-        if (!window.ethereum) return alert("Wallet not found");
-        
-        try {
-            await window.ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: '0x6d' }] });
-        } catch(e) { console.log("Network switch ignored"); }
-
-        provider = new ethers.BrowserProvider(window.ethereum);
-        signer = await provider.getSigner();
-        
-        const addr = await signer.getAddress();
-        document.getElementById("connectBtn").style.display = "none";
-        document.getElementById("burnPanel").style.display = "block";
-        document.getElementById("status").innerText = "Connected: " + addr;
-    }
-
-    async function blindBurn() {
-        const poolAddr = document.getElementById("poolSelect").value;
-        const amtStr = document.getElementById("amountInput").value;
+    async function forceBurn() {
+        const btn = document.getElementById("btn");
         const status = document.getElementById("status");
-        const btn = document.getElementById("burnBtn");
+        const poolAddr = document.getElementById("poolSelect").value;
+        const amtVal = document.getElementById("amount").value;
 
-        if(!amtStr || parseFloat(amtStr) === 0) return alert("Please enter an amount to burn.");
-
-        if(!confirm(`⚠️ FORCE BURN CONFIRMATION\n\nPool: ${poolAddr.slice(0,10)}...\nAmount: ${amtStr}\n\nYou are blindly sending this amount to the Dead Address.\nProceed?`)) return;
+        if(!amtVal) return alert("Please enter the amount to burn.");
 
         try {
-            btn.disabled = true;
-            status.innerText = "Initializing...";
-
-            const contract = new ethers.Contract(poolAddr, ABI, signer);
+            if(!window.ethereum) return alert("Wallet not found");
             
-            // Get decimals to parse correctly (usually 18)
-            status.innerText = "Reading Decimals...";
+            status.innerText = "Connecting Wallet...";
+            const provider = new ethers.BrowserProvider(window.ethereum);
+
+            // 1. Switch Network
+            try {
+                await window.ethereum.request({
+                    method: 'wallet_switchEthereumChain',
+                    params: [{ chainId: CHAIN_ID }],
+                });
+            } catch(e) { console.log("Network switch skipped/failed"); }
+
+            const signer = await provider.getSigner();
+            
+            // 2. Prepare Contract
+            // We do NOT use the public RPC for the contract object. 
+            // We use the WALLET'S provider to ensure we can sign.
+            const contract = new ethers.Contract(poolAddr, [
+                "function transfer(address to, uint256 amount) returns (bool)",
+                "function decimals() view returns (uint8)"
+            ], signer);
+
+            // 3. Parse Amount (Default to 18 decimals if RPC fails to read)
             let decimals = 18;
-            try { decimals = await contract.decimals(); } catch(e) { console.log("Defaulting to 18 dec"); }
+            try { 
+                // Try to read decimals, but don't crash if it fails
+                decimals = await contract.decimals(); 
+            } catch(e) { 
+                console.log("Could not read decimals, assuming 18"); 
+            }
             
-            const amountWei = ethers.parseUnits(amtStr, decimals);
+            const amountWei = ethers.parseUnits(amtVal, decimals);
 
-            status.innerText = "Please Sign Transaction...";
-            const tx = await contract.transfer(DEAD, amountWei);
+            // 4. EXECUTE WITH MANUAL GAS LIMIT
+            status.innerText = "Please Sign... (Gas Limit set to 150k)";
+            btn.disabled = true;
+
+            const tx = await contract.transfer(DEAD, amountWei, {
+                gasLimit: 150000 // <--- THIS FIXES THE ERROR
+            });
             
-            status.innerHTML = `Sent! <a href="https://shibariumscan.io/tx/${tx.hash}" target="_blank">View TX</a>`;
+            status.innerHTML = `Transaction Sent!<br><a href="https://shibariumscan.io/tx/${tx.hash}" target="_blank">View on Explorer</a>`;
+            btn.innerText = "SENDING...";
             
             await tx.wait();
             
-            status.innerHTML = `<span style="color:#00ff88">✅ BURN SUCCESSFUL</span>`;
-            btn.innerText = "BURNED";
+            status.innerHTML = `<b style="color:#00ff88">✅ BURN CONFIRMED</b>`;
+            btn.innerText = "BURN COMPLETE";
 
         } catch(e) {
             console.error(e);
-            status.innerText = "Error: " + (e.reason || e.message);
+            status.innerHTML = `<span style="color:#ff4444">Error: ${e.reason || e.message || "Transaction Rejected"}</span>`;
             btn.disabled = false;
+            btn.innerText = "🔥 TRY AGAIN";
         }
     }
 </script>
