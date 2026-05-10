@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RicSwap | Add Liquidity</title>
+    <title>RicSwap | Add Liquidity (Any Token)</title>
     <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.0/dist/ethers.umd.min.js"></script>
     <style>
         :root {
@@ -12,21 +12,20 @@
             --gold: #ffd700;
             --magma: linear-gradient(135deg, #ff4d00 0%, #ff8c00 100%);
         }
-        body { background: var(--obsidian); color: white; font-family: 'Inter', sans-serif; margin: 0; min-height: 100vh; display: flex; flex-direction: column; }
+        body { background: var(--obsidian); color: white; font-family: 'Inter', sans-serif; margin: 0; min-height: 100vh; }
         .nav { padding: 20px 5%; display: flex; align-items: center; background: rgba(5,5,5,0.95); border-bottom: 1px solid #222; }
         .logo { font-size: 24px; font-weight: 900; color: var(--gold); }
         .connect-btn { margin-left: auto; padding: 8px 20px; background: rgba(255,215,0,0.1); color: var(--gold); border: 1px solid var(--gold); border-radius: 999px; cursor: pointer; }
         
         .container { flex: 1; display: flex; align-items: center; justify-content: center; padding: 20px; }
-        .card { width: 100%; max-width: 460px; background: var(--card-bg); padding: 32px; border-radius: 24px; border: 1px solid #222; }
+        .card { width: 100%; max-width: 480px; background: var(--card-bg); padding: 32px; border-radius: 24px; border: 1px solid #222; }
         
         .input-box { background: #111; border: 1px solid #222; border-radius: 16px; padding: 16px; margin-bottom: 16px; }
         .label-row { display: flex; justify-content: space-between; margin-bottom: 8px; color: #aaa; font-size: 13px; }
-        input { background: transparent; border: none; color: white; font-size: 28px; width: 100%; outline: none; }
+        input { background: transparent; border: none; color: white; font-size: 26px; width: 100%; outline: none; }
+        .token-input { font-size: 14px; margin-top: 8px; }
         
-        button { width: 100%; padding: 18px; background: var(--magma); color: white; border: none; border-radius: 16px; font-weight: bold; font-size: 17px; cursor: pointer; margin-top: 10px; }
-        button:disabled { background: #333; color: #666; cursor: not-allowed; }
-        
+        button { width: 100%; padding: 18px; background: var(--magma); color: white; border: none; border-radius: 16px; font-weight: bold; cursor: pointer; margin-top: 10px; }
         #status { margin-top: 20px; text-align: center; font-size: 14px; min-height: 28px; }
     </style>
 </head>
@@ -38,35 +37,30 @@
 
     <div class="container">
         <div class="card">
-            <h2>Add Liquidity (BONE + RIC)</h2>
+            <h2>Create New Pool (RIC + Any Token)</h2>
             
+            <!-- Token A: RIC -->
             <div class="input-box">
                 <div class="label-row">
-                    <span>BONE</span>
-                    <span>Bal: <span id="balA">0.00</span></span>
+                    <span>RIC (Fixed)</span>
+                    <span>Bal: <span id="balRIC">0.00</span></span>
                 </div>
-                <input type="number" id="amountA" placeholder="0.0" value="1">
+                <input type="number" id="amountRIC" placeholder="0.0" value="100">
             </div>
 
-            <div style="text-align:center; font-size:32px; margin:10px 0;">+</div>
+            <div style="text-align:center; font-size:28px; margin:10px 0;">+</div>
 
+            <!-- Token B: Any Token -->
             <div class="input-box">
                 <div class="label-row">
-                    <span>RIC</span>
-                    <span>Bal: <span id="balB">0.00</span></span>
+                    <span>Custom Token Address</span>
+                    <span>Bal: <span id="balCustom">0.00</span></span>
                 </div>
-                <input type="number" id="amountB" placeholder="0.0" value="1">
+                <input type="text" id="customToken" placeholder="0x..." style="font-size:15px; margin-bottom:8px;">
+                <input type="number" id="amountCustom" placeholder="0.0" value="100">
             </div>
 
-            <!-- New: Recipient Address -->
-            <div class="input-box">
-                <div class="label-row">
-                    <span>Recipient Address (who gets LP tokens)</span>
-                </div>
-                <input type="text" id="recipient" placeholder="0x... (default = connected wallet)" value="">
-            </div>
-
-            <button id="supplyBtn" onclick="supplyLiquidity()">SUPPLY LIQUIDITY</button>
+            <button id="supplyBtn" onclick="supplyLiquidity()">CREATE POOL & ADD LIQUIDITY</button>
             <div id="status"></div>
         </div>
     </div>
@@ -78,86 +72,92 @@
         };
 
         let signer, userAddr, provider;
+        let customTokenAddress = null;
 
         async function connect() {
-            if (!window.ethereum) return alert("Please install MetaMask or Rabby Wallet");
-
-            try {
-                await window.ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: '0x6d' }] });
-            } catch (e) {}
+            if (!window.ethereum) return alert("Please install MetaMask or Rabby");
 
             provider = new ethers.BrowserProvider(window.ethereum);
             signer = await provider.getSigner();
             userAddr = await signer.getAddress();
 
             document.getElementById("connectBtn").innerText = userAddr.slice(0,6) + "...";
-            
-            // Auto fill recipient with connected wallet
-            document.getElementById("recipient").value = userAddr;
-            
             updateBalances();
         }
 
         async function updateBalances() {
             if (!userAddr) return;
-            
-            const boneBal = await provider.getBalance(userAddr);
-            document.getElementById("balA").innerText = parseFloat(ethers.formatEther(boneBal)).toFixed(4);
 
+            // RIC Balance
             const ricContract = new ethers.Contract(CONFIG.RIC, ["function balanceOf(address) view returns (uint256)"], provider);
             const ricBal = await ricContract.balanceOf(userAddr);
-            document.getElementById("balB").innerText = parseFloat(ethers.formatUnits(ricBal, 18)).toFixed(4);
+            document.getElementById("balRIC").innerText = parseFloat(ethers.formatUnits(ricBal, 18)).toFixed(4);
+
+            // Custom Token Balance (if entered)
+            const addr = document.getElementById("customToken").value.trim();
+            if (ethers.isAddress(addr)) {
+                try {
+                    const tokenContract = new ethers.Contract(addr, ["function balanceOf(address) view returns (uint256)"], provider);
+                    const bal = await tokenContract.balanceOf(userAddr);
+                    document.getElementById("balCustom").innerText = parseFloat(ethers.formatUnits(bal, 18)).toFixed(4);
+                } catch(e) {}
+            }
         }
 
         async function supplyLiquidity() {
             const status = document.getElementById("status");
             const btn = document.getElementById("supplyBtn");
-            const amountBone = document.getElementById("amountA").value;
-            const amountRic = document.getElementById("amountB").value;
-            let recipient = document.getElementById("recipient").value.trim();
+            const amountRIC = document.getElementById("amountRIC").value;
+            const amountCustom = document.getElementById("amountCustom").value;
+            const tokenAddr = document.getElementById("customToken").value.trim();
 
-            if (!recipient) recipient = userAddr;
-
-            if (!amountBone || !amountRic) return alert("Please enter amounts");
+            if (!tokenAddr || !ethers.isAddress(tokenAddr)) return alert("Please enter valid token address");
+            if (!amountRIC || !amountCustom) return alert("Please enter amounts");
 
             btn.disabled = true;
-            btn.innerText = "Approving RIC...";
+            btn.innerText = "Creating Pool...";
 
             try {
                 // Approve RIC
-                const ricContract = new ethers.Contract(CONFIG.RIC, ["function approve(address,uint256) returns (bool)"], signer);
+                const ricContract = new ethers.Contract(CONFIG.RIC, ["function approve(address,uint256)"], signer);
                 await ricContract.approve(CONFIG.ROUTER, ethers.MaxUint256);
+
+                // Approve Custom Token
+                const customContract = new ethers.Contract(tokenAddr, ["function approve(address,uint256)"], signer);
+                await customContract.approve(CONFIG.ROUTER, ethers.MaxUint256);
 
                 status.innerText = "Adding Liquidity...";
 
                 const router = new ethers.Contract(CONFIG.ROUTER, [
-                    "function addLiquidityETH(address token, uint amountTokenDesired, uint amountTokenMin, uint amountETHMin, address to, uint deadline) payable returns (uint,uint,uint)"
+                    "function addLiquidity(address tokenA, address tokenB, uint amountADesired, uint amountBDesired, uint amountAMin, uint amountBMin, address to, uint deadline) returns (uint,uint,uint)"
                 ], signer);
 
-                const tx = await router.addLiquidityETH(
+                const tx = await router.addLiquidity(
                     CONFIG.RIC,
-                    ethers.parseUnits(amountRic, 18),
+                    tokenAddr,
+                    ethers.parseUnits(amountRIC, 18),
+                    ethers.parseUnits(amountCustom, 18),
                     0,
                     0,
-                    recipient,                    // ← This is the key: Recipient Address
-                    Math.floor(Date.now()/1000) + 1200,
-                    { value: ethers.parseEther(amountBone) }
+                    userAddr,
+                    Math.floor(Date.now()/1000) + 1200
                 );
 
                 status.innerHTML = `Tx Sent! <a href="https://shibariumscan.io/tx/${tx.hash}" target="_blank">View</a>`;
                 await tx.wait();
-                status.innerHTML = `<span style="color:#00ff88">✅ Liquidity Added! LP tokens sent to ${recipient.slice(0,8)}...</span>`;
+                status.innerHTML = `<span style="color:#00ff88">✅ New Pool Created Successfully!</span>`;
 
             } catch (e) {
                 console.error(e);
                 status.innerHTML = `<span style="color:#ff6666">Error: ${e.reason || e.message}</span>`;
             } finally {
                 btn.disabled = false;
-                btn.innerText = "SUPPLY LIQUIDITY";
+                btn.innerText = "CREATE POOL & ADD LIQUIDITY";
             }
         }
 
         document.getElementById("connectBtn").addEventListener("click", connect);
+        document.getElementById("customToken").addEventListener("input", updateBalances);
     </script>
 </body>
 </html>
