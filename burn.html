@@ -3,226 +3,144 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RicSwap | God Mode Burner</title>
+    <title>RicSwap | Burn LP</title>
     <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.0/dist/ethers.umd.min.js"></script>
     <style>
-        :root { --bg: #050505; --card: #0f0f0f; --accent: #ff4444; --text: #e0e0e0; --border: #222; }
-        body { background: var(--bg); color: var(--text); font-family: 'Inter', system-ui, sans-serif; display: flex; flex-direction: column; align-items: center; padding: 40px 20px; margin: 0; }
-        
-        .container { width: 100%; max-width: 500px; }
-        h1 { color: var(--accent); margin: 0 0 10px 0; text-align: center; font-size: 28px; text-transform: uppercase; letter-spacing: 1px; }
-        .warning { background: rgba(255, 68, 68, 0.1); border: 1px solid var(--accent); color: #ff8888; padding: 12px; font-size: 12px; border-radius: 8px; margin-bottom: 24px; line-height: 1.5; }
-        
-        /* Section */
-        .section { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 20px; margin-bottom: 20px; }
-        .section-title { font-weight: 700; font-size: 14px; color: #fff; margin-bottom: 12px; display: flex; justify-content: space-between; }
-        
-        /* Inputs */
-        .input-group { margin-bottom: 15px; }
-        .label { display: block; font-size: 11px; color: #888; margin-bottom: 6px; text-transform: uppercase; font-weight: 700; }
-        input { width: 100%; background: #1a1a1a; border: 1px solid #333; color: #fff; padding: 14px; border-radius: 8px; font-family: monospace; font-size: 13px; outline: none; box-sizing: border-box; transition: 0.2s; }
-        input:focus { border-color: var(--accent); }
-
-        /* Buttons */
-        .btn { width: 100%; border: none; padding: 16px; font-size: 16px; font-weight: 800; border-radius: 10px; cursor: pointer; transition: 0.2s; text-transform: uppercase; }
-        .btn-connect { background: #fff; color: #000; margin-bottom: 20px; }
-        .btn-burn { background: var(--accent); color: white; margin-top: 10px; }
-        .btn-burn:hover { background: #ff0000; box-shadow: 0 0 25px rgba(255,0,0,0.4); }
-        .btn-secondary { background: #222; color: #888; font-size: 12px; padding: 8px; width: auto; border-radius: 6px; }
-
-        .status { margin-top: 15px; font-size: 13px; text-align: center; color: #888; word-break: break-all; }
-        a { color: #fff; text-decoration: underline; }
-        
-        .presets { display: flex; gap: 8px; margin-bottom: 10px; }
-        .pill { background: #222; border: 1px solid #333; padding: 6px 12px; border-radius: 20px; font-size: 11px; cursor: pointer; color: #aaa; }
-        .pill:hover { border-color: #666; color: #fff; }
-        .pill.active { border-color: var(--accent); color: var(--accent); background: rgba(255,68,68,0.1); }
-
+        body { 
+            background: #050505; 
+            color: white; 
+            font-family: 'Inter', sans-serif; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            height: 100vh; 
+            margin: 0; 
+        }
+        .card { 
+            background: #0f0f0f; 
+            padding: 40px; 
+            border-radius: 24px; 
+            border: 1px solid #222; 
+            text-align: center; 
+            max-width: 420px; 
+            box-shadow: 0 0 60px rgba(255, 68, 68, 0.2);
+        }
+        h1 { color: #ff4444; margin: 0 0 10px 0; font-size: 28px; }
+        p { color: #888; margin-bottom: 24px; }
+        .stat { 
+            background: #1a1a1a; 
+            padding: 20px; 
+            border-radius: 16px; 
+            margin: 20px 0; 
+            border: 1px solid #333; 
+        }
+        .val { font-size: 26px; font-weight: bold; color: #fff; }
+        button { 
+            background: #ff4444; 
+            color: white; 
+            border: none; 
+            padding: 16px 32px; 
+            font-size: 17px; 
+            font-weight: bold; 
+            border-radius: 12px; 
+            cursor: pointer; 
+            width: 100%; 
+            margin-top: 10px;
+        }
+        button:hover:not(:disabled) { background: #ff2222; }
+        button:disabled { background: #333; color: #666; cursor: not-allowed; }
+        #status { margin-top: 20px; font-size: 14px; min-height: 24px; }
+        .success { color: #00ff88; }
     </style>
 </head>
 <body>
-
-<div class="container">
-    <h1>🔥 God Mode Burner</h1>
-    <div class="warning">
-        <b>SECURITY NOTICE:</b> Only the wallet that holds the LP tokens can burn them.<br>
-        If the balance shows "0", switch wallets in Rabby/MetaMask.
+<div class="card">
+    <h1>🔥 Burn This LP</h1>
+    <p>Contract: <small>0x485c2fbCD26b154504D34F7725E70Cb1925a59fa</small></p>
+    
+    <div class="stat">
+        <span>Your LP Balance</span>
+        <span class="val" id="lpBal">Loading...</span>
     </div>
 
-    <button id="connectBtn" class="btn btn-connect" onclick="connect()">1. Connect Wallet</button>
-    <div id="walletDisplay" style="text-align:center; margin-bottom:20px; color:#00ff88; font-family:monospace; display:none;"></div>
-
-    <div class="section">
-        <div class="section-title">Select Pool</div>
-        <div class="presets">
-            <div class="pill" onclick="selectPool(0)">Pool 1 (Original)</div>
-            <div class="pill" onclick="selectPool(1)">Pool 2 (New)</div>
-        </div>
-        <div class="input-group">
-            <span class="label">LP Token Address</span>
-            <input type="text" id="lpAddress" placeholder="0x..." oninput="checkBalance()">
-        </div>
-        <div class="section-title">
-            <span>Your Balance</span>
-            <span id="balanceDisplay">---</span>
-        </div>
-    </div>
-
-    <div class="section">
-        <div class="section-title">Configuration</div>
-        
-        <div class="input-group">
-            <span class="label">Amount to Burn (Raw or Decimal)</span>
-            <input type="text" id="amount" placeholder="e.g. 108890.925">
-        </div>
-
-        <div class="input-group">
-            <span class="label">Target Address (The Graveyard)</span>
-            <input type="text" id="target" value="0x000000000000000000000000000000000000dEaD">
-        </div>
-        
-        <!-- Quick set helper -->
-        <div style="text-align:right;">
-            <button class="btn-secondary" onclick="useUserAddress()">Use My Address (Transfer)</button>
-            <button class="btn-secondary" onclick="useDeadAddress()">Reset to Dead (Burn)</button>
-        </div>
-    </div>
-
-    <button id="burnBtn" class="btn btn-burn" onclick="executeBurn()" disabled>Connect First</button>
-    <div id="status" class="status"></div>
+    <button id="burnBtn" onclick="connectAndBurn()">Connect & Burn</button>
+    <div id="status"></div>
 </div>
 
 <script>
-    // CONFIG
-    const POOLS = [
-        "0x941abcb1A4278Ff33B50F6Cf9F5A4C8a0888BdeE",
-        "0xA2D4194a094D4663850E6D1Cb1A5c77f63e03118"
-    ];
-    const DEAD = "0x000000000000000000000000000000000000dEaD";
-    
-    const ABI = [
+    const LP_ADDRESS = "0x485c2fbCD26b154504D34F7725E70Cb1925a59fa";
+    const DEAD_ADDRESS = "0x000000000000000000000000000000000000dEaD";
+
+    const ERC20_ABI = [
         "function balanceOf(address) view returns (uint256)",
         "function transfer(address to, uint256 amount) returns (bool)",
         "function decimals() view returns (uint8)"
     ];
 
     let provider, signer, userAddr;
-    let currentDecimals = 18;
 
-    async function connect() {
-        if (!window.ethereum) return alert("No Wallet Found");
-        
+    async function connectAndBurn() {
+        if (!window.ethereum) return alert("Please install MetaMask or Rabby");
+
         provider = new ethers.BrowserProvider(window.ethereum);
-        
-        try {
-            // Force Shibarium
-            await window.ethereum.request({
-                method: 'wallet_switchEthereumChain',
-                params: [{ chainId: '0x6d' }], // 109
-            });
-            provider = new ethers.BrowserProvider(window.ethereum); // Refresh
-        } catch(e) { console.log("Network switch skipped/failed"); }
-
         signer = await provider.getSigner();
         userAddr = await signer.getAddress();
 
-        document.getElementById("connectBtn").style.display = "none";
-        const disp = document.getElementById("walletDisplay");
-        disp.style.display = "block";
-        disp.innerText = "Connected: " + userAddr;
-        
-        document.getElementById("burnBtn").disabled = false;
-        document.getElementById("burnBtn").innerText = "BURN LIQUIDITY";
-        
-        // Auto-select first pool
-        selectPool(0);
-    }
+        const btn = document.getElementById("burnBtn");
+        btn.innerText = "Checking Balance...";
 
-    function selectPool(idx) {
-        document.getElementById("lpAddress").value = POOLS[idx];
         checkBalance();
     }
 
     async function checkBalance() {
-        const addr = document.getElementById("lpAddress").value;
-        const balDisp = document.getElementById("balanceDisplay");
-        
-        if(!ethers.isAddress(addr) || !userAddr) return;
-
-        balDisp.innerText = "Scanning...";
-        
         try {
-            const contract = new ethers.Contract(addr, ABI, provider);
+            const contract = new ethers.Contract(LP_ADDRESS, ERC20_ABI, provider);
             const bal = await contract.balanceOf(userAddr);
-            currentDecimals = await contract.decimals();
-            
-            if(bal > 0n) {
-                const fmt = ethers.formatUnits(bal, currentDecimals);
-                balDisp.innerText = fmt;
-                balDisp.style.color = "#00ff88";
-                
-                // Auto-fill amount
-                document.getElementById("amount").value = fmt; // Human readable
-                document.getElementById("amount").dataset.raw = bal.toString(); // Exact raw
+            const decimals = await contract.decimals();
+
+            const formatted = parseFloat(ethers.formatUnits(bal, decimals)).toFixed(6);
+            document.getElementById("lpBal").innerText = formatted + " LP";
+
+            const btn = document.getElementById("burnBtn");
+            if (bal > 0n) {
+                btn.innerText = "🔥 BURN THIS LP FOREVER";
+                btn.onclick = () => burnLP(bal);
             } else {
-                balDisp.innerText = "0.00 (Not in this wallet)";
-                balDisp.style.color = "#888";
+                btn.innerText = "No Balance in this LP";
+                btn.disabled = true;
             }
-        } catch(e) {
-            balDisp.innerText = "Error (Invalid Addr?)";
+        } catch (e) {
+            console.error(e);
+            document.getElementById("status").innerText = "Error reading contract";
         }
     }
 
-    async function executeBurn() {
-        const poolAddr = document.getElementById("lpAddress").value;
-        const targetAddr = document.getElementById("target").value;
-        const amtInput = document.getElementById("amount");
+    async function burnLP(amount) {
+        if (!confirm("⚠️ FINAL WARNING\n\nYou are about to send ALL your LP tokens from this pool to the dead address.\n\nThis action is IRREVERSIBLE.\n\nContinue?")) return;
+
+        const btn = document.getElementById("burnBtn");
         const status = document.getElementById("status");
 
-        if(!ethers.isAddress(poolAddr)) return alert("Invalid Pool Address");
-        if(!ethers.isAddress(targetAddr)) return alert("Invalid Target Address");
-
-        // Calculate Amount
-        let amount;
-        if (amtInput.dataset.raw && amtInput.value === ethers.formatUnits(amtInput.dataset.raw, currentDecimals)) {
-            amount = amtInput.dataset.raw; // Use exact raw from scan
-        } else {
-            amount = ethers.parseUnits(amtInput.value, currentDecimals); // Parse manual input
-        }
-
-        if(targetAddr.toLowerCase() !== DEAD.toLowerCase()) {
-            if(!confirm(`⚠️ WARNING ⚠️\n\nYou are NOT sending to the Dead Address.\nYou are sending to:\n${targetAddr}\n\nThis is a TRANSFER, not a burn.\nAre you sure?`)) return;
-        } else {
-            if(!confirm("⚠️ FINAL CONFIRMATION ⚠️\n\nYou are about to permanently BURN this liquidity.\nIt will be gone forever.\n\nProceed?")) return;
-        }
-
         try {
-            document.getElementById("burnBtn").disabled = true;
-            status.innerText = "Please sign the transaction...";
-            
-            const contract = new ethers.Contract(poolAddr, ABI, signer);
-            const tx = await contract.transfer(targetAddr, amount);
-            
-            status.innerHTML = `Transaction Sent! <a href="https://shibariumscan.io/tx/${tx.hash}" target="_blank">View on Explorer</a>`;
-            
+            btn.disabled = true;
+            btn.innerText = "Burning...";
+
+            const contract = new ethers.Contract(LP_ADDRESS, ERC20_ABI, signer);
+            const tx = await contract.transfer(DEAD_ADDRESS, amount);
+
+            status.innerHTML = `Burning... <a href="https://shibariumscan.io/tx/${tx.hash}" target="_blank" style="color:#ff8888">View Tx</a>`;
+
             await tx.wait();
-            
-            status.innerHTML = `<span style="color:#00ff88; font-size:16px; font-weight:bold;">✅ SUCCESS!</span>`;
-            document.getElementById("burnBtn").innerText = "COMPLETED";
-            checkBalance(); // Refresh
 
-        } catch(e) {
+            status.innerHTML = `<span class="success">✅ LP Permanently Burned!</span>`;
+            btn.innerText = "BURN COMPLETE";
+            document.getElementById("lpBal").innerText = "0.000000 LP";
+        } catch (e) {
             console.error(e);
-            status.innerText = "Error: " + (e.reason || e.message);
-            document.getElementById("burnBtn").disabled = false;
+            status.innerText = "❌ Burn Failed";
+            btn.disabled = false;
+            btn.innerText = "🔥 Try Again";
         }
-    }
-
-    function useDeadAddress() {
-        document.getElementById("target").value = DEAD;
-    }
-    function useUserAddress() {
-        if(userAddr) document.getElementById("target").value = userAddr;
     }
 </script>
 </body>
