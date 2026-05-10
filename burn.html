@@ -7,40 +7,53 @@
     <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.0/dist/ethers.umd.min.js"></script>
     <style>
         body { background: #050505; color: white; font-family: 'Inter', sans-serif; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; }
-        .card { background: #0f0f0f; padding: 40px; border-radius: 24px; border: 1px solid #222; text-align: center; max-width: 480px; box-shadow: 0 0 60px rgba(255,68,68,0.25); }
-        h1 { color: #ff4444; margin: 0 0 10px 0; font-size: 28px; }
-        .contract { font-size: 13px; color: #888; word-break: break-all; margin: 15px 0; }
-        .stat { background: #1a1a1a; padding: 20px; border-radius: 16px; margin: 20px 0; border: 1px solid #333; }
-        .val { font-size: 26px; font-weight: bold; color: #fff; }
-        input { width: 100%; background: #1a1a1a; border: 1px solid #333; color: white; padding: 14px; border-radius: 10px; font-family: monospace; margin: 10px 0; }
-        button { background: #ff4444; color: white; border: none; padding: 16px 32px; font-size: 17px; font-weight: bold; border-radius: 12px; cursor: pointer; width: 100%; margin-top: 10px; transition: 0.2s; }
-        button:hover:not(:disabled) { background: #ff2222; }
+        .card { background: #0f0f0f; padding: 40px; border-radius: 24px; border: 1px solid #222; text-align: center; max-width: 480px; width: 100%; box-shadow: 0 0 60px rgba(255, 68, 68, 0.15); }
+        h1 { color: #ff4444; margin: 0 0 10px 0; font-size: 28px; text-transform: uppercase; letter-spacing: 1px; }
+        p { color: #888; font-size: 13px; margin-bottom: 30px; }
+        
+        .input-group { text-align: left; margin-bottom: 20px; }
+        label { font-size: 11px; color: #666; font-weight: bold; text-transform: uppercase; display: block; margin-bottom: 5px; }
+        input { width: 100%; background: #1a1a1a; border: 1px solid #333; color: white; padding: 14px; border-radius: 10px; font-family: monospace; box-sizing: border-box; }
+        input:focus { border-color: #ff4444; outline: none; }
+
+        .stat { background: #151515; padding: 20px; border-radius: 16px; margin: 20px 0; border: 1px solid #222; }
+        .val { font-size: 26px; font-weight: bold; color: #fff; display: block; margin-top: 5px; font-family: monospace; }
+        
+        button { background: #ff4444; color: white; border: none; padding: 18px; font-size: 16px; font-weight: 800; border-radius: 12px; cursor: pointer; width: 100%; transition: 0.2s; text-transform: uppercase; }
+        button:hover:not(:disabled) { background: #ff2222; box-shadow: 0 0 30px rgba(255,0,0,0.4); }
         button:disabled { background: #333; color: #666; cursor: not-allowed; }
-        #status { margin-top: 20px; font-size: 14px; min-height: 24px; line-height: 1.5; }
+        
+        #status { margin-top: 20px; font-size: 13px; min-height: 24px; line-height: 1.5; color: #666; }
         .success { color: #00ff88; }
         .error { color: #ff6666; }
+        .warn { color: #ffcc00; }
+        a { color: #ff8888; text-decoration: none; border-bottom: 1px dotted #ff8888; }
     </style>
 </head>
 <body>
 <div class="card">
     <h1>🔥 God Mode Burner</h1>
-    <p>Enter any LP Pair Address</p>
+    <p>Permanently destroy LP Tokens</p>
     
-    <input type="text" id="lpAddress" placeholder="0x..." value="0x941abcb1A4278Ff33B50F6Cf9F5A4C8a0888BdeE">
+    <div class="input-group">
+        <label>Target LP Address</label>
+        <input type="text" id="lpAddress" value="0x941abcb1A4278Ff33B50F6Cf9F5A4C8a0888BdeE">
+    </div>
     
     <div class="stat">
-        <span>Your LP Balance</span>
+        <span style="font-size:12px; color:#888;">WALLET BALANCE</span>
         <span class="val" id="lpBal">---</span>
     </div>
 
-    <button id="burnBtn" onclick="connectAndBurn()">Connect Wallet</button>
-    <div id="status"></div>
+    <button id="burnBtn" onclick="connectAndBurn()">1. Connect & Scan</button>
+    <div id="status">Ready</div>
 </div>
 
 <script>
     const DEAD_ADDRESS = "0x000000000000000000000000000000000000dEaD";
-    const SHIBARIUM_RPC = "https://rpc.shibarium.shib.io";   // ← Your correct RPC
+    const SHIBARIUM_ID = "0x6d"; // 109
 
+    // Standard ERC20 ABI
     const ERC20_ABI = [
         "function balanceOf(address) view returns (uint256)",
         "function transfer(address to, uint256 amount) returns (bool)",
@@ -50,85 +63,100 @@
     let provider, signer, userAddr;
 
     async function connectAndBurn() {
-        if (!window.ethereum) return alert("Please install MetaMask or Rabby Wallet");
+        const btn = document.getElementById("burnBtn");
+        const status = document.getElementById("status");
+        
+        if (!window.ethereum) return alert("Wallet not found. Use Rabby or MetaMask.");
 
         try {
-            // Force switch to Shibarium
+            // 1. Force Network Switch
             await window.ethereum.request({
                 method: 'wallet_switchEthereumChain',
-                params: [{ chainId: '0x6d' }]   // 109 in hex
-            });
+                params: [{ chainId: SHIBARIUM_ID }]
+            }).catch(() => console.log("Network switch skipped"));
+
+            provider = new ethers.BrowserProvider(window.ethereum);
+            signer = await provider.getSigner();
+            userAddr = await signer.getAddress();
+
+            btn.innerText = "Scanning Balance...";
+            status.innerText = "Connected: " + userAddr.slice(0,6) + "...";
+            
+            checkBalance();
+
         } catch (e) {
-            console.log("Network switch skipped");
+            console.error(e);
+            status.innerText = "Connection Failed: " + e.message;
         }
-
-        provider = new ethers.JsonRpcProvider(SHIBARIUM_RPC);
-        signer = await new ethers.BrowserProvider(window.ethereum).getSigner();
-        userAddr = await signer.getAddress();
-
-        document.getElementById("burnBtn").innerText = "Checking Balance...";
-        checkBalance();
     }
 
     async function checkBalance() {
         const lpAddress = document.getElementById("lpAddress").value.trim();
-        const status = document.getElementById("status");
         const balDisplay = document.getElementById("lpBal");
+        const btn = document.getElementById("burnBtn");
+        const status = document.getElementById("status");
 
-        if (!ethers.isAddress(lpAddress)) {
-            status.innerText = "❌ Invalid LP Address";
-            return;
-        }
+        if (!ethers.isAddress(lpAddress)) return alert("Invalid Address");
 
         try {
+            // 2. Read Balance
             const contract = new ethers.Contract(lpAddress, ERC20_ABI, provider);
             const bal = await contract.balanceOf(userAddr);
-            const decimals = await contract.decimals();
+            
+            // Safe Decimal Reading (Default to 18 if fails)
+            let decimals = 18;
+            try { decimals = await contract.decimals(); } catch(e){}
 
-            const formatted = parseFloat(ethers.formatUnits(bal, decimals)).toFixed(6);
-            balDisplay.innerText = formatted + " LP";
+            const formatted = ethers.formatUnits(bal, decimals);
+            balDisplay.innerText = parseFloat(formatted).toFixed(4) + " LP";
 
-            const btn = document.getElementById("burnBtn");
             if (bal > 0n) {
-                btn.innerText = "🔥 BURN THIS LP FOREVER";
+                btn.innerText = "🔥 BURN ALL (" + parseFloat(formatted).toFixed(2) + ")";
                 btn.onclick = () => burnLP(lpAddress, bal);
+                status.innerHTML = "<span class='success'>Tokens Found! Ready to burn.</span>";
             } else {
-                btn.innerText = "No Balance in this LP";
+                balDisplay.style.color = "#666";
+                btn.innerText = "Wallet Empty";
                 btn.disabled = true;
+                status.innerHTML = "<span class='warn'>⚠️ Balance is 0.<br>Are your tokens Staked in RicSwap Farms?</span>";
             }
-            status.innerText = "";
         } catch (e) {
             console.error(e);
-            status.innerHTML = `<span class="error">❌ Cannot read LP contract.<br>Please make sure you are connected to Shibarium.</span>`;
+            status.innerHTML = `<span class="error">Read Error. Check VPN/Network.</span>`;
         }
     }
 
-    async function burnLP(lpAddress, amount) {
-        if (!confirm("⚠️ FINAL WARNING\n\nYou are about to permanently burn this LP.\n\nThis action is IRREVERSIBLE.\n\nContinue?")) return;
+    async function burnLP(lpAddress, amountRaw) {
+        if (!confirm("⚠️ FINAL WARNING\n\nThis action is IRREVERSIBLE.\n\nAre you sure you want to burn these tokens?")) return;
 
         const btn = document.getElementById("burnBtn");
         const status = document.getElementById("status");
 
         try {
             btn.disabled = true;
-            btn.innerText = "Burning...";
-            status.innerText = "Please confirm in wallet...";
+            btn.innerText = "Processing...";
+            status.innerText = "Please Sign Transaction...";
 
             const contract = new ethers.Contract(lpAddress, ERC20_ABI, signer);
-            const tx = await contract.transfer(DEAD_ADDRESS, amount);
+            
+            // 3. EXECUTE WITH GAS OVERRIDE (The Critical Fix)
+            const tx = await contract.transfer(DEAD_ADDRESS, amountRaw, {
+                gasLimit: 250000 // Forces the tx through even if RPC lags
+            });
 
-            status.innerHTML = `Burning... <br><a href="https://shibariumscan.io/tx/${tx.hash}" target="_blank" style="color:#ff8888">View Tx</a>`;
+            status.innerHTML = `Sending... <a href="https://shibariumscan.io/tx/${tx.hash}" target="_blank">View TX</a>`;
 
             await tx.wait();
 
-            status.innerHTML = `<span class="success">✅ LP Successfully Burned Forever!</span>`;
-            btn.innerText = "BURN COMPLETE";
-            document.getElementById("lpBal").innerText = "0.000000 LP";
+            status.innerHTML = `<span class="success">✅ BURN SUCCESSFUL!</span>`;
+            btn.innerText = "COMPLETED";
+            document.getElementById("lpBal").innerText = "0.0000 LP";
+            
         } catch (e) {
             console.error(e);
-            status.innerHTML = `<span class="error">❌ Burn Failed<br>${e.reason || e.message || "Unknown error"}</span>`;
+            status.innerHTML = `<span class="error">Failed: ${e.reason || e.message}</span>`;
             btn.disabled = false;
-            btn.innerText = "Try Again";
+            btn.innerText = "TRY AGAIN";
         }
     }
 </script>
