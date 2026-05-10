@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RicSwap | System Doctor</title>
+    <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.0/dist/ethers.umd.min.js"></script>
+    <style>
+        body { 
+            background: #050505; 
+            color: #e0e0e0; 
+            font-family: 'Inter', monospace; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            padding: 40px 20px; 
+            margin: 0; 
+        }
+        .container { width: 100%; max-width: 600px; }
+        
+        h1 { color: #00ccff; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 1px; font-size: 24px; text-align: center; }
+        p { color: #666; font-size: 13px; text-align: center; margin-bottom: 30px; }
+
+        /* Diagnostic Card */
+        .card { background: #0f0f0f; border: 1px solid #222; border-radius: 16px; padding: 0; overflow: hidden; margin-bottom: 20px; }
+        
+        .row { display: flex; justify-content: space-between; align-items: center; padding: 16px 20px; border-bottom: 1px solid #222; }
+        .row:last-child { border-bottom: none; }
+        
+        .label { font-size: 13px; color: #888; font-weight: 600; text-transform: uppercase; }
+        .val { font-size: 14px; color: #fff; font-weight: 700; display: flex; align-items: center; gap: 10px; }
+
+        /* Indicators */
+        .status-dot { width: 10px; height: 10px; border-radius: 50%; background: #333; display: inline-block; }
+        .ok { background: #00ff88; box-shadow: 0 0 10px rgba(0,255,136,0.5); }
+        .fail { background: #ff4444; box-shadow: 0 0 10px rgba(255,68,68,0.5); }
+        .warn { background: #ffcc00; }
+
+        button { width: 100%; padding: 16px; background: #00ccff; color: #000; border: none; font-weight: 800; font-size: 16px; cursor: pointer; border-radius: 12px; margin-top: 20px; transition: 0.2s; }
+        button:hover { background: #33ddff; transform: scale(1.02); }
+        button:disabled { background: #222; color: #555; cursor: not-allowed; transform: none; }
+
+        .fix-btn { padding: 6px 12px; font-size: 11px; background: #ff4444; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 700; }
+        
+        .console { background: #000; padding: 15px; border-radius: 8px; border: 1px solid #333; font-size: 12px; color: #888; height: 150px; overflow-y: auto; margin-top: 20px; font-family: monospace; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>System Doctor</h1>
+    <p>Diagnose why Rabby cannot see your LP tokens.</p>
+
+    <div class="card">
+        <!-- 1. Network Check -->
+        <div class="row">
+            <span class="label">1. Network Connection</span>
+            <div class="val">
+                <span id="netText">Waiting...</span>
+                <div id="netDot" class="status-dot"></div>
+            </div>
+        </div>
+        
+        <!-- 2. Wallet Identity -->
+        <div class="row">
+            <span class="label">2. Active Wallet</span>
+            <div class="val">
+                <span id="walletText">---</span>
+                <div id="walletDot" class="status-dot"></div>
+            </div>
+        </div>
+
+        <!-- 3. Contract Existence -->
+        <div class="row">
+            <span class="label">3. LP Contract Code</span>
+            <div class="val">
+                <span id="codeText">---</span>
+                <div id="codeDot" class="status-dot"></div>
+            </div>
+        </div>
+
+        <!-- 4. Balance Check -->
+        <div class="row">
+            <span class="label">4. Token Balance</span>
+            <div class="val">
+                <span id="balText">---</span>
+                <div id="balDot" class="status-dot"></div>
+            </div>
+        </div>
+    </div>
+
+    <button id="runBtn" onclick="runDiagnosis()">RUN DIAGNOSIS</button>
+    
+    <div class="console" id="logs">
+        > Ready to scan...<br>
+    </div>
+</div>
+
+<script>
+    // CONFIG
+    const SHIBARIUM_ID = 109;
+    const SHIBARIUM_HEX = "0x6d";
+    const POOL_ADDR = "0x941abcb1A4278Ff33B50F6Cf9F5A4C8a0888BdeE";
+    const EXPECTED_OWNER = "0x5E5aE526D45d69991039901a29148029a4889102";
+    
+    const ABI = [
+        "function balanceOf(address) view returns (uint256)",
+        "function decimals() view returns (uint8)"
+    ];
+
+    // LOGGER
+    function log(msg, type="info") {
+        const box = document.getElementById("logs");
+        const color = type === "error" ? "#ff4444" : (type === "success" ? "#00ff88" : "#888");
+        box.innerHTML += `<span style="color:${color}">> ${msg}</span><br>`;
+        box.scrollTop = box.scrollHeight;
+    }
+
+    async function runDiagnosis() {
+        if (!window.ethereum) return alert("No Wallet Found");
+        
+        const btn = document.getElementById("runBtn");
+        btn.disabled = true;
+        btn.innerText = "SCANNING...";
+        
+        const provider = new ethers.BrowserProvider(window.ethereum);
+        
+        // --- STEP 1: CHECK NETWORK ---
+        try {
+            const net = await provider.getNetwork();
+            const chainId = Number(net.chainId);
+            
+            if (chainId === SHIBARIUM_ID) {
+                document.getElementById("netText").innerText = "Shibarium (OK)";
+                document.getElementById("netText").style.color = "#00ff88";
+                document.getElementById("netDot").className = "status-dot ok";
+                log("Network: Connected to Shibarium", "success");
+            } else {
+                document.getElementById("netText").innerHTML = `Wrong Chain (${chainId}) <button class='fix-btn' onclick='switchNet()'>FIX</button>`;
+                document.getElementById("netText").style.color = "#ff4444";
+                document.getElementById("netDot").className = "status-dot fail";
+                log(`Network Error: You are on Chain ID ${chainId}. Must be 109.`, "error");
+                btn.disabled = false;
+                btn.innerText = "FIX NETWORK FIRST";
+                return; // Stop here
+            }
+        } catch (e) {
+            log("Network Check Failed: " + e.message, "error");
+        }
+
+        // --- STEP 2: CHECK WALLET ---
+        let userAddr;
+        try {
+            const signer = await provider.getSigner();
+            userAddr = await signer.getAddress();
+            
+            if (userAddr.toLowerCase() === EXPECTED_OWNER.toLowerCase()) {
+                document.getElementById("walletText").innerText = "Match (Owner)";
+                document.getElementById("walletText").style.color = "#00ff88";
+                document.getElementById("walletDot").className = "status-dot ok";
+                log("Wallet: Authenticated as Owner", "success");
+            } else {
+                document.getElementById("walletText").innerText = "MISMATCH";
+                document.getElementById("walletText").style.color = "#ff4444";
+                document.getElementById("walletDot").className = "status-dot fail";
+                log(`Wallet Mismatch! You are ${userAddr.slice(0,6)}...`, "error");
+                log(`REQUIRED: ${EXPECTED_OWNER.slice(0,6)}...`, "warn");
+            }
+        } catch(e) { log("Wallet Auth Failed", "error"); }
+
+        // --- STEP 3: CHECK CONTRACT CODE ---
+        try {
+            const code = await provider.getCode(POOL_ADDR);
+            if (code !== "0x") {
+                document.getElementById("codeText").innerText = "Found on Chain";
+                document.getElementById("codeText").style.color = "#00ff88";
+                document.getElementById("codeDot").className = "status-dot ok";
+                log("Contract: Exists on Shibarium", "success");
+            } else {
+                document.getElementById("codeText").innerText = "MISSING (404)";
+                document.getElementById("codeText").style.color = "#ff4444";
+                document.getElementById("codeDot").className = "status-dot fail";
+                log("CRITICAL: Contract not found. Are you sure you are on Shibarium?", "error");
+            }
+        } catch(e) { log("Code Check Failed", "error"); }
+
+        // --- STEP 4: CHECK BALANCE ---
+        try {
+            const contract = new ethers.Contract(POOL_ADDR, ABI, provider);
+            const bal = await contract.balanceOf(userAddr);
+            
+            if (bal > 0n) {
+                const dec = await contract.decimals();
+                const fmt = ethers.formatUnits(bal, dec);
+                document.getElementById("balText").innerText = parseFloat(fmt).toFixed(2) + " LP";
+                document.getElementById("balText").style.color = "#00ff88";
+                document.getElementById("balDot").className = "status-dot ok";
+                log("Balance: POSITIVE. Ready to Burn.", "success");
+            } else {
+                document.getElementById("balText").innerText = "0.00 LP";
+                document.getElementById("balText").style.color = "#ff4444";
+                document.getElementById("balDot").className = "status-dot fail";
+                log("Balance: Zero. Tokens are not in this wallet.", "error");
+            }
+        } catch (e) {
+            log("Balance Read Error: " + (e.reason || e.message), "error");
+        }
+
+        btn.disabled = false;
+        btn.innerText = "RUN AGAIN";
+    }
+
+    async function switchNet() {
+        try {
+            await window.ethereum.request({
+                method: 'wallet_switchEthereumChain',
+                params: [{ chainId: SHIBARIUM_HEX }],
+            });
+            runDiagnosis();
+        } catch (e) { alert("Switch failed. Please do it manually in Rabby."); }
+    }
+</script>
+</body>
+</html>
