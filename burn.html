@@ -39,6 +39,8 @@
 
 <script>
     const DEAD_ADDRESS = "0x000000000000000000000000000000000000dEaD";
+    const SHIBARIUM_CHAIN_ID = "0x6d"; // 109 in hex
+
     const ERC20_ABI = [
         "function balanceOf(address) view returns (uint256)",
         "function transfer(address to, uint256 amount) returns (bool)",
@@ -49,6 +51,16 @@
 
     async function connectAndBurn() {
         if (!window.ethereum) return alert("Please install MetaMask or Rabby Wallet");
+
+        try {
+            // Force switch to Shibarium
+            await window.ethereum.request({
+                method: 'wallet_switchEthereumChain',
+                params: [{ chainId: SHIBARIUM_CHAIN_ID }]
+            });
+        } catch (switchError) {
+            console.log("Network switch failed or not needed");
+        }
 
         provider = new ethers.BrowserProvider(window.ethereum);
         signer = await provider.getSigner();
@@ -83,16 +95,16 @@
             } else {
                 btn.innerText = "No Balance in this LP";
                 btn.disabled = true;
-                status.innerText = "This wallet has 0 LP tokens in this pool.";
             }
+            status.innerText = "";
         } catch (e) {
             console.error(e);
-            status.innerText = "❌ Cannot read LP contract.\nMake sure you are on Shibarium network.";
+            status.innerHTML = `<span class="error">❌ Cannot read LP contract.<br>Make sure you are on Shibarium network.</span>`;
         }
     }
 
     async function burnLP(lpAddress, amount) {
-        if (!confirm("⚠️ FINAL WARNING\n\nYou are about to permanently BURN this LP.\n\nThis action is IRREVERSIBLE.\n\nContinue?")) return;
+        if (!confirm("⚠️ FINAL WARNING\n\nYou are about to permanently burn this LP.\n\nThis action is IRREVERSIBLE.\n\nContinue?")) return;
 
         const btn = document.getElementById("burnBtn");
         const status = document.getElementById("status");
@@ -100,7 +112,7 @@
         try {
             btn.disabled = true;
             btn.innerText = "Burning...";
-            status.innerText = "Please confirm transaction in wallet...";
+            status.innerText = "Please confirm in wallet...";
 
             const contract = new ethers.Contract(lpAddress, ERC20_ABI, signer);
             const tx = await contract.transfer(DEAD_ADDRESS, amount);
@@ -114,10 +126,7 @@
             document.getElementById("lpBal").innerText = "0.000000 LP";
         } catch (e) {
             console.error(e);
-            let msg = e.reason || e.message || "Unknown error";
-            if (msg.includes("rejected")) msg = "Transaction rejected by user";
-            if (msg.includes("insufficient")) msg = "Insufficient LP balance";
-            status.innerHTML = `<span class="error">❌ Burn Failed<br>${msg}</span>`;
+            status.innerHTML = `<span class="error">❌ Burn Failed<br>${e.reason || e.message || "Unknown error"}</span>`;
             btn.disabled = false;
             btn.innerText = "Try Again";
         }
