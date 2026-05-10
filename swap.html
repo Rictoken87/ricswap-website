@@ -96,7 +96,7 @@
 
         let provider, signer, userAddr;
 
-        // Always keep BONE available
+        // Default tokens - BONE is always available
         let fromToken = { symbol: "BONE", address: CONFIG.WBONE, decimals: 18, isNative: true };
         let toToken   = { symbol: "RIC",  address: "0x12C94d3A30daa09f81Ea6c037004E6e99A4A3dfc", decimals: 18, isNative: false };
 
@@ -135,7 +135,7 @@
                 const pair = await factory.getPair(CONFIG.WBONE, address);
 
                 if (pair === "0x0000000000000000000000000000000000000000") {
-                    alert("No liquidity pool found with BONE for this token.");
+                    alert("No liquidity pool found with BONE.");
                     return;
                 }
 
@@ -145,15 +145,11 @@
 
                 const newToken = { symbol, address, decimals, isNative: false };
 
-                if (side === 'from') {
-                    fromToken = newToken;
-                    document.getElementById("fromTokenDisplay").textContent = symbol;
-                } else {
-                    toToken = newToken;
-                    document.getElementById("toTokenDisplay").textContent = symbol;
-                }
+                if (side === 'from') fromToken = newToken;
+                else toToken = newToken;
 
-                alert(`✅ ${symbol} added successfully!`);
+                document.getElementById(side + "TokenDisplay").textContent = symbol;
+                alert(`✅ ${symbol} added!`);
                 document.getElementById(inputId).value = "";
                 updateBalances();
                 updateQuote();
@@ -172,16 +168,10 @@
         }
 
         async function updateBalances() {
-            // From
             if (fromToken.isNative) {
                 const bal = await provider.getBalance(userAddr);
                 document.getElementById("fromBalance").textContent = parseFloat(ethers.formatEther(bal)).toFixed(4);
-            } else {
-                const contract = new ethers.Contract(fromToken.address, ERC20_ABI, provider);
-                const bal = await contract.balanceOf(userAddr);
-                document.getElementById("fromBalance").textContent = parseFloat(ethers.formatUnits(bal, fromToken.decimals)).toFixed(4);
             }
-            // To
             if (!toToken.isNative) {
                 const contract = new ethers.Contract(toToken.address, ERC20_ABI, provider);
                 const bal = await contract.balanceOf(userAddr);
@@ -201,9 +191,7 @@
             try {
                 const router = new ethers.Contract(CONFIG.ROUTER, ROUTER_ABI, provider);
                 const path = [fromToken.address, toToken.address];
-                const amountInWei = fromToken.isNative ? 
-                    ethers.parseEther(amountIn) : 
-                    ethers.parseUnits(amountIn, fromToken.decimals);
+                const amountInWei = fromToken.isNative ? ethers.parseEther(amountIn) : ethers.parseUnits(amountIn, fromToken.decimals);
 
                 const amounts = await router.getAmountsOut(amountInWei, path);
                 const amountOut = amounts[1];
