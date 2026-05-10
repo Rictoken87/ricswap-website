@@ -18,19 +18,16 @@
         .nav { padding: 20px 5%; display: flex; align-items: center; background: rgba(5,5,5,0.95); border-bottom: 1px solid #222; }
         .logo { font-size: 24px; font-weight: 900; color: var(--gold); }
         .connect-btn { margin-left: auto; padding: 8px 20px; background: rgba(255,215,0,0.1); color: var(--gold); border: 1px solid var(--gold); border-radius: 999px; cursor: pointer; }
-       
+        
         .container { flex: 1; display: flex; align-items: center; justify-content: center; padding: 20px; }
         .card { width: 100%; max-width: 460px; background: var(--card-bg); padding: 24px; border-radius: 24px; border: 1px solid var(--border); }
-       
+        
         .input-box { background: #111; border: 1px solid #222; border-radius: 16px; padding: 16px; margin-bottom: 12px; }
         .label-row { display: flex; justify-content: space-between; margin-bottom: 8px; color: #aaa; font-size: 13px; }
         input { background: transparent; border: none; color: white; font-size: 28px; width: 100%; outline: none; }
-       
-        button { width: 100%; padding: 16px; background: var(--magma); color: white; border: none; border-radius: 12px; font-weight: bold; margin-top: 20px; cursor: pointer; font-size: 16px; text-transform: uppercase; }
-        button:disabled { background: #333; color: #666; cursor: not-allowed; }
-       
-        #status { margin-top: 15px; text-align: center; font-size: 14px; min-height: 28px; color: #888; word-break: break-all; }
-        a { color: var(--gold); }
+        
+        button { width: 100%; padding: 16px; background: var(--magma); color: white; border: none; border-radius: 12px; font-weight: bold; margin-top: 20px; cursor: pointer; }
+        #status { margin-top: 15px; text-align: center; font-size: 14px; min-height: 28px; }
     </style>
 </head>
 <body>
@@ -38,131 +35,84 @@
         <div class="logo">RicSwap</div>
         <button id="connectBtn" class="connect-btn">Connect Wallet</button>
     </nav>
+
     <div class="container">
         <div class="card">
-            <h2>Add Liquidity (Native)</h2>
-           
+            <h2>Add Liquidity</h2>
+            
             <div class="input-box">
                 <div class="label-row">
-                    <span>BONE (ETH)</span>
+                    <span>BONE</span>
                     <span>Bal: <span id="balA">0.00</span></span>
                 </div>
                 <input type="number" id="amountA" placeholder="0.0" value="1">
             </div>
+
             <div style="text-align:center; font-size:32px; margin:10px 0;">+</div>
+
             <div class="input-box">
                 <div class="label-row">
-                    <span>RIC Token</span>
+                    <span>RIC</span>
                     <span>Bal: <span id="balB">0.00</span></span>
                 </div>
                 <input type="number" id="amountB" placeholder="0.0" value="1">
             </div>
-            
-            <button id="actionBtn" onclick="handleAction()">Connect First</button>
-           
-            <div id="status">Ready to pool.</div>
+
+            <button onclick="supply()">SUPPLY</button>
+            <div id="status"></div>
         </div>
     </div>
+
     <script>
         const CONFIG = {
             ROUTER: "0xcfBF0917F2fCDC4F5170aC991fa26F2Bc3da9Fd4",
-            RIC: "0x12C94d3A30daa09f81Ea6c037004E6e99A4A3dfc",
-            CHAIN_ID: "0x6d"
+            RIC: "0x12C94d3A30daa09f81Ea6c037004E6e99A4A3dfc"
         };
 
         let signer, userAddr, provider;
-        let isApproved = false;
-
-        const ABIS = {
-            ERC20: [
-                "function approve(address spender, uint256 amount) returns (bool)",
-                "function allowance(address owner, address spender) view returns (uint256)",
-                "function balanceOf(address) view returns (uint256)"
-            ],
-            ROUTER: [
-                "function addLiquidityETH(address token, uint amountTokenDesired, uint amountTokenMin, uint amountETHMin, address to, uint deadline) payable returns (uint amountToken, uint amountETH, uint liquidity)"
-            ]
-        };
 
         async function connect() {
-            if (!window.ethereum) return alert("No Wallet Found");
-
-            try {
-                await window.ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: CONFIG.CHAIN_ID }] });
-            } catch(e) {}
+            if (!window.ethereum) return alert("Please install MetaMask or Rabby Wallet");
 
             provider = new ethers.BrowserProvider(window.ethereum);
             signer = await provider.getSigner();
             userAddr = await signer.getAddress();
 
             document.getElementById("connectBtn").innerText = userAddr.slice(0,6) + "...";
-            document.getElementById("status").innerText = "Checking balance...";
-           
-            await updateBalances();
-            await checkAllowance();
+            updateBalances();
         }
 
         async function updateBalances() {
+            if (!userAddr || !provider) return;
+
             try {
+                // BONE Balance
                 const boneBal = await provider.getBalance(userAddr);
                 document.getElementById("balA").innerText = parseFloat(ethers.formatEther(boneBal)).toFixed(4);
 
-                const ricContract = new ethers.Contract(CONFIG.RIC, ABIS.ERC20, provider);
+                // RIC Balance
+                const ricContract = new ethers.Contract(CONFIG.RIC, ["function balanceOf(address) view returns (uint256)"], provider);
                 const ricBal = await ricContract.balanceOf(userAddr);
                 document.getElementById("balB").innerText = parseFloat(ethers.formatUnits(ricBal, 18)).toFixed(4);
-            } catch (e) {}
-        }
-
-        async function checkAllowance() {
-            const ricContract = new ethers.Contract(CONFIG.RIC, ABIS.ERC20, signer);
-            const allowed = await ricContract.allowance(userAddr, CONFIG.ROUTER);
-            const btn = document.getElementById("actionBtn");
-
-            if (allowed < ethers.parseUnits("10000", 18)) {
-                isApproved = false;
-                btn.innerText = "1. APPROVE RIC";
-            } else {
-                isApproved = true;
-                btn.innerText = "2. SUPPLY LIQUIDITY";
-            }
-            btn.disabled = false;
-        }
-
-        async function handleAction() {
-            if (!signer) return connect();
-            if (!isApproved) return approveRic();
-            return supplyLiquidity();
-        }
-
-        async function approveRic() {
-            const btn = document.getElementById("actionBtn");
-            const status = document.getElementById("status");
-            try {
-                btn.disabled = true;
-                btn.innerText = "Approving...";
-                const ricContract = new ethers.Contract(CONFIG.RIC, ABIS.ERC20, signer);
-                const tx = await ricContract.approve(CONFIG.ROUTER, ethers.MaxUint256);
-                status.innerHTML = `Approving... <a href="https://shibariumscan.io/tx/${tx.hash}" target="_blank">View</a>`;
-                await tx.wait();
-                status.innerText = "✅ RIC Approved!";
-                checkAllowance();
-            } catch(e) {
-                status.innerText = "Approve Failed";
-                btn.disabled = false;
+            } catch (e) {
+                console.error(e);
             }
         }
 
-        async function supplyLiquidity() {
+        async function supply() {
             const status = document.getElementById("status");
-            const btn = document.getElementById("actionBtn");
-            const amountBone = document.getElementById("amountA").value;
-            const amountRic = document.getElementById("amountB").value;
+            const btn = document.querySelector("button");
+            btn.disabled = true;
+            btn.innerText = "Supplying...";
 
             try {
-                btn.disabled = true;
-                btn.innerText = "Supplying...";
+                const amountBone = document.getElementById("amountA").value;
+                const amountRic = document.getElementById("amountB").value;
 
-                const router = new ethers.Contract(CONFIG.ROUTER, ABIS.ROUTER, signer);
+                const router = new ethers.Contract(CONFIG.ROUTER, [
+                    "function addLiquidityETH(address,uint256,uint256,uint256,address,uint256) payable returns (uint256,uint256,uint256)"
+                ], signer);
+
                 const tx = await router.addLiquidityETH(
                     CONFIG.RIC,
                     ethers.parseUnits(amountRic, 18),
@@ -173,14 +123,17 @@
                     { value: ethers.parseEther(amountBone) }
                 );
 
-                status.innerHTML = `Tx Sent! <a href="https://shibariumscan.io/tx/${tx.hash}" target="_blank">View</a>`;
+                status.innerHTML = `Tx Sent → <a href="https://shibariumscan.io/tx/${tx.hash}" target="_blank">View</a>`;
                 await tx.wait();
-                status.innerHTML = `<span style="color:#00ff88">✅ Success! You received LP tokens.</span>`;
+                status.innerHTML = `<span style="color:#00ff88">✅ Success! LP tokens should now appear in your wallet.</span>`;
+                
+                updateBalances();
             } catch (e) {
-                status.innerHTML = `<span style="color:#ff6666">Failed: ${e.reason || e.message}</span>`;
+                console.error(e);
+                status.innerHTML = `<span style="color:#ff6666">❌ ${e.reason || e.message}</span>`;
             } finally {
                 btn.disabled = false;
-                btn.innerText = "SUPPLY AGAIN";
+                btn.innerText = "SUPPLY";
             }
         }
 
