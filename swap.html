@@ -119,6 +119,7 @@
 
             document.getElementById("connectBtn").textContent = userAddr.slice(0,6) + "..." + userAddr.slice(-4);
             updateBalances();
+            updateQuote();
         }
 
         async function addCustomToken(side) {
@@ -128,14 +129,14 @@
             if (!address || address.length !== 42) return alert("Invalid address");
 
             const status = document.getElementById("status");
-            status.textContent = "Checking LP with BONE...";
+            status.textContent = "Checking LP...";
 
             try {
                 const factory = new ethers.Contract(CONFIG.FACTORY, ["function getPair(address,address) view returns (address)"], provider);
                 const pair = await factory.getPair(CONFIG.WBONE, address);
 
                 if (pair === "0x0000000000000000000000000000000000000000") {
-                    alert("No liquidity pool found with BONE for this token.");
+                    alert("No liquidity pool found with BONE.");
                     status.textContent = "";
                     return;
                 }
@@ -154,20 +155,20 @@
                     document.getElementById("toTokenDisplay").textContent = symbol;
                 }
 
-                alert(`✅ ${symbol} added successfully!`);
+                alert(`✅ ${symbol} added!`);
                 document.getElementById(inputId).value = "";
                 status.textContent = "";
                 updateBalances();
                 updateQuote();
 
             } catch (e) {
-                alert("Failed to load token. Make sure LP exists.");
+                alert("Failed to add token.");
                 status.textContent = "";
             }
         }
 
         function openTokenModal(side) {
-            alert("Use the box below to paste any token address and click 'Add'.\n\nThe system will check LP with BONE.");
+            alert("Paste token address in the box below and click 'Add'");
         }
 
         function switchTokens() {
@@ -179,12 +180,16 @@
         }
 
         async function updateBalances() {
-            // From balance
+            // From
             if (fromToken.isNative) {
                 const bal = await provider.getBalance(userAddr);
                 document.getElementById("fromBalance").textContent = parseFloat(ethers.formatEther(bal)).toFixed(4);
+            } else {
+                const contract = new ethers.Contract(fromToken.address, ERC20_ABI, provider);
+                const bal = await contract.balanceOf(userAddr);
+                document.getElementById("fromBalance").textContent = parseFloat(ethers.formatUnits(bal, fromToken.decimals)).toFixed(4);
             }
-            // To balance
+            // To
             if (!toToken.isNative) {
                 const contract = new ethers.Contract(toToken.address, ERC20_ABI, provider);
                 const bal = await contract.balanceOf(userAddr);
