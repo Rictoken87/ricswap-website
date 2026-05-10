@@ -3,102 +3,49 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RicSwap | Wallet Inspector</title>
+    <title>RicSwap | Burn Diagnostic</title>
     <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.0/dist/ethers.umd.min.js"></script>
     <style>
-        body { background: #050505; color: #e0e0e0; font-family: 'Inter', sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; margin: 0; }
-        .card { background: #0f0f0f; border: 1px solid #333; padding: 30px; border-radius: 20px; width: 100%; max-width: 500px; text-align: center; }
-        h1 { color: #00ccff; margin: 0 0 20px 0; font-size: 24px; }
-        
-        .stat-box { background: #111; padding: 20px; border-radius: 12px; margin-bottom: 15px; border: 1px solid #222; }
-        .label { display: block; font-size: 12px; color: #888; margin-bottom: 8px; text-transform: uppercase; }
-        .value { font-size: 24px; font-weight: bold; font-family: monospace; color: #666; }
-        .ready { color: #00ff88; text-shadow: 0 0 20px rgba(0,255,136,0.5); }
-        
-        button { background: #00ccff; color: #000; border: none; padding: 15px 30px; border-radius: 10px; font-weight: bold; font-size: 16px; cursor: pointer; width: 100%; transition: 0.2s; }
-        button:hover { background: #33ddff; transform: scale(1.02); }
-        
-        .note { margin-top: 20px; font-size: 13px; color: #888; line-height: 1.5; }
+        body { background: #050505; color: white; font-family: monospace; padding: 20px; }
+        .card { background: #0f0f0f; padding: 30px; border-radius: 16px; max-width: 600px; margin: 0 auto; }
+        button { padding: 12px 24px; background: #ff4444; color: white; border: none; border-radius: 8px; margin: 10px; cursor: pointer; }
     </style>
 </head>
 <body>
-
 <div class="card">
-    <h1>🔍 Wallet Truth Seeker</h1>
-    
-    <div class="stat-box">
-        <span class="label">Pool 1 (Original) Balance</span>
-        <div id="bal1" class="value">---</div>
-    </div>
-
-    <div class="stat-box">
-        <span class="label">Pool 2 (New) Balance</span>
-        <div id="bal2" class="value">---</div>
-    </div>
-
-    <button onclick="checkRealBalance()">SCAN WALLET NOW</button>
-    
-    <div class="note" id="advice">
-        Click SCAN to check if tokens are in your wallet.<br>
-        If balance is 0, you must <b>Unstake</b> on RicSwap.
-    </div>
+    <h1>🔍 Burner Diagnostic</h1>
+    <button onclick="checkMilestone()">Check Milestone Status</button>
+    <div id="output" style="margin-top:20px; white-space: pre-wrap; color:#aaa;"></div>
 </div>
 
 <script>
-    const POOL1 = "0x941abcb1A4278Ff33B50F6Cf9F5A4C8a0888BdeE";
-    const POOL2 = "0xA2D4194a094D4663850E6D1Cb1A5c77f63e03118";
-    const SHIBARIUM_RPC = "https://rpc.shibarium.shib.io";
-    
-    const ABI = ["function balanceOf(address) view returns (uint256)", "function decimals() view returns (uint8)"];
+    const BURNER = "0x485c2fbCD26b154504D34F7725E70Cb1925a59fa";
+    const RIC = "0x12C94d3A30daa09f81Ea6c037004E6e99A4A3dfc";
 
-    async function checkRealBalance() {
-        if(!window.ethereum) return alert("No Wallet");
-        
-        const btn = document.querySelector("button");
-        btn.innerText = "SCANNING...";
-        btn.disabled = true;
+    async function checkMilestone() {
+        const output = document.getElementById("output");
+        output.innerHTML = "Checking...\n";
 
         try {
-            // We use the public RPC to bypass wallet cache issues
-            const provider = new ethers.JsonRpcProvider(SHIBARIUM_RPC);
-            const walletProvider = new ethers.BrowserProvider(window.ethereum);
-            const signer = await walletProvider.getSigner();
-            const userAddr = await signer.getAddress();
-
-            // Check Pool 1
-            await checkToken(provider, POOL1, "bal1", userAddr);
+            const provider = new ethers.JsonRpcProvider("https://rpc.shibarium.shib.io");
             
-            // Check Pool 2
-            await checkToken(provider, POOL2, "bal2", userAddr);
+            const ricContract = new ethers.Contract(RIC, ["function balanceOf(address) view returns (uint256)"], provider);
+            const burnerBalance = await ricContract.balanceOf(BURNER);
 
-            btn.innerText = "SCAN COMPLETE";
-            
-        } catch(e) {
-            console.error(e);
-            alert("Connection Error. Please try again.");
-            btn.innerText = "RETRY SCAN";
-            btn.disabled = false;
-        }
-    }
+            output.innerHTML += `RIC in Burner: ${ethers.formatUnits(burnerBalance, 18)} RIC\n\n`;
 
-    async function checkToken(provider, tokenAddr, elId, userAddr) {
-        const el = document.getElementById(elId);
-        try {
-            const contract = new ethers.Contract(tokenAddr, ABI, provider);
-            const bal = await contract.balanceOf(userAddr);
+            const burner = new ethers.Contract(BURNER, [
+                "function getStatus() view returns (uint256 currentLP, bool isMilestoneReached, bool isBurned)"
+            ], provider);
+
+            const status = await burner.getStatus();
             
-            if(bal > 0n) {
-                const dec = await contract.decimals(); // Usually 18
-                const fmt = ethers.formatUnits(bal, dec);
-                el.innerText = parseFloat(fmt).toFixed(4) + " LP";
-                el.className = "value ready";
-                document.getElementById("advice").innerHTML = "<b style='color:#00ff88'>✅ TOKENS FOUND!</b><br>You can now run the Burn Tool.";
-            } else {
-                el.innerText = "0.0000 LP";
-                el.className = "value";
-            }
-        } catch(e) {
-            el.innerText = "Error";
+            output.innerHTML += `Is Milestone Reached: ${status[1]}\n`;
+            output.innerHTML += `Is Already Burned: ${status[2]}\n`;
+            output.innerHTML += `Current LP in Burner: ${ethers.formatEther(status[0])} LP\n`;
+
+        } catch (e) {
+            output.innerHTML += "Error: " + e.message;
         }
     }
 </script>
