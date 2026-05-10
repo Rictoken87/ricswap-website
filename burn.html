@@ -3,110 +3,72 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RicSwap | Burn LP</title>
+    <title>RicSwap | Trigger Burn</title>
     <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.0/dist/ethers.umd.min.js"></script>
     <style>
         body { background: #050505; color: white; font-family: 'Inter', sans-serif; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; }
-        .card { background: #0f0f0f; padding: 40px; border-radius: 24px; border: 1px solid #222; text-align: center; max-width: 460px; box-shadow: 0 0 60px rgba(255,68,68,0.25); }
+        .card { background: #0f0f0f; padding: 40px; border-radius: 24px; border: 1px solid #222; text-align: center; max-width: 460px; box-shadow: 0 0 60px rgba(255,68,68,0.3); }
         h1 { color: #ff4444; margin: 0 0 10px 0; font-size: 28px; }
-        .info { font-size: 14px; color: #888; margin: 15px 0; word-break: break-all; }
-        .stat { background: #1a1a1a; padding: 20px; border-radius: 16px; margin: 20px 0; border: 1px solid #333; }
-        .val { font-size: 26px; font-weight: bold; color: #fff; }
-        button { background: #ff4444; color: white; border: none; padding: 16px 32px; font-size: 17px; font-weight: bold; border-radius: 12px; cursor: pointer; width: 100%; margin-top: 10px; transition: 0.2s; }
-        button:hover:not(:disabled) { background: #ff2222; box-shadow: 0 0 25px rgba(255,68,68,0.5); }
+        .info { font-size: 14px; color: #aaa; margin: 20px 0; }
+        button { background: #ff4444; color: white; border: none; padding: 18px 32px; font-size: 18px; font-weight: bold; border-radius: 12px; cursor: pointer; width: 100%; margin-top: 15px; }
+        button:hover:not(:disabled) { background: #ff2222; }
         button:disabled { background: #333; color: #666; cursor: not-allowed; }
-        #status { margin-top: 20px; font-size: 14px; min-height: 24px; line-height: 1.5; }
+        #status { margin-top: 20px; font-size: 14px; min-height: 28px; }
         .success { color: #00ff88; }
     </style>
 </head>
 <body>
 <div class="card">
-    <h1>🔥 Burn LP</h1>
+    <h1>🔥 Trigger Burn</h1>
     <div class="info">
-        LP Pair: 0x941abcb1A4278Ff33B50F6Cf9F5A4C8a0888BdeE<br>
-        Burner: 0x485c2fbCD26b154504D34F7725E70Cb1925a59fa
-    </div>
-    
-    <div class="stat">
-        <span>LP Tokens in Burner</span>
-        <span class="val" id="lpBal">Loading...</span>
+        Burner Contract:<br>
+        <small>0x485c2fbCD26b154504D34F7725E70Cb1925a59fa</small>
     </div>
 
-    <button id="burnBtn" onclick="connectAndBurn()">Connect Wallet</button>
+    <button id="burnBtn" onclick="connectAndTrigger()">Connect Wallet & Trigger Burn</button>
     <div id="status"></div>
 </div>
 
 <script>
     const BURNER_ADDRESS = "0x485c2fbCD26b154504D34F7725E70Cb1925a59fa";
-    const DEAD_ADDRESS = "0x000000000000000000000000000000000000dEaD";
 
     const BURNER_ABI = [
         "function triggerMilestoneBurn()",
-        "function getStatus() view returns (uint256 currentLP, bool isMilestoneReached, bool isBurned, uint256 currentVipThreshold, uint256 currentServiceFee)"
+        "function getStatus() view returns (uint256 currentLP, bool isMilestoneReached, bool isBurned)"
     ];
 
-    let provider, signer, userAddr;
+    let signer;
 
-    async function connectAndBurn() {
-        if (!window.ethereum) return alert("Please install MetaMask or Rabby Wallet");
+    async function connectAndTrigger() {
+        if (!window.ethereum) return alert("Please install MetaMask or Rabby");
 
-        provider = new ethers.JsonRpcProvider("https://rpc.shibarium.shib.io");
-        signer = await new ethers.BrowserProvider(window.ethereum).getSigner();
-        userAddr = await signer.getAddress();
+        const provider = new ethers.BrowserProvider(window.ethereum);
+        signer = await provider.getSigner();
 
-        document.getElementById("burnBtn").innerText = "Checking...";
-        checkStatus();
-    }
-
-    async function checkStatus() {
-        try {
-            const burner = new ethers.Contract(BURNER_ADDRESS, BURNER_ABI, provider);
-            const status = await burner.getStatus();
-            
-            const currentLP = parseFloat(ethers.formatEther(status[0])).toFixed(6);
-            document.getElementById("lpBal").innerText = currentLP + " LP";
-
-            const btn = document.getElementById("burnBtn");
-            if (status[1] === true && status[2] === false) {  // Milestone reached and not burned
-                btn.innerText = "🔥 TRIGGER BURN NOW";
-                btn.onclick = triggerBurn;
-            } else if (status[2] === true) {
-                btn.innerText = "✅ Already Burned";
-                btn.disabled = true;
-            } else {
-                btn.innerText = "Milestone Not Reached";
-                btn.disabled = true;
-            }
-        } catch (e) {
-            console.error(e);
-            document.getElementById("status").innerText = "Error reading burner contract";
-        }
+        document.getElementById("burnBtn").innerText = "Triggering Burn...";
+        triggerBurn();
     }
 
     async function triggerBurn() {
-        if (!confirm("⚠️ FINAL WARNING\n\nYou are about to permanently burn the liquidity.\n\nThis action is IRREVERSIBLE.\n\nContinue?")) return;
-
+        const statusEl = document.getElementById("status");
         const btn = document.getElementById("burnBtn");
-        const status = document.getElementById("status");
 
         try {
-            btn.disabled = true;
-            btn.innerText = "Burning...";
-
             const burner = new ethers.Contract(BURNER_ADDRESS, BURNER_ABI, signer);
             const tx = await burner.triggerMilestoneBurn();
 
-            status.innerHTML = `Burning... <br><a href="https://shibariumscan.io/tx/${tx.hash}" target="_blank" style="color:#ff8888">View Tx</a>`;
+            statusEl.innerHTML = `Transaction Sent!<br><a href="https://shibariumscan.io/tx/${tx.hash}" target="_blank" style="color:#ff8888">View on Explorer</a>`;
 
             await tx.wait();
 
-            status.innerHTML = `<span class="success">✅ Liquidity Permanently Burned!</span>`;
+            statusEl.innerHTML = `<span class="success">✅ Liquidity Permanently Burned!</span>`;
             btn.innerText = "BURN COMPLETE";
+            btn.disabled = true;
         } catch (e) {
             console.error(e);
-            status.innerText = "❌ " + (e.reason || "Burn Failed");
-            btn.disabled = false;
+            statusEl.innerHTML = `<span style="color:#ff6666">❌ Failed: ${e.reason || e.message}</span>`;
             btn.innerText = "Try Again";
+            btn.disabled = false;
         }
     }
 </script>
