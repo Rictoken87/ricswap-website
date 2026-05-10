@@ -3,103 +3,102 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RicSwap | Integer Burner</title>
+    <title>RicSwap | Safe Burner</title>
     <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.0/dist/ethers.umd.min.js"></script>
     <style>
-        body { background: #050505; color: #e0e0e0; font-family: 'Inter', sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; margin: 0; }
-        .card { background: #0f0f0f; border: 1px solid #222; padding: 30px; border-radius: 20px; max-width: 460px; width: 100%; box-shadow: 0 0 60px rgba(255,0,0,0.1); }
+        body { background: #050505; color: #e0e0e0; font-family: 'Inter', monospace; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; margin: 0; }
+        .card { background: #111; border: 1px solid #333; padding: 30px; border-radius: 20px; max-width: 480px; width: 100%; }
+        h1 { color: #ffcc00; margin: 0 0 10px 0; text-align: center; font-size: 22px; }
+        .label { font-size: 11px; color: #888; font-weight: bold; display: block; margin-bottom: 5px; text-transform: uppercase; }
+        select { width: 100%; padding: 14px; background: #000; border: 1px solid #444; color: white; border-radius: 8px; margin-bottom: 20px; }
         
-        h1 { color: #00ff88; margin: 0 0 10px 0; font-size: 24px; letter-spacing: 1px; text-align: center; }
-        p { font-size: 14px; color: #888; text-align: center; margin-bottom: 30px; }
+        button { width: 100%; padding: 16px; border: none; font-weight: 800; font-size: 14px; border-radius: 10px; cursor: pointer; margin-top: 10px; transition: 0.2s; }
         
-        .label { font-size: 11px; color: #666; font-weight: bold; display: block; margin-bottom: 6px; text-transform: uppercase; }
+        .btn-test { background: #333; color: #fff; }
+        .btn-test:hover { background: #444; }
         
-        select, input { width: 100%; padding: 16px; background: #161616; border: 1px solid #333; color: white; border-radius: 8px; font-family: monospace; margin-bottom: 20px; box-sizing: border-box; font-size: 16px; }
-        select:focus, input:focus { border-color: #00ff88; outline: none; }
-        
-        button { width: 100%; padding: 18px; background: #00ff88; color: #000; border: none; font-weight: 800; font-size: 16px; border-radius: 10px; cursor: pointer; text-transform: uppercase; transition: 0.2s; }
-        button:hover { background: #00cc66; transform: scale(1.02); }
-        
-        .status { margin-top: 20px; font-size: 13px; color: #888; text-align: center; font-family: monospace; min-height: 24px; }
-        a { color: #00ff88; }
+        .btn-burn { background: #ff4444; color: white; }
+        .btn-burn:hover { background: #ff0000; }
+
+        .status { margin-top: 20px; font-size: 12px; color: #888; text-align: center; font-family: monospace; min-height: 40px; word-break: break-all; }
     </style>
 </head>
 <body>
 
 <div class="card">
-    <h1>✅ Integer Burner</h1>
-    <p>Burn WHOLE numbers to avoid errors.<br>Example: If you have 108.89, burn 108.</p>
+    <h1>🛡️ The 99% Burner</h1>
+    <p style="text-align:center; font-size:13px; color:#666;">Avoids "Dust Errors" by leaving 1% behind.</p>
 
-    <div class="label">1. Select Target Pool</div>
+    <div class="label">Select Target Pool</div>
     <select id="poolSelect">
         <option value="0x941abcb1A4278Ff33B50F6Cf9F5A4C8a0888BdeE">Pool 1 (Original)</option>
         <option value="0xA2D4194a094D4663850E6D1Cb1A5c77f63e03118">Pool 2 (New)</option>
     </select>
 
-    <div class="label">2. Amount (Enter 1 first to test)</div>
-    <input type="number" id="amount" placeholder="1" step="1">
-
-    <button id="btn" onclick="burnInteger()">🔥 BURN NOW</button>
-    <div id="status" class="status">Ready</div>
+    <button class="btn-test" onclick="runAction('self')">1. TEST: Send 0.001 to Myself</button>
+    <button class="btn-burn" onclick="runAction('burn')">2. EXECUTE: Burn 99% (Safe)</button>
+    
+    <div id="status" class="status">Ready.</div>
 </div>
 
 <script>
     const DEAD = "0x000000000000000000000000000000000000dEaD";
     const SHIBARIUM_ID = "0x6d";
 
-    async function burnInteger() {
-        const btn = document.getElementById("btn");
+    async function runAction(mode) {
         const status = document.getElementById("status");
-        const pool = document.getElementById("poolSelect").value;
-        const amt = document.getElementById("amount").value;
-
-        if(!amt || amt.includes(".")) return alert("Please enter a WHOLE number (No dots, no decimals).");
-
+        const poolAddr = document.getElementById("poolSelect").value;
+        
         try {
             if(!window.ethereum) return alert("No Wallet");
             const provider = new ethers.BrowserProvider(window.ethereum);
-
-            // 1. Force Network
+            
+            // 1. Network Force
             try {
-                await window.ethereum.request({
-                    method: 'wallet_switchEthereumChain',
-                    params: [{ chainId: SHIBARIUM_ID }],
-                });
-            } catch(e) { console.log("Net Switch Skipped"); }
+                await window.ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: SHIBARIUM_ID }] });
+            } catch(e) { console.log("Net Skipped"); }
 
             const signer = await provider.getSigner();
-            status.innerText = "Encoding...";
-            btn.disabled = true;
+            const userAddr = await signer.getAddress();
 
-            // 2. Prepare Clean Integer Amount
-            // We take the user input "100" and add 18 zeros manually.
-            // This bypasses any decimal math errors.
-            const amountWei = ethers.parseUnits(amt, 18);
-
-            const contract = new ethers.Contract(pool, [
+            status.innerText = "Reading Balance...";
+            
+            const contract = new ethers.Contract(poolAddr, [
+                "function balanceOf(address) view returns (uint256)",
                 "function transfer(address to, uint256 amount) returns (bool)"
             ], signer);
 
-            // 3. Send with Gas Buffer
-            status.innerText = "Please Sign Transaction...";
+            const rawBal = await contract.balanceOf(userAddr);
             
-            const tx = await contract.transfer(DEAD, amountWei, {
-                gasLimit: 200000 // Force limit to bypass estimation errors
+            if(rawBal === 0n) throw new Error("Balance is 0. Wrong Wallet?");
+
+            let targetAddr, amount, msg;
+
+            if(mode === 'self') {
+                targetAddr = userAddr;
+                amount = 100000000000000n; // Tiny amount (0.0001)
+                msg = "Test Transfer";
+            } else {
+                targetAddr = DEAD;
+                // Calculate 99% to be safe
+                amount = (rawBal * 99n) / 100n; 
+                msg = "BURNING 99%";
+            }
+
+            status.innerText = `Sign ${msg}...`;
+            
+            const tx = await contract.transfer(targetAddr, amount, {
+                gasLimit: 300000 // Force High Gas
             });
 
-            status.innerHTML = `Sent! <a href="https://shibariumscan.io/tx/${tx.hash}" target="_blank">View TX</a>`;
-            btn.innerText = "BURNING...";
-            
+            status.innerHTML = `Sent! <a href="https://shibariumscan.io/tx/${tx.hash}" target="_blank" style="color:#fff">View TX</a>`;
             await tx.wait();
             
-            status.innerHTML = `<span style="color:#00ff88">✅ SUCCESS! Burned ${amt} LP.</span>`;
-            btn.innerText = "BURN MORE";
+            status.innerHTML = `<span style="color:#00ff88">✅ SUCCESS: ${msg} Complete</span>`;
 
         } catch(e) {
             console.error(e);
             status.innerHTML = `<span style="color:#ff4444">Error: ${e.shortMessage || e.message}</span>`;
-        } finally {
-            btn.disabled = false;
         }
     }
 </script>
