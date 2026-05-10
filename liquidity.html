@@ -8,56 +8,79 @@
     <style>
         :root {
             --obsidian: #050505;
-            --card-bg: #121212;
-            --magma: linear-gradient(135deg, #ff4d00 0%, #ff8c00 100%);
+            --card-bg: #0a0a0a;
             --gold: #ffd700;
+            --magma: linear-gradient(135deg, #ff4d00 0%, #ff8c00 100%);
         }
-        body { background: var(--obsidian); color: white; font-family: system-ui, sans-serif; margin: 0; padding: 0; }
-        .nav { padding: 20px 40px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,215,0,0.1); }
-        .card { max-width: 500px; margin: 60px auto; background: var(--card-bg); border-radius: 24px; padding: 32px; box-shadow: 0 20px 40px rgba(0,0,0,0.8); }
-        .input-group { background: #1a1a1a; border-radius: 16px; padding: 16px; margin-bottom: 16px; border: 1px solid #333; }
-        .input-group:focus-within { border-color: var(--gold); }
-        label { display: block; color: #888; font-size: 12px; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 1px; }
-        input { background: transparent; border: none; color: white; font-size: 24px; width: 100%; outline: none; }
-        button { background: var(--magma); color: white; border: none; padding: 18px; border-radius: 16px; font-weight: bold; width: 100%; font-size: 18px; cursor: pointer; margin-top: 10px; }
-        #status { text-align: center; margin-top: 20px; font-size: 14px; min-height: 24px; }
+        body { background: var(--obsidian); color: white; font-family: 'Inter', sans-serif; margin: 0; min-height: 100vh; display: flex; flex-direction: column; }
+        .nav { padding: 20px 5%; display: flex; align-items: center; background: rgba(5,5,5,0.95); border-bottom: 1px solid #222; }
+        .logo { font-size: 24px; font-weight: 900; color: var(--gold); }
+        .connect-btn { margin-left: auto; padding: 8px 20px; background: rgba(255,215,0,0.1); color: var(--gold); border: 1px solid var(--gold); border-radius: 999px; cursor: pointer; }
+        
+        .container { flex: 1; display: flex; align-items: center; justify-content: center; padding: 20px; }
+        .card { width: 100%; max-width: 460px; background: var(--card-bg); padding: 32px; border-radius: 24px; border: 1px solid #222; }
+        
+        .input-box { background: #111; border: 1px solid #222; border-radius: 16px; padding: 16px; margin-bottom: 16px; }
+        .label-row { display: flex; justify-content: space-between; margin-bottom: 8px; color: #aaa; font-size: 13px; }
+        input { background: transparent; border: none; color: white; font-size: 28px; width: 100%; outline: none; }
+        
+        button { width: 100%; padding: 18px; background: var(--magma); color: white; border: none; border-radius: 16px; font-weight: bold; font-size: 17px; cursor: pointer; margin-top: 10px; }
+        button:disabled { background: #333; color: #666; cursor: not-allowed; }
+        
+        #status { margin-top: 20px; text-align: center; font-size: 14px; min-height: 28px; }
     </style>
 </head>
 <body>
-    <div class="nav">
-        <h2>RicSwap • Add Liquidity</h2>
-        <button id="connectBtn">CONNECT WALLET</button>
-    </div>
+    <nav class="nav">
+        <div class="logo">RicSwap</div>
+        <button id="connectBtn" class="connect-btn">Connect Wallet</button>
+    </nav>
 
-    <div class="card">
-        <h3 style="text-align:center;">RIC / BONE Pool</h3>
+    <div class="container">
+        <div class="card">
+            <h2>Add Liquidity (BONE + RIC)</h2>
+            
+            <div class="input-box">
+                <div class="label-row">
+                    <span>BONE</span>
+                    <span>Bal: <span id="balA">0.00</span></span>
+                </div>
+                <input type="number" id="amountA" placeholder="0.0" value="1">
+            </div>
 
-        <div class="input-group">
-            <label>BONE (Native)</label>
-            <input id="amountA" type="number" placeholder="Amount of BONE" value="1">
-            <div id="balanceA" style="font-size:12px; color:#888; margin-top:4px;">Balance: -- BONE</div>
+            <div style="text-align:center; font-size:32px; margin:10px 0;">+</div>
+
+            <div class="input-box">
+                <div class="label-row">
+                    <span>RIC</span>
+                    <span>Bal: <span id="balB">0.00</span></span>
+                </div>
+                <input type="number" id="amountB" placeholder="0.0" value="1">
+            </div>
+
+            <!-- New: Recipient Address -->
+            <div class="input-box">
+                <div class="label-row">
+                    <span>Recipient Address (who gets LP tokens)</span>
+                </div>
+                <input type="text" id="recipient" placeholder="0x... (default = connected wallet)" value="">
+            </div>
+
+            <button id="supplyBtn" onclick="supplyLiquidity()">SUPPLY LIQUIDITY</button>
+            <div id="status"></div>
         </div>
-
-        <div style="text-align:center; margin:10px 0; font-size:28px;">+</div>
-
-        <div class="input-group">
-            <label>RIC Token</label>
-            <input id="amountB" type="number" placeholder="Amount of RIC" value="1">
-            <div id="balanceB" style="font-size:12px; color:#888; margin-top:4px;">Balance: -- RIC</div>
-        </div>
-
-        <button id="addBtn">ADD LIQUIDITY</button>
-        <div id="status"></div>
     </div>
 
     <script>
-        const ROUTER = "0xcfBF0917F2fCDC4F5170aC991fa26F2Bc3da9Fd4";  // Your original router
-        const RIC = "0x12C94d3A30daa09f81Ea6c037004E6e99A4A3dfc";
+        const CONFIG = {
+            ROUTER: "0xcfBF0917F2fCDC4F5170aC991fa26F2Bc3da9Fd4",
+            RIC: "0x12C94d3A30daa09f81Ea6c037004E6e99A4A3dfc"
+        };
 
-        let signer, userAddress, provider;
+        let signer, userAddr, provider;
 
-        async function connectWallet() {
-            if (!window.ethereum) return alert("Please install MetaMask or Rabby");
+        async function connect() {
+            if (!window.ethereum) return alert("Please install MetaMask or Rabby Wallet");
 
             try {
                 await window.ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: '0x6d' }] });
@@ -65,68 +88,76 @@
 
             provider = new ethers.BrowserProvider(window.ethereum);
             signer = await provider.getSigner();
-            userAddress = await signer.getAddress();
+            userAddr = await signer.getAddress();
 
-            document.getElementById("connectBtn").textContent = userAddress.slice(0,6) + "..." + userAddress.slice(-4);
-            loadBalances();
+            document.getElementById("connectBtn").innerText = userAddr.slice(0,6) + "...";
+            
+            // Auto fill recipient with connected wallet
+            document.getElementById("recipient").value = userAddr;
+            
+            updateBalances();
         }
 
-        async function loadBalances() {
-            if (!userAddress) return;
-            const boneBal = await provider.getBalance(userAddress);
-            document.getElementById("balanceA").textContent = `Balance: ${parseFloat(ethers.formatEther(boneBal)).toFixed(4)} BONE`;
+        async function updateBalances() {
+            if (!userAddr) return;
+            
+            const boneBal = await provider.getBalance(userAddr);
+            document.getElementById("balA").innerText = parseFloat(ethers.formatEther(boneBal)).toFixed(4);
 
-            const ricContract = new ethers.Contract(RIC, ["function balanceOf(address) view returns (uint256)"], provider);
-            const ricBal = await ricContract.balanceOf(userAddress);
-            document.getElementById("balanceB").textContent = `Balance: ${parseFloat(ethers.formatUnits(ricBal, 18)).toFixed(4)} RIC`;
+            const ricContract = new ethers.Contract(CONFIG.RIC, ["function balanceOf(address) view returns (uint256)"], provider);
+            const ricBal = await ricContract.balanceOf(userAddr);
+            document.getElementById("balB").innerText = parseFloat(ethers.formatUnits(ricBal, 18)).toFixed(4);
         }
 
-        async function addLiquidity() {
+        async function supplyLiquidity() {
             const status = document.getElementById("status");
-            const btn = document.getElementById("addBtn");
+            const btn = document.getElementById("supplyBtn");
             const amountBone = document.getElementById("amountA").value;
             const amountRic = document.getElementById("amountB").value;
+            let recipient = document.getElementById("recipient").value.trim();
 
-            if (!amountBone || !amountRic) return alert("Please enter both amounts");
+            if (!recipient) recipient = userAddr;
+
+            if (!amountBone || !amountRic) return alert("Please enter amounts");
 
             btn.disabled = true;
-            status.textContent = "Approving RIC...";
+            btn.innerText = "Approving RIC...";
 
             try {
                 // Approve RIC
-                const ricContract = new ethers.Contract(RIC, ["function approve(address,uint256)"], signer);
-                await ricContract.approve(ROUTER, ethers.MaxUint256);
+                const ricContract = new ethers.Contract(CONFIG.RIC, ["function approve(address,uint256) returns (bool)"], signer);
+                await ricContract.approve(CONFIG.ROUTER, ethers.MaxUint256);
 
-                status.textContent = "Adding Liquidity...";
+                status.innerText = "Adding Liquidity...";
 
-                const router = new ethers.Contract(ROUTER, [
+                const router = new ethers.Contract(CONFIG.ROUTER, [
                     "function addLiquidityETH(address token, uint amountTokenDesired, uint amountTokenMin, uint amountETHMin, address to, uint deadline) payable returns (uint,uint,uint)"
                 ], signer);
 
                 const tx = await router.addLiquidityETH(
-                    RIC,
+                    CONFIG.RIC,
                     ethers.parseUnits(amountRic, 18),
                     0,
                     0,
-                    userAddress,
+                    recipient,                    // ← This is the key: Recipient Address
                     Math.floor(Date.now()/1000) + 1200,
                     { value: ethers.parseEther(amountBone) }
                 );
 
-                status.innerHTML = `Tx Sent → <a href="https://shibariumscan.io/tx/${tx.hash}" target="_blank">View</a>`;
+                status.innerHTML = `Tx Sent! <a href="https://shibariumscan.io/tx/${tx.hash}" target="_blank">View</a>`;
                 await tx.wait();
-                status.innerHTML = `<span style="color:#00ff88">✅ Liquidity Added Successfully!</span>`;
+                status.innerHTML = `<span style="color:#00ff88">✅ Liquidity Added! LP tokens sent to ${recipient.slice(0,8)}...</span>`;
 
             } catch (e) {
                 console.error(e);
                 status.innerHTML = `<span style="color:#ff6666">Error: ${e.reason || e.message}</span>`;
             } finally {
                 btn.disabled = false;
+                btn.innerText = "SUPPLY LIQUIDITY";
             }
         }
 
-        document.getElementById("connectBtn").addEventListener("click", connectWallet);
-        document.getElementById("addBtn").addEventListener("click", addLiquidity);
+        document.getElementById("connectBtn").addEventListener("click", connect);
     </script>
 </body>
 </html>
