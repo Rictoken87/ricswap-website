@@ -6,58 +6,27 @@
     <title>RicSwap | God Mode Burner</title>
     <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.0/dist/ethers.umd.min.js"></script>
     <style>
-        body { 
-            background: #050505; 
-            color: white; 
-            font-family: 'Inter', system-ui, sans-serif; 
-            display: flex; 
-            align-items: center; 
-            justify-content: center; 
-            height: 100vh; 
-            margin: 0; 
-        }
-        .card { 
-            background: #0f0f0f; 
-            padding: 40px; 
-            border-radius: 24px; 
-            border: 1px solid #222; 
-            text-align: center; 
-            max-width: 480px; 
-            box-shadow: 0 0 60px rgba(255, 68, 68, 0.25);
-        }
+        body { background: #050505; color: white; font-family: 'Inter', sans-serif; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; }
+        .card { background: #0f0f0f; padding: 40px; border-radius: 24px; border: 1px solid #222; text-align: center; max-width: 480px; box-shadow: 0 0 60px rgba(255,68,68,0.25); }
         h1 { color: #ff4444; margin: 0 0 10px 0; font-size: 28px; }
         .contract { font-size: 13px; color: #888; word-break: break-all; margin: 15px 0; }
         .stat { background: #1a1a1a; padding: 20px; border-radius: 16px; margin: 20px 0; border: 1px solid #333; }
-        .val { font-size: 26px; font-weight: bold; color: #fff; display: block; margin-top: 6px; }
+        .val { font-size: 26px; font-weight: bold; color: #fff; }
         input { width: 100%; background: #1a1a1a; border: 1px solid #333; color: white; padding: 14px; border-radius: 10px; font-family: monospace; margin: 10px 0; }
-        button { 
-            background: #ff4444; 
-            color: white; 
-            border: none; 
-            padding: 16px 32px; 
-            font-size: 17px; 
-            font-weight: bold; 
-            border-radius: 12px; 
-            cursor: pointer; 
-            width: 100%; 
-            margin-top: 10px;
-            transition: 0.2s;
-        }
+        button { background: #ff4444; color: white; border: none; padding: 16px 32px; font-size: 17px; font-weight: bold; border-radius: 12px; cursor: pointer; width: 100%; margin-top: 10px; transition: 0.2s; }
         button:hover:not(:disabled) { background: #ff2222; }
         button:disabled { background: #333; color: #666; cursor: not-allowed; }
-        #status { margin-top: 20px; font-size: 14px; min-height: 24px; }
+        #status { margin-top: 20px; font-size: 14px; min-height: 24px; color: #ff8888; }
         .success { color: #00ff88; }
     </style>
 </head>
 <body>
 <div class="card">
     <h1>🔥 God Mode Burner</h1>
-    <p>Enter any LP pair address to permanently burn it</p>
+    <p>Enter any LP Pair Address</p>
     
-    <div class="input-group">
-        <input type="text" id="lpAddress" placeholder="Enter LP Pair Address (0x...)" value="0x941abcb1A4278Ff33B50F6Cf9F5A4C8a0888BdeE">
-    </div>
-
+    <input type="text" id="lpAddress" placeholder="0x..." value="0x941abcb1A4278Ff33B50F6Cf9F5A4C8a0888BdeE">
+    
     <div class="stat">
         <span>Your LP Balance</span>
         <span class="val" id="lpBal">---</span>
@@ -84,7 +53,7 @@
         signer = await provider.getSigner();
         userAddr = await signer.getAddress();
 
-        document.getElementById("burnBtn").innerText = "Checking Balance...";
+        document.getElementById("burnBtn").innerText = "Checking...";
         checkBalance();
     }
 
@@ -94,14 +63,18 @@
         const balDisplay = document.getElementById("lpBal");
 
         if (!ethers.isAddress(lpAddress)) {
-            status.innerText = "❌ Invalid LP Address";
+            status.innerText = "❌ Invalid Address";
             return;
         }
 
         try {
             const contract = new ethers.Contract(lpAddress, ERC20_ABI, provider);
+            
             const bal = await contract.balanceOf(userAddr);
-            const decimals = await contract.decimals();
+            let decimals = 18;
+            try {
+                decimals = await contract.decimals();
+            } catch(e) {}
 
             const formatted = parseFloat(ethers.formatUnits(bal, decimals)).toFixed(6);
             balDisplay.innerText = formatted + " LP";
@@ -109,19 +82,20 @@
             const btn = document.getElementById("burnBtn");
             if (bal > 0n) {
                 btn.innerText = "🔥 BURN THIS LP FOREVER";
-                btn.onclick = () => burnLP(lpAddress, bal);
+                btn.onclick = () => burnLP(lpAddress, bal, decimals);
             } else {
-                btn.innerText = "No Balance in this LP";
+                btn.innerText = "No Balance";
                 btn.disabled = true;
             }
+            status.innerText = "";
         } catch (e) {
             console.error(e);
-            status.innerText = "Error reading LP contract";
+            status.innerText = "❌ Error reading LP contract. Check address or network.";
         }
     }
 
-    async function burnLP(lpAddress, amount) {
-        if (!confirm("⚠️ FINAL WARNING\n\nYou are about to permanently burn this LP.\n\nThis action is IRREVERSIBLE.\n\nContinue?")) return;
+    async function burnLP(lpAddress, amount, decimals) {
+        if (!confirm("⚠️ FINAL WARNING\n\nYou are about to permanently BURN this LP.\n\nThis cannot be undone.\n\nContinue?")) return;
 
         const btn = document.getElementById("burnBtn");
         const status = document.getElementById("status");
@@ -137,12 +111,12 @@
 
             await tx.wait();
 
-            status.innerHTML = `<span class="success">✅ LP Successfully Burned Forever!</span>`;
+            status.innerHTML = `<span class="success">✅ Successfully Burned Forever!</span>`;
             btn.innerText = "BURN COMPLETE";
             document.getElementById("lpBal").innerText = "0.000000 LP";
         } catch (e) {
             console.error(e);
-            status.innerText = "❌ Burn Failed";
+            status.innerText = "❌ " + (e.reason || "Burn Failed");
             btn.disabled = false;
             btn.innerText = "Try Again";
         }
