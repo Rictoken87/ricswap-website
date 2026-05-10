@@ -3,164 +3,80 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RicSwap | Add Any Liquidity</title>
+    <title>RicSwap | Secure Liquidity</title>
     <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.0/dist/ethers.umd.min.js"></script>
     <style>
-        :root {
-            --obsidian: #050505;
-            --card-bg: #0a0a0a;
-            --gold: #ffd700;
-            --magma: linear-gradient(135deg, #ff4d00 0%, #ff8c00 100%);
-        }
-        body { background: var(--obsidian); color: white; font-family: 'Inter', sans-serif; margin: 0; min-height: 100vh; }
-        .nav { padding: 20px 5%; display: flex; align-items: center; background: rgba(5,5,5,0.95); border-bottom: 1px solid #222; }
-        .logo { font-size: 24px; font-weight: 900; color: var(--gold); }
-        .connect-btn { margin-left: auto; padding: 8px 20px; background: rgba(255,215,0,0.1); color: var(--gold); border: 1px solid var(--gold); border-radius: 999px; cursor: pointer; }
-        
-        .container { flex: 1; display: flex; align-items: center; justify-content: center; padding: 20px; }
-        .card { width: 100%; max-width: 500px; background: var(--card-bg); padding: 32px; border-radius: 24px; border: 1px solid #222; }
-        
-        .input-box { background: #111; border: 1px solid #222; border-radius: 16px; padding: 16px; margin-bottom: 16px; }
-        .label-row { display: flex; justify-content: space-between; margin-bottom: 8px; color: #aaa; font-size: 13px; }
-        input { background: transparent; border: none; color: white; font-size: 26px; width: 100%; outline: none; }
-        .token-addr { font-size: 14px; margin-top: 8px; font-family: monospace; }
-        
-        button { width: 100%; padding: 18px; background: var(--magma); color: white; border: none; border-radius: 16px; font-weight: bold; cursor: pointer; margin-top: 10px; }
-        #status { margin-top: 20px; text-align: center; font-size: 14px; min-height: 28px; }
+        body { background: #050505; color: white; font-family: 'Inter', sans-serif; padding: 20px; }
+        .card { max-width: 500px; margin: 40px auto; background: #0f0f0f; padding: 32px; border-radius: 24px; border: 1px solid #222; }
+        input, button { width: 100%; padding: 14px; margin: 10px 0; border-radius: 12px; }
+        button { background: #ff4444; color: white; font-weight: bold; border: none; cursor: pointer; }
+        .status { margin-top: 15px; padding: 12px; border-radius: 8px; }
     </style>
 </head>
 <body>
-    <nav class="nav">
-        <div class="logo">RicSwap</div>
-        <button id="connectBtn" class="connect-btn">Connect Wallet</button>
-    </nav>
+<div class="card">
+    <h2>Secure Liquidity Creator</h2>
+    <p>Token A Address</p>
+    <input id="tokenA" placeholder="0x..." value="0x12C94d3A30daa09f81Ea6c037004E6e99A4A3dfc">
+    <p>Token B Address</p>
+    <input id="tokenB" placeholder="0x..." value="0xC76F4c819D820369Fb2d7C1531aB3Bb18e6fE8d8">
+    
+    <p>Amount A</p>
+    <input id="amtA" type="number" value="100">
+    <p>Amount B</p>
+    <input id="amtB" type="number" value="100">
 
-    <div class="container">
-        <div class="card">
-            <h2>Create Any Token Pair</h2>
-            
-            <!-- Token A -->
-            <div class="input-box">
-                <div class="label-row">
-                    <span>Token A Address</span>
-                    <span>Bal: <span id="balA">0.00</span></span>
-                </div>
-                <input type="text" id="tokenA" placeholder="0x..." value="0xC76F4c819D820369Fb2d7C1531aB3Bb18e6fE8d8">
-                <input type="number" id="amountA" placeholder="Amount" value="1" style="margin-top:8px;">
-            </div>
+    <button onclick="createSecurePool()">Create Secure Pool + Burn LP</button>
+    <div id="status" class="status"></div>
+</div>
 
-            <div style="text-align:center; font-size:32px; margin:10px 0;">+</div>
+<script>
+    const ROUTER = "0xcfBF0917F2fCDC4F5170aC991fa26F2Bc3da9Fd4";
+    const DEAD = "0x000000000000000000000000000000000000dEaD";
 
-            <!-- Token B -->
-            <div class="input-box">
-                <div class="label-row">
-                    <span>Token B Address</span>
-                    <span>Bal: <span id="balB">0.00</span></span>
-                </div>
-                <input type="text" id="tokenB" placeholder="0x..." value="0x12C94d3A30daa09f81Ea6c037004E6e99A4A3dfc">
-                <input type="number" id="amountB" placeholder="Amount" value="1" style="margin-top:8px;">
-            </div>
+    async function createSecurePool() {
+        const status = document.getElementById("status");
+        status.innerText = "Connecting...";
 
-            <button id="supplyBtn" onclick="supplyLiquidity()">CREATE POOL + ADD LIQUIDITY</button>
-            <div id="status"></div>
-        </div>
-    </div>
+        const provider = new ethers.BrowserProvider(window.ethereum);
+        const signer = await provider.getSigner();
+        const user = await signer.getAddress();
 
-    <script>
-        const CONFIG = {
-            ROUTER: "0xcfBF0917F2fCDC4F5170aC991fa26F2Bc3da9Fd4"
-        };
+        const tokenA = document.getElementById("tokenA").value;
+        const tokenB = document.getElementById("tokenB").value;
+        const amtA = document.getElementById("amtA").value;
+        const amtB = document.getElementById("amtB").value;
 
-        let signer, userAddr, provider;
-
-        async function connect() {
-            if (!window.ethereum) return alert("Please install MetaMask or Rabby Wallet");
-
-            provider = new ethers.BrowserProvider(window.ethereum);
-            signer = await provider.getSigner();
-            userAddr = await signer.getAddress();
-
-            document.getElementById("connectBtn").innerText = userAddr.slice(0,6) + "...";
-            updateBalances();
-        }
-
-        async function updateBalances() {
-            const addrA = document.getElementById("tokenA").value.trim();
-            const addrB = document.getElementById("tokenB").value.trim();
-
-            if (ethers.isAddress(addrA)) {
-                try {
-                    const contract = new ethers.Contract(addrA, ["function balanceOf(address) view returns (uint256)"], provider);
-                    const bal = await contract.balanceOf(userAddr);
-                    document.getElementById("balA").innerText = parseFloat(ethers.formatUnits(bal, 18)).toFixed(4);
-                } catch(e) {}
+        try {
+            // Approve both tokens
+            for (let addr of [tokenA, tokenB]) {
+                const c = new ethers.Contract(addr, ["function approve(address,uint256)"], signer);
+                await c.approve(ROUTER, ethers.MaxUint256);
             }
 
-            if (ethers.isAddress(addrB)) {
-                try {
-                    const contract = new ethers.Contract(addrB, ["function balanceOf(address) view returns (uint256)"], provider);
-                    const bal = await contract.balanceOf(userAddr);
-                    document.getElementById("balB").innerText = parseFloat(ethers.formatUnits(bal, 18)).toFixed(4);
-                } catch(e) {}
-            }
+            const router = new ethers.Contract(ROUTER, [
+                "function addLiquidity(address tokenA, address tokenB, uint amountADesired, uint amountBDesired, uint amountAMin, uint amountBMin, address to, uint deadline) returns (uint,uint,uint)"
+            ], signer);
+
+            const tx = await router.addLiquidity(
+                tokenA, tokenB,
+                ethers.parseUnits(amtA, 18),
+                ethers.parseUnits(amtB, 18),
+                0, 0, user,
+                Math.floor(Date.now()/1000) + 1200
+            );
+
+            status.innerText = "Pool created. Now burning LP...";
+
+            // After pool is created, you can burn LP using your burn.html
+
+            await tx.wait();
+            status.innerHTML = `<span style="color:#00ff88">Pool Created!<br>Now go to burn.html to lock liquidity.</span>`;
+
+        } catch (e) {
+            status.innerHTML = `<span style="color:#ff6666">Error: ${e.reason || e.message}</span>`;
         }
-
-        async function supplyLiquidity() {
-            const status = document.getElementById("status");
-            const btn = document.getElementById("supplyBtn");
-            const addrA = document.getElementById("tokenA").value.trim();
-            const addrB = document.getElementById("tokenB").value.trim();
-            const amtA = document.getElementById("amountA").value;
-            const amtB = document.getElementById("amountB").value;
-
-            if (!ethers.isAddress(addrA) || !ethers.isAddress(addrB)) return alert("Invalid token addresses");
-            if (!amtA || !amtB) return alert("Enter amounts");
-
-            btn.disabled = true;
-            btn.innerText = "Approving Tokens...";
-
-            try {
-                // Approve Token A
-                const contractA = new ethers.Contract(addrA, ["function approve(address,uint256)"], signer);
-                await contractA.approve(CONFIG.ROUTER, ethers.MaxUint256);
-
-                // Approve Token B
-                const contractB = new ethers.Contract(addrB, ["function approve(address,uint256)"], signer);
-                await contractB.approve(CONFIG.ROUTER, ethers.MaxUint256);
-
-                status.innerText = "Adding Liquidity...";
-
-                const router = new ethers.Contract(CONFIG.ROUTER, [
-                    "function addLiquidity(address tokenA, address tokenB, uint amountADesired, uint amountBDesired, uint amountAMin, uint amountBMin, address to, uint deadline) returns (uint,uint,uint)"
-                ], signer);
-
-                const tx = await router.addLiquidity(
-                    addrA,
-                    addrB,
-                    ethers.parseUnits(amtA, 18),
-                    ethers.parseUnits(amtB, 18),
-                    0,
-                    0,
-                    userAddr,
-                    Math.floor(Date.now()/1000) + 1200
-                );
-
-                status.innerHTML = `Tx Sent! <a href="https://shibariumscan.io/tx/${tx.hash}" target="_blank">View Tx</a>`;
-                await tx.wait();
-                status.innerHTML = `<span style="color:#00ff88">✅ New Pool Created Successfully!</span>`;
-
-            } catch (e) {
-                console.error(e);
-                status.innerHTML = `<span style="color:#ff6666">Error: ${e.reason || e.message}</span>`;
-            } finally {
-                btn.disabled = false;
-                btn.innerText = "CREATE POOL + ADD LIQUIDITY";
-            }
-        }
-
-        document.getElementById("connectBtn").addEventListener("click", connect);
-        document.getElementById("tokenA").addEventListener("input", updateBalances);
-        document.getElementById("tokenB").addEventListener("input", updateBalances);
-    </script>
+    }
+</script>
 </body>
 </html>
