@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RicSwap | Burner</title>
+    <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.0/dist/ethers.umd.min.js"></script>
+    <style>
+        body { 
+            background: #050505; 
+            color: white; 
+            font-family: 'Inter', sans-serif; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            height: 100vh; 
+            margin: 0; 
+        }
+        .card { 
+            background: #0f0f0f; 
+            padding: 40px 30px; 
+            border-radius: 24px; 
+            border: 1px solid #222; 
+            text-align: center; 
+            max-width: 420px; 
+            box-shadow: 0 0 60px rgba(255, 68, 68, 0.15);
+        }
+        h1 { 
+            color: #ff4444; 
+            margin: 0 0 8px 0; 
+            font-size: 28px; 
+        }
+        p { 
+            color: #888; 
+            font-size: 15px; 
+            margin-bottom: 24px; 
+        }
+        .stat { 
+            background: #1a1a1a; 
+            padding: 20px; 
+            border-radius: 16px; 
+            margin: 20px 0; 
+            border: 1px solid #333; 
+        }
+        .val { 
+            font-size: 28px; 
+            font-weight: bold; 
+            color: #fff; 
+            display: block; 
+            margin-top: 6px; 
+        }
+        button { 
+            background: #ff4444; 
+            color: white; 
+            border: none; 
+            padding: 16px 32px; 
+            font-size: 17px; 
+            font-weight: bold; 
+            border-radius: 12px; 
+            cursor: pointer; 
+            width: 100%; 
+            margin-top: 10px;
+            transition: all 0.2s;
+        }
+        button:hover:not(:disabled) { 
+            background: #ff2222; 
+            box-shadow: 0 0 25px rgba(255,68,68,0.5); 
+        }
+        button:disabled { 
+            background: #333; 
+            color: #666; 
+            cursor: not-allowed; 
+        }
+        #status { 
+            margin-top: 20px; 
+            font-size: 14px; 
+            min-height: 24px; 
+        }
+        .success { color: #00ff88; }
+    </style>
+</head>
+<body>
+<div class="card">
+    <h1>🔥 Burn Liquidity</h1>
+    <p>Permanently send LP tokens to the dead address.<br>No one can ever recover them.</p>
+    
+    <div class="stat">
+        <span>Your LP Balance</span>
+        <span class="val" id="lpBal">0.000000 LP</span>
+    </div>
+
+    <button id="burnBtn" onclick="handleBurn()">Connect Wallet</button>
+    <div id="status"></div>
+</div>
+
+<script>
+    const LP_ADDRESS = "0x941abcb1A4278Ff33B50F6Cf9F5A4C8a0888BdeE";
+    const DEAD_ADDRESS = "0x000000000000000000000000000000000000dEaD";
+
+    const ERC20_ABI = [
+        "function balanceOf(address) view returns (uint256)",
+        "function transfer(address to, uint256 amount) returns (bool)",
+        "function decimals() view returns (uint8)"
+    ];
+
+    let provider, signer, userAddr;
+
+    async function connectWallet() {
+        if (!window.ethereum) return alert("Please install MetaMask or Rabby");
+
+        provider = new ethers.BrowserProvider(window.ethereum);
+        signer = await provider.getSigner();
+        userAddr = await signer.getAddress();
+
+        document.getElementById("burnBtn").innerText = "Check Balance";
+        checkBalance();
+    }
+
+    async function checkBalance() {
+        try {
+            const contract = new ethers.Contract(LP_ADDRESS, ERC20_ABI, provider);
+            const bal = await contract.balanceOf(userAddr);
+            const decimals = await contract.decimals();
+
+            const formatted = parseFloat(ethers.formatUnits(bal, decimals)).toFixed(6);
+            document.getElementById("lpBal").innerText = formatted + " LP";
+
+            const btn = document.getElementById("burnBtn");
+            if (bal > 0n) {
+                btn.innerText = "🔥 BURN FOREVER";
+                btn.onclick = burnLP;
+            } else {
+                btn.innerText = "No LP Balance";
+                btn.disabled = true;
+            }
+        } catch (e) {
+            console.error(e);
+            document.getElementById("status").innerText = "Error reading LP contract";
+        }
+    }
+
+    async function burnLP() {
+        if (!confirm("⚠️ FINAL WARNING\n\nThis action sends ALL your LP tokens to the dead address.\n\nYou can NEVER get them back.\n\nAre you absolutely sure?")) return;
+
+        const btn = document.getElementById("burnBtn");
+        const status = document.getElementById("status");
+
+        try {
+            btn.disabled = true;
+            btn.innerText = "Burning...";
+
+            const contract = new ethers.Contract(LP_ADDRESS, ERC20_ABI, signer);
+            const bal = await contract.balanceOf(userAddr);
+
+            const tx = await contract.transfer(DEAD_ADDRESS, bal);
+            status.innerHTML = `Burning... <a href="https://shibariumscan.io/tx/${tx.hash}" target="_blank" style="color:#ff8888">View Tx</a>`;
+
+            await tx.wait();
+
+            status.innerHTML = `<span class="success">✅ Liquidity Permanently Burned!</span>`;
+            btn.innerText = "BURN COMPLETE";
+            document.getElementById("lpBal").innerText = "0.000000 LP";
+        } catch (e) {
+            console.error(e);
+            status.innerText = "❌ Burn Failed";
+            btn.disabled = false;
+            btn.innerText = "🔥 Try Again";
+        }
+    }
+
+    // Auto start
+    document.getElementById("burnBtn").addEventListener("click", connectWallet);
+</script>
+</body>
+</html>
