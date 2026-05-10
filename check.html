@@ -3,49 +3,49 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RicSwap | Burn Diagnostic</title>
+    <title>Diagnostic - Burner Status</title>
     <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.0/dist/ethers.umd.min.js"></script>
     <style>
-        body { background: #050505; color: white; font-family: monospace; padding: 20px; }
-        .card { background: #0f0f0f; padding: 30px; border-radius: 16px; max-width: 600px; margin: 0 auto; }
-        button { padding: 12px 24px; background: #ff4444; color: white; border: none; border-radius: 8px; margin: 10px; cursor: pointer; }
+        body { background: #050505; color: #0f0; font-family: monospace; padding: 20px; line-height: 1.6; }
+        pre { background: #111; padding: 15px; border-radius: 8px; overflow: auto; }
     </style>
 </head>
 <body>
-<div class="card">
-    <h1>🔍 Burner Diagnostic</h1>
-    <button onclick="checkMilestone()">Check Milestone Status</button>
-    <div id="output" style="margin-top:20px; white-space: pre-wrap; color:#aaa;"></div>
-</div>
+    <h1>Burner Diagnostic</h1>
+    <button onclick="runDiagnostic()" style="padding:12px 20px; font-size:16px;">Run Full Diagnostic</button>
+    <pre id="output">Click button to start...</pre>
 
 <script>
     const BURNER = "0x485c2fbCD26b154504D34F7725E70Cb1925a59fa";
     const RIC = "0x12C94d3A30daa09f81Ea6c037004E6e99A4A3dfc";
 
-    async function checkMilestone() {
+    async function runDiagnostic() {
         const output = document.getElementById("output");
-        output.innerHTML = "Checking...\n";
+        output.textContent = "Connecting to Shibarium...\n";
 
         try {
             const provider = new ethers.JsonRpcProvider("https://rpc.shibarium.shib.io");
-            
+
+            // 1. RIC Balance in Burner
             const ricContract = new ethers.Contract(RIC, ["function balanceOf(address) view returns (uint256)"], provider);
-            const burnerBalance = await ricContract.balanceOf(BURNER);
+            const ricBal = await ricContract.balanceOf(BURNER);
+            output.textContent += `RIC Balance in Burner: ${ethers.formatUnits(ricBal, 18)} RIC\n\n`;
 
-            output.innerHTML += `RIC in Burner: ${ethers.formatUnits(burnerBalance, 18)} RIC\n\n`;
-
+            // 2. Burner Status
             const burner = new ethers.Contract(BURNER, [
-                "function getStatus() view returns (uint256 currentLP, bool isMilestoneReached, bool isBurned)"
+                "function getStatus() view returns (uint256 currentLP, bool isMilestoneReached, bool isBurned, uint256 currentVipThreshold, uint256 currentServiceFee)"
             ], provider);
 
             const status = await burner.getStatus();
-            
-            output.innerHTML += `Is Milestone Reached: ${status[1]}\n`;
-            output.innerHTML += `Is Already Burned: ${status[2]}\n`;
-            output.innerHTML += `Current LP in Burner: ${ethers.formatEther(status[0])} LP\n`;
+
+            output.textContent += `Milestone Reached : ${status[1]}\n`;
+            output.textContent += `Already Burned    : ${status[2]}\n`;
+            output.textContent += `LP in Burner      : ${ethers.formatEther(status[0])} LP\n`;
+            output.textContent += `VIP Threshold     : ${ethers.formatUnits(status[3], 18)} RIC\n`;
+            output.textContent += `Service Fee       : ${ethers.formatEther(status[4])} BONE\n`;
 
         } catch (e) {
-            output.innerHTML += "Error: " + e.message;
+            output.textContent += "ERROR: " + e.message;
         }
     }
 </script>
