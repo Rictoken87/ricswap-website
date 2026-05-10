@@ -95,6 +95,8 @@
         };
 
         let provider, signer, userAddr;
+
+        // Default tokens
         let fromToken = { symbol: "BONE", address: CONFIG.WBONE, decimals: 18, isNative: true };
         let toToken   = { symbol: "RIC",  address: "0x12C94d3A30daa09f81Ea6c037004E6e99A4A3dfc", decimals: 18, isNative: false };
 
@@ -128,16 +130,12 @@
 
             if (!address || address.length !== 42) return alert("Invalid address");
 
-            const status = document.getElementById("status");
-            status.textContent = "Checking LP...";
-
             try {
                 const factory = new ethers.Contract(CONFIG.FACTORY, ["function getPair(address,address) view returns (address)"], provider);
                 const pair = await factory.getPair(CONFIG.WBONE, address);
 
                 if (pair === "0x0000000000000000000000000000000000000000") {
-                    alert("No liquidity pool found with BONE.");
-                    status.textContent = "";
+                    alert("No liquidity pool found with BONE for this token.");
                     return;
                 }
 
@@ -155,20 +153,14 @@
                     document.getElementById("toTokenDisplay").textContent = symbol;
                 }
 
-                alert(`✅ ${symbol} added!`);
+                alert(`✅ ${symbol} added successfully!`);
                 document.getElementById(inputId).value = "";
-                status.textContent = "";
                 updateBalances();
                 updateQuote();
 
             } catch (e) {
                 alert("Failed to add token.");
-                status.textContent = "";
             }
-        }
-
-        function openTokenModal(side) {
-            alert("Paste token address in the box below and click 'Add'");
         }
 
         function switchTokens() {
