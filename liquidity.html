@@ -18,19 +18,19 @@
         .nav { padding: 20px 5%; display: flex; align-items: center; background: rgba(5,5,5,0.95); border-bottom: 1px solid #222; }
         .logo { font-size: 24px; font-weight: 900; color: var(--gold); }
         .connect-btn { margin-left: auto; padding: 8px 20px; background: rgba(255,215,0,0.1); color: var(--gold); border: 1px solid var(--gold); border-radius: 999px; cursor: pointer; }
-        
+       
         .container { flex: 1; display: flex; align-items: center; justify-content: center; padding: 20px; }
         .card { width: 100%; max-width: 460px; background: var(--card-bg); padding: 24px; border-radius: 24px; border: 1px solid var(--border); }
-        
+       
         .input-box { background: #111; border: 1px solid #222; border-radius: 16px; padding: 16px; margin-bottom: 12px; }
         .label-row { display: flex; justify-content: space-between; margin-bottom: 8px; color: #aaa; font-size: 13px; }
         input { background: transparent; border: none; color: white; font-size: 28px; width: 100%; outline: none; }
-        
+       
         button { width: 100%; padding: 16px; background: var(--magma); color: white; border: none; border-radius: 12px; font-weight: bold; margin-top: 20px; cursor: pointer; font-size: 16px; text-transform: uppercase; }
         button:disabled { background: #333; color: #666; cursor: not-allowed; }
-        
+       
         #status { margin-top: 15px; text-align: center; font-size: 14px; min-height: 28px; color: #888; word-break: break-all; }
-        a { color: var(--gold); text-decoration: none; border-bottom: 1px dotted var(--gold); }
+        a { color: var(--gold); }
     </style>
 </head>
 <body>
@@ -38,11 +38,10 @@
         <div class="logo">RicSwap</div>
         <button id="connectBtn" class="connect-btn">Connect Wallet</button>
     </nav>
-
     <div class="container">
         <div class="card">
             <h2>Add Liquidity (Native)</h2>
-            
+           
             <div class="input-box">
                 <div class="label-row">
                     <span>BONE (ETH)</span>
@@ -50,9 +49,7 @@
                 </div>
                 <input type="number" id="amountA" placeholder="0.0" value="1">
             </div>
-
             <div style="text-align:center; font-size:32px; margin:10px 0;">+</div>
-
             <div class="input-box">
                 <div class="label-row">
                     <span>RIC Token</span>
@@ -60,25 +57,22 @@
                 </div>
                 <input type="number" id="amountB" placeholder="0.0" value="1">
             </div>
-
-            <!-- The Button dynamically changes function -->
-            <button id="actionBtn" onclick="handleAction()">Connect First</button>
             
+            <button id="actionBtn" onclick="handleAction()">Connect First</button>
+           
             <div id="status">Ready to pool.</div>
         </div>
     </div>
-
     <script>
         const CONFIG = {
             ROUTER: "0xcfBF0917F2fCDC4F5170aC991fa26F2Bc3da9Fd4",
             RIC: "0x12C94d3A30daa09f81Ea6c037004E6e99A4A3dfc",
-            CHAIN_ID: "0x6d" // Shibarium
+            CHAIN_ID: "0x6d"
         };
 
         let signer, userAddr, provider;
         let isApproved = false;
 
-        // Standard ERC20 + Router Interfaces
         const ABIS = {
             ERC20: [
                 "function approve(address spender, uint256 amount) returns (bool)",
@@ -93,18 +87,17 @@
         async function connect() {
             if (!window.ethereum) return alert("No Wallet Found");
 
-            // Force Shibarium
             try {
                 await window.ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: CONFIG.CHAIN_ID }] });
-            } catch(e) { console.log("Switch skipped"); }
+            } catch(e) {}
 
             provider = new ethers.BrowserProvider(window.ethereum);
             signer = await provider.getSigner();
             userAddr = await signer.getAddress();
 
             document.getElementById("connectBtn").innerText = userAddr.slice(0,6) + "...";
-            document.getElementById("status").innerText = "Checking Allowance...";
-            
+            document.getElementById("status").innerText = "Checking balance...";
+           
             await updateBalances();
             await checkAllowance();
         }
@@ -120,103 +113,74 @@
             } catch (e) {}
         }
 
-        // 1. Check if Router is allowed to spend RIC
         async function checkAllowance() {
             const ricContract = new ethers.Contract(CONFIG.RIC, ABIS.ERC20, signer);
             const allowed = await ricContract.allowance(userAddr, CONFIG.ROUTER);
             const btn = document.getElementById("actionBtn");
 
-            // If allowed < 100000 (arbitrary large number), ask to approve
-            if (allowed < ethers.parseUnits("1000", 18)) {
+            if (allowed < ethers.parseUnits("10000", 18)) {
                 isApproved = false;
                 btn.innerText = "1. APPROVE RIC";
-                btn.style.background = "#333"; 
             } else {
                 isApproved = true;
                 btn.innerText = "2. SUPPLY LIQUIDITY";
-                btn.style.background = "var(--magma)";
             }
             btn.disabled = false;
         }
 
-        // Main Handler
         async function handleAction() {
             if (!signer) return connect();
             if (!isApproved) return approveRic();
             return supplyLiquidity();
         }
 
-        // 2. Approve Function
         async function approveRic() {
             const btn = document.getElementById("actionBtn");
             const status = document.getElementById("status");
-            
             try {
                 btn.disabled = true;
                 btn.innerText = "Approving...";
-                
                 const ricContract = new ethers.Contract(CONFIG.RIC, ABIS.ERC20, signer);
-                // Approve Max
                 const tx = await ricContract.approve(CONFIG.ROUTER, ethers.MaxUint256);
-                
-                status.innerHTML = `Approving... <a href="https://shibariumscan.io/tx/${tx.hash}" target="_blank">View TX</a>`;
+                status.innerHTML = `Approving... <a href="https://shibariumscan.io/tx/${tx.hash}" target="_blank">View</a>`;
                 await tx.wait();
-                
-                status.innerText = "✅ Approved! Now Supply.";
-                checkAllowance(); // Reset button state
-
+                status.innerText = "✅ RIC Approved!";
+                checkAllowance();
             } catch(e) {
-                console.error(e);
-                status.innerText = "Approve Failed: " + e.message;
+                status.innerText = "Approve Failed";
                 btn.disabled = false;
-                btn.innerText = "TRY AGAIN";
             }
         }
 
-        // 3. Supply Function (Native BONE + RIC)
         async function supplyLiquidity() {
             const status = document.getElementById("status");
             const btn = document.getElementById("actionBtn");
             const amountBone = document.getElementById("amountA").value;
             const amountRic = document.getElementById("amountB").value;
 
-            if(!amountBone || !amountRic) return alert("Enter amounts");
-
             try {
                 btn.disabled = true;
                 btn.innerText = "Supplying...";
-                
-                const router = new ethers.Contract(CONFIG.ROUTER, ABIS.ROUTER, signer);
 
-                // ADD LIQUIDITY ETH
-                // We set min amounts to 0 for testing success (avoids slippage errors)
-                // gasLimit 500k handles the complex swap computation
+                const router = new ethers.Contract(CONFIG.ROUTER, ABIS.ROUTER, signer);
                 const tx = await router.addLiquidityETH(
                     CONFIG.RIC,
-                    ethers.parseUnits(amountRic, 18), // Token Desired
-                    0, // Token Min (0 for safety)
-                    0, // ETH Min (0 for safety)
+                    ethers.parseUnits(amountRic, 18),
+                    0,
+                    0,
                     userAddr,
                     Math.floor(Date.now()/1000) + 1200,
-                    { 
-                        value: ethers.parseEther(amountBone),
-                        gasLimit: 500000 
-                    }
+                    { value: ethers.parseEther(amountBone) }
                 );
 
-                status.innerHTML = `Processing... <a href="https://shibariumscan.io/tx/${tx.hash}" target="_blank">View TX</a>`;
-                
+                status.innerHTML = `Tx Sent! <a href="https://shibariumscan.io/tx/${tx.hash}" target="_blank">View</a>`;
                 await tx.wait();
-                
-                status.innerHTML = `<span style="color:#00ff88">✅ SUCCESS! LP Tokens Received.</span>`;
-                updateBalances();
-                btn.innerText = "DONE";
-
+                status.innerHTML = `<span style="color:#00ff88">✅ Success! You received LP tokens.</span>`;
             } catch (e) {
-                console.error(e);
-                status.innerHTML = `<span style="color:#ff4444">Failed: ${e.reason || e.message}</span>`;
+                status.innerHTML = `<span style="color:#ff6666">Failed: ${e.reason || e.message}</span>`;
+            } finally {
                 btn.disabled = false;
-                btn.innerText = "SUPPLY";
+                btn.innerText = "SUPPLY AGAIN";
             }
         }
 
