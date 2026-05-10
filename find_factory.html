@@ -1,30 +1,62 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <title>Factory Finder</title>
+    <meta charset="UTF-8">
+    <title>The Factory Truth</title>
     <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.0/dist/ethers.umd.min.js"></script>
-    <style>body{background:#111;color:#0f0;font-family:monospace;padding:50px;text-align:center} h1{color:#fff} #result{font-size:24px;margin-top:20px;padding:20px;border:1px solid #333;display:inline-block}</style>
+    <style>
+        body { background: #000; color: #fff; font-family: monospace; padding: 40px; text-align: center; }
+        .box { border: 2px solid #444; padding: 30px; max-width: 600px; margin: 0 auto; border-radius: 10px; background: #111; }
+        h1 { color: #ffd700; }
+        .success { color: #00ff88; font-size: 24px; font-weight: bold; border: 2px solid #00ff88; padding: 20px; margin-top: 20px; }
+        .fail { color: #ff4444; font-size: 20px; margin-top: 20px; }
+    </style>
 </head>
 <body>
-    <h1>🕵️ Factory Detective</h1>
-    <p>Scanning LP: 0x941abcb1A4278Ff33B50F6Cf9F5A4C8a0888BdeE</p>
-    <div id="result">Scanning...</div>
 
-    <script>
-        const LP = "0x941abcb1A4278Ff33B50F6Cf9F5A4C8a0888BdeE";
-        const RPC = "https://rpc.shibarium.shib.io";
+<div class="box">
+    <h1>🕵️ Truth Detector</h1>
+    <p>Asking Factory: <b>0x78ae...69d0</b></p>
+    <p>Query: "Do you own the Pair <b>RIC-WBONE</b>?"</p>
+    
+    <div id="status">Connecting...</div>
+</div>
 
-        window.onload = async () => {
-            try {
-                const provider = new ethers.JsonRpcProvider(RPC);
-                // Ask the LP: "Who is your parent?"
-                const contract = new ethers.Contract(LP, ["function factory() view returns (address)"], provider);
-                const factory = await contract.factory();
-                document.getElementById("result").innerHTML = `THE REAL FACTORY IS:<br><br><b style="color:yellow; font-size:30px">${factory}</b><br><br>Copy this address!`;
-            } catch(e) {
-                document.getElementById("result").innerText = "Error: " + e.message;
+<script>
+    // 1. The Candidate (The one you suspect)
+    const CANDIDATE_FACTORY = "0x78ae5cCD2f13D10aE3fF47F8418A79D99B4569d0";
+    
+    // 2. The Target LP (Your Burnt LP)
+    const YOUR_LP = "0x941abcb1A4278Ff33B50F6Cf9F5A4C8a0888BdeE";
+
+    // 3. The Tokens
+    const WBONE = "0xC76F4c819D820369Fb2d7C1531aB3Bb18e6fE8d8";
+    const RIC = "0x12C94d3A30daa09f81Ea6c037004E6e99A4A3dfc";
+    const RPC = "https://rpc.shibarium.shib.io";
+
+    window.onload = async () => {
+        try {
+            const provider = new ethers.JsonRpcProvider(RPC);
+            const factory = new ethers.Contract(CANDIDATE_FACTORY, ["function getPair(address,address) view returns (address)"], provider);
+            
+            const result = await factory.getPair(WBONE, RIC);
+            const display = document.getElementById("status");
+
+            if (result.toLowerCase() === YOUR_LP.toLowerCase()) {
+                display.innerHTML = `
+                    <div class="success">✅ MATCH FOUND!</div>
+                    <p>This Factory returned your exact LP address.</p>
+                    <p><b>0x78ae...</b> is the CORRECT Factory.</p>
+                `;
+            } else if (result === "0x0000000000000000000000000000000000000000") {
+                display.innerHTML = `<div class="fail">❌ FACTORY SAYS "NO"</div><p>It returned Address Zero.</p>`;
+            } else {
+                display.innerHTML = `<div class="fail">⚠️ MISMATCH</div><p>It returned a different pair: ${result}</p>`;
             }
+        } catch(e) {
+            document.getElementById("status").innerHTML = `<div class="fail">💥 ERROR</div><p>${e.message}</p>`;
         }
-    </script>
+    }
+</script>
 </body>
 </html>
