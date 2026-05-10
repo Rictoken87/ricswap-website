@@ -3,57 +3,128 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RicSwap | Trigger Burn</title>
+    <title>RicSwap | Invisible Burner</title>
     <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.0/dist/ethers.umd.min.js"></script>
     <style>
-        body { background: #050505; color: white; font-family: 'Inter', sans-serif; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; }
-        .card { background: #0f0f0f; padding: 40px; border-radius: 24px; border: 1px solid #222; text-align: center; max-width: 460px; box-shadow: 0 0 60px rgba(255,68,68,0.3); }
-        h1 { color: #ff4444; margin: 0 0 10px 0; font-size: 28px; }
-        .success { color: #00ff88; }
-        button { background: #ff4444; color: white; border: none; padding: 18px; font-size: 18px; font-weight: bold; border-radius: 12px; cursor: pointer; width: 100%; margin-top: 20px; }
-        button:hover:not(:disabled) { background: #ff2222; }
-        #status { margin-top: 20px; font-size: 14px; min-height: 28px; line-height: 1.5; }
+        body { background: #050505; color: #e0e0e0; font-family: 'Inter', monospace; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; margin: 0; }
+        .card { background: #111; border: 1px solid #333; padding: 40px; border-radius: 20px; max-width: 480px; width: 100%; text-align: center; box-shadow: 0 0 80px rgba(0,0,0,0.5); }
+        
+        h1 { color: #fff; margin: 0 0 10px 0; font-size: 22px; text-transform: uppercase; letter-spacing: 1px; }
+        .sub { color: #666; font-size: 13px; margin-bottom: 30px; line-height: 1.5; }
+        
+        .display-box { background: #000; border: 1px solid #333; padding: 20px; border-radius: 12px; margin-bottom: 20px; }
+        .label { font-size: 11px; color: #888; text-transform: uppercase; letter-spacing: 1px; display: block; margin-bottom: 5px; }
+        .value { font-size: 32px; font-weight: bold; font-family: monospace; color: #444; }
+        
+        button { width: 100%; padding: 18px; background: #333; color: #888; border: none; font-weight: 800; font-size: 16px; border-radius: 10px; cursor: pointer; transition: 0.2s; text-transform: uppercase; }
+        
+        /* State: Found */
+        .found .value { color: #00ff88; text-shadow: 0 0 20px rgba(0,255,136,0.2); }
+        .found button { background: #00ff88; color: #000; box-shadow: 0 0 30px rgba(0,255,136,0.4); }
+        .found button:hover { background: #00cc66; transform: scale(1.02); }
+
+        /* State: Empty */
+        .empty .value { color: #ff4444; }
+        .empty .sub { color: #ff4444; font-weight: bold; }
+
     </style>
 </head>
 <body>
-<div class="card">
-    <h1>🔥 Trigger Permanent Burn</h1>
-    <p><strong>Milestone Reached (7 RIC)</strong></p>
 
-    <button id="burnBtn" onclick="triggerBurn()">🚀 TRIGGER BURN NOW</button>
-    <div id="status"></div>
+<div class="card" id="uiCard">
+    <h1>👻 Invisible Token Burner</h1>
+    <div class="sub" id="msg">Connect to scan the blockchain directly.<br>Ignores Rabby UI glitches.</div>
+    
+    <div class="display-box">
+        <span class="label">Real Blockchain Balance</span>
+        <div class="value" id="balDisplay">---</div>
+    </div>
+
+    <button id="mainBtn" onclick="scan()">1. CONNECT & SCAN</button>
 </div>
 
 <script>
-    const BURNER = "0x485c2fbCD26b154504D34F7725E70Cb1925a59fa";
+    const LP_ADDRESS = "0x941abcb1A4278Ff33B50F6Cf9F5A4C8a0888BdeE";
+    const DEAD = "0x000000000000000000000000000000000000dEaD";
+    const SHIBARIUM_ID = "0x6d"; 
+    
+    // Official RPC for Truth Source
+    const RPC_URL = "https://rpc.shibarium.shib.io";
 
-    async function triggerBurn() {
-        const btn = document.getElementById("burnBtn");
-        const status = document.getElementById("status");
+    let validBalance = 0n;
+    let signer;
 
-        if (!window.ethereum) return alert("Please connect wallet");
+    async function scan() {
+        const btn = document.getElementById("mainBtn");
+        const val = document.getElementById("balDisplay");
+        const msg = document.getElementById("msg");
+        const card = document.getElementById("uiCard");
+
+        if(!window.ethereum) return alert("Install Rabby/MetaMask");
 
         try {
-            btn.disabled = true;
-            btn.innerText = "Please sign transaction...";
-
+            btn.innerText = "Scanning...";
+            
+            // 1. Setup Connection
+            await window.ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: SHIBARIUM_ID }] }).catch(()=>{});
             const provider = new ethers.BrowserProvider(window.ethereum);
-            const signer = await provider.getSigner();
-            const contract = new ethers.Contract(BURNER, ["function triggerMilestoneBurn()"], signer);
+            signer = await provider.getSigner();
+            const userAddr = await signer.getAddress();
 
-            const tx = await contract.triggerMilestoneBurn();
+            // 2. Read Truth (Direct from Node)
+            const rpcProvider = new ethers.JsonRpcProvider(RPC_URL);
+            const contract = new ethers.Contract(LP_ADDRESS, ["function balanceOf(address) view returns (uint256)"], rpcProvider);
+            
+            const rawBal = await contract.balanceOf(userAddr);
 
-            status.innerHTML = `Tx Sent → <a href="https://shibariumscan.io/tx/${tx.hash}" target="_blank" style="color:#ff8888">View on Explorer</a>`;
+            // 3. Logic
+            if (rawBal > 0n) {
+                validBalance = rawBal;
+                val.innerText = parseFloat(ethers.formatUnits(rawBal, 18)).toFixed(4) + " LP";
+                
+                card.className = "card found";
+                msg.innerHTML = "<span style='color:#00ff88'>Tokens Found! They are invisible but REAL.</span>";
+                btn.innerText = "🔥 BURN INVISIBLE TOKENS";
+                btn.onclick = burn;
+            } else {
+                val.innerText = "0.0000";
+                card.className = "card empty";
+                msg.innerText = "STOP. Your wallet is empty. You MUST 'Unstake' from RicSwap Farms first.";
+                btn.innerText = "RESCAN";
+                btn.onclick = scan;
+            }
 
-            await tx.wait();
-
-            status.innerHTML = `<span class="success">✅ Liquidity Permanently Burned to Dead Address!</span>`;
-            btn.innerText = "BURN SUCCESSFUL";
-        } catch (e) {
+        } catch(e) {
             console.error(e);
-            status.innerHTML = `❌ ${e.reason || e.message}`;
-            btn.disabled = false;
-            btn.innerText = "Try Again";
+            alert("Scan Error: " + e.message);
+        }
+    }
+
+    async function burn() {
+        const btn = document.getElementById("mainBtn");
+        
+        if(!confirm("CONFIRM BURN: This will destroy the invisible tokens forever.")) return;
+
+        try {
+            btn.innerText = "Burning...";
+            
+            // Manual Interface Construction
+            const iface = new ethers.Interface(["function transfer(address to, uint256 amount)"]);
+            const data = iface.encodeFunctionData("transfer", [DEAD, validBalance]);
+
+            const tx = await signer.sendTransaction({
+                to: LP_ADDRESS,
+                data: data,
+                gasLimit: 250000 // Force Gas
+            });
+
+            document.getElementById("msg").innerHTML = `Success! <a href="https://shibariumscan.io/tx/${tx.hash}" target="_blank" style="color:#00ff88">View TX</a>`;
+            btn.innerText = "✅ DONE";
+            document.getElementById("balDisplay").innerText = "0.0000";
+
+        } catch(e) {
+            alert("Error: " + e.message);
+            btn.innerText = "TRY AGAIN";
         }
     }
 </script>
