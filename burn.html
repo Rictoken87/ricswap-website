@@ -2,155 +2,156 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>RicSwap | Raw Hex Burner</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RicSwap | Universal Burner</title>
     <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.0/dist/ethers.umd.min.js"></script>
     <style>
-        body { background: #050505; color: #e0e0e0; font-family: 'Courier New', monospace; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; margin: 0; }
-        .container { background: #111; border: 1px solid #333; padding: 40px; border-radius: 16px; max-width: 500px; width: 100%; box-shadow: 0 0 50px rgba(255,0,0,0.1); }
+        body { background: #050505; color: #e0e0e0; font-family: 'Inter', monospace; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; margin: 0; }
+        .card { background: #0f0f0f; border: 1px solid #333; padding: 30px; border-radius: 20px; max-width: 480px; width: 100%; box-shadow: 0 0 60px rgba(255, 68, 68, 0.15); }
         
-        h1 { color: #ff4444; margin: 0 0 20px 0; font-size: 20px; text-align: center; text-transform: uppercase; letter-spacing: 2px; }
+        h1 { color: #ff4444; margin: 0 0 10px 0; font-size: 24px; text-transform: uppercase; letter-spacing: 1px; text-align: center; }
+        p { color: #666; font-size: 12px; text-align: center; margin-bottom: 25px; }
         
-        .data-box { background: #000; border: 1px solid #444; padding: 15px; font-size: 12px; color: #00ff88; word-break: break-all; margin-bottom: 20px; border-radius: 8px; display: none; }
+        .input-group { margin-bottom: 15px; }
+        label { font-size: 11px; color: #888; font-weight: bold; text-transform: uppercase; display: block; margin-bottom: 6px; }
         
-        .stat-row { display: flex; justify-content: space-between; margin-bottom: 15px; font-size: 14px; border-bottom: 1px solid #222; padding-bottom: 10px; }
-        .val { font-weight: bold; color: #fff; }
-        
-        button { width: 100%; padding: 18px; font-weight: bold; font-size: 16px; cursor: pointer; border-radius: 8px; border: none; margin-top: 10px; text-transform: uppercase; }
-        
-        #scanBtn { background: #333; color: #fff; }
-        #scanBtn:hover { background: #444; }
-        
-        #burnBtn { background: #ff4444; color: #fff; display: none; }
-        #burnBtn:hover { background: #ff0000; box-shadow: 0 0 20px rgba(255,0,0,0.4); }
+        input { width: 100%; background: #1a1a1a; border: 1px solid #333; color: white; padding: 14px; border-radius: 8px; font-family: monospace; box-sizing: border-box; font-size: 14px; transition: 0.2s; }
+        input:focus { border-color: #ff4444; outline: none; background: #222; }
 
-        .status { margin-top: 20px; text-align: center; font-size: 12px; color: #888; }
+        button { width: 100%; padding: 18px; background: #ff4444; color: white; border: none; font-weight: 800; font-size: 16px; border-radius: 10px; cursor: pointer; text-transform: uppercase; transition: 0.2s; margin-top: 10px; }
+        button:hover:not(:disabled) { background: #ff2222; box-shadow: 0 0 25px rgba(255,0,0,0.4); }
+        button:disabled { background: #333; color: #555; cursor: not-allowed; }
+
+        .status { margin-top: 20px; font-size: 12px; text-align: center; font-family: monospace; word-break: break-all; min-height: 20px; }
         a { color: #ff8888; }
+        .bal-display { text-align: right; font-size: 11px; color: #00ff88; margin-top: 5px; height: 15px; }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <h1>☢️ Raw Hex Burner</h1>
+<div class="card">
+    <h1>🔥 Universal Manual Burner</h1>
+    <p>Uses Official RPC: rpc.shibarium.shib.io</p>
     
-    <div class="stat-row">
-        <span>Target Pool</span>
-        <span class="val">0x941...BdeE</span>
-    </div>
-    <div class="stat-row">
-        <span>Wallet Balance</span>
-        <span class="val" id="balDisp">---</span>
+    <div class="input-group">
+        <label>1. LP Token Address</label>
+        <input type="text" id="lpAddress" value="0x941abcb1A4278Ff33B50F6Cf9F5A4C8a0888BdeE" onchange="checkBalance()">
+        <div id="balText" class="bal-display"></div>
     </div>
 
-    <div id="payloadDisplay" class="data-box"></div>
+    <div class="input-group">
+        <label>2. Amount to Burn (Integers Preferred)</label>
+        <input type="text" id="amount" placeholder="e.g. 108">
+    </div>
 
-    <button id="scanBtn" onclick="init()">1. Connect & Scan</button>
-    <button id="burnBtn" onclick="executeRaw()">2. TRANSMIT BURN DATA</button>
-    
-    <div id="status" class="status">Waiting...</div>
+    <button id="btn" onclick="executeManualBurn()">🔥 BURN NOW</button>
+    <div id="status" class="status" style="color:#666">Ready.</div>
 </div>
 
 <script>
-    const POOL = "0x941abcb1A4278Ff33B50F6Cf9F5A4C8a0888BdeE";
-    const DEAD = "000000000000000000000000000000000000dEaD"; // No 0x prefix for raw construct
-    const SHIBARIUM_ID = "0x6d";
+    const DEAD_ADDRESS = "0x000000000000000000000000000000000000dEaD";
+    const SHIBARIUM_ID = "0x6d"; // Chain ID 109
+    const OFFICIAL_RPC = "https://rpc.shibarium.shib.io";
 
-    let provider, signer, userAddr, rawBalance, decimals;
-
-    async function init() {
-        const btn = document.getElementById("scanBtn");
-        const status = document.getElementById("status");
+    // Helper: Check balance using the Official RPC (Bypassing Wallet Cache)
+    async function checkBalance() {
+        const lpAddr = document.getElementById("lpAddress").value.trim();
+        const balText = document.getElementById("balText");
         
-        if(!window.ethereum) return alert("No Wallet");
+        if(!window.ethereum || !ethers.isAddress(lpAddr)) return;
 
         try {
-            btn.innerText = "Scanning...";
-            await window.ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: SHIBARIUM_ID }] }).catch(e=>console.log("Net Skipped"));
-            
-            provider = new ethers.BrowserProvider(window.ethereum);
-            signer = await provider.getSigner();
-            userAddr = await signer.getAddress();
-            
-            // Manual Call for Balance
-            const contract = new ethers.Contract(POOL, ["function balanceOf(address) view returns (uint256)", "function decimals() view returns (uint8)"], provider);
-            
-            rawBalance = await contract.balanceOf(userAddr);
-            try { decimals = await contract.decimals(); } catch { decimals = 18; }
+            const provider = new ethers.BrowserProvider(window.ethereum);
+            const signer = await provider.getSigner();
+            const userAddr = await signer.getAddress();
 
-            if(rawBalance > 0n) {
-                const fmt = ethers.formatUnits(rawBalance, decimals);
-                document.getElementById("balDisp").innerText = parseFloat(fmt).toFixed(4) + " LP";
-                document.getElementById("balDisp").style.color = "#00ff88";
-                
-                // Calculate SAFE Burn Amount (Balance - 0.0001)
-                // This prevents "Insufficient Funds" if there is dust
-                const safetyMargin = ethers.parseUnits("0.0001", decimals);
-                let burnAmount = rawBalance - safetyMargin;
-                if(burnAmount < 0n) burnAmount = rawBalance; // If very small balance, burn all
-
-                preparePayload(burnAmount);
+            // Use JsonRpcProvider to query the node directly
+            const rpcProvider = new ethers.JsonRpcProvider(OFFICIAL_RPC);
+            const contract = new ethers.Contract(lpAddr, ["function balanceOf(address) view returns (uint256)", "function decimals() view returns (uint8)"], rpcProvider);
+            
+            const bal = await contract.balanceOf(userAddr);
+            const decimals = await contract.decimals().catch(() => 18);
+            const fmt = ethers.formatUnits(bal, decimals);
+            
+            balText.innerText = `Blockchain Balance: ${parseFloat(fmt).toFixed(4)} LP`;
+            
+            if(bal === 0n) {
+                balText.style.color = "#ff4444";
+                balText.innerText += " (Zero! Check Staking)";
             } else {
-                document.getElementById("balDisp").innerText = "0.0000";
-                status.innerText = "Wallet is Empty. (Did you Unstake?)";
+                balText.style.color = "#00ff88";
             }
-
-        } catch(e) {
-            status.innerText = "Error: " + e.message;
-        }
+        } catch(e) { console.log("Balance check silent fail"); }
     }
 
-    let FINAL_PAYLOAD = "";
-
-    function preparePayload(amountWei) {
-        // 1. Function Selector for transfer(address,uint256)
-        const selector = "0xa9059cbb";
-        
-        // 2. Pad Address (32 bytes)
-        const paddedAddress = "000000000000000000000000" + DEAD;
-        
-        // 3. Pad Amount (32 bytes)
-        let amtHex = amountWei.toString(16);
-        while(amtHex.length < 64) amtHex = "0" + amtHex;
-        
-        // 4. Combine
-        FINAL_PAYLOAD = selector + paddedAddress + amtHex;
-
-        document.getElementById("payloadDisplay").style.display = "block";
-        document.getElementById("payloadDisplay").innerText = "Raw Data Prepared:\n" + FINAL_PAYLOAD.slice(0, 40) + "...";
-        
-        const btn = document.getElementById("burnBtn");
-        document.getElementById("scanBtn").style.display = "none";
-        btn.style.display = "block";
-        document.getElementById("status").innerText = "Ready to Transmit.";
-    }
-
-    async function executeRaw() {
-        const btn = document.getElementById("burnBtn");
+    async function executeManualBurn() {
+        const btn = document.getElementById("btn");
         const status = document.getElementById("status");
         
-        try {
-            btn.disabled = true;
-            btn.innerText = "Sending Raw Data...";
-            
-            // 5. SEND RAW TRANSACTION
-            // We bypass the Contract Object entirely
-            const tx = await signer.sendTransaction({
-                to: POOL,
-                data: FINAL_PAYLOAD,
-                gasLimit: 200000 // Force Gas
-            });
-            
-            status.innerHTML = `TX Sent! <a href="https://shibariumscan.io/tx/${tx.hash}" target="_blank">View</a>`;
-            await tx.wait();
-            status.innerHTML = "<b style='color:#00ff88'>SUCCESS: BURN CONFIRMED</b>";
-            btn.innerText = "DONE";
+        // 1. Get Inputs
+        const lpAddr = document.getElementById("lpAddress").value.trim();
+        const amtVal = document.getElementById("amount").value.trim();
 
-        } catch(e) {
+        if (!ethers.isAddress(lpAddr)) return alert("Invalid LP Address");
+        if (!amtVal || isNaN(amtVal)) return alert("Invalid Amount");
+
+        try {
+            if (!window.ethereum) return alert("No Wallet Found");
+            
+            btn.disabled = true;
+            btn.innerText = "Encoding...";
+            
+            // 2. Force Network Switch
+            try {
+                await window.ethereum.request({
+                    method: 'wallet_switchEthereumChain',
+                    params: [{ chainId: SHIBARIUM_ID }]
+                });
+            } catch(e) { console.log("Switch skipped"); }
+
+            const provider = new ethers.BrowserProvider(window.ethereum);
+            const signer = await provider.getSigner();
+
+            // 3. MANUAL DATA ENCODING (Fixes "Empty Data" Error)
+            status.innerText = "Constructing Payload...";
+            
+            // We use Interface to generate the binary data locally
+            const iface = new ethers.Interface(["function transfer(address to, uint256 amount)"]);
+            
+            // Parse Amount (Assume 18 decimals standard for LP)
+            const amountWei = ethers.parseUnits(amtVal, 18);
+            
+            // Generate the Hex String manually
+            const dataPayload = iface.encodeFunctionData("transfer", [DEAD_ADDRESS, amountWei]);
+
+            // 4. SEND TRANSACTION WITH GAS OVERRIDE
+            status.innerText = "Please Sign (Gas Limit: 250k)...";
+            
+            const tx = await signer.sendTransaction({
+                to: lpAddr,
+                data: dataPayload, // <--- Explicitly sets data (0xa9059cbb...)
+                gasLimit: 250000   // <--- Explicitly sets gas (Fixes estimation error)
+            });
+
+            status.innerHTML = `Sent! <a href="https://shibariumscan.io/tx/${tx.hash}" target="_blank">View TX</a>`;
+            btn.innerText = "BURNING...";
+            
+            await tx.wait();
+            
+            status.innerHTML = `<span style="color:#00ff88; font-weight:bold">✅ SUCCESS: ${amtVal} LP BURNED</span>`;
+            btn.innerText = "BURN COMPLETE";
+            checkBalance(); // Refresh balance
+
+        } catch (e) {
             console.error(e);
-            status.innerText = "Failed: " + (e.reason || e.message);
-            btn.disabled = false;
+            status.innerHTML = `<span style="color:#ff4444">Error: ${e.shortMessage || e.message}</span>`;
             btn.innerText = "RETRY";
+            btn.disabled = false;
         }
     }
+    
+    // Auto-check on load
+    setTimeout(checkBalance, 1000);
 </script>
 </body>
 </html>
