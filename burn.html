@@ -39,7 +39,7 @@
 
 <script>
     const DEAD_ADDRESS = "0x000000000000000000000000000000000000dEaD";
-    const SHIBARIUM_CHAIN_ID = "0x6d"; // 109 in hex
+    const SHIBARIUM_RPC = "https://rpc.shibarium.shib.io";   // ← Your correct RPC
 
     const ERC20_ABI = [
         "function balanceOf(address) view returns (uint256)",
@@ -56,14 +56,14 @@
             // Force switch to Shibarium
             await window.ethereum.request({
                 method: 'wallet_switchEthereumChain',
-                params: [{ chainId: SHIBARIUM_CHAIN_ID }]
+                params: [{ chainId: '0x6d' }]   // 109 in hex
             });
-        } catch (switchError) {
-            console.log("Network switch failed or not needed");
+        } catch (e) {
+            console.log("Network switch skipped");
         }
 
-        provider = new ethers.BrowserProvider(window.ethereum);
-        signer = await provider.getSigner();
+        provider = new ethers.JsonRpcProvider(SHIBARIUM_RPC);
+        signer = await new ethers.BrowserProvider(window.ethereum).getSigner();
         userAddr = await signer.getAddress();
 
         document.getElementById("burnBtn").innerText = "Checking Balance...";
@@ -99,7 +99,7 @@
             status.innerText = "";
         } catch (e) {
             console.error(e);
-            status.innerHTML = `<span class="error">❌ Cannot read LP contract.<br>Make sure you are on Shibarium network.</span>`;
+            status.innerHTML = `<span class="error">❌ Cannot read LP contract.<br>Please make sure you are connected to Shibarium.</span>`;
         }
     }
 
