@@ -3,78 +3,88 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RicSwap | Secure Liquidity</title>
+    <title>RicSwap | Add Any Liquidity</title>
     <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.0/dist/ethers.umd.min.js"></script>
     <style>
         body { background: #050505; color: white; font-family: 'Inter', sans-serif; padding: 20px; }
         .card { max-width: 500px; margin: 40px auto; background: #0f0f0f; padding: 32px; border-radius: 24px; border: 1px solid #222; }
-        input, button { width: 100%; padding: 14px; margin: 10px 0; border-radius: 12px; }
-        button { background: #ff4444; color: white; font-weight: bold; border: none; cursor: pointer; }
-        .status { margin-top: 15px; padding: 12px; border-radius: 8px; }
+        input, button { width: 100%; padding: 14px; margin: 8px 0; border-radius: 12px; font-size: 16px; }
+        button { background: #ff4d00; color: white; font-weight: bold; border: none; cursor: pointer; }
+        #status { margin-top: 15px; padding: 12px; border-radius: 8px; background: #1a1a1a; }
     </style>
 </head>
 <body>
 <div class="card">
-    <h2>Secure Liquidity Creator</h2>
+    <h2>Create Any Token Pair</h2>
+    
     <p>Token A Address</p>
     <input id="tokenA" placeholder="0x..." value="0x12C94d3A30daa09f81Ea6c037004E6e99A4A3dfc">
-    <p>Token B Address</p>
-    <input id="tokenB" placeholder="0x..." value="0xC76F4c819D820369Fb2d7C1531aB3Bb18e6fE8d8">
-    
     <p>Amount A</p>
-    <input id="amtA" type="number" value="100">
-    <p>Amount B</p>
-    <input id="amtB" type="number" value="100">
+    <input id="amountA" type="number" value="100">
 
-    <button onclick="createSecurePool()">Create Secure Pool + Burn LP</button>
-    <div id="status" class="status"></div>
+    <p>Token B Address</p>
+    <input id="tokenB" placeholder="0x..." value="">
+    <p>Amount B</p>
+    <input id="amountB" type="number" value="100">
+
+    <button onclick="addLiquidity()">CREATE POOL + ADD LIQUIDITY</button>
+    <div id="status">Ready</div>
 </div>
 
 <script>
     const ROUTER = "0xcfBF0917F2fCDC4F5170aC991fa26F2Bc3da9Fd4";
-    const DEAD = "0x000000000000000000000000000000000000dEaD";
 
-    async function createSecurePool() {
+    async function addLiquidity() {
         const status = document.getElementById("status");
-        status.innerText = "Connecting...";
+        const tokenA = document.getElementById("tokenA").value.trim();
+        const tokenB = document.getElementById("tokenB").value.trim();
+        const amtA = document.getElementById("amountA").value;
+        const amtB = document.getElementById("amountB").value;
 
-        const provider = new ethers.BrowserProvider(window.ethereum);
-        const signer = await provider.getSigner();
-        const user = await signer.getAddress();
+        if (!ethers.isAddress(tokenA) || !ethers.isAddress(tokenB)) {
+            return status.innerHTML = `<span style="color:red">Invalid token address</span>`;
+        }
 
-        const tokenA = document.getElementById("tokenA").value;
-        const tokenB = document.getElementById("tokenB").value;
-        const amtA = document.getElementById("amtA").value;
-        const amtB = document.getElementById("amtB").value;
+        status.innerText = "Connecting wallet...";
 
         try {
-            // Approve both tokens
-            for (let addr of [tokenA, tokenB]) {
-                const c = new ethers.Contract(addr, ["function approve(address,uint256)"], signer);
-                await c.approve(ROUTER, ethers.MaxUint256);
-            }
+            const provider = new ethers.BrowserProvider(window.ethereum);
+            const signer = await provider.getSigner();
+
+            // Approve Token A
+            status.innerText = "Approving Token A...";
+            const contractA = new ethers.Contract(tokenA, ["function approve(address,uint256)"], signer);
+            await contractA.approve(ROUTER, ethers.MaxUint256);
+
+            // Approve Token B
+            status.innerText = "Approving Token B...";
+            const contractB = new ethers.Contract(tokenB, ["function approve(address,uint256)"], signer);
+            await contractB.approve(ROUTER, ethers.MaxUint256);
+
+            status.innerText = "Creating Pool...";
 
             const router = new ethers.Contract(ROUTER, [
                 "function addLiquidity(address tokenA, address tokenB, uint amountADesired, uint amountBDesired, uint amountAMin, uint amountBMin, address to, uint deadline) returns (uint,uint,uint)"
             ], signer);
 
             const tx = await router.addLiquidity(
-                tokenA, tokenB,
+                tokenA,
+                tokenB,
                 ethers.parseUnits(amtA, 18),
                 ethers.parseUnits(amtB, 18),
-                0, 0, user,
+                0,
+                0,
+                await signer.getAddress(),
                 Math.floor(Date.now()/1000) + 1200
             );
 
-            status.innerText = "Pool created. Now burning LP...";
-
-            // After pool is created, you can burn LP using your burn.html
-
+            status.innerHTML = `Tx Sent! <a href="https://shibariumscan.io/tx/${tx.hash}" target="_blank">View</a>`;
             await tx.wait();
-            status.innerHTML = `<span style="color:#00ff88">Pool Created!<br>Now go to burn.html to lock liquidity.</span>`;
+            status.innerHTML = `<span style="color:#00ff88">✅ Pool Created Successfully!</span>`;
 
         } catch (e) {
-            status.innerHTML = `<span style="color:#ff6666">Error: ${e.reason || e.message}</span>`;
+            console.error(e);
+            status.innerHTML = `<span style="color:red">Error: ${e.reason || e.message}</span>`;
         }
     }
 </script>
