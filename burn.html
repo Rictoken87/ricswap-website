@@ -3,155 +3,152 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RicSwap | Universal Burner</title>
+    <title>RicSwap | The Gatekeeper</title>
     <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.0/dist/ethers.umd.min.js"></script>
     <style>
         body { background: #050505; color: #e0e0e0; font-family: 'Inter', monospace; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; margin: 0; }
-        .card { background: #0f0f0f; border: 1px solid #333; padding: 30px; border-radius: 20px; max-width: 480px; width: 100%; box-shadow: 0 0 60px rgba(255, 68, 68, 0.15); }
+        .card { background: #0f0f0f; border: 1px solid #333; padding: 30px; border-radius: 20px; max-width: 500px; width: 100%; box-shadow: 0 0 60px rgba(0,0,0,0.5); }
         
-        h1 { color: #ff4444; margin: 0 0 10px 0; font-size: 24px; text-transform: uppercase; letter-spacing: 1px; text-align: center; }
-        p { color: #666; font-size: 12px; text-align: center; margin-bottom: 25px; }
+        h1 { color: #fff; margin: 0 0 10px 0; font-size: 20px; text-align: center; text-transform: uppercase; letter-spacing: 1px; }
+        .sub { color: #666; font-size: 12px; text-align: center; margin-bottom: 30px; }
         
-        .input-group { margin-bottom: 15px; }
-        label { font-size: 11px; color: #888; font-weight: bold; text-transform: uppercase; display: block; margin-bottom: 6px; }
+        .status-box { background: #1a1a1a; border: 1px solid #333; padding: 20px; border-radius: 12px; text-align: center; margin-bottom: 20px; }
+        .big-val { font-size: 32px; font-weight: bold; color: #666; display: block; margin: 10px 0; font-family: monospace; }
+        .address { font-size: 10px; color: #444; word-break: break-all; }
         
-        input { width: 100%; background: #1a1a1a; border: 1px solid #333; color: white; padding: 14px; border-radius: 8px; font-family: monospace; box-sizing: border-box; font-size: 14px; transition: 0.2s; }
-        input:focus { border-color: #ff4444; outline: none; background: #222; }
+        input { width: 100%; background: #000; border: 1px solid #444; color: white; padding: 12px; border-radius: 8px; font-family: monospace; box-sizing: border-box; text-align: center; margin-bottom: 10px; }
+        
+        button { width: 100%; padding: 18px; background: #333; color: #888; border: none; font-weight: 800; font-size: 16px; border-radius: 10px; cursor: not-allowed; text-transform: uppercase; transition: 0.3s; }
+        
+        /* States */
+        .found button { background: #00ff88; color: #000; cursor: pointer; box-shadow: 0 0 30px rgba(0,255,136,0.4); }
+        .found .big-val { color: #00ff88; }
+        
+        .empty .big-val { color: #ff4444; }
+        .empty .msg { color: #ff4444; font-size: 12px; font-weight: bold; }
 
-        button { width: 100%; padding: 18px; background: #ff4444; color: white; border: none; font-weight: 800; font-size: 16px; border-radius: 10px; cursor: pointer; text-transform: uppercase; transition: 0.2s; margin-top: 10px; }
-        button:hover:not(:disabled) { background: #ff2222; box-shadow: 0 0 25px rgba(255,0,0,0.4); }
-        button:disabled { background: #333; color: #555; cursor: not-allowed; }
-
-        .status { margin-top: 20px; font-size: 12px; text-align: center; font-family: monospace; word-break: break-all; min-height: 20px; }
-        a { color: #ff8888; }
-        .bal-display { text-align: right; font-size: 11px; color: #00ff88; margin-top: 5px; height: 15px; }
     </style>
 </head>
 <body>
 
-<div class="card">
-    <h1>🔥 Universal Manual Burner</h1>
-    <p>Uses Official RPC: rpc.shibarium.shib.io</p>
+<div class="card" id="mainCard">
+    <h1>🛡️ The Gatekeeper</h1>
+    <div class="sub">Verifies balance before allowing Burn.</div>
     
-    <div class="input-group">
-        <label>1. LP Token Address</label>
-        <input type="text" id="lpAddress" value="0x941abcb1A4278Ff33B50F6Cf9F5A4C8a0888BdeE" onchange="checkBalance()">
-        <div id="balText" class="bal-display"></div>
+    <input type="text" id="lpAddress" value="0x941abcb1A4278Ff33B50F6Cf9F5A4C8a0888BdeE" placeholder="LP Address">
+
+    <div class="status-box">
+        <span style="font-size:11px; color:#888; text-transform:uppercase;">Detected Balance</span>
+        <span class="big-val" id="balDisplay">---</span>
+        <div class="msg" id="msgDisplay">Connect Wallet to Scan</div>
     </div>
 
-    <div class="input-group">
-        <label>2. Amount to Burn (Integers Preferred)</label>
-        <input type="text" id="amount" placeholder="e.g. 108">
-    </div>
+    <div class="address" id="userAddress"></div>
 
-    <button id="btn" onclick="executeManualBurn()">🔥 BURN NOW</button>
-    <div id="status" class="status" style="color:#666">Ready.</div>
+    <button id="actionBtn" onclick="connectAndScan()">1. SCAN WALLET</button>
 </div>
 
 <script>
     const DEAD_ADDRESS = "0x000000000000000000000000000000000000dEaD";
-    const SHIBARIUM_ID = "0x6d"; // Chain ID 109
-    const OFFICIAL_RPC = "https://rpc.shibarium.shib.io";
+    const SHIBARIUM_RPC = "https://rpc.shibarium.shib.io"; // Official RPC
+    const CHAIN_ID = "0x6d"; 
 
-    // Helper: Check balance using the Official RPC (Bypassing Wallet Cache)
-    async function checkBalance() {
+    let signer, validBalance;
+
+    async function connectAndScan() {
+        const btn = document.getElementById("actionBtn");
+        const val = document.getElementById("balDisplay");
+        const msg = document.getElementById("msgDisplay");
+        const card = document.getElementById("mainCard");
         const lpAddr = document.getElementById("lpAddress").value.trim();
-        const balText = document.getElementById("balText");
-        
-        if(!window.ethereum || !ethers.isAddress(lpAddr)) return;
+
+        if(!window.ethereum) return alert("No Wallet Found");
 
         try {
-            const provider = new ethers.BrowserProvider(window.ethereum);
-            const signer = await provider.getSigner();
-            const userAddr = await signer.getAddress();
+            btn.innerText = "Scanning Blockchain...";
+            
+            // 1. Force Chain
+            await window.ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: CHAIN_ID }] })
+                .catch(() => console.log("Chain switch skipped"));
 
-            // Use JsonRpcProvider to query the node directly
-            const rpcProvider = new ethers.JsonRpcProvider(OFFICIAL_RPC);
-            const contract = new ethers.Contract(lpAddr, ["function balanceOf(address) view returns (uint256)", "function decimals() view returns (uint8)"], rpcProvider);
+            const provider = new ethers.BrowserProvider(window.ethereum);
+            signer = await provider.getSigner();
+            const userAddr = await signer.getAddress();
             
+            document.getElementById("userAddress").innerText = "Connected: " + userAddr;
+
+            // 2. READ-ONLY CHECK (Uses Official RPC directly for truth)
+            const rpcProvider = new ethers.JsonRpcProvider(SHIBARIUM_RPC);
+            const contract = new ethers.Contract(lpAddr, [
+                "function balanceOf(address) view returns (uint256)",
+                "function decimals() view returns (uint8)"
+            ], rpcProvider);
+
             const bal = await contract.balanceOf(userAddr);
-            const decimals = await contract.decimals().catch(() => 18);
-            const fmt = ethers.formatUnits(bal, decimals);
             
-            balText.innerText = `Blockchain Balance: ${parseFloat(fmt).toFixed(4)} LP`;
-            
-            if(bal === 0n) {
-                balText.style.color = "#ff4444";
-                balText.innerText += " (Zero! Check Staking)";
+            // 3. DECISION LOGIC
+            if (bal > 0n) {
+                // SUCCESS: Tokens Found
+                validBalance = bal;
+                const dec = await contract.decimals().catch(()=>18);
+                const fmt = ethers.formatUnits(bal, dec);
+                
+                val.innerText = parseFloat(fmt).toFixed(4) + " LP";
+                msg.innerText = "TOKENS SECURED";
+                
+                card.className = "card found";
+                btn.innerText = "🔥 BURN NOW";
+                btn.onclick = executeBurn; // Switch function to Burn
             } else {
-                balText.style.color = "#00ff88";
+                // FAILURE: Wallet Empty
+                val.innerText = "0.0000";
+                msg.innerText = "⚠️ STAKED IN FARM? UNSTAKE FIRST.";
+                
+                card.className = "card empty";
+                btn.innerText = "WALLET EMPTY (RESCAN)";
+                btn.onclick = connectAndScan; // Keep scanning
             }
-        } catch(e) { console.log("Balance check silent fail"); }
+
+        } catch(e) {
+            console.error(e);
+            msg.innerText = "Network Error: " + e.message;
+            btn.innerText = "RETRY SCAN";
+        }
     }
 
-    async function executeManualBurn() {
-        const btn = document.getElementById("btn");
-        const status = document.getElementById("status");
+    async function executeBurn() {
+        if(!confirm("Are you sure you want to burn ALL found tokens?")) return;
         
-        // 1. Get Inputs
+        const btn = document.getElementById("actionBtn");
         const lpAddr = document.getElementById("lpAddress").value.trim();
-        const amtVal = document.getElementById("amount").value.trim();
-
-        if (!ethers.isAddress(lpAddr)) return alert("Invalid LP Address");
-        if (!amtVal || isNaN(amtVal)) return alert("Invalid Amount");
 
         try {
-            if (!window.ethereum) return alert("No Wallet Found");
+            btn.innerText = "Sending...";
             
-            btn.disabled = true;
-            btn.innerText = "Encoding...";
-            
-            // 2. Force Network Switch
-            try {
-                await window.ethereum.request({
-                    method: 'wallet_switchEthereumChain',
-                    params: [{ chainId: SHIBARIUM_ID }]
-                });
-            } catch(e) { console.log("Switch skipped"); }
-
-            const provider = new ethers.BrowserProvider(window.ethereum);
-            const signer = await provider.getSigner();
-
-            // 3. MANUAL DATA ENCODING (Fixes "Empty Data" Error)
-            status.innerText = "Constructing Payload...";
-            
-            // We use Interface to generate the binary data locally
+            // Use Interface to ensure data is never empty
             const iface = new ethers.Interface(["function transfer(address to, uint256 amount)"]);
-            
-            // Parse Amount (Assume 18 decimals standard for LP)
-            const amountWei = ethers.parseUnits(amtVal, 18);
-            
-            // Generate the Hex String manually
-            const dataPayload = iface.encodeFunctionData("transfer", [DEAD_ADDRESS, amountWei]);
+            const data = iface.encodeFunctionData("transfer", [DEAD_ADDRESS, validBalance]);
 
-            // 4. SEND TRANSACTION WITH GAS OVERRIDE
-            status.innerText = "Please Sign (Gas Limit: 250k)...";
-            
             const tx = await signer.sendTransaction({
                 to: lpAddr,
-                data: dataPayload, // <--- Explicitly sets data (0xa9059cbb...)
-                gasLimit: 250000   // <--- Explicitly sets gas (Fixes estimation error)
+                data: data,
+                gasLimit: 250000 // Override Gas
             });
 
-            status.innerHTML = `Sent! <a href="https://shibariumscan.io/tx/${tx.hash}" target="_blank">View TX</a>`;
+            document.getElementById("msgDisplay").innerHTML = `<a href="https://shibariumscan.io/tx/${tx.hash}" target="_blank" style="color:#fff">VIEW TRANSACTION</a>`;
             btn.innerText = "BURNING...";
             
             await tx.wait();
             
-            status.innerHTML = `<span style="color:#00ff88; font-weight:bold">✅ SUCCESS: ${amtVal} LP BURNED</span>`;
-            btn.innerText = "BURN COMPLETE";
-            checkBalance(); // Refresh balance
+            btn.innerText = "✅ DONE";
+            document.getElementById("balDisplay").innerText = "0.0000";
+            document.getElementById("mainCard").className = "card";
 
-        } catch (e) {
-            console.error(e);
-            status.innerHTML = `<span style="color:#ff4444">Error: ${e.shortMessage || e.message}</span>`;
-            btn.innerText = "RETRY";
-            btn.disabled = false;
+        } catch(e) {
+            alert("Error: " + (e.reason || e.message));
+            btn.innerText = "TRY AGAIN";
         }
     }
-    
-    // Auto-check on load
-    setTimeout(checkBalance, 1000);
 </script>
 </body>
 </html>
