@@ -3,67 +3,58 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RicSwap | Hybrid Liquidity</title>
+    <title>RicSwap | Raw Liquidity</title>
     <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.0/dist/ethers.umd.min.js"></script>
     <style>
         body { background: #050505; color: #e0e0e0; font-family: 'Inter', monospace; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; }
         .card { width: 100%; max-width: 480px; background: #0f0f0f; padding: 32px; border-radius: 24px; border: 1px solid #222; box-shadow: 0 0 60px rgba(255, 77, 0, 0.15); }
-        
-        h2 { color: #ff4d00; margin: 0 0 20px 0; text-align: center; text-transform: uppercase; font-size: 20px; }
-        
+       
+        h2 { color: #ff4d00; margin: 0 0 25px 0; text-align: center; text-transform: uppercase; letter-spacing: 1px; font-size: 20px; }
+       
         .toggle-row { display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 20px; background: #1a1a1a; padding: 10px; border-radius: 12px; border: 1px solid #333; }
         .toggle-label { font-size: 14px; font-weight: bold; color: #fff; cursor: pointer; }
         input[type="checkbox"] { transform: scale(1.5); accent-color: #ff4d00; cursor: pointer; }
-
+        
         .input-group { margin-bottom: 15px; background: #161616; padding: 18px; border-radius: 16px; border: 1px solid #222; }
         label { font-size: 11px; color: #666; text-transform: uppercase; font-weight: bold; display: block; margin-bottom: 10px; }
-        
+       
         input.addr { width: 100%; background: transparent; border: none; color: white; font-size: 13px; font-family: monospace; outline: none; box-sizing: border-box; }
         input.amount { width: 100%; background: transparent; border: none; color: #ff4d00; font-size: 24px; font-weight: bold; margin-top: 8px; font-family: sans-serif; outline: none; }
-        
+       
         button { width: 100%; padding: 20px; background: #ff4d00; color: white; font-weight: 800; border: none; border-radius: 14px; font-size: 16px; cursor: pointer; margin-top: 10px; text-transform: uppercase; transition: 0.2s; }
-        button:hover:not(:disabled) { background: #ff6600; box-shadow: 0 0 30px rgba(255, 77, 0, 0.4); }
-        button:disabled { background: #222; color: #555; cursor: not-allowed; }
-        
-        #status { margin-top: 25px; padding: 15px; border-radius: 12px; background: #000; border: 1px solid #222; font-size: 12px; text-align: center; color: #888; font-family: monospace; min-height: 20px; }
-        a { color: #ff4d00; }
+        button:hover:not(:disabled) { background: #ff6600; box-shadow: 0 0 40px rgba(255, 77, 0, 0.3); transform: translateY(-1px); }
+        button:disabled { background: #222; color: #555; cursor: not-allowed; transform: none; box-shadow: none; }
+       
+        #status { margin-top: 25px; padding: 15px; border-radius: 12px; background: #000; border: 1px solid #222; font-size: 12px; text-align: center; color: #888; font-family: monospace; min-height: 20px; line-height: 1.5; }
+        a { color: #ff4d00; text-decoration: none; border-bottom: 1px dotted #ff4d00; }
     </style>
 </head>
 <body>
-
 <div class="card">
-    <h2>⚡ Hybrid Liquidity</h2>
-
+    <h2>⚡ Raw Liquidity</h2>
     <div class="toggle-row">
         <input type="checkbox" id="nativeMode" checked onchange="toggleMode()">
-        <label for="nativeMode" class="toggle-label">Use Native BONE (Recommended)</label>
+        <label for="nativeMode" class="toggle-label">Use Native BONE</label>
     </div>
-   
+  
     <div class="input-group">
         <label id="labelA">Token A (Native BONE)</label>
-        <input id="tokenA" class="addr" placeholder="Native BONE" value="NATIVE_BONE" disabled>
+        <input id="tokenA" class="addr" value="NATIVE_BONE" disabled>
         <input id="amountA" class="amount" type="number" placeholder="0.0" value="1">
     </div>
-
     <div style="text-align:center; font-size:24px; color:#333; margin:-10px 0 10px 0;">+</div>
-
     <div class="input-group">
-        <label>Token B Contract (e.g. RIC)</label>
+        <label>Token B Contract</label>
         <input id="tokenB" class="addr" placeholder="Paste 0x..." value="0x12C94d3A30daa09f81Ea6c037004E6e99A4A3dfc">
         <input id="amountB" class="amount" type="number" placeholder="0.0" value="100">
     </div>
-
     <button id="btn" onclick="startProcess()">INITIALIZE POOL</button>
     <div id="status">Ready. Connect Wallet.</div>
 </div>
-
 <script>
     const ROUTER = "0xcfBF0917F2fCDC4F5170aC991fa26F2Bc3da9Fd4";
-    const RPC = "https://rpc.shibarium.shib.io"; 
-    const SHIBARIUM_ID = "0x6d";
-
-    // Addresses
-    const WBONE = "0xC76F4c819D820369Fb2d7C1531aB3Bb18e6fE8d8"; 
+    const RPC = "https://rpc.shibarium.shib.io";
+    const WBONE = "0xC76F4c819D820369Fb2d7C1531aB3Bb18e6fE8d8";
 
     const ABI = [
         "function approve(address spender, uint256 amount) returns (bool)",
@@ -77,7 +68,6 @@
         const isNative = document.getElementById("nativeMode").checked;
         const inputA = document.getElementById("tokenA");
         const labelA = document.getElementById("labelA");
-
         if(isNative) {
             inputA.value = "NATIVE_BONE";
             inputA.disabled = true;
@@ -92,8 +82,7 @@
     async function startProcess() {
         const btn = document.getElementById("btn");
         const status = document.getElementById("status");
-        
-        // Inputs
+       
         const isNative = document.getElementById("nativeMode").checked;
         const addrB = document.getElementById("tokenB").value.trim();
         const rawAmtA = document.getElementById("amountA").value;
@@ -104,86 +93,72 @@
 
         try {
             if(!window.ethereum) return alert("Install Wallet");
-            btn.disabled = true;
-            status.innerText = "Connecting...";
 
-            const provider = new ethers.BrowserProvider(window.ethereum);
-            const signer = await provider.getSigner();
+            btn.disabled = true;
+            status.innerText = "Connecting to Shibarium...";
+
+            const provider = new ethers.JsonRpcProvider(RPC);
+            const walletProvider = new ethers.BrowserProvider(window.ethereum);
+            const signer = await walletProvider.getSigner();
             const userAddr = await signer.getAddress();
 
-            // Force Chain
-            await window.ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: SHIBARIUM_ID }] }).catch(()=>{});
+            await window.ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: '0x6d' }] }).catch(() => {});
 
-            // Get Decimals for Token B
-            const contractB = new ethers.Contract(addrB, ABI, signer);
+            const contractB = new ethers.Contract(addrB, ABI, provider);
             const decB = await contractB.decimals().catch(() => 18);
             const valB = ethers.parseUnits(rawAmtB, decB);
 
-            // APPROVAL FOR TOKEN B (Always needed)
+            // Approve Token B
+            status.innerText = "Approving Token B...";
             const allowB = await contractB.allowance(userAddr, ROUTER);
-            if(allowB < valB) {
-                status.innerText = "Approving Token B...";
-                const txApprove = await contractB.approve(ROUTER, ethers.MaxUint256);
+            if (allowB < valB) {
+                const txApprove = await new ethers.Contract(addrB, ABI, signer).approve(ROUTER, ethers.MaxUint256);
                 await txApprove.wait();
             }
 
+            status.innerText = "Creating Pool...";
             const router = new ethers.Contract(ROUTER, ABI, signer);
             const deadline = Math.floor(Date.now()/1000) + 1200;
 
             let tx;
-
             if (isNative) {
-                // --- MODE 1: Native BONE ---
-                status.innerText = "Supplying Native BONE + Token...";
-                
-                const valA_Wei = ethers.parseEther(rawAmtA); // Native always 18 decimals
-                
+                const valA = ethers.parseEther(rawAmtA);
                 tx = await router.addLiquidityETH(
                     addrB,
                     valB,
-                    0, 0, // Min 0 for safety
+                    0,
+                    0,
                     userAddr,
                     deadline,
-                    { 
-                        value: valA_Wei, // Send BONE as value
-                        gasLimit: 2000000 
-                    } 
+                    { value: valA, gasLimit: 2500000 }
                 );
-
             } else {
-                // --- MODE 2: ERC20 (WBONE) ---
                 const addrA = document.getElementById("tokenA").value.trim();
-                if(!ethers.isAddress(addrA)) return alert("Invalid Token A");
-
-                // Need Approval for A if not native
-                const contractA = new ethers.Contract(addrA, ABI, signer);
+                const contractA = new ethers.Contract(addrA, ABI, provider);
                 const decA = await contractA.decimals().catch(() => 18);
                 const valA = ethers.parseUnits(rawAmtA, decA);
 
+                // Approve Token A
                 const allowA = await contractA.allowance(userAddr, ROUTER);
-                if(allowA < valA) {
+                if (allowA < valA) {
                     status.innerText = "Approving Token A...";
-                    const txAppA = await contractA.approve(ROUTER, ethers.MaxUint256);
-                    await txAppA.wait();
+                    await new ethers.Contract(addrA, ABI, signer).approve(ROUTER, ethers.MaxUint256).then(tx => tx.wait());
                 }
 
-                status.innerText = "Supplying Tokens...";
                 tx = await router.addLiquidity(
                     addrA, addrB,
                     valA, valB,
                     0, 0,
                     userAddr,
                     deadline,
-                    { gasLimit: 2000000 }
+                    { gasLimit: 2500000 }
                 );
             }
 
-            status.innerHTML = `TX Sent! <a href="https://shibariumscan.io/tx/${tx.hash}" target="_blank">View TX</a>`;
+            status.innerHTML = `Tx Sent! <a href="https://shibariumscan.io/tx/${tx.hash}" target="_blank">View Tx</a>`;
             await tx.wait();
-            
-            status.innerHTML = `<b style="color:#00ff88">✅ SUCCESS! Liquidity Added.</b>`;
+            status.innerHTML = `<b style="color:#00ff88">✅ SUCCESS! Pool Created.</b>`;
             btn.innerText = "DONE";
-            btn.disabled = false;
 
         } catch(e) {
             console.error(e);
