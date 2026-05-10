@@ -3,53 +3,87 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RicSwap | Token Injector</title>
+    <title>RicSwap | Smart Adder</title>
     <style>
-        body { background: #111; color: #fff; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; }
-        button { background: #5865F2; color: white; padding: 20px 40px; font-size: 18px; border: none; border-radius: 12px; cursor: pointer; font-weight: bold; transition: 0.2s; }
-        button:hover { background: #4752C4; transform: scale(1.05); }
-        .addr { margin-top: 20px; color: #666; font-family: monospace; font-size: 12px; }
+        body { background: #050505; color: #e0e0e0; font-family: 'Inter', sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; margin: 0; }
+        .card { background: #111; border: 1px solid #333; padding: 40px; border-radius: 24px; text-align: center; max-width: 400px; box-shadow: 0 0 50px rgba(92, 100, 245, 0.2); }
+        
+        h1 { color: #fff; font-size: 20px; margin: 0 0 10px 0; }
+        p { font-size: 13px; color: #888; margin-bottom: 30px; line-height: 1.5; }
+        
+        button { background: #5865F2; color: white; width: 100%; padding: 18px; font-size: 16px; border: none; border-radius: 12px; cursor: pointer; font-weight: 800; transition: 0.2s; text-transform: uppercase; box-shadow: 0 4px 15px rgba(88, 101, 242, 0.4); }
+        button:hover { background: #4752C4; transform: translateY(-2px); }
+        
+        .status { margin-top: 20px; font-size: 12px; color: #666; font-family: monospace; }
     </style>
 </head>
 <body>
 
-    <!-- THE ONE-CLICK BUTTON -->
-    <button onclick="addToken()">🦊 CLICK TO ADD TOKEN TO RABBY</button>
+<div class="card">
+    <h1>🦊 Smart Token Injector</h1>
+    <p>1. Switches to Shibarium<br>2. Adds Ric-LP Token to Rabby</p>
     
-    <div class="addr">Token: 0x941abcb1A4278Ff33B50F6Cf9F5A4C8a0888BdeE</div>
+    <button onclick="addTokenSafe()">Add Token to Wallet</button>
+    <div id="status" class="status">Ready</div>
+</div>
 
 <script>
-    async function addToken() {
-        if (typeof window.ethereum === 'undefined') return alert("Rabby/MetaMask not installed!");
+    const SHIBARIUM_ID = '0x6d'; // 109
+    const TOKEN_ADDR = '0x941abcb1A4278Ff33B50F6Cf9F5A4C8a0888BdeE';
 
-        const tokenAddress = '0x941abcb1A4278Ff33B50F6Cf9F5A4C8a0888BdeE';
-        const tokenSymbol = 'Ric-LP';
-        const tokenDecimals = 18;
-        const tokenImage = ''; // Optional
+    async function addTokenSafe() {
+        const status = document.getElementById('status');
+        if (!window.ethereum) return alert("Rabby/MetaMask not found!");
 
         try {
-            // This command forces the wallet to register the token
+            status.innerText = "Step 1: Switching Network...";
+            
+            // 1. FORCE NETWORK SWITCH
+            try {
+                await window.ethereum.request({
+                    method: 'wallet_switchEthereumChain',
+                    params: [{ chainId: SHIBARIUM_ID }],
+                });
+            } catch (switchError) {
+                // This error code 4902 means the chain has not been added to Rabby.
+                if (switchError.code === 4902) {
+                    await window.ethereum.request({
+                        method: 'wallet_addEthereumChain',
+                        params: [{
+                            chainId: SHIBARIUM_ID,
+                            chainName: 'Shibarium',
+                            rpcUrls: ['https://rpc.shibarium.shib.io'],
+                            nativeCurrency: { name: 'BONE', symbol: 'BONE', decimals: 18 },
+                            blockExplorerUrls: ['https://shibariumscan.io']
+                        }],
+                    });
+                }
+            }
+
+            status.innerText = "Step 2: Adding Token...";
+
+            // 2. ADD TOKEN
             const wasAdded = await window.ethereum.request({
                 method: 'wallet_watchAsset',
                 params: {
-                    type: 'ERC20', 
+                    type: 'ERC20',
                     options: {
-                        address: tokenAddress, 
-                        symbol: tokenSymbol, 
-                        decimals: tokenDecimals, 
-                        image: tokenImage, 
+                        address: TOKEN_ADDR,
+                        symbol: 'Ric-LP',
+                        decimals: 18,
                     },
                 },
             });
 
             if (wasAdded) {
-                alert('✅ SUCCESS! Check your Rabby "Tokens" list.');
+                status.innerHTML = "<b style='color:#00ff88'>✅ SUCCESS! Token Added.</b>";
             } else {
-                alert('Action Cancelled.');
+                status.innerText = "⚠️ Request Cancelled by User";
             }
+
         } catch (error) {
-            console.log(error);
-            alert("Error: " + error.message);
+            console.error(error);
+            status.innerText = "Error: " + error.message;
         }
     }
 </script>
