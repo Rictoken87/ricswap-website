@@ -13,62 +13,54 @@
         button { background: #ff4444; color: white; border: none; padding: 18px 32px; font-size: 18px; font-weight: bold; border-radius: 12px; cursor: pointer; width: 100%; margin-top: 15px; }
         button:hover:not(:disabled) { background: #ff2222; }
         button:disabled { background: #333; color: #666; cursor: not-allowed; }
-        #status { margin-top: 20px; font-size: 14px; min-height: 28px; }
+        #status { margin-top: 20px; font-size: 14px; min-height: 28px; line-height: 1.5; }
         .success { color: #00ff88; }
     </style>
 </head>
 <body>
 <div class="card">
-    <h1>🔥 Trigger Burn</h1>
+    <h1>🔥 Trigger Permanent Burn</h1>
     <div class="info">
-        Burner Contract:<br>
-        <small>0x485c2fbCD26b154504D34F7725E70Cb1925a59fa</small>
+        Burner: 0x485c2fbCD26b154504D34F7725E70Cb1925a59fa<br>
+        <strong>Milestone Reached (0.02 RIC)</strong>
     </div>
 
-    <button id="burnBtn" onclick="connectAndTrigger()">Connect Wallet & Trigger Burn</button>
+    <button id="burnBtn" onclick="triggerBurn()">🚀 TRIGGER BURN NOW</button>
     <div id="status"></div>
 </div>
 
 <script>
     const BURNER_ADDRESS = "0x485c2fbCD26b154504D34F7725E70Cb1925a59fa";
 
-    const BURNER_ABI = [
-        "function triggerMilestoneBurn()",
-        "function getStatus() view returns (uint256 currentLP, bool isMilestoneReached, bool isBurned)"
-    ];
-
-    let signer;
-
-    async function connectAndTrigger() {
-        if (!window.ethereum) return alert("Please install MetaMask or Rabby");
-
-        const provider = new ethers.BrowserProvider(window.ethereum);
-        signer = await provider.getSigner();
-
-        document.getElementById("burnBtn").innerText = "Triggering Burn...";
-        triggerBurn();
-    }
+    const ABI = ["function triggerMilestoneBurn()"];
 
     async function triggerBurn() {
-        const statusEl = document.getElementById("status");
+        if (!window.ethereum) return alert("Please install MetaMask or Rabby");
+
+        const status = document.getElementById("status");
         const btn = document.getElementById("burnBtn");
 
         try {
-            const burner = new ethers.Contract(BURNER_ADDRESS, BURNER_ABI, signer);
+            btn.disabled = true;
+            btn.innerText = "Please confirm in wallet...";
+
+            const provider = new ethers.BrowserProvider(window.ethereum);
+            const signer = await provider.getSigner();
+            const burner = new ethers.Contract(BURNER_ADDRESS, ABI, signer);
+
             const tx = await burner.triggerMilestoneBurn();
 
-            statusEl.innerHTML = `Transaction Sent!<br><a href="https://shibariumscan.io/tx/${tx.hash}" target="_blank" style="color:#ff8888">View on Explorer</a>`;
+            status.innerHTML = `Tx Sent! <a href="https://shibariumscan.io/tx/${tx.hash}" target="_blank" style="color:#ff8888">View Transaction</a>`;
 
             await tx.wait();
 
-            statusEl.innerHTML = `<span class="success">✅ Liquidity Permanently Burned!</span>`;
-            btn.innerText = "BURN COMPLETE";
-            btn.disabled = true;
+            status.innerHTML = `<span class="success">✅ Liquidity Permanently Burned to Dead Address!</span>`;
+            btn.innerText = "BURN SUCCESSFUL";
         } catch (e) {
             console.error(e);
-            statusEl.innerHTML = `<span style="color:#ff6666">❌ Failed: ${e.reason || e.message}</span>`;
-            btn.innerText = "Try Again";
+            status.innerHTML = `<span style="color:#ff6666">❌ ${e.reason || e.message || "Transaction Failed"}</span>`;
             btn.disabled = false;
+            btn.innerText = "Try Again";
         }
     }
 </script>
