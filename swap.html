@@ -15,25 +15,25 @@
         }
         body { background: var(--obsidian); color: white; font-family: 'Inter', system-ui, sans-serif; margin: 0; min-height: 100vh; }
         .nav { padding: 20px 5%; display: flex; align-items: center; border-bottom: 1px solid rgba(255,215,0,0.1); background: rgba(5,5,5,0.95); backdrop-filter: blur(12px); position: sticky; top: 0; z-index: 1000; }
-        .logo { font-size: 24px; font-weight: 800; color: var(--gold); }
-        .connect-btn { margin-left: auto; background: rgba(255,215,0,0.05); color: var(--gold); border: 1px solid var(--gold); padding: 10px 24px; border-radius: 99px; font-weight: 600; cursor: pointer; }
+        .logo { font-size: 26px; font-weight: 900; color: var(--gold); }
+        .connect-btn { margin-left: auto; background: rgba(255,215,0,0.1); color: var(--gold); border: 1px solid var(--gold); padding: 10px 24px; border-radius: 999px; font-weight: 600; cursor: pointer; }
 
         .container { flex: 1; display: flex; align-items: center; justify-content: center; padding: 20px; }
-        .card { width: 100%; max-width: 460px; background: var(--card-bg); border-radius: 24px; padding: 32px; border: 1px solid var(--border); box-shadow: 0 20px 80px rgba(0,0,0,0.8); }
+        .card { width: 100%; max-width: 480px; background: var(--card-bg); border-radius: 24px; padding: 32px; border: 1px solid var(--border); box-shadow: 0 25px 80px rgba(0,0,0,0.8); }
 
-        .input-box { background: #161616; border: 1px solid #333; border-radius: 16px; padding: 16px; margin-bottom: 12px; }
-        .label-row { display: flex; justify-content: space-between; font-size: 13px; color: #888; margin-bottom: 8px; }
-        input { background: transparent; border: none; color: white; font-size: 28px; width: 100%; outline: none; font-weight: 600; }
-        .token-selector { background: #222; padding: 8px 14px; border-radius: 8px; font-weight: 700; cursor: pointer; }
+        .input-box { background: #161616; border: 1px solid #333; border-radius: 20px; padding: 20px; margin-bottom: 16px; }
+        .label-row { display: flex; justify-content: space-between; font-size: 14px; color: #aaa; margin-bottom: 10px; }
+        input { background: transparent; border: none; color: white; font-size: 32px; width: 100%; outline: none; font-weight: 600; }
+        .token-selector { background: #222; padding: 10px 16px; border-radius: 12px; font-weight: 700; cursor: pointer; }
 
-        .add-token { margin-top: 12px; display: flex; gap: 8px; }
-        .add-token input { flex: 1; padding: 10px; background: #1a1a1a; border: 1px solid #444; border-radius: 8px; color: white; }
-        .add-token button { background: var(--gold); color: black; border: none; padding: 10px 16px; border-radius: 8px; font-weight: 700; cursor: pointer; white-space: nowrap; }
+        .add-token { margin: 8px 0; display: flex; gap: 8px; }
+        .add-token input { flex: 1; padding: 12px; background: #1a1a1a; border: 1px solid #444; border-radius: 12px; color: white; font-size: 14px; }
+        .add-token button { background: var(--gold); color: black; border: none; padding: 12px 20px; border-radius: 12px; font-weight: 700; cursor: pointer; white-space: nowrap; }
 
-        .arrow-container { display: flex; justify-content: center; margin: -10px 0; z-index: 2; cursor: pointer; }
-        .arrow { background: #222; border: 4px solid var(--card-bg); padding: 8px; border-radius: 50%; font-size: 20px; }
+        .arrow-container { text-align: center; margin: -8px 0 8px 0; cursor: pointer; font-size: 28px; color: #666; }
+        .arrow-container:hover { color: var(--gold); }
 
-        #swapBtn { background: var(--magma); color: white; border: none; width: 100%; padding: 18px; border-radius: 16px; font-weight: 800; margin-top: 20px; cursor: pointer; font-size: 17px; }
+        #swapBtn { background: var(--magma); color: white; border: none; width: 100%; padding: 18px; border-radius: 16px; font-size: 18px; font-weight: 800; margin-top: 10px; cursor: pointer; }
         .status { margin-top: 16px; text-align: center; font-size: 14px; min-height: 28px; }
     </style>
 </head>
@@ -45,7 +45,7 @@
 
     <div class="container">
         <div class="card">
-            <h2>Swap</h2>
+            <h2>Swap Any Token</h2>
 
             <!-- FROM -->
             <div class="input-box">
@@ -53,13 +53,17 @@
                     <span>You Pay</span>
                     <span>Balance: <span id="fromBalance">0.0000</span></span>
                 </div>
-                <div style="display:flex; align-items:center; gap:12px;">
+                <div style="display:flex; gap:12px;">
                     <input type="number" id="fromAmount" placeholder="0.0" value="1" step="0.0001">
                     <div onclick="openTokenModal('from')" class="token-selector" id="fromTokenDisplay">BONE</div>
                 </div>
+                <div class="add-token">
+                    <input type="text" id="fromCustom" placeholder="Or paste token address">
+                    <button onclick="addCustomToken('from')">Add</button>
+                </div>
             </div>
 
-            <div class="arrow-container" onclick="switchTokens()">↓</div>
+            <div class="arrow-container" onclick="switchTokens()">↔</div>
 
             <!-- TO -->
             <div class="input-box">
@@ -67,16 +71,14 @@
                     <span>You Receive</span>
                     <span>Balance: <span id="toBalance">0.0000</span></span>
                 </div>
-                <div style="display:flex; align-items:center; gap:12px;">
+                <div style="display:flex; gap:12px;">
                     <input type="number" id="toAmount" placeholder="0.0" readonly>
                     <div onclick="openTokenModal('to')" class="token-selector" id="toTokenDisplay">RIC</div>
                 </div>
-            </div>
-
-            <!-- Add Custom Token -->
-            <div class="add-token">
-                <input type="text" id="customAddress" placeholder="Paste token address (0x...)">
-                <button onclick="addCustomToken()">+ Add</button>
+                <div class="add-token">
+                    <input type="text" id="toCustom" placeholder="Or paste token address">
+                    <button onclick="addCustomToken('to')">Add</button>
+                </div>
             </div>
 
             <button id="swapBtn">SWAP NOW</button>
@@ -96,8 +98,6 @@
         let fromToken = { symbol: "BONE", address: CONFIG.WBONE, decimals: 18, isNative: true };
         let toToken   = { symbol: "RIC",  address: "0x12C94d3A30daa09f81Ea6c037004E6e99A4A3dfc", decimals: 18, isNative: false };
 
-        let supportedTokens = [fromToken, toToken];
-
         const ROUTER_ABI = [
             "function swapExactETHForTokens(uint amountOutMin, address[] calldata path, address to, uint deadline) external payable",
             "function swapExactTokensForTokens(uint amountIn, uint amountOutMin, address[] calldata path, address to, uint deadline) external"
@@ -111,7 +111,6 @@
         ];
 
         async function connect() {
-            if (!window.ethereum) return alert("Please install MetaMask or Rabby");
             provider = new ethers.JsonRpcProvider(CONFIG.RPC);
             const bp = new ethers.BrowserProvider(window.ethereum);
             signer = await bp.getSigner();
@@ -121,65 +120,49 @@
             updateBalances();
         }
 
-        async function addCustomToken() {
-            const address = document.getElementById("customAddress").value.trim();
-            if (!address || address.length !== 42) return alert("Please enter a valid token address");
+        async function addCustomToken(side) {
+            const inputId = side === 'from' ? 'fromCustom' : 'toCustom';
+            const address = document.getElementById(inputId).value.trim();
+
+            if (!address || address.length !== 42) return alert("Invalid token address");
 
             const status = document.getElementById("status");
-            status.textContent = "Checking liquidity pool...";
+            status.textContent = "Checking LP...";
 
             try {
-                // Check if LP exists with BONE
                 const factory = new ethers.Contract(CONFIG.FACTORY, ["function getPair(address,address) view returns (address)"], provider);
-                const pairAddress = await factory.getPair(CONFIG.WBONE, address);
+                const pair = await factory.getPair(CONFIG.WBONE, address);
 
-                if (pairAddress === "0x0000000000000000000000000000000000000000") {
-                    status.textContent = "❌ No LP found with BONE";
-                    setTimeout(() => status.textContent = "", 3000);
+                if (pair === "0x0000000000000000000000000000000000000000") {
+                    alert("No liquidity pool found with BONE for this token.");
                     return;
                 }
 
-                // Get token info
                 const tokenContract = new ethers.Contract(address, ERC20_ABI, provider);
                 const symbol = await tokenContract.symbol();
                 const decimals = await tokenContract.decimals();
 
                 const newToken = { symbol, address, decimals, isNative: false };
 
-                supportedTokens.push(newToken);
-                alert(`✅ ${symbol} added successfully! You can now select it.`);
+                if (side === 'from') {
+                    fromToken = newToken;
+                    document.getElementById("fromTokenDisplay").textContent = symbol;
+                } else {
+                    toToken = newToken;
+                    document.getElementById("toTokenDisplay").textContent = symbol;
+                }
 
-                document.getElementById("customAddress").value = "";
-                status.textContent = "";
+                alert(`✅ ${symbol} added successfully!`);
+                document.getElementById(inputId).value = "";
+                updateBalances();
 
             } catch (e) {
-                console.error(e);
-                status.textContent = "❌ Invalid token or error checking LP";
+                alert("Failed to add token. Make sure the address is correct and LP exists.");
             }
         }
 
         function openTokenModal(side) {
-            let html = `<h3 style="padding:15px; background:#111; margin:0;">Select Token</h3>`;
-            supportedTokens.forEach(t => {
-                html += `<div onclick="selectToken('${side}', '${t.symbol}', '${t.address}', ${t.decimals}, ${t.isNative}); window.close()" 
-                            style="padding:15px; cursor:pointer; border-bottom:1px solid #333;">
-                            ${t.symbol}
-                         </div>`;
-            });
-            const win = window.open("", "_blank", "width=400,height=500");
-            win.document.write(html);
-        }
-
-        function selectToken(side, symbol, address, decimals, isNative) {
-            if (side === 'from') {
-                fromToken = { symbol, address, decimals, isNative };
-                document.getElementById("fromTokenDisplay").textContent = symbol;
-            } else {
-                toToken = { symbol, address, decimals, isNative };
-                document.getElementById("toTokenDisplay").textContent = symbol;
-            }
-            updateBalances();
-            updateQuote();
+            alert("Token list coming soon.\n\nUse the box below to paste any token address and click 'Add'.");
         }
 
         function switchTokens() {
@@ -187,14 +170,12 @@
             document.getElementById("fromTokenDisplay").textContent = fromToken.symbol;
             document.getElementById("toTokenDisplay").textContent = toToken.symbol;
             updateBalances();
-            updateQuote();
         }
 
-        async function updateBalances() { /* ... */ }
-        async function updateQuote() { /* ... */ }
-        async function executeSwap() { /* ... */ }
+        async function updateBalances() { /* implement later */ }
+        async function updateQuote() { /* implement later */ }
+        async function executeSwap() { /* implement later */ }
 
-        // Event Listeners
         document.getElementById("connectBtn").addEventListener("click", connect);
     </script>
 </body>
