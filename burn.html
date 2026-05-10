@@ -9,7 +9,7 @@
         body { 
             background: #050505; 
             color: white; 
-            font-family: 'Inter', sans-serif; 
+            font-family: 'Inter', system-ui, sans-serif; 
             display: flex; 
             align-items: center; 
             justify-content: center; 
@@ -22,11 +22,20 @@
             border-radius: 24px; 
             border: 1px solid #222; 
             text-align: center; 
-            max-width: 420px; 
-            box-shadow: 0 0 60px rgba(255, 68, 68, 0.2);
+            max-width: 460px; 
+            box-shadow: 0 0 60px rgba(255, 68, 68, 0.25);
         }
-        h1 { color: #ff4444; margin: 0 0 10px 0; font-size: 28px; }
-        p { color: #888; margin-bottom: 24px; }
+        h1 { 
+            color: #ff4444; 
+            margin: 0 0 10px 0; 
+            font-size: 28px; 
+        }
+        .contract { 
+            font-size: 13px; 
+            color: #888; 
+            word-break: break-all; 
+            margin: 15px 0; 
+        }
         .stat { 
             background: #1a1a1a; 
             padding: 20px; 
@@ -34,7 +43,13 @@
             margin: 20px 0; 
             border: 1px solid #333; 
         }
-        .val { font-size: 26px; font-weight: bold; color: #fff; }
+        .val { 
+            font-size: 26px; 
+            font-weight: bold; 
+            color: #fff; 
+            display: block; 
+            margin-top: 6px; 
+        }
         button { 
             background: #ff4444; 
             color: white; 
@@ -46,29 +61,46 @@
             cursor: pointer; 
             width: 100%; 
             margin-top: 10px;
+            transition: 0.2s;
         }
-        button:hover:not(:disabled) { background: #ff2222; }
-        button:disabled { background: #333; color: #666; cursor: not-allowed; }
-        #status { margin-top: 20px; font-size: 14px; min-height: 24px; }
+        button:hover:not(:disabled) { 
+            background: #ff2222; 
+            box-shadow: 0 0 25px rgba(255,68,68,0.5); 
+        }
+        button:disabled { 
+            background: #333; 
+            color: #666; 
+            cursor: not-allowed; 
+        }
+        #status { 
+            margin-top: 20px; 
+            font-size: 14px; 
+            min-height: 24px; 
+        }
         .success { color: #00ff88; }
     </style>
 </head>
 <body>
 <div class="card">
-    <h1>🔥 Burn This LP</h1>
-    <p>Contract: <small>0x485c2fbCD26b154504D34F7725E70Cb1925a59fa</small></p>
+    <h1>🔥 Burn Liquidity</h1>
+    <p>Permanently lock this LP pool</p>
+    
+    <div class="contract">
+        <strong>LP Pair:</strong><br>
+        0x941abcb1A4278Ff33B50F6Cf9F5A4C8a0888BdeE
+    </div>
     
     <div class="stat">
         <span>Your LP Balance</span>
         <span class="val" id="lpBal">Loading...</span>
     </div>
 
-    <button id="burnBtn" onclick="connectAndBurn()">Connect & Burn</button>
+    <button id="burnBtn" onclick="connectAndBurn()">Connect Wallet</button>
     <div id="status"></div>
 </div>
 
 <script>
-    const LP_ADDRESS = "0x485c2fbCD26b154504D34F7725E70Cb1925a59fa";
+    const LP_ADDRESS = "0x941abcb1A4278Ff33B50F6Cf9F5A4C8a0888BdeE";
     const DEAD_ADDRESS = "0x000000000000000000000000000000000000dEaD";
 
     const ERC20_ABI = [
@@ -80,7 +112,7 @@
     let provider, signer, userAddr;
 
     async function connectAndBurn() {
-        if (!window.ethereum) return alert("Please install MetaMask or Rabby");
+        if (!window.ethereum) return alert("Please install MetaMask or Rabby Wallet");
 
         provider = new ethers.BrowserProvider(window.ethereum);
         signer = await provider.getSigner();
@@ -106,17 +138,17 @@
                 btn.innerText = "🔥 BURN THIS LP FOREVER";
                 btn.onclick = () => burnLP(bal);
             } else {
-                btn.innerText = "No Balance in this LP";
+                btn.innerText = "No LP Balance";
                 btn.disabled = true;
             }
         } catch (e) {
             console.error(e);
-            document.getElementById("status").innerText = "Error reading contract";
+            document.getElementById("status").innerText = "Error reading LP contract";
         }
     }
 
     async function burnLP(amount) {
-        if (!confirm("⚠️ FINAL WARNING\n\nYou are about to send ALL your LP tokens from this pool to the dead address.\n\nThis action is IRREVERSIBLE.\n\nContinue?")) return;
+        if (!confirm("⚠️ FINAL WARNING\n\nYou are about to permanently burn ALL your LP tokens from this pool.\n\nThis action is IRREVERSIBLE.\n\nContinue?")) return;
 
         const btn = document.getElementById("burnBtn");
         const status = document.getElementById("status");
@@ -128,11 +160,11 @@
             const contract = new ethers.Contract(LP_ADDRESS, ERC20_ABI, signer);
             const tx = await contract.transfer(DEAD_ADDRESS, amount);
 
-            status.innerHTML = `Burning... <a href="https://shibariumscan.io/tx/${tx.hash}" target="_blank" style="color:#ff8888">View Tx</a>`;
+            status.innerHTML = `Burning... <br><a href="https://shibariumscan.io/tx/${tx.hash}" target="_blank" style="color:#ff8888">View Transaction</a>`;
 
             await tx.wait();
 
-            status.innerHTML = `<span class="success">✅ LP Permanently Burned!</span>`;
+            status.innerHTML = `<span class="success">✅ LP Successfully Burned Forever!</span>`;
             btn.innerText = "BURN COMPLETE";
             document.getElementById("lpBal").innerText = "0.000000 LP";
         } catch (e) {
