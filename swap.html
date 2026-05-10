@@ -12,7 +12,6 @@
             --gold: #ffd700;
             --magma: linear-gradient(135deg, #ff4d00 0%, #ff8c00 100%);
             --border: #222;
-            --text-mute: #888;
         }
         body { background: var(--obsidian); color: white; font-family: 'Inter', system-ui, sans-serif; margin: 0; min-height: 100vh; }
         .nav { padding: 20px 5%; display: flex; align-items: center; border-bottom: 1px solid rgba(255,215,0,0.1); background: rgba(5,5,5,0.95); backdrop-filter: blur(12px); position: sticky; top: 0; z-index: 1000; }
@@ -23,9 +22,9 @@
         .card { width: 100%; max-width: 460px; background: var(--card-bg); border-radius: 24px; padding: 32px; border: 1px solid var(--border); box-shadow: 0 20px 80px rgba(0,0,0,0.8); }
 
         .input-box { background: #161616; border: 1px solid #333; border-radius: 16px; padding: 16px; margin-bottom: 12px; }
-        .label-row { display: flex; justify-content: space-between; font-size: 13px; color: var(--text-mute); margin-bottom: 8px; }
+        .label-row { display: flex; justify-content: space-between; font-size: 13px; color: #888; margin-bottom: 8px; }
         input { background: transparent; border: none; color: white; font-size: 28px; width: 100%; outline: none; font-weight: 600; }
-        .token-selector { background: #222; padding: 6px 12px; border-radius: 8px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 6px; }
+        .token-selector { background: #222; padding: 8px 14px; border-radius: 8px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 8px; }
 
         .arrow-container { display: flex; justify-content: center; margin: -10px 0; z-index: 2; cursor: pointer; }
         .arrow { background: #222; border: 4px solid var(--card-bg); padding: 8px; border-radius: 50%; }
@@ -52,16 +51,11 @@
                 </div>
                 <div style="display:flex; align-items:center; gap:12px;">
                     <input type="number" id="fromAmount" placeholder="0.0" value="1" step="0.0001">
-                    <div onclick="showTokenModal('from')" class="token-selector" id="fromTokenDisplay">
-                        BONE
-                    </div>
+                    <div onclick="showTokenModal('from')" class="token-selector" id="fromTokenDisplay">BONE</div>
                 </div>
             </div>
 
-            <!-- Arrow -->
-            <div class="arrow-container" onclick="switchTokens()">
-                <div class="arrow">↓</div>
-            </div>
+            <div class="arrow-container" onclick="switchTokens()">↓</div>
 
             <!-- TO -->
             <div class="input-box">
@@ -71,9 +65,7 @@
                 </div>
                 <div style="display:flex; align-items:center; gap:12px;">
                     <input type="number" id="toAmount" placeholder="0.0" readonly>
-                    <div onclick="showTokenModal('to')" class="token-selector" id="toTokenDisplay">
-                        RIC
-                    </div>
+                    <div onclick="showTokenModal('to')" class="token-selector" id="toTokenDisplay">RIC</div>
                 </div>
             </div>
 
@@ -90,17 +82,25 @@
         };
 
         let provider, signer, userAddr;
-        let fromToken = { symbol: "BONE", address: CONFIG.WBONE, isNative: true };
-        let toToken   = { symbol: "RIC",  address: "0x12C94d3A30daa09f81Ea6c037004E6e99A4A3dfc", isNative: false };
+        let fromToken = { symbol: "BONE", address: CONFIG.WBONE, decimals: 18, isNative: true };
+        let toToken   = { symbol: "RIC",  address: "0x12C94d3A30daa09f81Ea6c037004E6e99A4A3dfc", decimals: 18, isNative: false };
 
         const ROUTER_ABI = [
-            "function swapExactETHForTokens(uint amountOutMin, address[] calldata path, address to, uint deadline) external payable returns (uint[] memory amounts)",
-            "function swapExactTokensForTokens(uint amountIn, uint amountOutMin, address[] calldata path, address to, uint deadline) external returns (uint[] memory amounts)"
+            "function swapExactETHForTokens(uint amountOutMin, address[] calldata path, address to, uint deadline) external payable",
+            "function swapExactTokensForTokens(uint amountIn, uint amountOutMin, address[] calldata path, address to, uint deadline) external"
         ];
 
         const ERC20_ABI = [
             "function balanceOf(address) view returns (uint256)",
             "function approve(address,uint256) returns (bool)"
+        ];
+
+        // Popular tokens on Shibarium (you can add more)
+        const TOKEN_LIST = [
+            { symbol: "BONE", address: CONFIG.WBONE, decimals: 18, isNative: true },
+            { symbol: "RIC",  address: "0x12C94d3A30daa09f81Ea6c037004E6e99A4A3dfc", decimals: 18 },
+            { symbol: "SHIB", address: "0x9B6c5D8C9a1c8c9e9c9f8d8c9e9c9f8d8c9e9c9f", decimals: 18 }, // Replace with real SHIB if needed
+            // Add more tokens here as you create LPs
         ];
 
         async function connect() {
@@ -115,22 +115,45 @@
         }
 
         async function updateBalances() {
-            // From Token
+            // From
             if (fromToken.isNative) {
                 const bal = await provider.getBalance(userAddr);
                 document.getElementById("fromBalance").textContent = parseFloat(ethers.formatEther(bal)).toFixed(4);
             } else {
                 const contract = new ethers.Contract(fromToken.address, ERC20_ABI, provider);
                 const bal = await contract.balanceOf(userAddr);
-                document.getElementById("fromBalance").textContent = parseFloat(ethers.formatEther(bal)).toFixed(4);
+                document.getElementById("fromBalance").textContent = parseFloat(ethers.formatUnits(bal, fromToken.decimals)).toFixed(4);
             }
-
-            // To Token
+            // To
             if (!toToken.isNative) {
                 const contract = new ethers.Contract(toToken.address, ERC20_ABI, provider);
                 const bal = await contract.balanceOf(userAddr);
-                document.getElementById("toBalance").textContent = parseFloat(ethers.formatEther(bal)).toFixed(4);
+                document.getElementById("toBalance").textContent = parseFloat(ethers.formatUnits(bal, toToken.decimals)).toFixed(4);
             }
+        }
+
+        function showTokenModal(side) {
+            let html = "<h3>Select Token</h3><div style='max-height:400px;overflow:auto;'>";
+            TOKEN_LIST.forEach(token => {
+                html += `<div onclick="selectToken('${side}', '${token.symbol}', '${token.address}', ${token.decimals}, ${token.isNative})" style="padding:12px; cursor:pointer; border-bottom:1px solid #333;">
+                    ${token.symbol}
+                </div>`;
+            });
+            html += "</div>";
+            const modal = window.open("", "_blank", "width=400,height=500");
+            modal.document.write(html);
+        }
+
+        function selectToken(side, symbol, address, decimals, isNative) {
+            if (side === 'from') {
+                fromToken = { symbol, address, decimals, isNative };
+                document.getElementById("fromTokenDisplay").textContent = symbol;
+            } else {
+                toToken = { symbol, address, decimals, isNative };
+                document.getElementById("toTokenDisplay").textContent = symbol;
+            }
+            updateBalances();
+            updateQuote();
         }
 
         async function updateQuote() {
@@ -139,27 +162,17 @@
 
             document.getElementById("toAmount").value = "Calculating...";
 
-            // For now we support BONE <-> RIC only (you can expand later)
-            // In future: use router.getAmountsOut with dynamic path
             try {
-                const pair = new ethers.Contract("0x941abcb1A4278Ff33B50F6Cf9F5A4C8a0888BdeE", 
-                    ["function getReserves() view returns (uint112, uint112, uint32)", "function token0() view returns (address)"], 
-                    provider);
+                const router = new ethers.Contract(CONFIG.ROUTER, ROUTER_ABI, provider);
+                const path = [fromToken.address, toToken.address];
+                const amountInWei = fromToken.isNative ? ethers.parseEther(amountIn) : ethers.parseUnits(amountIn, fromToken.decimals);
 
-                const [r0, r1] = await pair.getReserves();
-                const t0 = await pair.token0();
+                const amounts = await router.getAmountsOut(amountInWei, path);
+                const amountOut = amounts[1];
 
-                const resIn = t0.toLowerCase() === CONFIG.WBONE.toLowerCase() ? r0 : r1;
-                const resOut = t0.toLowerCase() === CONFIG.WBONE.toLowerCase() ? r1 : r0;
-
-                const amountInWei = ethers.parseEther(amountIn);
-                const num = amountInWei * 997n * BigInt(resOut);
-                const den = BigInt(resIn) * 1000n + (amountInWei * 997n);
-                const amountOut = num / den;
-
-                document.getElementById("toAmount").value = parseFloat(ethers.formatEther(amountOut)).toFixed(4);
+                document.getElementById("toAmount").value = parseFloat(ethers.formatUnits(amountOut, toToken.decimals)).toFixed(4);
             } catch (e) {
-                document.getElementById("toAmount").value = "—";
+                document.getElementById("toAmount").value = "No Pool";
             }
         }
 
@@ -175,34 +188,20 @@
                 status.textContent = "⛽ Confirm in wallet...";
 
                 const router = new ethers.Contract(CONFIG.ROUTER, ROUTER_ABI, signer);
-                const amountInWei = ethers.parseEther(amountInStr);
+                const amountInWei = fromToken.isNative ? 
+                    ethers.parseEther(amountInStr) : 
+                    ethers.parseUnits(amountInStr, fromToken.decimals);
+
                 const path = [fromToken.address, toToken.address];
 
                 let tx;
-
                 if (fromToken.isNative) {
-                    // BONE → Token
-                    tx = await router.swapExactETHForTokens(
-                        0,
-                        path,
-                        userAddr,
-                        Math.floor(Date.now() / 1000) + 1200,
-                        { value: amountInWei, gasLimit: 1800000 }
-                    );
+                    tx = await router.swapExactETHForTokens(0, path, userAddr, Math.floor(Date.now()/1000)+1200, {value: amountInWei, gasLimit: 2000000});
                 } else {
-                    // Token → Token (or Token → BONE)
-                    // First approve if needed
+                    // Approve first
                     const tokenContract = new ethers.Contract(fromToken.address, ERC20_ABI, signer);
                     await tokenContract.approve(CONFIG.ROUTER, amountInWei);
-                    
-                    tx = await router.swapExactTokensForTokens(
-                        amountInWei,
-                        0,
-                        path,
-                        userAddr,
-                        Math.floor(Date.now() / 1000) + 1200,
-                        { gasLimit: 1800000 }
-                    );
+                    tx = await router.swapExactTokensForTokens(amountInWei, 0, path, userAddr, Math.floor(Date.now()/1000)+1200, {gasLimit: 2000000});
                 }
 
                 status.innerHTML = `✅ Tx Sent! <a href="https://shibariumscan.io/tx/${tx.hash}" target="_blank" style="color:#ffd700">View Tx</a>`;
@@ -212,7 +211,7 @@
                 updateBalances();
             } catch (e) {
                 console.error(e);
-                status.textContent = "❌ " + (e.reason || e.shortMessage || "Transaction Failed");
+                status.textContent = "❌ " + (e.reason || "Transaction Failed");
                 status.style.color = "#ff4444";
             } finally {
                 btn.disabled = false;
@@ -226,10 +225,6 @@
             document.getElementById("toTokenDisplay").textContent = toToken.symbol;
             updateBalances();
             updateQuote();
-        }
-
-        function showTokenModal(side) {
-            alert("Token selection modal coming soon!\n\nYou can currently swap BONE ↔ RIC.\nMore tokens will be added soon.");
         }
 
         // Event Listeners
