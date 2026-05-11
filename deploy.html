@@ -2,69 +2,99 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>RicSwap | Router Deployer (Final)</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RicSwap | Auto-Loader Deployer</title>
     <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.0/dist/ethers.umd.min.js"></script>
     <style>
-        body { background: #050505; color: #e0e0e0; font-family: monospace; display: flex; justify-content: center; padding-top: 50px; }
-        .card { background: #111; padding: 30px; border: 1px solid #333; width: 500px; border-radius: 12px; }
-        h2 { color: #00ff88; margin-top: 0; text-align: center; }
-        input { width: 100%; background: #222; border: 1px solid #444; color: #fff; padding: 10px; margin-bottom: 15px; font-family: monospace; }
-        button { width: 100%; padding: 15px; background: #00ff88; color: #000; border: none; font-weight: bold; cursor: pointer; margin-top: 10px; }
-        #log { margin-top: 20px; padding: 15px; background: #000; border: 1px solid #222; color: #00ff88; word-break: break-all; min-height: 50px; }
+        body { background: #050505; color: #e0e0e0; font-family: monospace; padding: 40px; display: flex; justify-content: center; }
+        .card { background: #111; padding: 30px; border: 1px solid #333; width: 520px; border-radius: 12px; }
+        h2 { color: #00ff88; text-align: center; margin-top: 0; }
+        label { display: block; color: #888; font-size: 12px; margin-top: 15px; margin-bottom: 5px; }
+        input { width: 100%; background: #222; border: 1px solid #444; color: #fff; padding: 10px; border-radius: 6px; font-family: monospace; }
+        button { width: 100%; padding: 15px; background: #333; color: #fff; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; margin-top: 20px; }
+        button.active { background: #00ff88; color: #000; }
+        #status { margin-top: 20px; padding: 15px; background: #000; border: 1px solid #222; color: #888; word-break: break-all; font-size: 12px; min-height: 80px; }
+        .success { color: #00ff88 !important; }
     </style>
 </head>
 <body>
-
 <div class="card">
-    <h2>🚀 Deploy Working Router</h2>
-    <p>This script contains the full Router Bytecode.</p>
-
-    <label>Your Factory:</label>
-    <input id="factory" value="0x78ae5cCD2f13D10aE3fF47F8418A79D99B4569d0" readonly>
-
-    <label>Shibarium WBONE:</label>
-    <input id="weth" value="0xC76F4c819D820369Fb2d7C1531aB3Bb18e6fE8d8" readonly>
-
-    <button onclick="deploy()">DEPLOY ROUTER</button>
-    <div id="log">Ready.</div>
+    <h2>🚀 Router Deployer (Auto-Load)</h2>
+   
+    <label>1. Factory Address</label>
+    <input id="factory" value="0x78ae5cCD2f13D10aE3fF47F8418A79D99B4569d0">
+    <label>2. WBONE Address</label>
+    <input id="wbone" value="0xC76F4c819D820369Fb2d7C1531aB3Bb18e6fE8d8">
+    
+    <button id="loadBtn" onclick="loadResources()">1. LOAD OFFICIAL ROUTER CODE</button>
+    <button id="deployBtn" onclick="deploy()" disabled>2. DEPLOY NEW ROUTER</button>
+   
+    <div id="status">Waiting to load official Uniswap V2 Router...</div>
 </div>
 
 <script>
-    // OFFICIAL UNISWAP V2 ROUTER 02 BYTECODE (Minified)
-    const BYTECODE = "";
+    let bytecode = null;
+    let abi = null;
 
-    const ABI = [ "constructor(address _factory, address _WETH)" ];
-
-    async function deploy() {
-        const log = (m) => document.getElementById("log").innerHTML = m;
-        const factory = document.getElementById("factory").value;
-        const weth = document.getElementById("weth").value;
+    async function loadResources() {
+        const status = document.getElementById("status");
+        status.innerText = "Downloading official Uniswap V2 Router artifact...";
 
         try {
-            log("Connecting to Wallet...");
-            if(!window.ethereum) throw new Error("No Wallet");
+            const resp = await fetch("https://unpkg.com/@uniswap/v2-periphery@1.1.0/build/UniswapV2Router02.json");
+            const json = await resp.json();
+           
+            bytecode = json.bytecode;
+            abi = json.abi;
+
+            status.innerHTML = `<span class="success">✅ Official Router Code Loaded Successfully!</span>`;
+            document.getElementById("loadBtn").style.display = "none";
+            document.getElementById("deployBtn").disabled = false;
+            document.getElementById("deployBtn").classList.add("active");
+        } catch(e) {
+            status.innerText = "❌ Failed to load code: " + e.message;
+        }
+    }
+
+    async function deploy() {
+        const status = document.getElementById("status");
+        const factoryAddr = document.getElementById("factory").value.trim();
+        const wboneAddr = document.getElementById("wbone").value.trim();
+
+        if (!ethers.isAddress(factoryAddr) || !ethers.isAddress(wboneAddr)) {
+            return status.innerText = "❌ Invalid Factory or WBONE address";
+        }
+
+        try {
+            status.innerText = "Connecting wallet...";
+            if (!window.ethereum) throw new Error("No wallet detected");
+
             await window.ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: "0x6d" }] });
-            
+
             const provider = new ethers.BrowserProvider(window.ethereum);
             const signer = await provider.getSigner();
 
-            log("Preparing Payload (Bytecode size: " + BYTECODE.length + ")...");
-            
-            const factoryObj = new ethers.ContractFactory(ABI, BYTECODE, signer);
-            
-            log("🚀 Sending Deployment Transaction...");
-            const contract = await factoryObj.deploy(factory, weth);
-            
-            log(`⏳ <b>Transaction Sent!</b><br>Hash: <a href="https://shibariumscan.io/tx/${contract.deploymentTransaction().hash}" target="_blank" style="color:white">View on Scan</a><br>Waiting for confirmation...`);
-            
+            status.innerText = "Deploying Router... Please confirm transaction";
+
+            const factory = new ethers.ContractFactory(abi, bytecode, signer);
+            const contract = await factory.deploy(factoryAddr, wboneAddr);
+
+            const txHash = contract.deploymentTransaction().hash;
+            status.innerHTML = `🚀 Deployment sent!<br>Tx: <a href="https://shibariumscan.io/tx/${txHash}" target="_blank">View Transaction</a><br>Waiting for confirmation...`;
+
             await contract.waitForDeployment();
-            const newAddr = await contract.getAddress();
-            
-            log(`✅ <b>DEPLOYMENT COMPLETE!</b><br><br>NEW ROUTER ADDRESS:<br><b style="font-size:16px; color:white; background:#222; padding:5px;">${newAddr}</b><br><br>👉 Copy this address into the LP Tool.`);
+            const newRouter = await contract.getAddress();
+
+            status.innerHTML = `
+                <span class="success">✅ DEPLOYMENT SUCCESSFUL!</span><br><br>
+                <b>New Router Address:</b><br>
+                <span style="color:#00ff88; font-size:15px;">${newRouter}</span><br><br>
+                Copy this address and use it in all your tools from now on.
+            `;
 
         } catch(e) {
             console.error(e);
-            log("❌ ERROR: " + (e.reason || e.message));
+            status.innerText = "❌ Deploy failed: " + (e.reason || e.message);
         }
     }
 </script>
