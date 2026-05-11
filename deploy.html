@@ -2,94 +2,97 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>RicSwap | Ironclad Deployer</title>
+    <title>RicSwap | Universal Deployer</title>
     <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.0/dist/ethers.umd.min.js"></script>
     <style>
-        body { background: #080808; color: #e0e0e0; font-family: monospace; display: flex; justify-content: center; padding-top: 30px; }
-        .card { background: #111; padding: 30px; border: 1px solid #333; width: 550px; border-radius: 16px; box-shadow: 0 0 50px rgba(0,255,136,0.1); }
-        h2 { color: #00ff88; text-align: center; margin-top: 0; text-transform: uppercase; }
+        body { background: #050505; color: #e0e0e0; font-family: monospace; display: flex; justify-content: center; padding-top: 30px; }
+        .card { background: #111; padding: 25px; border: 1px solid #333; width: 550px; border-radius: 12px; }
+        h2 { color: #00ff88; text-align: center; margin-top: 0; }
         
-        .field { margin-bottom: 15px; }
-        label { display: block; color: #888; font-size: 11px; margin-bottom: 5px; font-weight: bold; }
-        input { width: 100%; background: #1a1a1a; border: 1px solid #444; color: #fff; padding: 12px; border-radius: 6px; font-family: monospace; box-sizing: border-box; }
+        .tabs { display: flex; border-bottom: 1px solid #333; margin-bottom: 20px; }
+        .tab { flex: 1; padding: 10px; text-align: center; cursor: pointer; color: #666; background: #000; }
+        .tab.active { color: #fff; background: #222; border-top: 2px solid #00ff88; }
         
-        button { width: 100%; padding: 15px; background: #222; color: #777; border: none; border-radius: 8px; font-weight: bold; cursor: not-allowed; margin-top: 10px; text-transform: uppercase; }
-        button.active { background: #00ff88; color: #000; cursor: pointer; }
-        button.secondary { background: #333; color: #fff; cursor: pointer; margin-top: 5px; border: 1px solid #444; }
+        input, textarea { width: 100%; background: #1a1a1a; border: 1px solid #444; color: #fff; padding: 10px; border-radius: 6px; box-sizing: border-box; margin-bottom: 10px; }
+        
+        button { width: 100%; padding: 15px; background: #333; color: #fff; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; margin-top: 10px; }
+        button.deploy { background: #00ff88; color: #000; }
+        button:disabled { opacity: 0.5; cursor: not-allowed; }
 
-        #status { margin-top: 20px; padding: 15px; background: #000; border: 1px solid #222; color: #aaa; font-size: 11px; border-radius: 6px; }
-        
-        /* Manual Fallback Area */
-        #manual-section { display: none; border-top: 1px solid #333; margin-top: 20px; padding-top: 20px; }
-        textarea { width: 100%; height: 100px; background: #000; border: 1px solid #ff4d00; color: #fff; font-family: monospace; font-size: 10px; padding: 10px; box-sizing: border-box; }
-        .warn { color: #ff4d00; font-weight: bold; margin-bottom: 10px; display: block; }
+        #status { margin-top: 20px; padding: 15px; background: #000; border: 1px solid #222; color: #888; word-break: break-all; font-size: 11px; }
+        .success { color: #00ff88; }
+        .err { color: #ff4444; }
     </style>
 </head>
 <body>
 
 <div class="card">
-    <h2>🚀 Ironclad Deployer</h2>
+    <h2>🚀 Universal Deployer</h2>
     
-    <div class="field">
-        <label>1. YOUR FACTORY ADDRESS</label>
-        <input id="factory" value="0x78ae5cCD2f13D10aE3fF47F8418A79D99B4569d0">
+    <label>1. Factory Address</label>
+    <input id="factory" value="0x78ae5cCD2f13D10aE3fF47F8418A79D99B4569d0">
+    
+    <label>2. WBONE Address</label>
+    <input id="wbone" value="0xC76F4c819D820369Fb2d7C1531aB3Bb18e6fE8d8">
+
+    <div class="tabs">
+        <div class="tab active" onclick="switchTab('auto')" id="tab-auto">Method A: Auto-Load</div>
+        <div class="tab" onclick="switchTab('manual')" id="tab-manual">Method B: Manual Paste</div>
     </div>
 
-    <div class="field">
-        <label>2. SHIBARIUM WBONE</label>
-        <input id="wbone" value="0xC76F4c819D820369Fb2d7C1531aB3Bb18e6fE8d8">
+    <!-- METHOD A: AUTO -->
+    <div id="view-auto">
+        <p style="font-size:12px; color:#888;">Attempts to download verified code from JSDelivr CDN.</p>
+        <button onclick="autoLoad()">⬇️ DOWNLOAD CODE</button>
     </div>
 
-    <!-- Step 1: Load Code -->
-    <button id="loadBtn" class="secondary" onclick="loadCode()">1. Attempt Auto-Load (CDN)</button>
-    
-    <!-- Manual Fallback -->
-    <div id="manual-section">
-        <span class="warn">⚠️ Auto-Load Failed. Do it manually:</span>
-        <p style="font-size:11px; color:#ccc;">
-            1. <a href="https://cdn.jsdelivr.net/npm/@uniswap/v2-periphery@1.1.0/build/UniswapV2Router02.json" target="_blank" style="color:#00ff88">CLICK HERE</a> to open the code.<br>
-            2. Copy the entire text on that page.<br>
-            3. Paste it in the box below:
+    <!-- METHOD B: MANUAL -->
+    <div id="view-manual" style="display:none;">
+        <p style="font-size:12px; color:#888;">
+            1. <a href="https://cdn.jsdelivr.net/npm/@uniswap/v2-periphery@1.1.0/build/UniswapV2Router02.json" target="_blank" style="color:#00ff88">CLICK THIS LINK</a> (Opens JSON).<br>
+            2. Select ALL text (Ctrl+A) and Copy (Ctrl+C).<br>
+            3. Paste it below:
         </p>
-        <textarea id="pasteBox" placeholder="Paste the JSON code here..." oninput="parseManual()"></textarea>
+        <textarea id="pasteBox" style="height:100px;" placeholder='Paste full JSON here...' oninput="manualParse()"></textarea>
     </div>
 
-    <!-- Step 2: Deploy -->
-    <button id="deployBtn" onclick="deploy()">2. Deploy Router</button>
+    <hr style="border:0; border-top:1px solid #333; margin:20px 0;">
     
+    <button id="deployBtn" class="deploy" onclick="deploy()" disabled>DEPLOY ROUTER 🚀</button>
     <div id="status">Waiting for code...</div>
 </div>
 
 <script>
-    let bytecode = null;
-    let abi = null;
+    let bytecode = null, abi = null;
 
-    // AUTO-LOADER (Uses JSDelivr - More reliable)
-    async function loadCode() {
+    function switchTab(mode) {
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        document.getElementById('tab-'+mode).classList.add('active');
+        document.getElementById('view-auto').style.display = mode==='auto'?'block':'none';
+        document.getElementById('view-manual').style.display = mode==='manual'?'block':'none';
+    }
+
+    async function autoLoad() {
         const status = document.getElementById("status");
-        status.innerText = "Trying cdn.jsdelivr.net...";
-        
+        status.innerText = " downloading from JSDelivr...";
         try {
-            const resp = await fetch("https://cdn.jsdelivr.net/npm/@uniswap/v2-periphery@1.1.0/build/UniswapV2Router02.json");
-            if(!resp.ok) throw new Error("CDN Blocked");
-            
-            const json = await resp.json();
+            const r = await fetch("https://cdn.jsdelivr.net/npm/@uniswap/v2-periphery@1.1.0/build/UniswapV2Router02.json");
+            if(!r.ok) throw new Error("Blocked");
+            const json = await r.json();
             activate(json);
-
         } catch(e) {
-            status.innerHTML = "<span style='color:#ff4d00'>❌ CDN Blocked by Browser. Use Manual Mode below.</span>";
-            document.getElementById("manual-section").style.display = "block";
+            status.innerHTML = "<b class='err'>❌ Auto-Load Failed.</b><br>Please switch to 'Method B: Manual Paste' tab above.";
+            switchTab('manual');
         }
     }
 
-    // MANUAL PARSER
-    function parseManual() {
+    function manualParse() {
         try {
-            const raw = document.getElementById("pasteBox").value;
-            const json = JSON.parse(raw);
+            const txt = document.getElementById("pasteBox").value;
+            const json = JSON.parse(txt);
             activate(json);
         } catch(e) {
-            document.getElementById("status").innerText = "Invalid JSON. Copy exactly.";
+            document.getElementById("status").innerText = "Invalid JSON...";
         }
     }
 
@@ -97,54 +100,41 @@
         if(!json.bytecode || !json.abi) return;
         bytecode = json.bytecode;
         abi = json.abi;
-        
-        const btn = document.getElementById("deployBtn");
-        btn.className = "active";
-        btn.disabled = false;
-        btn.innerText = "2. DEPLOY NOW 🚀";
-        
-        document.getElementById("status").innerHTML = `<span style="color:#00ff88">✅ Code Ready! Size: ${bytecode.length} chars.</span>`;
-        document.getElementById("manual-section").style.display = "none";
-        document.getElementById("loadBtn").style.display = "none";
+        document.getElementById("status").innerHTML = `<b class="success">✅ Code Loaded! (${bytecode.length} chars)</b>`;
+        document.getElementById("deployBtn").disabled = false;
     }
 
-    // DEPLOYMENT ENGINE
     async function deploy() {
         const status = document.getElementById("status");
-        const factory = document.getElementById("factory").value;
-        const wbone = document.getElementById("wbone").value;
+        const f = document.getElementById("factory").value;
+        const w = document.getElementById("wbone").value;
 
         try {
-            status.innerText = "Connecting Wallet...";
+            status.innerText = "Connecting...";
             if(!window.ethereum) throw new Error("No Wallet");
-            
-            // Network Switch
             await window.ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: "0x6d" }] });
             
-            const provider = new ethers.BrowserProvider(window.ethereum);
-            const signer = await provider.getSigner();
+            const p = new ethers.BrowserProvider(window.ethereum);
+            const s = await p.getSigner();
 
-            status.innerText = "Please Confirm Deployment...";
-            const factoryObj = new ethers.ContractFactory(abi, bytecode, signer);
-            const contract = await factoryObj.deploy(factory, wbone);
+            status.innerText = "Confirm Deployment...";
+            const fact = new ethers.ContractFactory(abi, bytecode, s);
+            const c = await fact.deploy(f, w);
             
-            status.innerHTML = `🚀 <b>Sent!</b> <a href="https://shibariumscan.io/tx/${contract.deploymentTransaction().hash}" target="_blank" style="color:#fff">View TX</a><br>Waiting for confirmation...`;
+            status.innerHTML = `🚀 <b>Sent!</b> <a href="https://shibariumscan.io/tx/${c.deploymentTransaction().hash}" target="_blank" style="color:#fff">View TX</a>`;
+            await c.waitForDeployment();
+            const addr = await c.getAddress();
             
-            await contract.waitForDeployment();
-            const newAddr = await contract.getAddress();
-            
-            status.innerHTML = `
-                <div style="border:2px solid #00ff88; padding:10px; border-radius:8px; background:#002211;">
-                    <b style="color:#00ff88; font-size:14px;">✅ DEPLOYMENT SUCCESSFUL</b><br><br>
-                    NEW ADDRESS:<br>
-                    <span style="color:#fff; background:#000; padding:4px;">${newAddr}</span><br><br>
-                    👉 <b>COPY THIS</b> and update your LP Tool.
-                </div>
-            `;
+            status.innerHTML = `<div style="background:#002211; padding:10px; border:1px solid #00ff88; border-radius:6px;">
+                <b style="color:#00ff88">✅ SUCCESS!</b><br><br>
+                NEW ROUTER:<br>
+                <span style="color:#fff; background:#000; padding:3px;">${addr}</span>
+                <br><br>👉 Copy this to the Liquidity Tool.
+            </div>`;
 
         } catch(e) {
             console.error(e);
-            status.innerText = "Error: " + (e.reason || e.message);
+            status.innerHTML = `<span class="err">Error: ${e.reason || e.message}</span>`;
         }
     }
 </script>
