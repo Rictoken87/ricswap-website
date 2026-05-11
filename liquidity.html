@@ -3,249 +3,314 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RicSwap | Smart Manager</title>
+    <title>RicSwap | Ultimate Liquidity</title>
     <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.0/dist/ethers.umd.min.js"></script>
     <style>
         body { background: #050505; color: #e0e0e0; font-family: 'Inter', monospace; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; }
-        .card { width: 100%; max-width: 480px; background: #0f0f0f; padding: 32px; border-radius: 24px; border: 1px solid #222; box-shadow: 0 0 60px rgba(255, 77, 0, 0.1); }
+        .card { width: 100%; max-width: 480px; background: #0f0f0f; padding: 32px; border-radius: 24px; border: 1px solid #222; box-shadow: 0 0 80px rgba(255, 77, 0, 0.1); }
         
-        h2 { color: #ff4d00; margin: 0 0 10px 0; text-align: center; text-transform: uppercase; letter-spacing: 1px; font-size: 18px; }
-        .status-badge { text-align: center; margin-bottom: 20px; padding: 8px; background: #1a1a1a; border-radius: 8px; font-size: 12px; color: #888; border: 1px solid #333; }
+        h2 { color: #ff4d00; margin: 0 0 20px 0; text-align: center; text-transform: uppercase; letter-spacing: 1px; font-size: 18px; }
         
-        .input-group { margin-bottom: 15px; background: #161616; padding: 18px; border-radius: 16px; border: 1px solid #222; position: relative; }
-        label { font-size: 11px; color: #666; text-transform: uppercase; font-weight: bold; display: block; margin-bottom: 10px; }
+        /* Status Badges */
+        .status-box { display: flex; gap: 10px; margin-bottom: 20px; }
+        .badge { flex: 1; text-align: center; padding: 8px; background: #1a1a1a; border-radius: 8px; font-size: 11px; color: #666; border: 1px solid #333; }
+        .badge.active { border-color: #ff4d00; color: #fff; background: #221111; }
+        .badge.found { border-color: #00ff88; color: #00ff88; background: #112211; }
+
+        /* Inputs */
+        .input-group { margin-bottom: 15px; background: #161616; padding: 18px; border-radius: 16px; border: 1px solid #222; position: relative; transition: 0.2s; }
+        .input-group:focus-within { border-color: #444; }
         
-        input.addr { width: 100%; background: transparent; border: none; color: white; font-size: 11px; font-family: monospace; outline: none; box-sizing: border-box; }
-        input.amount { width: 100%; background: transparent; border: none; color: #ff4d00; font-size: 24px; font-weight: bold; margin-top: 8px; font-family: sans-serif; outline: none; }
+        .row-top { display: flex; justify-content: space-between; margin-bottom: 10px; }
+        label { font-size: 11px; color: #666; text-transform: uppercase; font-weight: bold; }
         
-        /* Lock Overlay for Auto-Calc */
+        .balance { font-size: 11px; color: #ff4d00; cursor: pointer; }
+        .balance:hover { text-decoration: underline; }
+
+        input.addr { width: 100%; background: transparent; border: none; color: #aaa; font-size: 11px; font-family: monospace; outline: none; margin-bottom: 8px; display: block; }
+        input.amount { width: 100%; background: transparent; border: none; color: white; font-size: 24px; font-weight: bold; font-family: sans-serif; outline: none; }
+        
+        /* Locked State for Auto-Calc */
+        .locked { opacity: 0.7; }
         .locked input.amount { color: #00ff88; cursor: not-allowed; }
-        .locked::after { content: "AUTO-MATCHING PRICE"; position: absolute; top: 10px; right: 10px; font-size: 9px; background: #004422; color: #00ff88; padding: 4px 8px; border-radius: 4px; }
+        .locked::after { content: "AUTO-MATCHING"; position: absolute; bottom: 10px; right: 15px; font-size: 9px; background: #004422; color: #00ff88; padding: 4px 8px; border-radius: 4px; pointer-events: none; }
 
         button { width: 100%; padding: 20px; background: #ff4d00; color: white; font-weight: 800; border: none; border-radius: 14px; font-size: 16px; cursor: pointer; margin-top: 10px; text-transform: uppercase; }
         button:disabled { background: #222; color: #555; cursor: not-allowed; }
         
-        #log { margin-top: 25px; padding: 15px; border-radius: 12px; background: #000; border: 1px solid #222; font-size: 11px; color: #888; font-family: monospace; min-height: 40px; max-height: 150px; overflow-y: auto; }
+        #log { margin-top: 25px; padding: 15px; border-radius: 12px; background: #000; border: 1px solid #222; font-size: 11px; color: #888; font-family: monospace; min-height: 20px; max-height: 100px; overflow-y: auto; }
     </style>
 </head>
 <body>
 
 <div class="card">
-    <h2>⚡ Smart Liquidity</h2>
-    <div id="poolStatus" class="status-badge">Initializing...</div>
+    <h2>⚡ Smart Liquidity Manager</h2>
+    
+    <div class="status-box">
+        <div id="statusPool" class="badge">Scanning Pool...</div>
+        <div id="statusNative" class="badge active">Native BONE Mode</div>
+    </div>
 
     <!-- Toggle -->
     <div style="text-align:center; margin-bottom:15px;">
         <label style="display:inline-flex; align-items:center; gap:8px; cursor:pointer;">
-            <input type="checkbox" id="nativeMode" checked onchange="updateUI()">
+            <input type="checkbox" id="nativeMode" checked onchange="toggleNative()">
             <span style="font-size:12px; color:#fff;">Use Native BONE</span>
         </label>
     </div>
    
+    <!-- INPUT A -->
     <div class="input-group">
-        <label id="labelA">Token A</label>
+        <div class="row-top">
+            <label id="labelA">Native BONE</label>
+            <div class="balance" onclick="setMax('A')" id="balDisplayA">Balance: ---</div>
+        </div>
         <input id="tokenA" class="addr" value="NATIVE_BONE" disabled>
         <input id="amountA" class="amount" type="number" placeholder="0.0" oninput="calculateQuote()">
     </div>
 
     <div style="text-align:center; font-size:20px; color:#333; margin:-10px 0 10px 0;">+</div>
 
+    <!-- INPUT B -->
     <div class="input-group" id="groupB">
-        <label>Token B Contract</label>
-        <input id="tokenB" class="addr" placeholder="Paste 0x..." onchange="checkPool()">
+        <div class="row-top">
+            <label>Token B Address</label>
+            <div class="balance" onclick="setMax('B')" id="balDisplayB">Balance: ---</div>
+        </div>
+        <input id="tokenB" class="addr" placeholder="Paste 0x..." oninput="handleAddressChange()">
         <input id="amountB" class="amount" type="number" placeholder="0.0">
     </div>
 
-    <button id="btn" onclick="execute()">Load Pool Data</button>
-    <div id="log">Enter Token B address to begin.</div>
+    <button id="btn" onclick="execute()">Connect Wallet</button>
+    <div id="log">Ready.</div>
 </div>
 
 <script>
-    const ROUTER_ADDR = "0xcfBF0917F2fCDC4F5170aC991fa26F2Bc3da9Fd4";
-    const FACTORY_ADDR = "0x78ae5cCD2f13D10aE3fF47F8418A79D99B4569d0";
+    // --- CONFIG ---
+    const ROUTER = "0xcfBF0917F2fCDC4F5170aC991fa26F2Bc3da9Fd4";
+    const FACTORY = "0x78ae5cCD2f13D10aE3fF47F8418A79D99B4569d0";
     const WBONE = "0xC76F4c819D820369Fb2d7C1531aB3Bb18e6fE8d8";
     const SHIBARIUM_ID = "0x6d";
 
-    // ABIs
-    const ERC20_ABI = [
-        "function approve(address spender, uint256 amount) returns (bool)",
+    const ABI = [
+        "function approve(address,uint) returns (bool)",
         "function decimals() view returns (uint8)",
-        "function allowance(address owner, address spender) view returns (uint256)",
-        "function balanceOf(address) view returns (uint256)"
-    ];
-    const FACTORY_ABI = ["function getPair(address,address) view returns (address)"];
-    const PAIR_ABI = [
-        "function getReserves() view returns (uint112, uint112, uint32)",
+        "function allowance(address,address) view returns (uint256)",
+        "function balanceOf(address) view returns (uint256)",
+        "function getPair(address,address) view returns (address)",
+        "function getReserves() view returns (uint112,uint112,uint32)",
         "function token0() view returns (address)"
     ];
+
     const ROUTER_ABI = [
         "function addLiquidity(address,address,uint,uint,uint,uint,address,uint) returns (uint,uint,uint)",
         "function addLiquidityETH(address,uint,uint,uint,address,uint) payable returns (uint,uint,uint)"
     ];
 
     let provider, signer, userAddr;
-    let poolState = { exists: false, reserveA: 0n, reserveB: 0n, token0: "" };
+    let poolState = { exists: false, reserveA: 0n, reserveB: 0n };
+    let balances = { A: 0n, B: 0n, decA: 18, decB: 18 };
 
-    // 1. Initialization
+    // --- 1. INITIALIZATION ---
     async function init() {
-        if(!window.ethereum) return log("No Wallet Found");
-        provider = new ethers.BrowserProvider(window.ethereum);
-        signer = await provider.getSigner();
-        userAddr = await signer.getAddress();
+        if(!window.ethereum) return log("No Wallet");
         
-        // Force Chain
-        await window.ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: SHIBARIUM_ID }] }).catch(()=>{});
-        
-        document.getElementById("btn").innerText = "CHECK POOL";
-        document.getElementById("btn").onclick = checkPool;
-        updateUI();
+        try {
+            await window.ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: SHIBARIUM_ID }] });
+            
+            provider = new ethers.BrowserProvider(window.ethereum);
+            signer = await provider.getSigner();
+            userAddr = await signer.getAddress();
+            
+            document.getElementById("btn").innerText = "ADD LIQUIDITY";
+            log("Connected: " + userAddr.slice(0,6));
+            
+            refreshBalances();
+            
+        } catch(e) { console.error(e); }
     }
 
-    function updateUI() {
+    // --- 2. BALANCE LOGIC ---
+    async function refreshBalances() {
+        if(!userAddr) return;
+        
+        // Token A Balance
         const isNative = document.getElementById("nativeMode").checked;
-        const inputA = document.getElementById("tokenA");
-        if(isNative) {
-            inputA.value = "NATIVE_BONE"; inputA.disabled = true;
+        const addrA = isNative ? WBONE : document.getElementById("tokenA").value;
+        
+        try {
+            // A
+            if(isNative) {
+                balances.A = await provider.getBalance(userAddr);
+                balances.decA = 18;
+            } else if(ethers.isAddress(addrA)) {
+                const cA = new ethers.Contract(addrA, ABI, provider);
+                balances.A = await cA.balanceOf(userAddr);
+                balances.decA = await cA.decimals().catch(()=>18);
+            }
+            document.getElementById("balDisplayA").innerText = `Bal: ${parseFloat(ethers.formatUnits(balances.A, balances.decA)).toFixed(4)} (MAX)`;
+
+            // B
+            const addrB = document.getElementById("tokenB").value;
+            if(ethers.isAddress(addrB)) {
+                const cB = new ethers.Contract(addrB, ABI, provider);
+                balances.B = await cB.balanceOf(userAddr);
+                balances.decB = await cB.decimals().catch(()=>18);
+                document.getElementById("balDisplayB").innerText = `Bal: ${parseFloat(ethers.formatUnits(balances.B, balances.decB)).toFixed(4)} (MAX)`;
+                
+                checkPool(); // Also check pool if B is valid
+            } else {
+                document.getElementById("balDisplayB").innerText = "Bal: ---";
+            }
+
+        } catch(e) { console.log("Bal check error", e); }
+    }
+
+    function setMax(side) {
+        if(side === 'A') {
+            // Leave slight dust for gas if native
+            let val = balances.A;
+            if(document.getElementById("nativeMode").checked) val = val - ethers.parseEther("0.5"); 
+            if(val < 0n) val = 0n;
+            document.getElementById("amountA").value = ethers.formatUnits(val, balances.decA);
+            calculateQuote(); // Trigger auto-calc for B
         } else {
-            inputA.value = WBONE; inputA.disabled = false;
+            if(poolState.exists) return alert("Cannot set B manually. Set A, and B will calculate.");
+            document.getElementById("amountB").value = ethers.formatUnits(balances.B, balances.decB);
         }
     }
 
-    function log(msg) {
-        const div = document.getElementById("log");
-        div.innerHTML += `<div>> ${msg}</div>`;
-        div.scrollTop = div.scrollHeight;
+    function handleAddressChange() {
+        refreshBalances();
     }
 
-    // 2. Check Pool Status
+    function toggleNative() {
+        const isNative = document.getElementById("nativeMode").checked;
+        const el = document.getElementById("tokenA");
+        if(isNative) {
+            el.value = "NATIVE_BONE"; el.disabled = true;
+            document.getElementById("statusNative").classList.add("active");
+        } else {
+            el.value = WBONE; el.disabled = false;
+            document.getElementById("statusNative").classList.remove("active");
+        }
+        refreshBalances();
+    }
+
+    // --- 3. POOL LOGIC ---
     async function checkPool() {
-        if(!signer) await init();
-        
         const isNative = document.getElementById("nativeMode").checked;
         const addrA = isNative ? WBONE : document.getElementById("tokenA").value;
         const addrB = document.getElementById("tokenB").value;
 
-        if(!ethers.isAddress(addrB)) return log("Invalid Token B");
+        if(!ethers.isAddress(addrA) || !ethers.isAddress(addrB)) return;
 
-        log("Checking Factory for pair...");
-        const factory = new ethers.Contract(FACTORY_ADDR, FACTORY_ABI, signer);
-        const pairAddr = await factory.getPair(addrA, addrB);
+        const factory = new ethers.Contract(FACTORY, ABI, provider);
+        const pair = await factory.getPair(addrA, addrB);
+        const badge = document.getElementById("statusPool");
 
-        if(pairAddr === "0x0000000000000000000000000000000000000000") {
+        if(pair === "0x0000000000000000000000000000000000000000") {
             poolState.exists = false;
-            document.getElementById("poolStatus").innerText = "✨ NEW POOL (You set the price)";
-            document.getElementById("poolStatus").style.color = "#ff4d00";
+            badge.innerText = "New Pool (Set Price)";
+            badge.className = "badge active";
             document.getElementById("groupB").classList.remove("locked");
             document.getElementById("amountB").disabled = false;
-            
-            document.getElementById("btn").innerText = "CREATE POOL";
-            document.getElementById("btn").onclick = execute;
         } else {
             poolState.exists = true;
-            document.getElementById("poolStatus").innerText = "🔒 EXISTING POOL (Auto-Matching Price)";
-            document.getElementById("poolStatus").style.color = "#00ff88";
+            badge.innerText = "Pool Exists (Auto-Calc)";
+            badge.className = "badge found";
             
-            // Fetch Reserves
-            const pair = new ethers.Contract(pairAddr, PAIR_ABI, signer);
-            const reserves = await pair.getReserves();
-            const token0 = await pair.token0();
+            // Get Reserves to calc price
+            const pairContract = new ethers.Contract(pair, ABI, provider);
+            const res = await pairContract.getReserves();
+            const t0 = await pairContract.token0();
             
-            poolState.token0 = token0;
-            // Align reserves to A/B logic
-            if(token0.toLowerCase() === addrA.toLowerCase()) {
-                poolState.reserveA = reserves[0];
-                poolState.reserveB = reserves[1];
+            // Orient reserves
+            if(t0.toLowerCase() === addrA.toLowerCase()) {
+                poolState.reserveA = res[0]; poolState.reserveB = res[1];
             } else {
-                poolState.reserveA = reserves[1];
-                poolState.reserveB = reserves[0];
+                poolState.reserveA = res[1]; poolState.reserveB = res[0];
             }
-            
+
             document.getElementById("groupB").classList.add("locked");
             document.getElementById("amountB").disabled = true;
-            document.getElementById("btn").innerText = "ADD LIQUIDITY";
-            document.getElementById("btn").onclick = execute;
-            
-            log("Pool Found! Input A to calculate B.");
+            calculateQuote();
         }
     }
 
-    // 3. Auto-Math (Quote)
-    async function calculateQuote() {
-        if(!poolState.exists) return; // Free mode
-        
+    function calculateQuote() {
+        if(!poolState.exists) return;
         const amtA = document.getElementById("amountA").value;
         if(!amtA) return;
 
-        // Simple math: (AmtA * ResB) / ResA
-        // Note: This is rough estimate for UI. Real tx uses smart contract logic.
-        // We need decimals to be precise, but for UI rough ratio is okay.
+        // Simple Ratio for UI: (AmtA * ResB) / ResA
+        // Note: Mixing BigInt and float is tricky, using float for UI estimate
+        const rA = parseFloat(ethers.formatUnits(poolState.reserveA, balances.decA));
+        const rB = parseFloat(ethers.formatUnits(poolState.reserveB, balances.decB));
         
-        // Better: Just use JS math for UI feedback since we can't easily get decimals async here without lag
-        // A more robust way is to assume ratio:
-        const ratio = Number(poolState.reserveB) / Number(poolState.reserveA);
-        const estimatedB = parseFloat(amtA) * ratio;
+        if(rA === 0) return;
         
-        document.getElementById("amountB").value = estimatedB.toFixed(6);
+        const estB = parseFloat(amtA) * (rB / rA);
+        document.getElementById("amountB").value = estB.toFixed(6);
     }
 
-    // 4. Execution
+    // --- 4. EXECUTION ---
     async function execute() {
+        if(!signer) { await init(); return; }
+        
+        const btn = document.getElementById("btn");
+        const addrB = document.getElementById("tokenB").value;
+        const rawA = document.getElementById("amountA").value;
+        const rawB = document.getElementById("amountB").value;
+
         try {
-            const btn = document.getElementById("btn");
             btn.disabled = true;
-            
-            const isNative = document.getElementById("nativeMode").checked;
-            const addrB = document.getElementById("tokenB").value;
-            const amtA = document.getElementById("amountA").value;
-            const amtB = document.getElementById("amountB").value; // Use the calculated value
+            log("Starting Transaction...");
 
-            // 1. Get Decimals
-            const contractB = new ethers.Contract(addrB, ERC20_ABI, signer);
-            const decB = await contractB.decimals().catch(()=>18);
-            const valB = ethers.parseUnits(amtB, decB);
+            // 1. Approve B
+            const conB = new ethers.Contract(addrB, ABI, signer);
+            const valB = ethers.parseUnits(rawB, balances.decB);
+            const allowB = await conB.allowance(userAddr, ROUTER);
             
-            // 2. Approve B
-            log("Approving Token B...");
-            const txApp = await contractB.approve(ROUTER_ADDR, ethers.MaxUint256);
-            await txApp.wait();
+            if(allowB < valB) {
+                log("Approving Token B...");
+                const tx = await conB.approve(ROUTER, ethers.MaxUint256);
+                await tx.wait();
+            }
 
-            // 3. Add Liquidity
-            log("Sending Transaction...");
-            const router = new ethers.Contract(ROUTER_ADDR, ROUTER_ABI, signer);
+            // 2. Add Liquidity
+            log("Sending to Router...");
+            const router = new ethers.Contract(ROUTER, ROUTER_ABI, signer);
             const deadline = Math.floor(Date.now()/1000) + 1200;
+            const isNative = document.getElementById("nativeMode").checked;
             let tx;
 
             if(isNative) {
-                const valA = ethers.parseEther(amtA);
-                // Native BONE
+                const valA = ethers.parseEther(rawA);
                 tx = await router.addLiquidityETH(
-                    addrB,
-                    valB,
-                    0, 0, // Slippage 0 for ease
-                    userAddr,
-                    deadline,
-                    { value: valA, gasLimit: 4000000 }
+                    addrB, valB, 0, 0, userAddr, deadline,
+                    { value: valA, gasLimit: 3000000 }
                 );
             } else {
-                // WBONE logic would go here (omitted for brevity in Native mode)
+                // ... (Standard addLiquidity logic if needed) ...
+                // Focusing on Native for this tool
             }
 
-            log(`TX Sent: ${tx.hash}`);
-            document.getElementById("poolStatus").innerHTML = `<a href="https://shibariumscan.io/tx/${tx.hash}" target="_blank" style="color:#fff">VIEW SUCCESS</a>`;
+            log("TX Sent: " + tx.hash);
+            document.getElementById("statusPool").innerHTML = `<a href="https://shibariumscan.io/tx/${tx.hash}" target="_blank">VIEW TX</a>`;
             await tx.wait();
-            alert("Success!");
+            alert("Liquidity Added!");
+            
+            refreshBalances();
             btn.disabled = false;
 
         } catch(e) {
-            console.error(e);
-            log("ERROR: " + (e.reason || e.message));
-            document.getElementById("btn").disabled = false;
+            log("Error: " + e.message);
+            btn.disabled = false;
         }
     }
-
-    // Start
-    setTimeout(init, 1000);
-
+    
+    function log(msg) { document.getElementById("log").innerText = msg; }
 </script>
 </body>
 </html>
