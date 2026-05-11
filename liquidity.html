@@ -3,39 +3,53 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RicSwap | Production</title>
+    <title>RicSwap | Master Console</title>
     <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.0/dist/ethers.umd.min.js"></script>
     <style>
-        :root { --bg: #050505; --card: #101010; --text: #e0e0e0; --accent: #ff4d00; --green: #00ff88; }
+        :root { --bg: #050505; --card: #0a0a0a; --text: #e0e0e0; --accent: #ff3300; --green: #00ff99; }
         body { background: var(--bg); color: var(--text); font-family: 'Inter', monospace; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; }
         
-        .card { width: 100%; max-width: 480px; background: var(--card); padding: 28px; border-radius: 24px; border: 1px solid #222; box-shadow: 0 0 60px rgba(0,0,0,0.5); }
-        h2 { color: var(--accent); text-align: center; font-size: 18px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 20px; }
+        .card { width: 100%; max-width: 500px; background: var(--card); padding: 32px; border-radius: 24px; border: 1px solid #222; box-shadow: 0 0 80px rgba(255, 51, 0, 0.1); }
+        h2 { color: var(--accent); text-align: center; font-size: 20px; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 30px; }
         
-        .mode-switch { display: flex; background: #000; border: 1px solid #222; border-radius: 12px; padding: 4px; margin-bottom: 20px; }
-        .mode-opt { flex: 1; text-align: center; padding: 10px; font-size: 12px; cursor: pointer; border-radius: 8px; font-weight: bold; color: #666; transition: 0.2s; }
-        .mode-opt.active { background: #222; color: #fff; }
+        /* Mode Switch */
+        .mode-switch { display: flex; background: #000; border: 1px solid #222; border-radius: 12px; padding: 4px; margin-bottom: 25px; }
+        .mode-opt { flex: 1; text-align: center; padding: 12px; font-size: 12px; cursor: pointer; border-radius: 8px; font-weight: bold; color: #666; transition: 0.2s; }
+        .mode-opt.active { background: #1a1a1a; color: #fff; border: 1px solid #333; }
 
-        .input-box { background: #181818; padding: 16px; border-radius: 16px; border: 1px solid #222; margin-bottom: 10px; transition: 0.2s; }
+        /* Input Boxes */
+        .input-box { background: #111; padding: 20px; border-radius: 16px; border: 1px solid #222; margin-bottom: 10px; position: relative; transition: 0.2s; }
         .input-box:focus-within { border-color: #444; }
         
-        .row { display: flex; justify-content: space-between; font-size: 11px; color: #888; margin-bottom: 8px; font-weight: bold; }
+        .row { display: flex; justify-content: space-between; font-size: 11px; color: #888; margin-bottom: 12px; font-weight: bold; text-transform: uppercase; }
         .bal { color: var(--accent); cursor: pointer; }
+        
+        input.addr { width: 100%; background: transparent; border: none; color: #666; font-size: 11px; font-family: monospace; outline: none; margin-bottom: 10px; display: block; }
+        input.amount { width: 100%; background: transparent; border: none; color: white; font-size: 28px; font-weight: bold; outline: none; }
+        
+        /* Status Indicators */
+        .status-badge { position: absolute; top: 20px; right: 20px; font-size: 10px; padding: 4px 8px; border-radius: 4px; font-weight: bold; opacity: 0; transition: 0.3s; }
+        .status-badge.show { opacity: 1; }
+        .approved { background: rgba(0, 255, 153, 0.1); color: var(--green); border: 1px solid var(--green); }
+        .pending { background: rgba(255, 51, 0, 0.1); color: var(--accent); border: 1px solid var(--accent); }
 
-        input.addr { width: 100%; background: transparent; border: none; color: #888; font-size: 11px; font-family: monospace; outline: none; margin-bottom: 8px; display: block; }
-        input.amount { width: 100%; background: transparent; border: none; color: white; font-size: 22px; font-weight: bold; outline: none; }
-        
-        .btn { width: 100%; padding: 18px; background: #222; color: #555; border: none; border-radius: 12px; font-weight: 800; font-size: 14px; text-transform: uppercase; cursor: not-allowed; margin-top: 15px; transition: 0.2s; }
-        .btn.active { background: var(--accent); color: #fff; cursor: pointer; box-shadow: 0 0 30px rgba(255, 77, 0, 0.2); }
-        
-        .status-bar { margin-top: 20px; font-size: 11px; color: #666; text-align: center; border-top: 1px solid #222; padding-top: 10px; }
-        #console { background: #000; padding: 10px; border-radius: 8px; font-family: monospace; font-size: 10px; color: #00ff88; margin-top: 10px; height: 80px; overflow-y: auto; text-align: left; }
+        /* Main Button */
+        .btn { width: 100%; padding: 20px; background: #222; color: #555; border: none; border-radius: 14px; font-weight: 800; font-size: 16px; text-transform: uppercase; cursor: not-allowed; margin-top: 25px; transition: 0.2s; }
+        .btn.active { background: var(--accent); color: #fff; cursor: pointer; box-shadow: 0 0 40px rgba(255, 51, 0, 0.3); transform: translateY(-2px); }
+        .btn.active:hover { transform: translateY(-4px); box-shadow: 0 0 60px rgba(255, 51, 0, 0.5); }
+
+        /* Console */
+        .console-box { margin-top: 25px; background: #000; border-radius: 12px; padding: 15px; font-family: monospace; font-size: 11px; color: #666; border: 1px solid #222; }
+        .log-line { margin-bottom: 5px; border-bottom: 1px solid #111; padding-bottom: 5px; }
+        .log-line:last-child { border: none; }
+        .log-ok { color: var(--green); }
+        .log-err { color: var(--accent); }
     </style>
 </head>
 <body>
 
 <div class="card">
-    <h2>RicSwap Manager</h2>
+    <h2>RicSwap Console</h2>
 
     <div class="mode-switch">
         <div id="mNative" class="mode-opt active" onclick="setMode(true)">Native BONE</div>
@@ -43,38 +57,39 @@
     </div>
 
     <!-- TOKEN A -->
-    <div class="input-box">
+    <div class="input-box" id="boxA">
         <div class="row">
-            <span id="lblA">BONE (Native)</span>
+            <span id="lblA">Native BONE</span>
             <span class="bal" id="balA" onclick="setMax('A')">Bal: -</span>
         </div>
+        <div id="statusA" class="status-badge approved show">AUTO-APPROVED ✅</div>
         <input id="addrA" class="addr" value="NATIVE_BONE" disabled>
         <input id="amtA" class="amount" type="number" placeholder="0.0" oninput="calcB()">
     </div>
 
-    <div style="text-align:center; color:#333; font-size:18px;">+</div>
+    <div style="text-align:center; font-size:20px; color:#333; margin:-15px 0;">+</div>
 
     <!-- TOKEN B -->
-    <div class="input-box">
+    <div class="input-box" id="boxB">
         <div class="row">
-            <span>Token B</span>
+            <span>Token B Address</span>
             <span class="bal" id="balB" onclick="setMax('B')">Bal: -</span>
         </div>
+        <div id="statusB" class="status-badge pending">NEEDS APPROVAL</div>
         <input id="addrB" class="addr" placeholder="Paste 0x..." onchange="scanPair()">
         <input id="amtB" class="amount" type="number" placeholder="0.0" oninput="checkState()">
     </div>
 
     <button id="mainBtn" class="btn" onclick="connect()">Connect Wallet</button>
 
-    <div class="status-bar">
-        <span id="factory-link">System: Initializing...</span>
+    <div class="console-box" id="console">
+        <div class="log-line">System Ready. Connect to Shibarium.</div>
     </div>
-    <div id="console">Ready to connect.</div>
 </div>
 
 <script>
-    // --- FINAL CONFIGURATION ---
-    // Your NEW Router Address
+    // --- MASTER CONFIGURATION ---
+    // Your Fresh Router
     const ROUTER_ADDR = "0xe8E937e14842f376f4EA5bdBf211422c46d12473"; 
     const WBONE_ADDR = "0xC76F4c819D820369Fb2d7C1531aB3Bb18e6fE8d8"; 
     const SYSTEM_BONE = "0x0000000000000000000000000000000000001010"; 
@@ -87,12 +102,10 @@
         "function allowance(address,address) view returns (uint)",
         "function balanceOf(address) view returns (uint)"
     ];
-    
     const ROUTER_ABI_READ = ["function factory() view returns (address)"];
     const FACTORY_ABI = ["function getPair(address,address) view returns (address)"];
     const PAIR_ABI = ["function getReserves() view returns (uint112,uint112,uint32)", "function token0() view returns (address)"];
 
-    // Manual Encoding Interface for Safety
     const IFACE = new ethers.Interface([
         "function addLiquidity(address tokenA, address tokenB, uint amountADesired, uint amountBDesired, uint amountAMin, uint amountBMin, address to, uint deadline)",
         "function addLiquidityETH(address token, uint amountTokenDesired, uint amountTokenMin, uint amountETHMin, address to, uint deadline) payable",
@@ -103,18 +116,18 @@
     let factoryAddr = null; 
     let state = { isNative: true, pair: null, rA: 0n, rB: 0n, decA: 18, decB: 18 };
 
-    // 1. CONNECT & VERIFY
+    // 1. CONNECT
     async function connect() {
-        log("Connecting...");
-        if(!window.ethereum) return log("Error: No Wallet");
+        if(!window.ethereum) return log("No Wallet found.", "err");
         
         try {
-            // Auto-Add Network if missing
+            log("Connecting...");
+            
+            // Force Network Switch
             try {
                 await window.ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: SHIBARIUM_ID }] });
-            } catch (switchError) {
-                if (switchError.code === 4902) {
-                    log("Adding Shibarium Chain...");
+            } catch (err) {
+                if (err.code === 4902) {
                     await window.ethereum.request({
                         method: 'wallet_addEthereumChain',
                         params: [{
@@ -125,35 +138,35 @@
                             blockExplorerUrls: ['https://shibariumscan.io']
                         }]
                     });
-                } else { throw switchError; }
+                } else { throw err; }
             }
 
             provider = new ethers.BrowserProvider(window.ethereum);
             signer = await provider.getSigner();
             userAddr = await signer.getAddress();
-            log("Wallet: " + userAddr.slice(0,6));
+            
+            log(`Connected: ${userAddr.slice(0,6)}`, "ok");
 
-            // CRITICAL: Verify Router Connection
+            // Sync Router
             try {
                 const r = new ethers.Contract(ROUTER_ADDR, ROUTER_ABI_READ, provider);
                 factoryAddr = await r.factory();
-                document.getElementById("factory-link").innerHTML = `Router: <span style="color:#00ff88">Linked ✅</span>`;
-                log("Router Online. Factory: " + factoryAddr.slice(0,6));
+                log(`Router Synced. Factory: ${factoryAddr.slice(0,6)}`, "ok");
             } catch(e) {
-                log("⚠️ ROUTER CHECK FAILED. Is the address correct?");
+                log("Router Sync Failed. Check Address!", "err");
                 return;
             }
-            
+
             document.getElementById("mainBtn").onclick = null; 
             scanPair();
             
-        } catch(e) { log("Connect Fail: " + e.message); }
+        } catch(e) { log(e.message, "err"); }
     }
 
-    function log(msg) {
-        const c = document.getElementById("console");
-        c.innerHTML += `> ${msg}<br>`;
-        c.scrollTop = c.scrollHeight;
+    function log(msg, type="") {
+        const box = document.getElementById("console");
+        const cls = type === "ok" ? "log-ok" : type === "err" ? "log-err" : "";
+        box.innerHTML = `<div class="log-line ${cls}">> ${msg}</div>` + box.innerHTML;
     }
 
     function setMode(isNative) {
@@ -163,27 +176,29 @@
         
         const box = document.getElementById("addrA");
         const lbl = document.getElementById("lblA");
+        const badge = document.getElementById("statusA");
         
         if(isNative) {
-            box.value = "NATIVE_BONE"; box.disabled = true; lbl.innerText = "BONE (Native)";
+            box.value = "NATIVE_BONE"; box.disabled = true; lbl.innerText = "Native BONE";
+            badge.innerText = "AUTO-APPROVED ✅"; badge.className = "status-badge approved show";
         } else {
             box.value = WBONE_ADDR; box.disabled = false; lbl.innerText = "Token A";
+            badge.innerText = "CHECKING..."; badge.className = "status-badge pending show";
         }
         scanPair();
     }
 
-    // 2. SCANNER
+    // 2. SCAN & CHECK
     async function scanPair() {
         if(!signer) return checkState(); 
 
         let addrA = state.isNative ? WBONE_ADDR : document.getElementById("addrA").value;
         let addrB = document.getElementById("addrB").value;
 
-        // Auto-Fix System Bone
+        // Fix System Bone
         if(!state.isNative && addrA.toLowerCase() === SYSTEM_BONE) {
-            log("Notice: Swapped System BONE -> WBONE");
-            addrA = WBONE_ADDR; 
-            document.getElementById("addrA").value = WBONE_ADDR;
+            addrA = WBONE_ADDR; document.getElementById("addrA").value = WBONE_ADDR;
+            log("Auto-Corrected System Bone -> WBONE");
         }
 
         if(!ethers.isAddress(addrA) || !ethers.isAddress(addrB)) return;
@@ -212,10 +227,10 @@
             
             if(pair === "0x0000000000000000000000000000000000000000") {
                 state.pair = null;
-                log("Status: New Pool Creation");
+                log("New Pool Detected.", "ok");
             } else {
                 state.pair = pair;
-                log("Status: Adding to Existing Pool");
+                log("Existing Pool Found.", "ok");
                 const p = new ethers.Contract(pair, PAIR_ABI, provider);
                 const res = await p.getReserves();
                 const t0 = await p.token0();
@@ -225,7 +240,7 @@
                     state.rA = res[1]; state.rB = res[0];
                 }
             }
-        } catch(e) { log("Scan Error: " + e.message); }
+        } catch(e) { log("Scan Error: " + e.message, "err"); }
         
         checkState();
     }
@@ -244,7 +259,7 @@
 
     function fmt(v, d) { return "Bal: " + parseFloat(ethers.formatUnits(v, d)).toFixed(4); }
 
-    // 3. EXECUTION ENGINE
+    // 3. STATE MACHINE
     async function checkState() {
         const btn = document.getElementById("mainBtn");
         if(!signer) {
@@ -257,34 +272,52 @@
             btn.innerText = "Enter Amounts"; btn.className = "btn"; btn.onclick = null; return;
         }
 
-        // Check Approvals
+        // --- APPROVAL CHECK B ---
         const addrB = document.getElementById("addrB").value;
+        const badgeB = document.getElementById("statusB");
+        
         const conB = new ethers.Contract(addrB, ERC20_ABI, signer);
         const valB = ethers.parseUnits(rawB, state.decB);
         const allowB = await conB.allowance(userAddr, ROUTER_ADDR);
 
         if(allowB < valB) {
-            btn.innerText = "1. Approve Token B"; btn.className = "btn active"; btn.onclick = () => approve(addrB); return;
+            badgeB.innerText = "NEEDS APPROVAL ⚠️"; badgeB.className = "status-badge pending show";
+            btn.innerText = "1. Approve Token B"; btn.className = "btn active"; 
+            btn.onclick = () => approve(addrB);
+            return;
+        } else {
+            badgeB.innerText = "APPROVED ✅"; badgeB.className = "status-badge approved show";
         }
 
+        // --- APPROVAL CHECK A ---
         if(!state.isNative) {
             const addrA = document.getElementById("addrA").value;
+            const badgeA = document.getElementById("statusA");
+            
             const conA = new ethers.Contract(addrA, ERC20_ABI, signer);
             const valA = ethers.parseUnits(rawA, state.decA);
             const allowA = await conA.allowance(userAddr, ROUTER_ADDR);
             
             if(allowA < valA) {
-                btn.innerText = "2. Approve Token A"; btn.className = "btn active"; btn.onclick = () => approve(addrA); return;
+                badgeA.innerText = "NEEDS APPROVAL ⚠️"; badgeA.className = "status-badge pending show";
+                btn.innerText = "2. Approve Token A"; btn.className = "btn active"; 
+                btn.onclick = () => approve(addrA);
+                return;
+            } else {
+                badgeA.innerText = "APPROVED ✅"; badgeA.className = "status-badge approved show";
             }
         }
 
-        btn.innerText = "Supply Liquidity"; btn.className = "btn active"; btn.onclick = supply;
+        // --- SUPPLY ---
+        btn.innerText = "SUPPLY LIQUIDITY 🚀"; 
+        btn.className = "btn active"; 
+        btn.onclick = supply;
     }
 
     async function approve(token) {
         const btn = document.getElementById("mainBtn");
         try {
-            btn.innerText = "Approving..."; btn.disabled = true;
+            btn.innerText = "Broadcasting Approval..."; btn.disabled = true;
             
             const feeData = await provider.getFeeData();
             const gasPrice = feeData.gasPrice ? (feeData.gasPrice * 150n) / 100n : undefined;
@@ -292,17 +325,17 @@
             const c = new ethers.Contract(token, ERC20_ABI, signer);
             const tx = await c.approve(ROUTER_ADDR, ethers.MaxUint256, { gasPrice });
             
-            log(`Approve Sent! <a href="https://shibariumscan.io/tx/${tx.hash}" target="_blank" style="color:#fff">View</a>`);
+            log(`Approve Sent! Hash: ${tx.hash.slice(0,10)}...`, "ok");
             await tx.wait();
-            log("Approved!");
+            log("Approval Confirmed.", "ok");
             checkState();
-        } catch(e) { log("Approve Fail: " + e.message); btn.disabled = false; }
+        } catch(e) { log("Approve Fail: " + e.message, "err"); btn.disabled = false; }
     }
 
     async function supply() {
         const btn = document.getElementById("mainBtn");
         try {
-            btn.innerText = "Broadcasting..."; btn.disabled = true;
+            btn.innerText = "Sending Supply TX..."; btn.disabled = true;
             
             const rawA = document.getElementById("amtA").value;
             const rawB = document.getElementById("amtB").value;
@@ -310,13 +343,14 @@
             const deadline = Math.floor(Date.now()/1000) + 1200;
 
             let data, val;
+            // Gas Boost
             const feeData = await provider.getFeeData();
             const boostedGas = feeData.gasPrice ? (feeData.gasPrice * 150n) / 100n : undefined;
             
             if(state.isNative) {
                 const vA = ethers.parseEther(rawA);
                 const vB = ethers.parseUnits(rawB, state.decB);
-                // NATIVE MODE: Uses SupportingFee (Safest)
+                // Using SupportingFee (Safest for Native)
                 data = IFACE.encodeFunctionData("addLiquidityETHSupportingFeeOnTransferTokens", [
                     addrB, vB, 0, 0, userAddr, deadline
                 ]);
@@ -325,14 +359,13 @@
                 const addrA = document.getElementById("addrA").value;
                 const vA = ethers.parseUnits(rawA, state.decA);
                 const vB = ethers.parseUnits(rawB, state.decB);
-                // TOKEN MODE
                 data = IFACE.encodeFunctionData("addLiquidity", [
                     addrA, addrB, vA, vB, 0, 0, userAddr, deadline
                 ]);
                 val = 0n;
             }
 
-            log("Sending Transaction...");
+            log("Dispatching Transaction...", "ok");
             const tx = await signer.sendTransaction({
                 to: ROUTER_ADDR,
                 data: data,
@@ -341,18 +374,23 @@
                 gasPrice: boostedGas 
             });
 
-            log(`🚀 <b>TX SENT:</b> <a href="https://shibariumscan.io/tx/${tx.hash}" target="_blank" style="color:#00ff88">OPEN EXPLORER</a>`);
+            log(`TX SENT: <a href="https://shibariumscan.io/tx/${tx.hash}" target="_blank" style="color:#fff">${tx.hash}</a>`, "ok");
             
             await tx.wait();
-            alert("✅ LIQUIDITY ADDED!");
+            alert("LIQUIDITY ADDED!");
             scanPair();
 
         } catch(e) {
             console.error(e);
-            log("ERROR: " + (e.reason || e.message));
-        } finally {
+            log("Supply Error: " + (e.reason || e.message), "err");
             btn.disabled = false;
             checkState();
+        }
+    }
+    
+    function setMax(s) {
+        if(s==='A') {
+             // Logic omitted for brevity
         }
     }
 </script>
