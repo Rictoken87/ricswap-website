@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RicSwap | Stable Injector</title>
+    <title>RicSwap | Rocket Fuel</title>
     <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.0/dist/ethers.umd.min.js"></script>
     <style>
         :root { --bg: #050505; --card: #101010; --text: #e0e0e0; --accent: #ff4d00; --green: #00ff88; }
@@ -13,7 +13,7 @@
         h2 { color: var(--accent); text-align: center; font-size: 18px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 20px; }
         
         .mode-switch { display: flex; background: #000; border: 1px solid #222; border-radius: 12px; padding: 4px; margin-bottom: 20px; }
-        .mode-opt { flex: 1; text-align: center; padding: 10px; font-size: 12px; cursor: pointer; border-radius: 8px; font-weight: bold; color: #666; }
+        .mode-opt { flex: 1; text-align: center; padding: 10px; font-size: 12px; cursor: pointer; border-radius: 8px; font-weight: bold; color: #666; transition: 0.2s; }
         .mode-opt.active { background: #222; color: #fff; }
 
         .input-box { background: #181818; padding: 16px; border-radius: 16px; border: 1px solid #222; margin-bottom: 10px; transition: 0.2s; }
@@ -29,7 +29,7 @@
         .btn.active { background: var(--accent); color: #fff; cursor: pointer; box-shadow: 0 0 30px rgba(255, 77, 0, 0.2); }
         
         .status-bar { margin-top: 20px; font-size: 11px; color: #666; text-align: center; border-top: 1px solid #222; padding-top: 10px; }
-        #console { background: #000; font-family: monospace; font-size: 10px; color: #666; padding: 10px; border-radius: 8px; margin-top: 10px; height: 60px; overflow-y: auto; text-align: left; }
+        #console { background: #000; padding: 10px; border-radius: 8px; font-family: monospace; font-size: 10px; color: #00ff88; margin-top: 10px; height: 80px; overflow-y: auto; text-align: left; }
     </style>
 </head>
 <body>
@@ -67,7 +67,8 @@
     <button id="mainBtn" class="btn" onclick="connect()">Connect Wallet</button>
 
     <div class="status-bar">
-        <span id="pool-status">State: Disconnected</span>
+        <span id="router-link">Router: Active</span> | 
+        <span id="factory-link">Factory: Syncing...</span>
     </div>
     <div id="console">System Idle.</div>
 </div>
@@ -75,11 +76,10 @@
 <script>
     // --- CONSTANTS ---
     const ROUTER_ADDR = "0xcfBF0917F2fCDC4F5170aC991fa26F2Bc3da9Fd4";
-    // Fallback Factory if dynamic fetch fails
     const FALLBACK_FACTORY = "0x78ae5cCD2f13D10aE3fF47F8418A79D99B4569d0"; 
     const WBONE_ADDR = "0xC76F4c819D820369Fb2d7C1531aB3Bb18e6fE8d8"; 
     const SYSTEM_BONE = "0x0000000000000000000000000000000000001010"; 
-    const SHIBARIUM_ID = "0x6d"; // 109
+    const SHIBARIUM_ID = "0x6d"; 
 
     const ERC20_ABI = [
         "function approve(address,uint) returns (bool)",
@@ -92,66 +92,44 @@
     const FACTORY_ABI = ["function getPair(address,address) view returns (address)"];
     const PAIR_ABI = ["function getReserves() view returns (uint112,uint112,uint32)", "function token0() view returns (address)"];
 
+    // Safe Interface
     const IFACE = new ethers.Interface([
         "function addLiquidity(address tokenA, address tokenB, uint amountADesired, uint amountBDesired, uint amountAMin, uint amountBMin, address to, uint deadline)",
-        "function addLiquidityETH(address token, uint amountTokenDesired, uint amountTokenMin, uint amountETHMin, address to, uint deadline) payable"
+        "function addLiquidityETH(address token, uint amountTokenDesired, uint amountTokenMin, uint amountETHMin, address to, uint deadline) payable",
+        "function addLiquidityETHSupportingFeeOnTransferTokens(address token, uint amountTokenDesired, uint amountTokenMin, uint amountETHMin, address to, uint deadline) payable"
     ]);
 
     let provider, signer, userAddr;
-    let factoryAddr = FALLBACK_FACTORY; // Default to known good
+    let factoryAddr = FALLBACK_FACTORY; 
     let state = { isNative: true, pair: null, rA: 0n, rB: 0n, decA: 18, decB: 18 };
 
-    // --- 1. ROBUST CONNECTION ---
+    // 1. INIT
     async function connect() {
-        log("Connecting...");
-        if(!window.ethereum) return log("Error: No Wallet found.");
+        log("Initializing...");
+        if(!window.ethereum) return log("Error: No Wallet");
         
         try {
-            // 1. Switch Chain with Auto-Add
-            try {
-                await window.ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: SHIBARIUM_ID }] });
-            } catch (switchError) {
-                if (switchError.code === 4902) {
-                    log("Adding Shibarium Chain...");
-                    await window.ethereum.request({
-                        method: 'wallet_addEthereumChain',
-                        params: [{
-                            chainId: SHIBARIUM_ID,
-                            chainName: 'Shibarium',
-                            nativeCurrency: { name: 'BONE', symbol: 'BONE', decimals: 18 },
-                            rpcUrls: ['https://rpc.shibarium.shib.io'],
-                            blockExplorerUrls: ['https://shibariumscan.io']
-                        }]
-                    });
-                } else {
-                    throw switchError;
-                }
-            }
-
-            // 2. Setup Provider
+            await window.ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: SHIBARIUM_ID }] });
             provider = new ethers.BrowserProvider(window.ethereum);
             signer = await provider.getSigner();
             userAddr = await signer.getAddress();
-            log("Wallet: " + userAddr.slice(0,6));
+            log("Connected: " + userAddr.slice(0,6));
 
-            // 3. Sync Factory (With Failover)
+            // Sync Factory
             try {
-                log("Fetching Factory from Router...");
                 const r = new ethers.Contract(ROUTER_ADDR, ROUTER_ABI_READ, provider);
                 factoryAddr = await r.factory();
-                log("Factory Synced: " + factoryAddr.slice(0,6));
+                document.getElementById("factory-link").innerText = "Factory: Synced";
+                document.getElementById("factory-link").style.color = "#00ff88";
             } catch(e) {
-                log("⚠️ Factory Fetch Failed. Using Hardcoded: " + FALLBACK_FACTORY.slice(0,6));
-                factoryAddr = FALLBACK_FACTORY;
+                log("⚠️ Factory Sync Fail. Using Hardcoded.");
+                document.getElementById("factory-link").innerText = "Factory: Fallback";
             }
             
-            document.getElementById("mainBtn").onclick = null; // Remove connect handler
+            document.getElementById("mainBtn").onclick = null; 
             scanPair();
             
-        } catch(e) { 
-            console.error(e);
-            log("Connection Failed: " + e.message);
-        }
+        } catch(e) { log("Connect Error: " + e.message); }
     }
 
     function log(msg) {
@@ -176,23 +154,21 @@
         scanPair();
     }
 
-    // --- 2. SCANNER ---
+    // 2. SCANNER
     async function scanPair() {
-        if(!signer) return checkState(); // Wait for connect
+        if(!signer) return checkState(); 
 
         let addrA = state.isNative ? WBONE_ADDR : document.getElementById("addrA").value;
         let addrB = document.getElementById("addrB").value;
 
-        // Auto-Correct System BONE
+        // Auto-Fix System Bone
         if(!state.isNative && addrA.toLowerCase() === SYSTEM_BONE) {
-            log("⚠️ Swapped System BONE for WBONE");
+            log("Note: Switched System BONE to WBONE");
             addrA = WBONE_ADDR; 
             document.getElementById("addrA").value = WBONE_ADDR;
         }
 
         if(!ethers.isAddress(addrA) || !ethers.isAddress(addrB)) return;
-
-        log(`Scanning Pair: ${addrA.slice(0,4)}... / ${addrB.slice(0,4)}...`);
 
         try {
             // Balances
@@ -212,20 +188,14 @@
             const balB = await cB.balanceOf(userAddr);
             document.getElementById("balB").innerText = fmt(balB, state.decB);
 
-            // Factory Check
+            // Pair
             const f = new ethers.Contract(factoryAddr, FACTORY_ABI, provider);
             const pair = await f.getPair(addrA, addrB);
             
             if(pair === "0x0000000000000000000000000000000000000000") {
                 state.pair = null;
-                document.getElementById("pool-status").innerText = "Status: New Pool (Initialize)";
-                document.getElementById("pool-status").style.color = "#ff4d00";
             } else {
                 state.pair = pair;
-                document.getElementById("pool-status").innerText = "Status: Active Pool";
-                document.getElementById("pool-status").style.color = "#00ff88";
-                
-                // Get Reserves
                 const p = new ethers.Contract(pair, PAIR_ABI, provider);
                 const res = await p.getReserves();
                 const t0 = await p.token0();
@@ -236,7 +206,6 @@
                     state.rA = res[1]; state.rB = res[0];
                 }
             }
-            log("Scan Complete.");
         } catch(e) { log("Scan Error: " + e.message); }
         
         checkState();
@@ -256,7 +225,7 @@
 
     function fmt(v, d) { return "Bal: " + parseFloat(ethers.formatUnits(v, d)).toFixed(4); }
 
-    // --- 3. STATE MACHINE ---
+    // 3. STATE & EXECUTION
     async function checkState() {
         const btn = document.getElementById("mainBtn");
         if(!signer) {
@@ -276,7 +245,6 @@
             return;
         }
 
-        // Check Allowances
         const addrB = document.getElementById("addrB").value;
         const conB = new ethers.Contract(addrB, ERC20_ABI, signer);
         const valB = ethers.parseUnits(rawB, state.decB);
@@ -312,11 +280,16 @@
         const btn = document.getElementById("mainBtn");
         try {
             btn.innerText = "Approving..."; btn.disabled = true;
+            // Rocket Fuel: Gas Boost for Approval
+            const feeData = await provider.getFeeData();
+            const gasPrice = feeData.gasPrice ? (feeData.gasPrice * 150n) / 100n : undefined;
+
             const c = new ethers.Contract(token, ERC20_ABI, signer);
-            const tx = await c.approve(ROUTER_ADDR, ethers.MaxUint256);
-            log("Approve Tx Sent: " + tx.hash);
+            const tx = await c.approve(ROUTER_ADDR, ethers.MaxUint256, { gasPrice });
+            
+            log(`Approve Sent! <a href="https://shibariumscan.io/tx/${tx.hash}" target="_blank" style="color:#fff">View</a>`);
             await tx.wait();
-            log("Approved.");
+            log("Approved!");
             checkState();
         } catch(e) { log("Approve Fail: " + e.message); btn.disabled = false; }
     }
@@ -324,20 +297,24 @@
     async function supply() {
         const btn = document.getElementById("mainBtn");
         try {
-            btn.innerText = "Confirming..."; btn.disabled = true;
+            btn.innerText = "Sending..."; btn.disabled = true;
             
             const rawA = document.getElementById("amtA").value;
             const rawB = document.getElementById("amtB").value;
             const addrB = document.getElementById("addrB").value;
-            const deadline = Math.floor(Date.now()/1000) + 300; // 5 mins
+            const deadline = Math.floor(Date.now()/1000) + 1200;
 
             let data, val;
+            
+            // Rocket Fuel: Get Gas + 50%
+            const feeData = await provider.getFeeData();
+            const boostedGas = feeData.gasPrice ? (feeData.gasPrice * 150n) / 100n : undefined;
             
             if(state.isNative) {
                 const vA = ethers.parseEther(rawA);
                 const vB = ethers.parseUnits(rawB, state.decB);
-                // HEX PROTOCOL for Native
-                data = IFACE.encodeFunctionData("addLiquidityETH", [
+                // USE SupportingFee FOR NATIVE (Safe against Tax)
+                data = IFACE.encodeFunctionData("addLiquidityETHSupportingFeeOnTransferTokens", [
                     addrB, vB, 0, 0, userAddr, deadline
                 ]);
                 val = vA;
@@ -345,31 +322,45 @@
                 const addrA = document.getElementById("addrA").value;
                 const vA = ethers.parseUnits(rawA, state.decA);
                 const vB = ethers.parseUnits(rawB, state.decB);
-                // HEX PROTOCOL for Tokens
                 data = IFACE.encodeFunctionData("addLiquidity", [
                     addrA, addrB, vA, vB, 0, 0, userAddr, deadline
                 ]);
                 val = 0n;
             }
 
-            log("Sending Supply TX...");
+            log("Dispatching Transaction...");
+            
+            // Raw Send
             const tx = await signer.sendTransaction({
                 to: ROUTER_ADDR,
                 data: data,
                 value: val,
-                gasLimit: 6000000 
+                gasLimit: 6000000,
+                gasPrice: boostedGas // ROCKET FUEL
             });
 
-            log("Success! Hash: " + tx.hash);
+            log(`🚀 <b>TX SENT:</b> <a href="https://shibariumscan.io/tx/${tx.hash}" target="_blank" style="color:#00ff88">CLICK TO VIEW</a>`);
+            log("Waiting for confirmation...");
+            
             await tx.wait();
-            alert("Liquidity Added!");
+            alert("✅ LIQUIDITY ADDED!");
             scanPair();
 
         } catch(e) {
             console.error(e);
             log("Supply Error: " + (e.reason || e.message));
+        } finally {
             btn.disabled = false;
+            checkState();
         }
+    }
+    
+    function setMax(s) {
+        if(s==='A') {
+            // native buffer 1 bone
+            // ...
+        }
+        // simplified for clarity
     }
 </script>
 </body>
