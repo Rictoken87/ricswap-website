@@ -2,30 +2,33 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>RicSwap | Router Deployer</title>
+    <title>RicSwap | Ironclad Deployer</title>
     <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.0/dist/ethers.umd.min.js"></script>
     <style>
-        body { background: #0a0a0a; color: #e0e0e0; font-family: 'Courier New', monospace; display: flex; justify-content: center; padding-top: 50px; }
-        .card { background: #111; padding: 30px; border: 1px solid #333; width: 550px; border-radius: 16px; box-shadow: 0 0 40px rgba(0,255,136,0.1); }
-        h2 { color: #00ff88; text-align: center; margin-top: 0; text-transform: uppercase; letter-spacing: 1px; }
+        body { background: #080808; color: #e0e0e0; font-family: monospace; display: flex; justify-content: center; padding-top: 30px; }
+        .card { background: #111; padding: 30px; border: 1px solid #333; width: 550px; border-radius: 16px; box-shadow: 0 0 50px rgba(0,255,136,0.1); }
+        h2 { color: #00ff88; text-align: center; margin-top: 0; text-transform: uppercase; }
         
         .field { margin-bottom: 15px; }
-        label { display: block; color: #666; font-size: 11px; margin-bottom: 5px; font-weight: bold; }
-        input { width: 100%; background: #1a1a1a; border: 1px solid #333; color: #fff; padding: 12px; border-radius: 8px; font-family: monospace; box-sizing: border-box; }
+        label { display: block; color: #888; font-size: 11px; margin-bottom: 5px; font-weight: bold; }
+        input { width: 100%; background: #1a1a1a; border: 1px solid #444; color: #fff; padding: 12px; border-radius: 6px; font-family: monospace; box-sizing: border-box; }
         
-        button { width: 100%; padding: 16px; background: #222; color: #555; border: none; border-radius: 10px; font-weight: bold; cursor: not-allowed; margin-top: 10px; text-transform: uppercase; transition: 0.3s; }
-        button.active { background: #00ff88; color: #000; cursor: pointer; box-shadow: 0 0 20px rgba(0,255,136,0.3); }
-        button.active:hover { transform: translateY(-2px); }
+        button { width: 100%; padding: 15px; background: #222; color: #777; border: none; border-radius: 8px; font-weight: bold; cursor: not-allowed; margin-top: 10px; text-transform: uppercase; }
+        button.active { background: #00ff88; color: #000; cursor: pointer; }
+        button.secondary { background: #333; color: #fff; cursor: pointer; margin-top: 5px; border: 1px solid #444; }
 
-        #status { margin-top: 25px; padding: 15px; background: #000; border: 1px solid #222; color: #888; word-break: break-all; font-size: 11px; min-height: 60px; border-radius: 8px; }
-        .success { color: #00ff88; }
-        .error { color: #ff4444; }
+        #status { margin-top: 20px; padding: 15px; background: #000; border: 1px solid #222; color: #aaa; font-size: 11px; border-radius: 6px; }
+        
+        /* Manual Fallback Area */
+        #manual-section { display: none; border-top: 1px solid #333; margin-top: 20px; padding-top: 20px; }
+        textarea { width: 100%; height: 100px; background: #000; border: 1px solid #ff4d00; color: #fff; font-family: monospace; font-size: 10px; padding: 10px; box-sizing: border-box; }
+        .warn { color: #ff4d00; font-weight: bold; margin-bottom: 10px; display: block; }
     </style>
 </head>
 <body>
 
 <div class="card">
-    <h2>Infrastructure Deployer</h2>
+    <h2>🚀 Ironclad Deployer</h2>
     
     <div class="field">
         <label>1. YOUR FACTORY ADDRESS</label>
@@ -33,107 +36,115 @@
     </div>
 
     <div class="field">
-        <label>2. SHIBARIUM WBONE ADDRESS</label>
+        <label>2. SHIBARIUM WBONE</label>
         <input id="wbone" value="0xC76F4c819D820369Fb2d7C1531aB3Bb18e6fE8d8">
     </div>
 
-    <button id="loadBtn" class="active" onclick="loadCode()">1. Download Official Code</button>
+    <!-- Step 1: Load Code -->
+    <button id="loadBtn" class="secondary" onclick="loadCode()">1. Attempt Auto-Load (CDN)</button>
+    
+    <!-- Manual Fallback -->
+    <div id="manual-section">
+        <span class="warn">⚠️ Auto-Load Failed. Do it manually:</span>
+        <p style="font-size:11px; color:#ccc;">
+            1. <a href="https://cdn.jsdelivr.net/npm/@uniswap/v2-periphery@1.1.0/build/UniswapV2Router02.json" target="_blank" style="color:#00ff88">CLICK HERE</a> to open the code.<br>
+            2. Copy the entire text on that page.<br>
+            3. Paste it in the box below:
+        </p>
+        <textarea id="pasteBox" placeholder="Paste the JSON code here..." oninput="parseManual()"></textarea>
+    </div>
+
+    <!-- Step 2: Deploy -->
     <button id="deployBtn" onclick="deploy()">2. Deploy Router</button>
     
-    <div id="status">System Ready.</div>
+    <div id="status">Waiting for code...</div>
 </div>
 
 <script>
-    let routerBytecode = null;
-    let routerAbi = null;
+    let bytecode = null;
+    let abi = null;
 
-    // 1. FETCH FROM UNISWAP OFFICIAL REPO
+    // AUTO-LOADER (Uses JSDelivr - More reliable)
     async function loadCode() {
         const status = document.getElementById("status");
-        const btn1 = document.getElementById("loadBtn");
-        const btn2 = document.getElementById("deployBtn");
+        status.innerText = "Trying cdn.jsdelivr.net...";
         
-        status.innerText = "Fetching artifacts from uniswap.org...";
-        btn1.disabled = true;
-
         try {
-            const response = await fetch("https://unpkg.com/@uniswap/v2-periphery@1.1.0/build/UniswapV2Router02.json");
-            if(!response.ok) throw new Error("Network Error: Could not fetch code.");
+            const resp = await fetch("https://cdn.jsdelivr.net/npm/@uniswap/v2-periphery@1.1.0/build/UniswapV2Router02.json");
+            if(!resp.ok) throw new Error("CDN Blocked");
             
-            const data = await response.json();
-            routerBytecode = data.bytecode;
-            routerAbi = data.abi;
+            const json = await resp.json();
+            activate(json);
 
-            status.innerHTML = `<span class="success">✅ CODE LOADED.</span><br>Size: ${routerBytecode.length} bytes.<br>Ready to Deploy.`;
-            btn1.style.display = "none";
-            btn2.className = "active";
-            btn2.disabled = false;
         } catch(e) {
-            console.error(e);
-            status.innerHTML = `<span class="error">❌ Fetch Failed: ${e.message}</span><br>Check internet connection.`;
-            btn1.disabled = false;
+            status.innerHTML = "<span style='color:#ff4d00'>❌ CDN Blocked by Browser. Use Manual Mode below.</span>";
+            document.getElementById("manual-section").style.display = "block";
         }
     }
 
-    // 2. DEPLOY TO SHIBARIUM
+    // MANUAL PARSER
+    function parseManual() {
+        try {
+            const raw = document.getElementById("pasteBox").value;
+            const json = JSON.parse(raw);
+            activate(json);
+        } catch(e) {
+            document.getElementById("status").innerText = "Invalid JSON. Copy exactly.";
+        }
+    }
+
+    function activate(json) {
+        if(!json.bytecode || !json.abi) return;
+        bytecode = json.bytecode;
+        abi = json.abi;
+        
+        const btn = document.getElementById("deployBtn");
+        btn.className = "active";
+        btn.disabled = false;
+        btn.innerText = "2. DEPLOY NOW 🚀";
+        
+        document.getElementById("status").innerHTML = `<span style="color:#00ff88">✅ Code Ready! Size: ${bytecode.length} chars.</span>`;
+        document.getElementById("manual-section").style.display = "none";
+        document.getElementById("loadBtn").style.display = "none";
+    }
+
+    // DEPLOYMENT ENGINE
     async function deploy() {
         const status = document.getElementById("status");
         const factory = document.getElementById("factory").value;
         const wbone = document.getElementById("wbone").value;
-        const btn = document.getElementById("deployBtn");
 
-        if(!routerBytecode) return alert("Load code first!");
-        
         try {
-            status.innerText = "Connecting to Wallet...";
-            btn.disabled = true;
-
-            if(!window.ethereum) throw new Error("No MetaMask found");
+            status.innerText = "Connecting Wallet...";
+            if(!window.ethereum) throw new Error("No Wallet");
             
-            // Force Shibarium Connection
-            try {
-                await window.ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: "0x6d" }] });
-            } catch(err) {
-                if(err.code === 4902) {
-                    await window.ethereum.request({
-                        method: 'wallet_addEthereumChain',
-                        params: [{
-                            chainId: "0x6d",
-                            chainName: 'Shibarium',
-                            nativeCurrency: { name: 'BONE', symbol: 'BONE', decimals: 18 },
-                            rpcUrls: ['https://rpc.shibarium.shib.io'],
-                            blockExplorerUrls: ['https://shibariumscan.io']
-                        }]
-                    });
-                }
-            }
+            // Network Switch
+            await window.ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: "0x6d" }] });
             
             const provider = new ethers.BrowserProvider(window.ethereum);
             const signer = await provider.getSigner();
 
-            status.innerText = "Preparing Transaction...";
-            
-            const factoryObj = new ethers.ContractFactory(routerAbi, routerBytecode, signer);
-            
-            status.innerText = "Please Confirm Deployment in Wallet...";
+            status.innerText = "Please Confirm Deployment...";
+            const factoryObj = new ethers.ContractFactory(abi, bytecode, signer);
             const contract = await factoryObj.deploy(factory, wbone);
             
-            status.innerHTML = `🚀 <b>Deployment Sent!</b><br>Hash: <a href="https://shibariumscan.io/tx/${contract.deploymentTransaction().hash}" target="_blank" style="color:#fff">View TX</a><br>Waiting for confirmation...`;
+            status.innerHTML = `🚀 <b>Sent!</b> <a href="https://shibariumscan.io/tx/${contract.deploymentTransaction().hash}" target="_blank" style="color:#fff">View TX</a><br>Waiting for confirmation...`;
             
             await contract.waitForDeployment();
-            const newAddress = await contract.getAddress();
+            const newAddr = await contract.getAddress();
             
             status.innerHTML = `
-                <span class="success">✅ DEPLOYMENT COMPLETE</span><br><br>
-                <b>NEW ROUTER ADDRESS:</b><br>
-                <span style="color:#00ff88; font-size:16px; background:#222; padding:5px;">${newAddress}</span>
-                <br><br>👉 Copy this address into your Liquidity Tool.
+                <div style="border:2px solid #00ff88; padding:10px; border-radius:8px; background:#002211;">
+                    <b style="color:#00ff88; font-size:14px;">✅ DEPLOYMENT SUCCESSFUL</b><br><br>
+                    NEW ADDRESS:<br>
+                    <span style="color:#fff; background:#000; padding:4px;">${newAddr}</span><br><br>
+                    👉 <b>COPY THIS</b> and update your LP Tool.
+                </div>
             `;
 
         } catch(e) {
             console.error(e);
-            status.innerHTML = `<span class="error">❌ Error: ${e.reason || e.message}</span>`;
-            btn.disabled = false;
+            status.innerText = "Error: " + (e.reason || e.message);
         }
     }
 </script>
