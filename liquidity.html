@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RicSwap | Liquidity Pro</title>
+    <title>RicSwap | Liquidity Pro (Auto-Fix)</title>
     <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.0/dist/ethers.umd.min.js"></script>
     <style>
         :root { --bg: #080808; --card: #121212; --border: #222; --accent: #ff5500; --text: #e0e0e0; --green: #00d26a; }
@@ -19,7 +19,7 @@
         .mode-opt.active { background: #222; color: #fff; }
         
         /* Input Areas */
-        .token-box { background: #1a1a1a; padding: 16px; border-radius: 16px; border: 1px solid var(--border); margin-bottom: 8px; }
+        .token-box { background: #1a1a1a; padding: 16px; border-radius: 16px; border: 1px solid var(--border); margin-bottom: 8px; transition: 0.3s; }
         .token-header { display: flex; justify-content: space-between; font-size: 11px; color: #888; margin-bottom: 8px; font-weight: bold; text-transform: uppercase; }
         
         input.addr { width: 100%; background: transparent; border: none; color: #888; font-size: 11px; font-family: monospace; margin-bottom: 10px; outline: none; }
@@ -36,23 +36,25 @@
 
         .info-row { display: flex; justify-content: space-between; padding: 12px 4px; font-size: 12px; color: #666; border-top: 1px solid #222; margin-top: 16px; }
         .status-txt { color: var(--green); }
+        
+        #debug { font-size: 10px; color: #444; margin-top: 10px; text-align: center; font-family: monospace; }
     </style>
 </head>
 <body>
 
 <div class="card">
-    <h2>Add Liquidity</h2>
+    <h2>Liquidity Pro</h2>
 
     <!-- Mode Switcher -->
     <div class="mode-switch">
-        <div id="modeNative" class="mode-opt active" onclick="setMode('native')">Native BONE + Token</div>
+        <div id="modeNative" class="mode-opt active" onclick="setMode('native')">Native BONE</div>
         <div id="modeToken" class="mode-opt" onclick="setMode('token')">Token + Token</div>
     </div>
 
     <!-- Token A -->
     <div class="token-box" id="boxA">
         <div class="token-header">
-            <span id="labelA">BONE</span>
+            <span id="labelA">BONE (Native)</span>
             <span id="balA">Bal: -</span>
         </div>
         <input id="addrA" class="addr" value="NATIVE_BONE" disabled>
@@ -62,12 +64,12 @@
     <div style="text-align:center; font-size:18px; color:#333;">+</div>
 
     <!-- Token B -->
-    <div class="token-box">
+    <div class="token-box" id="boxB">
         <div class="token-header">
             <span>Token B</span>
             <span id="balB">Bal: -</span>
         </div>
-        <input id="addrB" class="addr" placeholder="Paste 0x..." onchange="scanPair()">
+        <input id="addrB" class="addr" placeholder="Paste 0x..." onchange="handleInputB()">
         <input id="amtB" class="amount" type="number" placeholder="0.0" oninput="checkState()">
     </div>
 
@@ -75,18 +77,20 @@
     <button id="mainBtn" class="action-btn btn-connect" onclick="handleAction()">Connect Wallet</button>
 
     <div class="info-row">
-        <span>Pool Status:</span>
-        <span id="poolStatus">---</span>
+        <span>Status:</span>
+        <span id="poolStatus">Waiting for inputs...</span>
     </div>
+    <div id="debug"></div>
 </div>
 
 <script>
+    // --- CONFIGURATION ---
     const ROUTER_ADDR = "0xcfBF0917F2fCDC4F5170aC991fa26F2Bc3da9Fd4";
     const FACTORY_ADDR = "0x78ae5cCD2f13D10aE3fF47F8418A79D99B4569d0"; 
-    const WBONE_ADDR = "0xC76F4c819D820369Fb2d7C1531aB3Bb18e6fE8d8";
+    const WBONE_ADDR = "0xC76F4c819D820369Fb2d7C1531aB3Bb18e6fE8d8"; // The Real WBONE
+    const SYSTEM_BONE = "0x0000000000000000000000000000000000001010"; // The "Trap" Address
     const SHIBARIUM_ID = "0x6d";
 
-    // ABIs
     const ERC20_ABI = [
         "function approve(address,uint) returns (bool)",
         "function allowance(address,address) view returns (uint)",
@@ -95,21 +99,22 @@
     ];
     const FACTORY_ABI = ["function getPair(address,address) view returns (address)"];
     const PAIR_ABI = ["function getReserves() view returns (uint112,uint112,uint32)", "function token0() view returns (address)"];
-    const ROUTER_ABI = [
-        "function addLiquidity(address,address,uint,uint,uint,uint,address,uint)",
-        "function addLiquidityETH(address,uint,uint,uint,address,uint) payable"
-    ];
+    
+    // Manual Interface for encoding
+    const ROUTER_IFACE = new ethers.Interface([
+        "function addLiquidity(address tokenA, address tokenB, uint amountADesired, uint amountBDesired, uint amountAMin, uint amountBMin, address to, uint deadline)",
+        "function addLiquidityETH(address token, uint amountTokenDesired, uint amountTokenMin, uint amountETHMin, address to, uint deadline) payable"
+    ]);
 
     let provider, signer, userAddr;
     let state = { 
         isNative: true, 
-        step: 0, // 0:Connect, 1:ApproveA, 2:ApproveB, 3:Supply
         pairExists: false,
         resA: 0n, resB: 0n,
         decA: 18, decB: 18
     };
 
-    // --- 1. UI Logic ---
+    // --- 1. UI MODES ---
     function setMode(mode) {
         state.isNative = (mode === 'native');
         document.getElementById("modeNative").className = state.isNative ? "mode-opt active" : "mode-opt";
@@ -121,14 +126,28 @@
         if(state.isNative) {
             addrA.value = "NATIVE_BONE";
             addrA.disabled = true;
-            labelA.innerText = "BONE";
+            labelA.innerText = "BONE (Native)";
         } else {
             addrA.value = "";
             addrA.disabled = false;
-            addrA.placeholder = "Paste Token A 0x...";
+            addrA.placeholder = "Paste Token A (e.g. WBONE)";
             labelA.innerText = "Token A";
+            // Auto-fill WBONE for convenience if empty
+            if(addrA.value === "") addrA.value = WBONE_ADDR;
         }
-        checkState();
+        
+        // Reset and scan
+        scanPair();
+    }
+
+    function handleInputB() {
+        // Auto-Correction: If user pasted System BONE, swap to WBONE
+        const box = document.getElementById("addrB");
+        if(box.value.toLowerCase() === SYSTEM_BONE.toLowerCase()) {
+            alert("⚠️ Notice: You pasted the System BONE address. Swapping to WBONE for compatibility.");
+            box.value = WBONE_ADDR;
+        }
+        scanPair();
     }
 
     async function connect() {
@@ -138,60 +157,65 @@
             provider = new ethers.BrowserProvider(window.ethereum);
             signer = await provider.getSigner();
             userAddr = await signer.getAddress();
+            document.getElementById("mainBtn").onclick = null; // Clear connect handler
             scanPair();
         } catch(e) { console.error(e); }
     }
 
-    // --- 2. Data Logic ---
+    // --- 2. SCANNER ---
     async function scanPair() {
-        if(!signer) return;
-        const addrA = state.isNative ? WBONE_ADDR : document.getElementById("addrA").value;
-        const addrB = document.getElementById("addrB").value;
+        if(!signer) return document.getElementById("mainBtn").onclick = connect;
         
-        if(!ethers.isAddress(addrB)) return;
-        if(!state.isNative && !ethers.isAddress(addrA)) return;
+        let addrA = state.isNative ? WBONE_ADDR : document.getElementById("addrA").value;
+        let addrB = document.getElementById("addrB").value;
+        
+        // Sanitize inputs
+        if(!ethers.isAddress(addrA) || !ethers.isAddress(addrB)) return;
 
-        // Get Decimals & Balances
+        // fetch info
         try {
-            const conB = new ethers.Contract(addrB, ERC20_ABI, provider);
-            state.decB = await conB.decimals().catch(()=>18);
-            const balB = await conB.balanceOf(userAddr);
-            document.getElementById("balB").innerText = parseFloat(ethers.formatUnits(balB, state.decB)).toFixed(4);
-
+            // Token A
             if(state.isNative) {
                 const balNative = await provider.getBalance(userAddr);
-                document.getElementById("balA").innerText = parseFloat(ethers.formatEther(balNative)).toFixed(4);
+                document.getElementById("balA").innerText = "Bal: " + parseFloat(ethers.formatEther(balNative)).toFixed(4);
                 state.decA = 18;
             } else {
                 const conA = new ethers.Contract(addrA, ERC20_ABI, provider);
                 state.decA = await conA.decimals().catch(()=>18);
                 const balA = await conA.balanceOf(userAddr);
-                document.getElementById("balA").innerText = parseFloat(ethers.formatUnits(balA, state.decA)).toFixed(4);
+                document.getElementById("balA").innerText = "Bal: " + parseFloat(ethers.formatUnits(balA, state.decA)).toFixed(4);
             }
-        } catch(e) {}
 
-        // Check Factory
-        const factory = new ethers.Contract(FACTORY_ADDR, FACTORY_ABI, provider);
-        const pairAddr = await factory.getPair(addrA, addrB);
+            // Token B
+            const conB = new ethers.Contract(addrB, ERC20_ABI, provider);
+            state.decB = await conB.decimals().catch(()=>18);
+            const balB = await conB.balanceOf(userAddr);
+            document.getElementById("balB").innerText = "Bal: " + parseFloat(ethers.formatUnits(balB, state.decB)).toFixed(4);
 
-        if(pairAddr === "0x0000000000000000000000000000000000000000") {
-            state.pairExists = false;
-            document.getElementById("poolStatus").innerText = "New Pool (You set price)";
-            document.getElementById("poolStatus").className = "status-txt";
-        } else {
-            state.pairExists = true;
-            document.getElementById("poolStatus").innerText = "Pool Active (Auto-Sync)";
-            
-            const pair = new ethers.Contract(pairAddr, PAIR_ABI, provider);
-            const res = await pair.getReserves();
-            const t0 = await pair.token0();
-            
-            if(t0.toLowerCase() === addrA.toLowerCase()) {
-                state.resA = res[0]; state.resB = res[1];
+            // Pair
+            const factory = new ethers.Contract(FACTORY_ADDR, FACTORY_ABI, provider);
+            const pairAddr = await factory.getPair(addrA, addrB);
+
+            if(pairAddr === "0x0000000000000000000000000000000000000000") {
+                state.pairExists = false;
+                document.getElementById("poolStatus").innerText = "🆕 New Pool (You determine price)";
+                document.getElementById("poolStatus").className = "status-txt";
             } else {
-                state.resA = res[1]; state.resB = res[0];
+                state.pairExists = true;
+                document.getElementById("poolStatus").innerText = "✅ Pool Found (Auto-Sync)";
+                
+                const pair = new ethers.Contract(pairAddr, PAIR_ABI, provider);
+                const res = await pair.getReserves();
+                const t0 = await pair.token0();
+                
+                if(t0.toLowerCase() === addrA.toLowerCase()) {
+                    state.resA = res[0]; state.resB = res[1];
+                } else {
+                    state.resA = res[1]; state.resB = res[0];
+                }
             }
-        }
+        } catch(e) { console.log("Scanning...", e); }
+        
         checkState();
     }
 
@@ -209,95 +233,109 @@
         checkState();
     }
 
-    // --- 3. State Machine (The Fix) ---
+    // --- 3. STATE MACHINE ---
     async function checkState() {
-        if(!signer) return setBtn("Connect Wallet", "btn-connect", connect);
-
+        const btn = document.getElementById("mainBtn");
         const rawA = document.getElementById("amtA").value;
         const rawB = document.getElementById("amtB").value;
-        if(!rawA || !rawB) return setBtn("Enter Amounts", "btn-disabled", null);
+        const addrB = document.getElementById("addrB").value;
+
+        if(!rawA || !rawB || !ethers.isAddress(addrB)) {
+            btn.innerText = "Enter Amounts";
+            btn.className = "action-btn btn-disabled";
+            btn.onclick = null;
+            return;
+        }
 
         // Check Allowances
-        const addrB = document.getElementById("addrB").value;
         const conB = new ethers.Contract(addrB, ERC20_ABI, signer);
-        const allowB = await conB.allowance(userAddr, ROUTER_ADDR);
         const reqB = ethers.parseUnits(rawB, state.decB);
+        const allowB = await conB.allowance(userAddr, ROUTER_ADDR);
+
+        if(allowB < reqB) {
+            btn.innerText = "1. Approve Token B";
+            btn.className = "action-btn btn-approve";
+            btn.onclick = () => approve(addrB);
+            return;
+        }
 
         if(!state.isNative) {
             const addrA = document.getElementById("addrA").value;
             const conA = new ethers.Contract(addrA, ERC20_ABI, signer);
-            const allowA = await conA.allowance(userAddr, ROUTER_ADDR);
             const reqA = ethers.parseUnits(rawA, state.decA);
+            const allowA = await conA.allowance(userAddr, ROUTER_ADDR);
 
-            if(allowA < reqA) return setBtn("1. Approve Token A", "btn-approve", () => approve(addrA));
+            if(allowA < reqA) {
+                btn.innerText = "2. Approve Token A";
+                btn.className = "action-btn btn-approve";
+                btn.onclick = () => approve(addrA);
+                return;
+            }
         }
 
-        if(allowB < reqB) return setBtn(state.isNative ? "1. Approve Token B" : "2. Approve Token B", "btn-approve", () => approve(addrB));
-
-        setBtn("Supply Liquidity", "btn-supply", supply);
+        btn.innerText = "Supply Liquidity";
+        btn.className = "action-btn btn-supply";
+        btn.onclick = supply;
     }
 
-    function setBtn(txt, cls, fn) {
-        const btn = document.getElementById("mainBtn");
-        btn.innerText = txt;
-        btn.className = "action-btn " + cls;
-        btn.onclick = fn;
-    }
-
-    // --- 4. Actions ---
+    // --- 4. EXECUTION ---
     async function approve(tokenAddr) {
         const btn = document.getElementById("mainBtn");
-        btn.innerText = "Approving...";
-        btn.disabled = true;
-        
         try {
+            btn.innerText = "Approving..."; btn.disabled = true;
             const con = new ethers.Contract(tokenAddr, ERC20_ABI, signer);
             const tx = await con.approve(ROUTER_ADDR, ethers.MaxUint256);
+            document.getElementById("debug").innerText = `Approve Tx: ${tx.hash}`;
             await tx.wait();
-            checkState(); // Refresh UI
+            checkState();
         } catch(e) {
-            alert("Approve Failed: " + e.message);
-        } finally {
+            alert(e.reason || e.message);
             btn.disabled = false;
         }
     }
 
     async function supply() {
         const btn = document.getElementById("mainBtn");
-        btn.innerText = "Supplying...";
-        btn.disabled = true;
+        btn.innerText = "Confirming..."; btn.disabled = true;
 
         try {
-            const router = new ethers.Contract(ROUTER_ADDR, ROUTER_ABI, signer);
-            const deadline = Math.floor(Date.now()/1000) + 1200;
-            
+            const deadline = Math.floor(Date.now()/1000) + 3600;
             const rawA = document.getElementById("amtA").value;
             const rawB = document.getElementById("amtB").value;
             const addrB = document.getElementById("addrB").value;
             const valB = ethers.parseUnits(rawB, state.decB);
 
-            let tx;
+            let calldata, valWei;
+
             if(state.isNative) {
-                // Native BONE
+                // Native BONE + Token
                 const valA = ethers.parseEther(rawA);
-                tx = await router.addLiquidityETH(
-                    addrB, valB, 0, 0, userAddr, deadline,
-                    { value: valA, gasLimit: 4000000 }
-                );
+                valWei = valA;
+                calldata = ROUTER_IFACE.encodeFunctionData("addLiquidityETH", [
+                    addrB, valB, 0, 0, userAddr, deadline
+                ]);
             } else {
-                // Token-Token
+                // Token + Token (Corrected for WBONE)
                 const addrA = document.getElementById("addrA").value;
                 const valA = ethers.parseUnits(rawA, state.decA);
-                tx = await router.addLiquidity(
-                    addrA, addrB, valA, valB, 0, 0, userAddr, deadline,
-                    { gasLimit: 4000000 }
-                );
+                valWei = 0n;
+                calldata = ROUTER_IFACE.encodeFunctionData("addLiquidity", [
+                    addrA, addrB, valA, valB, 0, 0, userAddr, deadline
+                ]);
             }
 
-            document.getElementById("poolStatus").innerHTML = `<a href="https://shibariumscan.io/tx/${tx.hash}" target="_blank" style="color:#00d26a">Success! View TX</a>`;
+            // FORCE SEND
+            const tx = await signer.sendTransaction({
+                to: ROUTER_ADDR,
+                data: calldata,
+                value: valWei,
+                gasLimit: 6000000 
+            });
+
+            document.getElementById("poolStatus").innerHTML = `<a href="https://shibariumscan.io/tx/${tx.hash}" target="_blank" style="color:#00d26a">View Transaction</a>`;
             await tx.wait();
-            alert("Liquidity Added Successfully!");
-            scanPair(); // Reset
+            alert("✅ Liquidity Successfully Added!");
+            scanPair();
 
         } catch(e) {
             console.error(e);
