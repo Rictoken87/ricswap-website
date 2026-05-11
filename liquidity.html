@@ -91,6 +91,7 @@
     const WBONE = "0xC76F4c819D820369Fb2d7C1531aB3Bb18e6fE8d8";
     const SHIBARIUM_ID = "0x6d";
 
+    // Standard ABIs
     const ABI = [
         "function approve(address,uint) returns (bool)",
         "function decimals() view returns (uint8)",
@@ -101,10 +102,16 @@
         "function token0() view returns (address)"
     ];
 
-    // Manual Interfaces for Hex Encoding
+    // WBONE Specific for Manual Wrapping
+    const WBONE_ABI = [
+        "function deposit() payable", 
+        "function approve(address,uint) returns (bool)", 
+        "function allowance(address,address) view returns (uint256)"
+    ];
+
+    // Manual Interface for Hex Construction
     const IFACE = new ethers.Interface([
-        "function addLiquidity(address tokenA, address tokenB, uint amountADesired, uint amountBDesired, uint amountAMin, uint amountBMin, address to, uint deadline)",
-        "function addLiquidityETHSupportingFeeOnTransferTokens(address token, uint amountTokenDesired, uint amountTokenMin, uint amountETHMin, address to, uint deadline) payable"
+        "function addLiquidity(address tokenA, address tokenB, uint amountADesired, uint amountBDesired, uint amountAMin, uint amountBMin, address to, uint deadline)"
     ]);
 
     let provider, signer, userAddr;
@@ -227,7 +234,7 @@
         document.getElementById("amountB").value = estB.toFixed(6);
     }
 
-    // --- 3. EXECUTION (MANUAL HEX ENGINE) ---
+    // --- 3. EXECUTION (THE 100% FIX) ---
     async function execute() {
         if(!signer) { await init(); return; }
         
@@ -239,70 +246,65 @@
 
         try {
             btn.disabled = true;
-            log("Step 1: Approvals...");
+            const deadline = Math.floor(Date.now()/1000) + 3600;
 
-            // 1. Approve Token B (Always)
-            const conB = new ethers.Contract(addrB, ABI, signer);
+            // --- PHASE 1: NATIVE WRAP (The Safety Layer) ---
+            if(isNative) {
+                log("Step 1/4: Wrapping BONE...");
+                const valA = ethers.parseEther(rawA);
+                const wbone = new ethers.Contract(WBONE, WBONE_ABI, signer);
+                
+                const wrapTx = await wbone.deposit({ value: valA });
+                log("Wrapping... Waiting for confirmation.");
+                await wrapTx.wait();
+                log("✅ Wrapped.");
+
+                // Update AddrA to WBONE for the rest of logic
+                balances.decA = 18; // WBONE is 18
+            }
+
+            // --- PHASE 2: APPROVALS ---
+            log("Step 2/4: Checking Approvals...");
+            
+            const addrA = isNative ? WBONE : document.getElementById("tokenA").value;
+            const valA = ethers.parseUnits(rawA, balances.decA);
             const valB = ethers.parseUnits(rawB, balances.decB);
+
+            // Approve A (WBONE or Token A)
+            const conA = new ethers.Contract(addrA, ABI, signer);
+            const allowA = await conA.allowance(userAddr, ROUTER);
+            if(allowA < valA) {
+                log("Approving Token A...");
+                const txA = await conA.approve(ROUTER, ethers.MaxUint256);
+                await txA.wait();
+            }
+
+            // Approve B
+            const conB = new ethers.Contract(addrB, ABI, signer);
             const allowB = await conB.allowance(userAddr, ROUTER);
             if(allowB < valB) {
                 log("Approving Token B...");
-                const tx = await conB.approve(ROUTER, ethers.MaxUint256);
-                await tx.wait();
+                const txB = await conB.approve(ROUTER, ethers.MaxUint256);
+                await txB.wait();
             }
 
-            let calldata, valA_Wei, txValue;
-            const deadline = Math.floor(Date.now()/1000) + 3600; // 1 hour
-
-            // 2. Construct Payload based on Mode
-            if(isNative) {
-                // NATIVE MODE: Use "SupportingFeeOnTransferTokens" to prevent reverts
-                // Selector: 0xb698e2ad
-                valA_Wei = ethers.parseEther(rawA);
-                
-                const params = IFACE.encodeFunctionData("addLiquidityETHSupportingFeeOnTransferTokens", [
-                    addrB,    // token
-                    valB,     // amountTokenDesired
-                    0,        // minToken (0 for safety)
-                    0,        // minETH (0 for safety)
-                    userAddr, // to
-                    deadline
-                ]);
-                // Manually strip prefix if needed, but IFACE usually handles it correct.
-                // Safe fallback: use IFACE directly.
-                calldata = params;
-                txValue = valA_Wei;
-            } else {
-                // TOKEN MODE
-                const addrA = document.getElementById("tokenA").value;
-                const conA = new ethers.Contract(addrA, ABI, signer);
-                const valA = ethers.parseUnits(rawA, balances.decA);
-                
-                const allowA = await conA.allowance(userAddr, ROUTER);
-                if(allowA < valA) {
-                    log("Approving Token A...");
-                    const txA = await conA.approve(ROUTER, ethers.MaxUint256);
-                    await txA.wait();
-                }
-
-                calldata = IFACE.encodeFunctionData("addLiquidity", [
-                    addrA, addrB,
-                    valA, valB,
-                    0, 0, // min amounts
-                    userAddr,
-                    deadline
-                ]);
-                txValue = 0n;
-            }
-
-            log("Step 2: Sending (Gas: 5M)...");
+            // --- PHASE 3: SUPPLY (Manual Hex) ---
+            log("Step 3/4: Supplying to Pool...");
             
-            // 3. Send Raw Transaction
+            // We construct the call manually so it CANNOT be empty
+            const calldata = IFACE.encodeFunctionData("addLiquidity", [
+                addrA, addrB,
+                valA, valB,
+                0, 0, // Slippage 0 for safety
+                userAddr,
+                deadline
+            ]);
+
             const tx = await signer.sendTransaction({
                 to: ROUTER,
                 data: calldata,
-                value: txValue,
-                gasLimit: 5000000 // Massive Gas Force
+                value: 0, // 0 ETH because we are sending WBONE now
+                gasLimit: 5000000
             });
 
             log("TX Sent: " + tx.hash);
