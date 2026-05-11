@@ -2,258 +2,87 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RicSwap | Poly-RPC Doctor</title>
+    <title>Router Doctor</title>
     <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.0/dist/ethers.umd.min.js"></script>
     <style>
-        body { 
-            background: #050505; 
-            color: #e0e0e0; 
-            font-family: 'Inter', monospace; 
-            display: flex; 
-            flex-direction: column; 
-            align-items: center; 
-            padding: 40px 20px; 
-            margin: 0; 
-        }
-        .container { width: 100%; max-width: 550px; }
-        
-        h1 { color: #00ccff; margin: 0 0 5px 0; text-transform: uppercase; letter-spacing: 1px; font-size: 24px; text-align: center; }
-        .sub { color: #666; font-size: 12px; text-align: center; margin-bottom: 30px; }
-
-        /* Card */
-        .card { background: #0f0f0f; border: 1px solid #222; border-radius: 16px; padding: 20px; margin-bottom: 15px; }
-        
-        .row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; font-size: 13px; }
-        .row:last-child { margin-bottom: 0; }
-        
-        .label { color: #888; font-weight: 600; }
-        .val { color: #fff; font-family: monospace; font-weight: 700; }
-        .success { color: #00ff88; }
-        .error { color: #ff4444; }
-        .warn { color: #ffcc00; }
-
-        /* Console */
-        .console { 
-            background: #000; 
-            border: 1px solid #333; 
-            border-radius: 8px; 
-            padding: 15px; 
-            height: 180px; 
-            overflow-y: auto; 
-            font-family: monospace; 
-            font-size: 11px; 
-            color: #666; 
-            margin-bottom: 20px;
-        }
-
-        /* Buttons */
-        button { width: 100%; padding: 14px; font-weight: 800; font-size: 15px; border-radius: 10px; cursor: pointer; border: none; margin-top: 10px; transition: 0.2s; }
-        .btn-scan { background: #00ccff; color: #000; }
-        .btn-scan:hover { background: #33ddff; }
-        
-        .btn-burn { background: #ff4444; color: white; display: none; }
-        .btn-burn:hover { background: #ff0000; box-shadow: 0 0 20px rgba(255,0,0,0.4); }
-        
-        .btn-switch { background: #333; color: #fff; display: none; }
-        .btn-switch:hover { background: #444; }
-
+        body { background: #111; color: #eee; font-family: monospace; padding: 40px; text-align: center; }
+        .box { background: #222; padding: 20px; border: 1px solid #444; max-width: 500px; margin: 0 auto; border-radius: 10px; }
+        button { padding: 15px; background: #ff4d00; color: white; border: none; font-weight: bold; cursor: pointer; width: 100%; margin-top: 20px; }
+        .val { color: #00ff88; font-size: 14px; word-break: break-all; margin-top: 5px; display: block; }
+        .err { color: #ff4444; }
     </style>
 </head>
 <body>
+    <div class="box">
+        <h2>🩺 Router Diagnostic</h2>
+        <p>Target: 0xcfBF0917F2fCDC4F5170aC991fa26F2Bc3da9Fd4</p>
+        
+        <div style="text-align:left; margin-top:20px;">
+            <p>1. FACTORY Variable: <span id="fact" class="val">Waiting...</span></p>
+            <p>2. WETH/WBONE Variable: <span id="weth" class="val">Waiting...</span></p>
+            <p>3. Code Check: <span id="code" class="val">Waiting...</span></p>
+        </div>
 
-<div class="container">
-    <h1>Poly-RPC Doctor</h1>
-    <div class="sub">Multi-Node Diagnostic & Recovery Tool</div>
-
-    <div class="card">
-        <div class="row">
-            <span class="label">Target Wallet</span>
-            <span class="val" id="walletAddr">Not Connected</span>
-        </div>
-        <div class="row">
-            <span class="label">Network Status</span>
-            <span class="val" id="netStatus">Waiting</span>
-        </div>
-        <div class="row">
-            <span class="label">Token Balance</span>
-            <span class="val" id="finalBal">---</span>
-        </div>
+        <button onclick="diagnose()">RUN DIAGNOSIS</button>
+        <div id="status" style="margin-top:15px;"></div>
     </div>
-
-    <div class="console" id="logs">
-        > System Ready.<br>
-        > Click "START DIAGNOSIS" to begin.<br>
-    </div>
-
-    <button id="scanBtn" class="btn-scan" onclick="startDiagnosis()">1. START DIAGNOSIS</button>
-    <button id="switchBtn" class="btn-switch" onclick="switchNetwork()">SWITCH TO SHIBARIUM</button>
-    <button id="burnBtn" class="btn-burn" onclick="burn()">2. 🔥 BURN FOUND TOKENS</button>
-</div>
 
 <script>
-    // CONFIGURATION
-    const POOL_ADDR = "0x941abcb1A4278Ff33B50F6Cf9F5A4C8a0888BdeE"; // Pool 1
-    const DEAD_ADDR = "0x000000000000000000000000000000000000dEaD";
-    const EXPECTED_CHAIN = 109n;
-    
-    // LIST OF PUBLIC NODES TO TRY
-    const RPCS = [
-        "https://rpc.shibarium.shib.io",
-        "https://shibarium.drpc.org", 
-        "https://shib.nownodes.io",
-        "https://rpc.shibrpc.com"
-    ];
+    const ROUTER = "0xcfBF0917F2fCDC4F5170aC991fa26F2Bc3da9Fd4";
+    const RPC = "https://rpc.shibarium.shib.io";
 
     const ABI = [
-        "function balanceOf(address) view returns (uint256)",
-        "function decimals() view returns (uint8)",
-        "function transfer(address to, uint256 amount) returns (bool)"
+        "function factory() view returns (address)",
+        "function WETH() view returns (address)",
+        "function weth() view returns (address)" // Try lowercase too
     ];
 
-    let signer, userAddress, confirmedBalanceRaw;
-
-    function log(msg, type="info") {
-        const box = document.getElementById("logs");
-        let color = "#888";
-        if(type === "err") color = "#ff4444";
-        if(type === "ok") color = "#00ff88";
-        if(type === "warn") color = "#ffcc00";
+    async function diagnose() {
+        const status = document.getElementById("status");
+        status.innerText = "Connecting to Shibarium...";
         
-        box.innerHTML += `<span style="color:${color}">> ${msg}</span><br>`;
-        box.scrollTop = box.scrollHeight;
-    }
-
-    async function startDiagnosis() {
-        const scanBtn = document.getElementById("scanBtn");
-        scanBtn.disabled = true;
-        scanBtn.innerText = "SCANNING...";
-
-        if(!window.ethereum) return log("Error: No Wallet Found", "err");
-
-        // 1. CHECK WALLET CONNECTION
         try {
-            const browserProvider = new ethers.BrowserProvider(window.ethereum);
-            signer = await browserProvider.getSigner();
-            userAddress = await signer.getAddress();
-            document.getElementById("walletAddr").innerText = userAddress.slice(0,6) + "..." + userAddress.slice(-4);
+            const provider = new ethers.JsonRpcProvider(RPC);
             
-            // Check Chain
-            const net = await browserProvider.getNetwork();
-            if(net.chainId !== EXPECTED_CHAIN) {
-                log(`Wrong Network detected: Chain ID ${net.chainId}`, "err");
-                document.getElementById("netStatus").innerText = "Wrong Chain";
-                document.getElementById("netStatus").className = "val error";
-                document.getElementById("switchBtn").style.display = "block";
-                scanBtn.innerText = "Network Error";
-                return;
+            // 1. Check if contract exists
+            const code = await provider.getCode(ROUTER);
+            if(code === "0x") {
+                document.getElementById("code").innerText = "❌ NO CONTRACT FOUND (EOA)";
+                document.getElementById("code").className = "val err";
+                return status.innerText = "CRITICAL: This address is empty.";
+            } else {
+                document.getElementById("code").innerText = "✅ Contract Exists (" + code.length + " bytes)";
             }
-            document.getElementById("netStatus").innerText = "Connected (Shibarium)";
-            document.getElementById("netStatus").className = "val success";
-            log("Wallet connected successfully.", "ok");
-        } catch(e) {
-            return log("Wallet Connection Failed: " + e.message, "err");
-        }
 
-        // 2. POLY-RPC SCAN (The Bypass)
-        log("Starting Poly-RPC Scan...", "warn");
-        let found = false;
-
-        for (let rpc of RPCS) {
-            log(`Trying Node: ${rpc.split("//")[1]}...`);
+            // 2. Read Variables
+            const router = new ethers.Contract(ROUTER, ABI, provider);
+            
             try {
-                // Create a direct connection to this specific node
-                const rpcProvider = new ethers.JsonRpcProvider(rpc);
-                
-                // Check Contract Exists
-                const code = await rpcProvider.getCode(POOL_ADDR);
-                if(code === "0x") {
-                    log(`- Node reachable, but Contract missing? (Lag)`, "err");
-                    continue;
-                }
-
-                // Check Balance
-                const contract = new ethers.Contract(POOL_ADDR, ABI, rpcProvider);
-                const bal = await contract.balanceOf(userAddress);
-                
-                if(bal >= 0n) {
-                    const dec = await contract.decimals();
-                    const fmt = ethers.formatUnits(bal, dec);
-                    
-                    log(`SUCCESS! Data retrieved.`, "ok");
-                    log(`Balance: ${fmt} LP`, bal > 0n ? "ok" : "warn");
-                    
-                    document.getElementById("finalBal").innerText = parseFloat(fmt).toFixed(4) + " LP";
-                    
-                    if(bal > 0n) {
-                        confirmedBalanceRaw = bal;
-                        document.getElementById("burnBtn").style.display = "block";
-                        document.getElementById("burnBtn").innerText = `BURN ${parseFloat(fmt).toFixed(2)} LP NOW`;
-                        document.getElementById("finalBal").className = "val success";
-                        log("READY TO BURN.", "ok");
-                    } else {
-                        document.getElementById("finalBal").className = "val error";
-                        log("Wallet is empty. Switch accounts?", "err");
-                    }
-                    found = true;
-                    break; // Stop scanning if we found data
+                const f = await router.factory();
+                document.getElementById("fact").innerText = f;
+                if(f === "0x0000000000000000000000000000000000000000") {
+                     document.getElementById("fact").className = "val err";
+                     status.innerHTML = "<b style='color:red'>FATAL: Factory is Zero Address. Router needs Redeploy.</b>";
                 }
             } catch(e) {
-                log(`- Connection Failed (Blocked/Timeout)`, "err");
+                document.getElementById("fact").innerText = "❌ REVERT (Function missing?)";
+                document.getElementById("fact").className = "val err";
             }
-        }
 
-        if(!found) {
-            log("CRITICAL: All public nodes failed. Try VPN.", "err");
-            scanBtn.innerText = "SCAN FAILED";
-            scanBtn.disabled = false;
-        } else {
-            scanBtn.style.display = "none";
-        }
-    }
+            try {
+                const w = await router.WETH().catch(() => router.weth()); // Try both cases
+                document.getElementById("weth").innerText = w;
+            } catch(e) {
+                document.getElementById("weth").innerText = "❌ REVERT";
+                document.getElementById("weth").className = "val err";
+            }
 
-    async function burn() {
-        if(!confirm("⚠️ FINAL WARNING: Permanently destroy these tokens?")) return;
-        
-        const btn = document.getElementById("burnBtn");
-        try {
-            btn.disabled = true;
-            btn.innerText = "Sign Transaction...";
-            
-            // We must use the wallet provider to write, even if it's flaky on reads
-            // The gas estimation might fail, so we force limits
-            const contract = new ethers.Contract(POOL_ADDR, ABI, signer);
-            
-            log("Sending transaction...", "warn");
-            
-            // Manually set gas limit to bypass "missing revert data" estimation error
-            const tx = await contract.transfer(DEAD_ADDR, confirmedBalanceRaw, {
-                gasLimit: 100000 // Force gas limit
-            });
-            
-            log(`Tx Sent: ${tx.hash}`, "ok");
-            btn.innerText = "BURNING...";
-            
-            await tx.wait();
-            log("✅ BURN CONFIRMED!", "ok");
-            btn.innerText = "COMPLETED";
-            document.getElementById("finalBal").innerText = "0.00 LP";
-            
+            if(status.innerText.includes("FATAL")) return;
+            status.innerText = "Diagnosis Complete.";
+
         } catch(e) {
-            log("Burn Failed: " + (e.reason || e.message), "err");
-            btn.disabled = false;
-            btn.innerText = "TRY AGAIN";
+            status.innerText = "Network Error: " + e.message;
         }
-    }
-
-    async function switchNetwork() {
-        try {
-            await window.ethereum.request({
-                method: 'wallet_switchEthereumChain',
-                params: [{ chainId: '0x6d' }],
-            });
-            startDiagnosis();
-        } catch(e) { alert("Please switch manually in your wallet."); }
     }
 </script>
 </body>
