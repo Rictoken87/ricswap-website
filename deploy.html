@@ -2,79 +2,139 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RicSwap | Auto-Loader Deployer</title>
+    <title>RicSwap | Router Deployer</title>
     <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.0/dist/ethers.umd.min.js"></script>
     <style>
-        body { background: #050505; color: #e0e0e0; font-family: monospace; padding: 40px; display: flex; justify-content: center; }
-        .card { background: #111; padding: 30px; border: 1px solid #333; width: 520px; border-radius: 12px; }
-        h2 { color: #00ff88; text-align: center; margin-top: 0; }
-        label { display: block; color: #888; font-size: 12px; margin-top: 15px; margin-bottom: 5px; }
-        input { width: 100%; background: #222; border: 1px solid #444; color: #fff; padding: 10px; border-radius: 6px; font-family: monospace; }
-        button { width: 100%; padding: 15px; background: #333; color: #fff; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; margin-top: 20px; }
-        button.active { background: #00ff88; color: #000; }
-        #status { margin-top: 20px; padding: 15px; background: #000; border: 1px solid #222; color: #888; word-break: break-all; font-size: 12px; min-height: 80px; }
-        .success { color: #00ff88 !important; }
+        body { background: #0a0a0a; color: #e0e0e0; font-family: 'Courier New', monospace; display: flex; justify-content: center; padding-top: 50px; }
+        .card { background: #111; padding: 30px; border: 1px solid #333; width: 550px; border-radius: 16px; box-shadow: 0 0 40px rgba(0,255,136,0.1); }
+        h2 { color: #00ff88; text-align: center; margin-top: 0; text-transform: uppercase; letter-spacing: 1px; }
+        
+        .field { margin-bottom: 15px; }
+        label { display: block; color: #666; font-size: 11px; margin-bottom: 5px; font-weight: bold; }
+        input { width: 100%; background: #1a1a1a; border: 1px solid #333; color: #fff; padding: 12px; border-radius: 8px; font-family: monospace; box-sizing: border-box; }
+        
+        button { width: 100%; padding: 16px; background: #222; color: #555; border: none; border-radius: 10px; font-weight: bold; cursor: not-allowed; margin-top: 10px; text-transform: uppercase; transition: 0.3s; }
+        button.active { background: #00ff88; color: #000; cursor: pointer; box-shadow: 0 0 20px rgba(0,255,136,0.3); }
+        button.active:hover { transform: translateY(-2px); }
+
+        #status { margin-top: 25px; padding: 15px; background: #000; border: 1px solid #222; color: #888; word-break: break-all; font-size: 11px; min-height: 60px; border-radius: 8px; }
+        .success { color: #00ff88; }
+        .error { color: #ff4444; }
+        .highlight { background: #222; color: #fff; padding: 4px; border-radius: 4px; }
     </style>
 </head>
 <body>
+
 <div class="card">
-    <h2>🚀 Router Deployer</h2>
-   
-    <label>1. Factory Address</label>
-    <input id="factory" value="0x78ae5cCD2f13D10aE3fF47F8418A79D99B4569d0">
-    <label>2. WBONE Address</label>
-    <input id="wbone" value="0xC76F4c819D820369Fb2d7C1531aB3Bb18e6fE8d8">
+    <h2>Infrastructure Deployer</h2>
     
-    <button onclick="deploy()">DEPLOY NEW ROUTER</button>
-   
-    <div id="status">Ready. Click button to deploy.</div>
+    <div class="field">
+        <label>1. YOUR FACTORY ADDRESS</label>
+        <input id="factory" value="0x78ae5cCD2f13D10aE3fF47F8418A79D99B4569d0">
+    </div>
+
+    <div class="field">
+        <label>2. SHIBARIUM WBONE ADDRESS</label>
+        <input id="wbone" value="0xC76F4c819D820369Fb2d7C1531aB3Bb18e6fE8d8">
+    </div>
+
+    <button id="loadBtn" class="active" onclick="loadCode()">1. Download Official Code</button>
+    <button id="deployBtn" onclick="deploy()">2. Deploy Router</button>
+    
+    <div id="status">System Ready.</div>
 </div>
 
 <script>
-    // Official Uniswap V2 Router02 Bytecode + ABI (embedded)
-    const ROUTER_BYTECODE = "0x608060405234801561001057600080fd5b50600436106100cd5760003560e01c80638abdf5aa1161008a578063e2797bfc11610064578063e2797bfc146101bb578063f2fde38b146101d9578063f5ae497a146101f5578063f83c388414610213576100cd565b80638abdf5aa146101755780638da5cb5b14610193578063a45d5399146101b1576100cd565b80633b2d87c4146100d157806343cce08e146100ef5780634e69d5601461010d5780634e6fd6c41461012f578063715018a61461014d57806373f4256114610157575b600080fd5b6100d961021d565b6040516100e69190610c09565b60405180910390f35b6100f7610235565b6040516101049190610c3a565b60405180910390f35b610115610259565b604051610126959493929190610c6d565b60405180910390f35b61013761037c565b6040516101449190610c09565b60405180910390f35b610155610382565b005b61015f610395565b60405161016c9190610cbe565b60405180910390f35b61017d6103a7565b60405161018a9190610c3a565b60405180910390f35b61019b6103cb565b6040516101a89190610c09565b60405180910390f35b6101b96103f2565b005b6101c3610757565b6040516101d09190610c3a565b60405180910390f35b6101f360048036038101906101ee9190610d05565b61077b565b005b6101fd6107ff565b60405161020a9190610c09565b60405180910390f35b61021b610823565b005b7312c94d3a30daa09f81ea6c037004e6e99a4a3dfc81565b7f0000000000000000000000000000000000000000000000056bc75e2d6310000081565b5f5f5f5f5f7f000000000000000000000000941abcb1a4278ff33b50f6cf9f5a4c8a0888bdee73ffffffffffffffffffffffffffffffffffffffff166370a08231306040518263ffffffff1660e01b81526004016102b79190610c09565b602060405180830381865afa1580156102d2573d5f5f3e3d5ffd5b505050506040513d601f19601f820116820180604052508101906102f69190610d5a565b94507f0000000000000000000000000000000000000000000000056bc75e2d6310000085101593505f60149054906101000a900460ff1692507f00000000000000000000000000000000000000000000003635c9adc5dea0000091507f0000000000000000000000000000000000000000000000008ac7230489e8000090509091929394565b61dead81565b61038a610835565b6103935f6108bc565b565b5f60149054906101000a900460ff1681565b7f0000000000000000000000000000000000000000000000008ac7230489e8000081565b5f5f9054906101000a900473ffffffffffffffffffffffffffffffffffffffff16905090565b6103fa61097d565b5f60149054906101000a900460ff1615610449576040517f08c379a000000000000000000000000000000000000000000000000000000000815260040161044090610ddf565b60405180910390fd5b5f7f000000000000000000000000941abcb1a4278ff33b50f6cf9f5a4c8a0888bdee73ffffffffffffffffffffffffffffffffffffffff166370a08231306040518263ffffffff1660e01b81526004016104a39190610c09565b602060405180830381865afa1580156104be573d5f5f3e3d5ffd5b505050506040513d601f19601f820116820180604052508101906104e29190610d5a565b90507f0000000000000000000000000000000000000000000000056bc75e2d63100000811015610547576040517f08c379a000000000000000000000000000000000000000000000000000000000815260040161053e90610e6d565b60405180910390fd5b5f7312c94d3a30daa09f81ea6c037004e6e99a4a3dfc73ffffffffffffffffffffffffffffffffffffffff166370a08231336040518263ffffffff1660e01b81526004016105959190610c09565b602060405180830381865afa1580156105b0573d5f5f3e3d5ffd5b505050506040513d601f19601f820116820180604052508101906105d49190610d5a565b90505f7f00000000000000000000000000000000000000000000003635c9adc5dea0000082101590508015801561062a57505f7f0000000000000000000000000000000000000000000000008ac7230489e80000115b15610693576106923361dead7f0000000000000000000000000000000000000000000000008ac7230489e800007312c94d3a30daa09f81ea6c037004e6e99a4a3dfc73ffffffffffffffffffffffffffffffffffffffff1661099f909392919063ffffffff16565b5b6106e061dead847f000000000000000000000000941abcb1a4278ff33b50f6cf9f5a4c8a0888bdee73ffffffffffffffffffffffffffffffffffffffff166109f49092919063ffffffff16565b60015f60146101000a81548160ff0219169083151502179055503373ffffffffffffffffffffffffffffffffffffffff167f2117631d8cbc39e513651892c92ee05e0a71441f488a00dd37eb06732fd232668483604051610742929190610e8b565b60405180910390a2505050610755610a47565b565b7f00000000000000000000000000000000000000000000003635c9adc5dea0000081565b610783610835565b5f73ffffffffffffffffffffffffffffffffffffffff168173ffffffffffffffffffffffffffffffffffffffff16036107f3575f6040517f1e4fbdf70000000000000000000000000000000000000000000000000000000081526004016107ea9190610c09565b60405180910390fd5b6107fc816108bc565b50565b7f000000000000000000000000941abcb1a4278ff33b50f6cf9f5a4c8a0888bdee81565b61082b610835565b610833610382565b565b61083d610a61565b73ffffffffffffffffffffffffffffffffffffffff1661085b6103cb565b73ffffffffffffffffffffffffffffffffffffffff16146108ba5761087e610a61565b6040517f118cdaa70000000000000000000000000000000000000000000000000000000081526004016108b19190610c09565b60405180910390fd5b565b5f5f5f9054906101000a900473ffffffffffffffffffffffffffffffffffffffff169050815f5f6101000a81548173ffffffffffffffffffffffffffffffffffffffff021916908373ffffffffffffffffffffffffffffffffffffffff1602179055508173ffffffffffffffffffffffffffffffffffffffff168173ffffffffffffffffffffffffffffffffffffffff167f8be0079c531659141344cd1fd0a4f28419497f9722a3daafe3b4186f6b6457e060405160405180910390a35050565b610985610a68565b6002610997610992610aa9565b610ad2565b5f0181905550565b6109ad848484846001610adb565b6109ee57836040517f5274afe70000000000000000000000000000000000000000000000000000000081526004016109e59190610c09565b60405180910390fd5b50505050565b610a018383836001610b4c565b610a4257826040517f5274afe7000000000000000000000000000000000000000000000000000000008152600401610a399190610c09565b60405180910390fd5b505050565b6001610a59610a54610aa9565b610ad2565b5f0181905550565b5f33905090565b610a70610bae565b15610aa7576040517f3ee5aeb500000000000000000000000000000000000000000000000000000000815260040160405180910390fd5b565b5f7f9b779b17422d0df92223018b32b4d1fa46e071723d6817e2486d003becc55f005f1b905090565b5f819050919050565b5f5f6323b872dd60e01b9050604051815f525f1960601c87166004525f1960601c86166024528460445260205f60645f5f8c5af1925060015f51148316610b39578383151615610b2d573d5f823e3d81fd5b5f883b113d1516831692505b806040525f606052505095945050505050565b5f5f63a9059cbb60e01b9050604051815f525f1960601c86166004528460245260205f60445f5f8b5af1925060015f51148316610ba0578383151615610b94573d5f823e3d81fd5b5f873b113d1516831692505b806040525050949350505050565b5f6002610bc1610bbc610aa9565b610ad2565b5f015414905090565b5f73ffffffffffffffffffffffffffffffffffffffff82169050919050565b5f610bf382610bca565b9050919050565b610c0381610be9565b82525050565b5f602082019050610c1c5f830184610bfa565b92915050565b5f819050919050565b610c3481610c22565b82525050565b5f602082019050610c4d5f830184610c2b565b92915050565b5f8115159050919050565b610c6781610c53565b82525050565b5f60a082019050610c805f830188610c2b565b610c8d6020830187610c5e565b610c9a6040830186610c5e565b610ca76060830185610c2b565b610cb46080830184610c2b565b9695505050505050565b5f602082019050610cd15f830184610c5e565b92915050565b5f5ffd5b610ce481610be9565b8114610cee575f5ffd5b50565b5f81359050610cff81610cdb565b92915050565b5f60208284031215610d1a57610d19610cd7565b5b5f610d2784828501610cf1565b91505092915050565b610d3981610c22565b8114610d43575f5ffd5b50565b5f81519050610d5481610d30565b92915050565b5f60208284031215610d6f57610d6e610cd7565b5b5f610d7c84828501610d46565b91505092915050565b5f82825260208201905092915050565b7f5269634275726e65725649503a20416c7265616479206275726e6564000000005f82015250565b5f610dc9601c83610d85565b9150610dd482610d95565b602082019050919050565b5f6020820190508181035f830152610df681610dbd565b9050919050565b7f5269634275726e65725649503a204d696c6573746f6e65206e6f7420726561635f8201527f6865640000000000000000000000000000000000000000000000000000000000602082015250565b5f610e57602383610d85565b9150610e6282610dfd565b604082019050919050565b5f6020820190508181035f830152610e8481610e4b565b9050919050565b5f604082019050610e9e5f830185610c2b565b610eab6020830184610c5e565b939250505056fea2646970667358221220c653078e53422c8b2258cb11173fb265b2c6ac7911084a2a7cb380460cfcad3364736f6c63430008220033";
-    const ROUTER_ABI = [ /* full ABI here - shortened for readability */ ];
+    let routerBytecode = null;
+    let routerAbi = null;
 
-    async function deploy() {
+    // 1. FETCH FROM UNISWAP OFFICIAL REPO
+    async function loadCode() {
         const status = document.getElementById("status");
-        const factoryAddr = document.getElementById("factory").value.trim();
-        const wboneAddr = document.getElementById("wbone").value.trim();
-
-        if (!ethers.isAddress(factoryAddr) || !ethers.isAddress(wboneAddr)) {
-            return status.innerText = "❌ Invalid Factory or WBONE address";
-        }
+        const btn1 = document.getElementById("loadBtn");
+        const btn2 = document.getElementById("deployBtn");
+        
+        status.innerText = "Fetching artifacts from uniswap.org...";
+        btn1.disabled = true;
 
         try {
-            status.innerText = "Connecting wallet...";
-            if (!window.ethereum) throw new Error("No wallet detected");
+            const response = await fetch("https://unpkg.com/@uniswap/v2-periphery@1.1.0/build/UniswapV2Router02.json");
+            if(!response.ok) throw new Error("Network Error: Could not fetch code.");
+            
+            const data = await response.json();
+            routerBytecode = data.bytecode;
+            routerAbi = data.abi;
 
-            await window.ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: "0x6d" }] });
+            status.innerHTML = `<span class="success">✅ CODE LOADED.</span><br>Size: ${routerBytecode.length} bytes.<br>Ready to Deploy.`;
+            btn1.style.display = "none";
+            btn2.className = "active";
+            btn2.disabled = false;
+        } catch(e) {
+            console.error(e);
+            status.innerHTML = `<span class="error">❌ Fetch Failed: ${e.message}</span><br>Check internet connection.`;
+            btn1.disabled = false;
+        }
+    }
 
+    // 2. DEPLOY TO SHIBARIUM
+    async function deploy() {
+        const status = document.getElementById("status");
+        const factory = document.getElementById("factory").value;
+        const wbone = document.getElementById("wbone").value;
+        const btn = document.getElementById("deployBtn");
+
+        if(!routerBytecode) return alert("Load code first!");
+        
+        try {
+            status.innerText = "Connecting to Wallet...";
+            btn.disabled = true;
+
+            if(!window.ethereum) throw new Error("No MetaMask found");
+            
+            // Force Shibarium Connection
+            try {
+                await window.ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: "0x6d" }] });
+            } catch(err) {
+                if(err.code === 4902) {
+                    await window.ethereum.request({
+                        method: 'wallet_addEthereumChain',
+                        params: [{
+                            chainId: "0x6d",
+                            chainName: 'Shibarium',
+                            nativeCurrency: { name: 'BONE', symbol: 'BONE', decimals: 18 },
+                            rpcUrls: ['https://rpc.shibarium.shib.io'],
+                            blockExplorerUrls: ['https://shibariumscan.io']
+                        }]
+                    });
+                }
+            }
+            
             const provider = new ethers.BrowserProvider(window.ethereum);
             const signer = await provider.getSigner();
 
-            status.innerText = "Deploying Router... Please confirm";
-
-            const factory = new ethers.ContractFactory(ROUTER_ABI, ROUTER_BYTECODE, signer);
-            const contract = await factory.deploy(factoryAddr, wboneAddr);
-
-            const txHash = contract.deploymentTransaction().hash;
-            status.innerHTML = `🚀 Deployment sent!<br>Tx: <a href="https://shibariumscan.io/tx/${txHash}" target="_blank">View</a><br>Waiting...`;
-
+            status.innerText = "Preparing Transaction...";
+            
+            const factoryObj = new ethers.ContractFactory(routerAbi, routerBytecode, signer);
+            
+            status.innerText = "Please Confirm Deployment in Wallet...";
+            const contract = await factoryObj.deploy(factory, wbone);
+            
+            status.innerHTML = `🚀 <b>Deployment Sent!</b><br>Hash: <a href="https://shibariumscan.io/tx/${contract.deploymentTransaction().hash}" target="_blank" style="color:#fff">View TX</a><br>Waiting for confirmation...`;
+            
             await contract.waitForDeployment();
-            const newRouter = await contract.getAddress();
-
+            const newAddress = await contract.getAddress();
+            
             status.innerHTML = `
-                <span class="success">✅ SUCCESS!</span><br><br>
-                <b>New Router:</b><br>
-                <span style="color:#00ff88; font-size:15px;">${newRouter}</span><br><br>
-                Copy this address and use it everywhere.
+                <span class="success">✅ DEPLOYMENT COMPLETE</span><br><br>
+                <b>NEW ROUTER ADDRESS:</b><br>
+                <span style="color:#00ff88; font-size:16px; background:#222; padding:5px;">${newAddress}</span>
+                <br><br>👉 Copy this address into your Liquidity Tool.
             `;
 
         } catch(e) {
             console.error(e);
-            status.innerText = "❌ Failed: " + (e.reason || e.message);
+            status.innerHTML = `<span class="error">❌ Error: ${e.reason || e.message}</span>`;
+            btn.disabled = false;
         }
     }
 </script>
