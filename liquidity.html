@@ -38,7 +38,7 @@
         button { width: 100%; padding: 20px; background: #ff4d00; color: white; font-weight: 800; border: none; border-radius: 14px; font-size: 16px; cursor: pointer; margin-top: 10px; text-transform: uppercase; }
         button:disabled { background: #222; color: #555; cursor: not-allowed; }
         
-        #log { margin-top: 25px; padding: 15px; border-radius: 12px; background: #000; border: 1px solid #222; font-size: 11px; color: #888; font-family: monospace; min-height: 20px; max-height: 100px; overflow-y: auto; }
+        #log { margin-top: 25px; padding: 15px; border-radius: 12px; background: #000; border: 1px solid #222; font-size: 11px; color: #888; font-family: monospace; min-height: 20px; max-height: 100px; overflow-y: auto; word-break: break-all; }
     </style>
 </head>
 <body>
@@ -55,7 +55,7 @@
     <div style="text-align:center; margin-bottom:15px;">
         <label style="display:inline-flex; align-items:center; gap:8px; cursor:pointer;">
             <input type="checkbox" id="nativeMode" checked onchange="toggleNative()">
-            <span style="font-size:12px; color:#fff;">Use Native BONE</span>
+            <span style="font-size:12px; color:#fff;">Use Native BONE (Recommended)</span>
         </label>
     </div>
    
@@ -65,7 +65,7 @@
             <label id="labelA">Native BONE</label>
             <div class="balance" onclick="setMax('A')" id="balDisplayA">Balance: ---</div>
         </div>
-        <input id="tokenA" class="addr" value="NATIVE_BONE" disabled>
+        <input id="tokenA" class="addr" value="NATIVE_BONE" disabled onchange="handleAddressChange()">
         <input id="amountA" class="amount" type="number" placeholder="0.0" oninput="calculateQuote()">
     </div>
 
@@ -187,11 +187,14 @@
     function toggleNative() {
         const isNative = document.getElementById("nativeMode").checked;
         const el = document.getElementById("tokenA");
+        const label = document.getElementById("labelA");
         if(isNative) {
             el.value = "NATIVE_BONE"; el.disabled = true;
+            label.innerText = "Native BONE";
             document.getElementById("statusNative").classList.add("active");
         } else {
             el.value = WBONE; el.disabled = false;
+            label.innerText = "Token A Address";
             document.getElementById("statusNative").classList.remove("active");
         }
         refreshBalances();
@@ -243,8 +246,6 @@
         const amtA = document.getElementById("amountA").value;
         if(!amtA) return;
 
-        // Simple Ratio for UI: (AmtA * ResB) / ResA
-        // Note: Mixing BigInt and float is tricky, using float for UI estimate
         const rA = parseFloat(ethers.formatUnits(poolState.reserveA, balances.decA));
         const rB = parseFloat(ethers.formatUnits(poolState.reserveB, balances.decB));
         
@@ -254,11 +255,12 @@
         document.getElementById("amountB").value = estB.toFixed(6);
     }
 
-    // --- 4. EXECUTION ---
+    // --- 4. EXECUTION (FIXED) ---
     async function execute() {
         if(!signer) { await init(); return; }
         
         const btn = document.getElementById("btn");
+        const statusPool = document.getElementById("statusPool");
         const addrB = document.getElementById("tokenB").value;
         const rawA = document.getElementById("amountA").value;
         const rawB = document.getElementById("amountB").value;
@@ -267,7 +269,7 @@
             btn.disabled = true;
             log("Starting Transaction...");
 
-            // 1. Approve B
+            // 1. Approve B (Always needed)
             const conB = new ethers.Contract(addrB, ABI, signer);
             const valB = ethers.parseUnits(rawB, balances.decB);
             const allowB = await conB.allowance(userAddr, ROUTER);
@@ -278,34 +280,52 @@
                 await tx.wait();
             }
 
-            // 2. Add Liquidity
-            log("Sending to Router...");
             const router = new ethers.Contract(ROUTER, ROUTER_ABI, signer);
             const deadline = Math.floor(Date.now()/1000) + 1200;
             const isNative = document.getElementById("nativeMode").checked;
             let tx;
 
             if(isNative) {
+                // --- NATIVE MODE ---
                 const valA = ethers.parseEther(rawA);
                 tx = await router.addLiquidityETH(
                     addrB, valB, 0, 0, userAddr, deadline,
-                    { value: valA, gasLimit: 3000000 }
+                    { value: valA, gasLimit: 4000000 }
                 );
+
             } else {
-                // ... (Standard addLiquidity logic if needed) ...
-                // Focusing on Native for this tool
+                // --- TOKEN MODE (The Fixed Else Block) ---
+                const addrA = document.getElementById("tokenA").value;
+                const conA = new ethers.Contract(addrA, ABI, signer);
+                const valA = ethers.parseUnits(rawA, balances.decA);
+                
+                // Check Approval for Token A
+                const allowA = await conA.allowance(userAddr, ROUTER);
+                if(allowA < valA) {
+                    log("Approving Token A...");
+                    const txAppA = await conA.approve(ROUTER, ethers.MaxUint256);
+                    await txAppA.wait();
+                }
+
+                // Send Standard Liquidity
+                tx = await router.addLiquidity(
+                    addrA, addrB, valA, valB, 0, 0, userAddr, deadline,
+                    { gasLimit: 4000000 }
+                );
             }
 
             log("TX Sent: " + tx.hash);
-            document.getElementById("statusPool").innerHTML = `<a href="https://shibariumscan.io/tx/${tx.hash}" target="_blank">VIEW TX</a>`;
+            statusPool.innerHTML = `<a href="https://shibariumscan.io/tx/${tx.hash}" target="_blank" style="color:#fff">VIEW SUCCESS</a>`;
+            
             await tx.wait();
-            alert("Liquidity Added!");
+            alert("✅ SUCCESS! Liquidity Added.");
             
             refreshBalances();
             btn.disabled = false;
 
         } catch(e) {
-            log("Error: " + e.message);
+            console.error(e);
+            log("Error: " + (e.reason || e.message));
             btn.disabled = false;
         }
     }
