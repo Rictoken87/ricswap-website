@@ -590,16 +590,20 @@ const CONFIG = {
 };
 
 // ABIs
+const WBONE_ADDRESS = "0xc76f4c819d820369fb2d7c1531ab3bb18e6fe8d8";
+
 const ERC20_ABI = [
   "function balanceOf(address) view returns (uint256)",
   "function decimals() view returns (uint8)",
   "function symbol() view returns (string)",
+  "function name() view returns (string)",
   "function allowance(address,address) view returns (uint256)",
   "function approve(address,uint256) returns (bool)",
 ];
 
 const ROUTER_ABI = [
   "function addLiquidity(address,address,uint256,uint256,uint256,uint256,address,uint256) external returns (uint256,uint256,uint256)",
+  "function addLiquidityETH(address,uint256,uint256,uint256,address,uint256) external payable returns (uint256,uint256,uint256)",
 ];
 
 const FACTORY_ABI = [
@@ -671,30 +675,56 @@ async function onAddressChange(side) {
   if (!ethers.isAddress(addr)) return;
   if (!provider) return;
 
+  // ── Special handling for WBONE ──────────────────────────────
+  // WBONE is the wrapped native token on Shibarium. It does not
+  // implement symbol() the same way as regular ERC20s. We handle
+  // it explicitly so it loads correctly.
+  const isWBONE = addr.toLowerCase() === WBONE_ADDRESS.toLowerCase();
+
   try {
     const contract = new ethers.Contract(addr, ERC20_ABI, provider);
-    const [symbol, decimals, balance] = await Promise.all([
-      contract.symbol(),
-      contract.decimals(),
-      userAddress ? contract.balanceOf(userAddress) : 0n,
-    ]);
 
-    tokenInfo[side] = { symbol, decimals, balance, address: addr };
+    let symbol, decimals, balance;
+
+    if (isWBONE) {
+      // WBONE: use name() fallback, decimals=18, balanceOf works normally
+      decimals = 18;
+      symbol   = "WBONE";
+      balance  = userAddress ? await contract.balanceOf(userAddress) : 0n;
+    } else {
+      // Regular ERC20 — try symbol() first, fall back to name()
+      [decimals, balance] = await Promise.all([
+        contract.decimals(),
+        userAddress ? contract.balanceOf(userAddress) : 0n,
+      ]);
+      try {
+        symbol = await contract.symbol();
+      } catch(_) {
+        try {
+          symbol = await contract.name(); // fallback for tokens without symbol()
+        } catch(_) {
+          symbol = addr.slice(0,6) + "..."; // last resort
+        }
+      }
+    }
+
+    tokenInfo[side] = { symbol, decimals, balance, address: addr, isWBONE };
 
     // Display symbol + decimals
     meta.innerHTML =
-      `<span class="token-symbol">${symbol}</span>` +
+      `<span class="token-symbol">${isWBONE ? "WBONE (native)" : symbol}</span>` +
       `<span class="token-decimals">${decimals} decimals</span>`;
 
-    // [FIX-2, FIX-7] Show correct balance using actual decimals
+    // Show balance using correct decimals
     document.getElementById("bal" + side).textContent =
       formatUnits(balance, decimals);
 
-    // Check if pair exists and show info
+    // Check if pair exists
     checkPairExists();
 
   } catch(e) {
-    meta.innerHTML = `<span class="token-decimals" style="color:#ff4466">Could not fetch token info</span>`;
+    const msg = decodeError ? decodeError(e) : e.message;
+    meta.innerHTML = `<span class="token-decimals" style="color:#ff4466">Error: ${sanitize(msg).slice(0,60)}</span>`;
   }
 }
 
@@ -730,6 +760,11 @@ async function checkPairExists() {
 // ─────────────────────────────────────────────
 // MAX button
 // ─────────────────────────────────────────────
+function fillWBONE(side) {
+  document.getElementById("token" + side).value = WBONE_ADDRESS;
+  onAddressChange(side);
+}
+
 function setMax(side) {
   if (!tokenInfo[side]) return;
   const { balance, decimals } = tokenInfo[side];
@@ -796,8 +831,11 @@ async function addLiquidity() {
       tokenBContract.allowance(userAddress, CONFIG.ROUTER),
     ]);
 
-    // ── Step 2: Approve Token A if needed ────────────────────────
-    if (allowanceA < amountAWei) {
+    // ── Step 2: Approve Token A if needed (skip for WBONE) ─────
+    const aIsWBONE = tokenInfo.A.isWBONE;
+    const bIsWBONE = tokenInfo.B.isWBONE;
+
+    if (!aIsWBONE && allowanceA < amountAWei) {
       setStatus("loading", null, `Approving ${tokenInfo.A.symbol}...`);
       let txA;
       try {
@@ -809,8 +847,8 @@ async function addLiquidity() {
       await txA.wait();
     }
 
-    // ── Step 3: Approve Token B if needed ────────────────────────
-    if (allowanceB < amountBWei) {
+    // ── Step 3: Approve Token B if needed (skip for WBONE) ─────
+    if (!bIsWBONE && allowanceB < amountBWei) {
       setStatus("loading", null, `Approving ${tokenInfo.B.symbol}...`);
       let txB;
       try {
@@ -822,22 +860,38 @@ async function addLiquidity() {
       await txB.wait();
     }
 
-    // ── Step 4: Pre-flight simulation (catches revert before sending) ──
-    // Shibarium RPC does not return revert data on failed txs.
-    // staticCall runs the exact same call locally and surfaces the real reason.
+    // ── Step 4: Pre-flight simulation ───────────────────────────
+    // staticCall runs the exact call locally to surface revert reason
+    // before spending gas. Shibarium RPC swallows revert data otherwise.
     setStatus("loading", null, "Simulating transaction...");
 
     const router   = new ethers.Contract(CONFIG.ROUTER, ROUTER_ABI, signer);
     const deadline = BigInt(Math.floor(Date.now() / 1000) + 300);
 
+    // Route to addLiquidityETH when either token is WBONE
+    const useETH    = aIsWBONE || bIsWBONE;
+    const tokenAddr = aIsWBONE ? addrB  : addrA;
+    const tokenAmt  = aIsWBONE ? amountBWei : amountAWei;
+    const tokenMin  = aIsWBONE ? minB   : minA;
+    const ethAmt    = aIsWBONE ? amountAWei : amountBWei;
+    const ethMin    = aIsWBONE ? minA   : minB;
+
     try {
-      await router.addLiquidity.staticCall(
-        addrA, addrB,
-        amountAWei, amountBWei,
-        minA, minB,
-        userAddress,
-        deadline
-      );
+      if (useETH) {
+        // addLiquidityETH: BONE is sent as msg.value, WBONE approval not needed
+        await router.addLiquidityETH.staticCall(
+          tokenAddr, tokenAmt, tokenMin, ethMin,
+          userAddress, deadline,
+          { value: ethAmt }
+        );
+      } else {
+        await router.addLiquidity.staticCall(
+          addrA, addrB,
+          amountAWei, amountBWei,
+          minA, minB,
+          userAddress, deadline
+        );
+      }
     } catch(simErr) {
       const reason = decodeError(simErr);
       if (reason.includes("check router/factory") || reason.includes("missing revert")) {
@@ -851,13 +905,21 @@ async function addLiquidity() {
     // ── Step 5: Send the real transaction ────────────────────────
     setStatus("loading", null, "Sending transaction...");
 
-    const tx = await router.addLiquidity(
-      addrA, addrB,
-      amountAWei, amountBWei,
-      minA, minB,
-      userAddress,
-      deadline
-    );
+    let tx;
+    if (useETH) {
+      tx = await router.addLiquidityETH(
+        tokenAddr, tokenAmt, tokenMin, ethMin,
+        userAddress, deadline,
+        { value: ethAmt }
+      );
+    } else {
+      tx = await router.addLiquidity(
+        addrA, addrB,
+        amountAWei, amountBWei,
+        minA, minB,
+        userAddress, deadline
+      );
+    }
 
     setStatus("loading", null, `Confirming... (tx: ${tx.hash.slice(0,10)}...)`);
     const receipt = await tx.wait();
