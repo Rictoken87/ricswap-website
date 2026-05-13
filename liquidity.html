@@ -582,8 +582,8 @@
 // CONFIG — replace with your deployed addresses
 // ─────────────────────────────────────────────
 const CONFIG = {
-  ROUTER:   "0x8869D8B61dC440e44B9b844E43B303636982c65e",
-  FACTORY:  "0x78ae5cCD2f13D10aE3fF47F8418A79D99B4569d0",
+  ROUTER:   "0x652875c0F607CB392C0F9E5FB957A7055c2deD2e",
+  FACTORY:  "0xD8fFEECfDE1698a70A26a094afBE917bA58E2F70",
   CHAIN_ID: 109n,   // Shibarium mainnet
   CHAIN_NAME: "Shibarium",
   EXPLORER: "https://shibariumscan.io",
@@ -839,9 +839,13 @@ async function addLiquidity() {
         deadline
       );
     } catch(simErr) {
-      // Simulation failed — decode and surface the real revert reason
       const reason = decodeError(simErr);
-      throw new Error(`Simulation failed: ${reason}`);
+      if (reason.includes("check router/factory") || reason.includes("missing revert")) {
+        setStatus("loading", null, "Running diagnostics...");
+        const diagMsg = await runDiagnostics(addrA, addrB, amountAWei, amountBWei, deadline);
+        throw new Error(diagMsg);
+      }
+      throw new Error("Reverted: " + reason);
     }
 
     // ── Step 5: Send the real transaction ────────────────────────
@@ -938,6 +942,112 @@ function setButtonLoading(loading) {
 }
 
 // ─────────────────────────────────────────────
+
+// ─────────────────────────────────────────────
+// Deep diagnostics — called when staticCall gives
+// a generic revert with no reason string.
+// Checks each failure condition individually.
+// ─────────────────────────────────────────────
+async function runDiagnostics(addrA, addrB, amountAWei, amountBWei, deadline) {
+  const checks = [];
+
+  // 1. Router contract exists?
+  try {
+    const code = await provider.getCode(CONFIG.ROUTER);
+    if (!code || code === "0x") {
+      return "ROUTER contract not deployed at " + CONFIG.ROUTER + ". Check your CONFIG address.";
+    }
+    checks.push("Router: OK");
+  } catch(e) { return "Cannot reach RPC to check router: " + e.message; }
+
+  // 2. Factory contract exists?
+  try {
+    const code = await provider.getCode(CONFIG.FACTORY);
+    if (!code || code === "0x") {
+      return "FACTORY contract not deployed at " + CONFIG.FACTORY + ". Check your CONFIG address.";
+    }
+    checks.push("Factory: OK");
+  } catch(e) { return "Cannot reach RPC to check factory: " + e.message; }
+
+  // 3. Deadline not already expired?
+  try {
+    const block = await provider.getBlock("latest");
+    if (deadline <= BigInt(block.timestamp)) {
+      return "Deadline already expired. Your system clock may be behind. (block=" + block.timestamp + " deadline=" + deadline + ")";
+    }
+    checks.push("Deadline: OK");
+  } catch(e) { checks.push("Deadline: could not verify"); }
+
+  // 4. Token A allowance sufficient?
+  try {
+    const tokenA = new ethers.Contract(addrA, ERC20_ABI, provider);
+    const allow  = await tokenA.allowance(userAddress, CONFIG.ROUTER);
+    if (allow < amountAWei) {
+      return tokenInfo.A.symbol + " allowance too low. Have: " + ethers.formatUnits(allow, tokenInfo.A.decimals) + ", need: " + ethers.formatUnits(amountAWei, tokenInfo.A.decimals) + ". Please re-approve.";
+    }
+    checks.push("Allowance A: OK");
+  } catch(e) { return "Could not check Token A allowance: " + e.message; }
+
+  // 5. Token B allowance sufficient?
+  try {
+    const tokenB = new ethers.Contract(addrB, ERC20_ABI, provider);
+    const allow  = await tokenB.allowance(userAddress, CONFIG.ROUTER);
+    if (allow < amountBWei) {
+      return tokenInfo.B.symbol + " allowance too low. Have: " + ethers.formatUnits(allow, tokenInfo.B.decimals) + ", need: " + ethers.formatUnits(amountBWei, tokenInfo.B.decimals) + ". Please re-approve.";
+    }
+    checks.push("Allowance B: OK");
+  } catch(e) { return "Could not check Token B allowance: " + e.message; }
+
+  // 6. Token A balance sufficient?
+  try {
+    const tokenA = new ethers.Contract(addrA, ERC20_ABI, provider);
+    const bal    = await tokenA.balanceOf(userAddress);
+    if (bal < amountAWei) {
+      return "Insufficient " + tokenInfo.A.symbol + " balance. Have: " + ethers.formatUnits(bal, tokenInfo.A.decimals) + ", need: " + ethers.formatUnits(amountAWei, tokenInfo.A.decimals);
+    }
+    checks.push("Balance A: OK");
+  } catch(e) { return "Could not check Token A balance: " + e.message; }
+
+  // 7. Token B balance sufficient?
+  try {
+    const tokenB = new ethers.Contract(addrB, ERC20_ABI, provider);
+    const bal    = await tokenB.balanceOf(userAddress);
+    if (bal < amountBWei) {
+      return "Insufficient " + tokenInfo.B.symbol + " balance. Have: " + ethers.formatUnits(bal, tokenInfo.B.decimals) + ", need: " + ethers.formatUnits(amountBWei, tokenInfo.B.decimals);
+    }
+    checks.push("Balance B: OK");
+  } catch(e) { return "Could not check Token B balance: " + e.message; }
+
+  // 8. Factory.getPair — check if pair creation will succeed
+  try {
+    const factory = new ethers.Contract(CONFIG.FACTORY, [
+      "function getPair(address,address) view returns (address)",
+      "function createPair(address,address) returns (address)"
+    ], provider);
+    const pair = await factory.getPair(addrA, addrB);
+    checks.push("Pair check: " + (pair === "0x0000000000000000000000000000000000000000" ? "will create new" : "exists " + pair));
+  } catch(e) {
+    return "Factory.getPair() failed — factory address may be wrong or ABI mismatch. Error: " + e.message;
+  }
+
+  // 9. pairInitCodeHash — does router have a non-zero hash?
+  try {
+    const routerContract = new ethers.Contract(CONFIG.ROUTER, [
+      "function pairInitCodeHash() view returns (bytes32)"
+    ], provider);
+    const hash = await routerContract.pairInitCodeHash();
+    if (!hash || hash === "0x0000000000000000000000000000000000000000000000000000000000000000") {
+      return "Router pairInitCodeHash is zero! Deploy router with correct hash from factory.pairCodeHash().";
+    }
+    checks.push("InitCodeHash: " + hash.slice(0,10) + "...");
+  } catch(e) {
+    return "Router does not expose pairInitCodeHash() — may be wrong contract at " + CONFIG.ROUTER;
+  }
+
+  // All checks passed but still reverting — return diagnostic summary
+  return "All pre-checks passed but call still reverts. Passed: [" + checks.join(", ") + "]. Possible cause: pairInitCodeHash mismatch between router and factory. Verify factory.pairCodeHash() matches the hash passed to the router constructor.";
+}
+
 // Error decoder — handles Shibarium RPC quirks
 // Shibarium's RPC often returns "missing revert data"
 // instead of the actual revert reason. This function
