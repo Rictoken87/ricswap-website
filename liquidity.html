@@ -490,7 +490,7 @@
 
   <!-- Header -->
   <div class="header">
-    <div class="logo"><a href="index.html">Ric<span>Swap</a></span></div>
+    <div class="logo">Ric<span>Swap</span></div>
     <div class="network-badge">
       <div class="dot"></div>
       Shibarium
@@ -687,10 +687,17 @@ async function onAddressChange(side) {
     let symbol, decimals, balance;
 
     if (isWBONE) {
-      // WBONE: use name() fallback, decimals=18, balanceOf works normally
+      // WBONE on Shibarium: the user holds BONE natively (not wrapped).
+      // balanceOf(user) returns WBONE (wrapped) balance which is usually 0.
+      // We show native BONE balance instead — this is what addLiquidityETH uses.
       decimals = 18;
       symbol   = "WBONE";
-      balance  = userAddress ? await contract.balanceOf(userAddress) : 0n;
+      const wboneBalance   = userAddress ? await contract.balanceOf(userAddress) : 0n;
+      const nativeBalance  = userAddress ? await provider.getBalance(userAddress)  : 0n;
+      // Use native BONE as the spendable balance for addLiquidityETH
+      balance = nativeBalance;
+      // Store both so we can show useful info
+      tokenInfo[side + "_wboneWrapped"] = wboneBalance;
     } else {
       // Regular ERC20 — try symbol() first, fall back to name()
       [decimals, balance] = await Promise.all([
@@ -716,8 +723,9 @@ async function onAddressChange(side) {
       `<span class="token-decimals">${decimals} decimals</span>`;
 
     // Show balance using correct decimals
+    // For WBONE: show native BONE balance (what addLiquidityETH will use)
     document.getElementById("bal" + side).textContent =
-      formatUnits(balance, decimals);
+      formatUnits(balance, decimals) + (isWBONE ? " BONE" : "");
 
     // Check if pair exists
     checkPairExists();
@@ -767,8 +775,12 @@ function fillWBONE(side) {
 
 function setMax(side) {
   if (!tokenInfo[side]) return;
-  const { balance, decimals } = tokenInfo[side];
-  document.getElementById("amount" + side).value = ethers.formatUnits(balance, decimals);
+  const { balance, decimals, isWBONE } = tokenInfo[side];
+  // For WBONE: leave a small reserve for gas (0.01 BONE)
+  const safeBalance = isWBONE && balance > ethers.parseEther("0.01")
+    ? balance - ethers.parseEther("0.01")
+    : balance;
+  document.getElementById("amount" + side).value = ethers.formatUnits(safeBalance, decimals);
 }
 
 // ─────────────────────────────────────────────
@@ -808,9 +820,11 @@ async function addLiquidity() {
     return setStatus("error", "✕", "Amount too precise for token decimals");
   }
 
-  // Balance checks
-  if (amountAWei > tokenInfo.A.balance) return setStatus("error", "✕", `Insufficient ${tokenInfo.A.symbol} balance`);
-  if (amountBWei > tokenInfo.B.balance) return setStatus("error", "✕", `Insufficient ${tokenInfo.B.symbol} balance`);
+  // Balance checks — for WBONE use native BONE balance (provider.getBalance)
+  const balA = tokenInfo.A.balance; // native BONE if WBONE, else ERC20 balance
+  const balB = tokenInfo.B.balance;
+  if (amountAWei > balA) return setStatus("error", "✕", `Insufficient ${tokenInfo.A.symbol} balance`);
+  if (amountBWei > balB) return setStatus("error", "✕", `Insufficient ${tokenInfo.B.symbol} balance`);
 
   // [FIX-1] Slippage-based minimums (never 0)
   const minA = amountAWei * (10000n - slippageBps) / 10000n;
