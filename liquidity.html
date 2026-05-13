@@ -40,10 +40,7 @@
       <div class="balance" onclick="getBalance('B')">Balance: <span id="balB">0.00</span></div>
     </div>
 
-    <button class="create" onclick="createPair()">1. Create Pair (First Time Only)</button>
-    <button class="approve" onclick="approveToken('A')">2. Approve Token A</button>
-    <button class="approve" onclick="approveToken('B')">3. Approve Token B</button>
-    <button class="supply" onclick="addLiquidity()">SUPPLY LIQUIDITY</button>
+    <button class="supply" onclick="addLiquidity()">SUPPLY LIQUIDITY (Auto-Creates Pair)</button>
 
     <div id="status">Ready</div>
   </div>
@@ -72,91 +69,72 @@
       } catch(e) {}
     }
 
-    async function createPair() {
-      const tokenA = document.getElementById("tokenA").value.trim();
-      const tokenB = document.getElementById("tokenB").value.trim();
-
-      if (!ethers.isAddress(tokenA) || !ethers.isAddress(tokenB)) {
-        return alert("❌ Invalid Token A or Token B address");
-      }
-      if (tokenA.toLowerCase() === tokenB.toLowerCase()) {
-        return alert("❌ Token A and Token B cannot be the same");
-      }
-
-      const status = document.getElementById("status");
-      status.innerHTML = "Creating Pair...";
-
-      try {
-        const factory = new ethers.Contract(FACTORY, [
-          "function createPair(address tokenA, address tokenB) external returns (address pair)"
-        ], signer);
-
-        const tx = await factory.createPair(tokenA, tokenB);
-        status.innerHTML = `✅ Pair Created! <a href="https://shibariumscan.io/tx/${tx.hash}" target="_blank">View Tx</a>`;
-        await tx.wait();
-      } catch (e) {
-        status.innerHTML = "❌ " + (e.reason || e.message || "Failed to create pair");
-        console.error(e);
-      }
-    }
-
-    async function approveToken(side) {
-      const tokenAddr = document.getElementById("token" + side).value.trim();
-      const amountStr = document.getElementById("amount" + side).value;
-
-      if (!ethers.isAddress(tokenAddr)) return alert("❌ Invalid token address");
-      if (!amountStr || parseFloat(amountStr) <= 0) return alert("❌ Enter valid amount");
-
-      const status = document.getElementById("status");
-      status.innerHTML = `Approving Token ${side}...`;
-
-      try {
-        const token = new ethers.Contract(tokenAddr, [
-          "function approve(address spender, uint256 amount) external returns (bool)"
-        ], signer);
-
-        const amount = ethers.parseEther(amountStr);
-        const tx = await token.approve(ROUTER, amount);
-        await tx.wait();
-        status.innerHTML = `✅ Token ${side} Approved`;
-      } catch (e) {
-        status.innerHTML = "❌ Approval failed";
-        console.error(e);
-      }
-    }
-
     async function addLiquidity() {
       const tokenA = document.getElementById("tokenA").value.trim();
       const tokenB = document.getElementById("tokenB").value.trim();
       const amtA = document.getElementById("amountA").value;
       const amtB = document.getElementById("amountB").value;
 
-      if (!ethers.isAddress(tokenA) || !ethers.isAddress(tokenB)) return alert("❌ Invalid token address");
-      if (!amtA || !amtB) return alert("❌ Enter amounts");
+      if (!ethers.isAddress(tokenA) || !ethers.isAddress(tokenB)) {
+        return alert("❌ Please enter valid token addresses");
+      }
+      if (tokenA.toLowerCase() === tokenB.toLowerCase()) {
+        return alert("❌ Token A and Token B cannot be the same");
+      }
+      if (!amtA || !amtB || parseFloat(amtA) <= 0 || parseFloat(amtB) <= 0) {
+        return alert("❌ Please enter valid amounts");
+      }
 
       const status = document.getElementById("status");
-      status.innerHTML = "Adding Liquidity...";
-
-      const deadline = Math.floor(Date.now() / 1000) + 1200;
+      status.innerHTML = "Checking pair...";
 
       try {
-        const router = new ethers.Contract(ROUTER, [
-          "function addLiquidity(address tokenA, address tokenB, uint256 amountADesired, uint256 amountBDesired, uint256 amountAMin, uint256 amountBMin, address to, uint256 deadline) external returns (uint256,uint256,uint256)"
+        const factory = new ethers.Contract(FACTORY, [
+          "function getPair(address,address) view returns (address)",
+          "function createPair(address,address) returns (address)"
         ], signer);
 
+        let pair = await factory.getPair(tokenA, tokenB);
+
+        // Auto-create pair if it doesn't exist
+        if (pair === "0x0000000000000000000000000000000000000000") {
+          status.innerHTML = "Creating new pair...";
+          const createTx = await factory.createPair(tokenA, tokenB);
+          await createTx.wait();
+          pair = await factory.getPair(tokenA, tokenB);
+          status.innerHTML = "Pair created successfully!";
+        }
+
+        // Approve both tokens
+        status.innerHTML = "Approving tokens...";
+        const amountAWei = ethers.parseEther(amtA);
+        const amountBWei = ethers.parseEther(amtB);
+
+        const tokenAContract = new ethers.Contract(tokenA, ["function approve(address,uint256)"], signer);
+        const tokenBContract = new ethers.Contract(tokenB, ["function approve(address,uint256)"], signer);
+
+        await tokenAContract.approve(ROUTER, amountAWei);
+        await tokenBContract.approve(ROUTER, amountBWei);
+
+        // Add Liquidity
+        status.innerHTML = "Adding liquidity...";
+        const router = new ethers.Contract(ROUTER, [
+          "function addLiquidity(address,address,uint256,uint256,uint256,uint256,address,uint256) external returns (uint256,uint256,uint256)"
+        ], signer);
+
+        const deadline = Math.floor(Date.now() / 1000) + 1200;
+
         const tx = await router.addLiquidity(
-          tokenA,
-          tokenB,
-          ethers.parseEther(amtA),
-          ethers.parseEther(amtB),
-          0,   // amountAMin
-          0,   // amountBMin
+          tokenA, tokenB,
+          amountAWei, amountBWei,
+          0, 0,                 // min amounts (0 for simplicity)
           userAddress,
           deadline
         );
 
         status.innerHTML = `✅ Success! <a href="https://shibariumscan.io/tx/${tx.hash}" target="_blank">View Transaction</a>`;
         await tx.wait();
+
       } catch (e) {
         console.error(e);
         status.innerHTML = "❌ " + (e.reason || e.message || "Transaction failed");
