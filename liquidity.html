@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>RicSwap | Add Liquidity</title>
-  <script src="https://cdn.jsdelivr.net/npm/web3@latest/dist/web3.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.0/dist/ethers.umd.min.js"></script>
   <style>
     body { background: #050505; color: #e0e0e0; font-family: 'Inter', sans-serif; margin:0; padding:20px; }
     .container { max-width: 620px; margin:auto; background:#12122b; padding:30px; border-radius:16px; box-shadow:0 10px 30px rgba(0,0,0,0.6); }
@@ -14,8 +14,8 @@
     input { width:100%; background:#2a2a4a; border:none; color:#fff; padding:14px; border-radius:8px; font-size:16px; }
     .balance { text-align:right; font-size:13px; color:#888; cursor:pointer; }
     button { width:100%; padding:16px; margin:10px 0; border:none; border-radius:10px; font-weight:bold; cursor:pointer; }
-    .approve { background:#3b82f6; color:white; }
     .create { background:#ffaa00; color:black; }
+    .approve { background:#3b82f6; color:white; }
     .supply { background:#00ff9d; color:black; font-size:18px; }
     #status { margin-top:15px; padding:14px; background:#1f1f3b; border-radius:8px; text-align:center; min-height:28px; }
   </style>
@@ -49,83 +49,75 @@
   </div>
 
   <script>
-    let web3, account;
+    let provider, signer, userAddress;
     const ROUTER = "0x8869D8B61dC440e44B9b844E43B303636982c65e";
-    const FACTORY = "0x78ae5cCD2f13D10aE3fF47F8418A79D99B4569d0";   // ← Your Factory
+    const FACTORY = "0x78ae5cCD2f13D10aE3fF47F8418A79D99B4569d0";
 
     async function connectWallet() {
       if (!window.ethereum) return alert("Please install MetaMask or Rabby");
-      web3 = new Web3(window.ethereum);
-      const accounts = await ethereum.request({ method: 'eth_requestAccounts' });
-      account = accounts[0];
-      document.getElementById("account").innerHTML = `Connected: ${account.slice(0,6)}...${account.slice(-4)}`;
+      provider = new ethers.BrowserProvider(window.ethereum);
+      signer = await provider.getSigner();
+      userAddress = await signer.getAddress();
+      document.getElementById("account").innerHTML = `Connected: ${userAddress.slice(0,6)}...${userAddress.slice(-4)}`;
     }
 
     async function getBalance(side) {
-      if (!account) return;
       const addr = document.getElementById("token" + side).value.trim();
-      if (!addr || !web3.utils.isAddress(addr)) return;
+      if (!ethers.isAddress(addr)) return;
 
       try {
-        const token = new web3.eth.Contract([{
-          "constant": true,
-          "inputs": [{"name":"_owner","type":"address"}],
-          "name": "balanceOf",
-          "outputs": [{"name":"balance","type":"uint256"}],
-          "type": "function"
-        }], addr);
-
-        const bal = await token.methods.balanceOf(account).call();
-        const decimals = 18; // Most tokens use 18 decimals
-        document.getElementById("bal" + side).innerText = parseFloat(web3.utils.fromWei(bal, 'ether')).toFixed(4);
-      } catch(e) {
-        console.error(e);
-      }
+        const token = new ethers.Contract(addr, ["function balanceOf(address) view returns (uint256)"], provider);
+        const bal = await token.balanceOf(userAddress);
+        document.getElementById("bal" + side).innerText = parseFloat(ethers.formatEther(bal)).toFixed(4);
+      } catch(e) {}
     }
 
     async function createPair() {
-      if (!account) return alert("Connect wallet first");
       const tokenA = document.getElementById("tokenA").value.trim();
       const tokenB = document.getElementById("tokenB").value.trim();
 
-      if (!tokenA || !tokenB) return alert("Enter both token addresses");
+      if (!ethers.isAddress(tokenA) || !ethers.isAddress(tokenB)) {
+        return alert("❌ Invalid Token A or Token B address");
+      }
+      if (tokenA.toLowerCase() === tokenB.toLowerCase()) {
+        return alert("❌ Token A and Token B cannot be the same");
+      }
 
       const status = document.getElementById("status");
       status.innerHTML = "Creating Pair...";
 
       try {
-        const factoryABI = [{
-          "inputs": [{"name":"tokenA","type":"address"},{"name":"tokenB","type":"address"}],
-          "name": "createPair",
-          "outputs": [{"name":"pair","type":"address"}],
-          "type": "function"
-        }];
+        const factory = new ethers.Contract(FACTORY, [
+          "function createPair(address tokenA, address tokenB) external returns (address pair)"
+        ], signer);
 
-        const factory = new web3.eth.Contract(factoryABI, FACTORY);
-        const tx = await factory.methods.createPair(tokenA, tokenB).send({ from: account });
-        status.innerHTML = `✅ Pair Created! <a href="https://shibariumscan.io/tx/${tx.transactionHash}" target="_blank">View Tx</a>`;
+        const tx = await factory.createPair(tokenA, tokenB);
+        status.innerHTML = `✅ Pair Created! <a href="https://shibariumscan.io/tx/${tx.hash}" target="_blank">View Tx</a>`;
+        await tx.wait();
       } catch (e) {
-        status.innerHTML = "❌ " + (e.reason || e.message);
+        status.innerHTML = "❌ " + (e.reason || e.message || "Failed to create pair");
         console.error(e);
       }
     }
 
     async function approveToken(side) {
-      if (!account) return alert("Connect wallet first");
       const tokenAddr = document.getElementById("token" + side).value.trim();
       const amountStr = document.getElementById("amount" + side).value;
 
-      if (!tokenAddr || !amountStr) return alert("Enter token address and amount");
+      if (!ethers.isAddress(tokenAddr)) return alert("❌ Invalid token address");
+      if (!amountStr || parseFloat(amountStr) <= 0) return alert("❌ Enter valid amount");
 
       const status = document.getElementById("status");
       status.innerHTML = `Approving Token ${side}...`;
 
-      const abi = [{"constant":false,"inputs":[{"name":"spender","type":"address"},{"name":"amount","type":"uint256"}],"name":"approve","outputs":[{"name":"","type":"bool"}],"type":"function"}];
-      const token = new web3.eth.Contract(abi, tokenAddr);
-      const amount = web3.utils.toWei(amountStr, 'ether');
-
       try {
-        await token.methods.approve(ROUTER, amount).send({ from: account });
+        const token = new ethers.Contract(tokenAddr, [
+          "function approve(address spender, uint256 amount) external returns (bool)"
+        ], signer);
+
+        const amount = ethers.parseEther(amountStr);
+        const tx = await token.approve(ROUTER, amount);
+        await tx.wait();
         status.innerHTML = `✅ Token ${side} Approved`;
       } catch (e) {
         status.innerHTML = "❌ Approval failed";
@@ -134,14 +126,13 @@
     }
 
     async function addLiquidity() {
-      if (!account) return alert("Connect wallet first");
-
       const tokenA = document.getElementById("tokenA").value.trim();
       const tokenB = document.getElementById("tokenB").value.trim();
       const amtA = document.getElementById("amountA").value;
       const amtB = document.getElementById("amountB").value;
 
-      if (!tokenA || !tokenB || !amtA || !amtB) return alert("Fill all fields");
+      if (!ethers.isAddress(tokenA) || !ethers.isAddress(tokenB)) return alert("❌ Invalid token address");
+      if (!amtA || !amtB) return alert("❌ Enter amounts");
 
       const status = document.getElementById("status");
       status.innerHTML = "Adding Liquidity...";
@@ -149,36 +140,23 @@
       const deadline = Math.floor(Date.now() / 1000) + 1200;
 
       try {
-        const routerABI = [{
-          "inputs": [
-            {"name":"tokenA","type":"address"},
-            {"name":"tokenB","type":"address"},
-            {"name":"amountADesired","type":"uint256"},
-            {"name":"amountBDesired","type":"uint256"},
-            {"name":"amountAMin","type":"uint256"},
-            {"name":"amountBMin","type":"uint256"},
-            {"name":"to","type":"address"},
-            {"name":"deadline","type":"uint256"}
-          ],
-          "name": "addLiquidity",
-          "outputs": [],
-          "type": "function"
-        }];
+        const router = new ethers.Contract(ROUTER, [
+          "function addLiquidity(address tokenA, address tokenB, uint256 amountADesired, uint256 amountBDesired, uint256 amountAMin, uint256 amountBMin, address to, uint256 deadline) external returns (uint256,uint256,uint256)"
+        ], signer);
 
-        const router = new web3.eth.Contract(routerABI, ROUTER);
-
-        await router.methods.addLiquidity(
+        const tx = await router.addLiquidity(
           tokenA,
           tokenB,
-          web3.utils.toWei(amtA, 'ether'),
-          web3.utils.toWei(amtB, 'ether'),
-          0,
-          0,
-          account,
+          ethers.parseEther(amtA),
+          ethers.parseEther(amtB),
+          0,   // amountAMin
+          0,   // amountBMin
+          userAddress,
           deadline
-        ).send({ from: account });
+        );
 
-        status.innerHTML = `✅ Success! Liquidity Added.`;
+        status.innerHTML = `✅ Success! <a href="https://shibariumscan.io/tx/${tx.hash}" target="_blank">View Transaction</a>`;
+        await tx.wait();
       } catch (e) {
         console.error(e);
         status.innerHTML = "❌ " + (e.reason || e.message || "Transaction failed");
