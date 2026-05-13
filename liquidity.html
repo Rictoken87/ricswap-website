@@ -1,118 +1,197 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RicSwap | Add Liquidity</title>
-    <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.0/dist/ethers.umd.min.js"></script>
-    <style>
-        body { background: #050505; color: #e0e0e0; font-family: monospace; display: flex; justify-content: center; padding: 30px; }
-        .card { background: #111; padding: 30px; border: 1px solid #333; width: 520px; border-radius: 16px; }
-        h2 { color: #00ff88; text-align: center; }
-        .input-group { margin-bottom: 20px; background: #1a1a1a; padding: 15px; border-radius: 12px; }
-        label { display: block; color: #888; font-size: 12px; margin-bottom: 6px; }
-        input { width: 100%; background: #222; border: none; color: #fff; padding: 12px; border-radius: 8px; }
-        button { width: 100%; padding: 18px; background: #00ff88; color: #000; border: none; border-radius: 12px; font-weight: bold; margin-top: 15px; cursor: pointer; }
-        #status { margin-top: 20px; padding: 15px; background: #000; border: 1px solid #222; border-radius: 8px; font-size: 13px; min-height: 80px; }
-        .success { color: #00ff88; }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RicSwap - Add Liquidity</title>
+  <script src="https://cdn.jsdelivr.net/npm/web3@latest/dist/web3.min.js"></script>
+  <style>
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background: #0a0a1f;
+      color: #fff;
+      margin: 0;
+      padding: 20px;
+    }
+    .container {
+      max-width: 620px;
+      margin: auto;
+      background: #12122b;
+      padding: 30px;
+      border-radius: 16px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+    }
+    h1 { text-align: center; margin-bottom: 30px; }
+    .token-box {
+      background: #1f1f3b;
+      padding: 20px;
+      border-radius: 12px;
+      margin-bottom: 20px;
+    }
+    label { display: block; margin-bottom: 8px; font-weight: bold; }
+    input[type="text"], input[type="number"] {
+      width: 100%;
+      padding: 14px;
+      background: #2a2a4a;
+      border: none;
+      border-radius: 8px;
+      color: #fff;
+      font-size: 16px;
+    }
+    button {
+      width: 100%;
+      padding: 16px;
+      margin: 10px 0;
+      border: none;
+      border-radius: 8px;
+      font-weight: bold;
+      cursor: pointer;
+      font-size: 17px;
+    }
+    .approve-btn { background: #3b82f6; color: white; }
+    .add-btn { background: #00ff9d; color: black; font-size: 18px; }
+    .status {
+      margin: 15px 0;
+      padding: 14px;
+      background: #2a2a4a;
+      border-radius: 8px;
+      text-align: center;
+      min-height: 24px;
+    }
+    .balance { text-align: right; font-size: 0.9em; color: #aaa; cursor: pointer; }
+  </style>
 </head>
 <body>
-<div class="card">
-    <h2>💧 Add Liquidity</h2>
-    
-    <div class="input-group">
-        <label>Token A (e.g. RIC)</label>
-        <input id="tokenA" placeholder="0x..." value="">
-        <input id="amountA" type="number" placeholder="Amount" value="100">
-    </div>
-    
-    <div class="input-group">
-        <label>Token B (Any Token)</label>
-        <input id="tokenB" placeholder="0x..." value="">
-        <input id="amountB" type="number" placeholder="Amount" value="100">
+  <div class="container">
+    <h1>Add Liquidity</h1>
+    <button onclick="connectWallet()">Connect Wallet</button>
+    <p id="account" style="text-align:center; font-size:0.9em;"></p>
+
+    <!-- Token A -->
+    <div class="token-box">
+      <label>Token A Address</label>
+      <input type="text" id="tokenA" placeholder="0x...">
+      <input type="number" id="amountA" placeholder="Amount" step="0.0000001">
+      <div class="balance" onclick="getBalance('A')">Balance: <span id="balanceA">0.00</span></div>
     </div>
 
-    <button onclick="addLiquidity()">ADD LIQUIDITY + AUTO BURN LP</button>
-    <div id="status">Ready</div>
-</div>
+    <!-- Token B -->
+    <div class="token-box">
+      <label>Token B Address</label>
+      <input type="text" id="tokenB" placeholder="0x...">
+      <input type="number" id="amountB" placeholder="Amount" step="0.0000001">
+      <div class="balance" onclick="getBalance('B')">Balance: <span id="balanceB">0.00</span></div>
+    </div>
 
-<script>
-    const ROUTER = "0xe8E937e14842f376f4EA5bdBf211422c46d12473";   // ← Your Working Router
-    const FACTORY = "0x78ae5cCD2f13D10aE3fF47F8418A79D99B4569d0";
-    const DEAD = "0x000000000000000000000000000000000000dEaD";
+    <button class="approve-btn" onclick="approveToken('A')">Approve Token A</button>
+    <button class="approve-btn" onclick="approveToken('B')">Approve Token B</button>
+    <button class="add-btn" onclick="addLiquidity()">Add Liquidity</button>
+
+    <div id="status" class="status">Ready to add liquidity</div>
+  </div>
+
+  <script>
+    let web3;
+    let account;
+    const routerAddress = "0x8869D8B61dC440e44B9b844E43B303636982c65e";
+
+    async function connectWallet() {
+      if (!window.ethereum) return alert("Please install MetaMask");
+      web3 = new Web3(window.ethereum);
+      const accounts = await ethereum.request({ method: 'eth_requestAccounts' });
+      account = accounts[0];
+      document.getElementById("account").innerHTML = `Connected: ${account.slice(0,6)}...${account.slice(-4)}`;
+    }
+
+    async function getBalance(side) {
+      if (!account) return;
+      const tokenAddr = document.getElementById("token" + side).value;
+      if (!tokenAddr) return;
+
+      try {
+        const token = new web3.eth.Contract([{"constant":true,"inputs":[{"name":"_owner","type":"address"}],"name":"balanceOf","outputs":[{"name":"balance","type":"uint256"}],"type":"function"}], tokenAddr);
+        const bal = await token.methods.balanceOf(account).call();
+        document.getElementById("balance" + side).innerHTML = web3.utils.fromWei(bal, 'ether');
+      } catch(e) {}
+    }
+
+    async function approveToken(side) {
+      if (!account) return alert("Connect wallet first");
+      const tokenAddr = document.getElementById("token" + side).value;
+      const amount = document.getElementById("amount" + side).value;
+
+      if (!tokenAddr || !amount) return alert("Please enter token address and amount");
+
+      const status = document.getElementById("status");
+      status.innerHTML = `Approving Token ${side}...`;
+
+      const abi = [{"constant":false,"inputs":[{"name":"spender","type":"address"},{"name":"amount","type":"uint256"}],"name":"approve","outputs":[{"name":"","type":"bool"}],"type":"function"}];
+      const token = new web3.eth.Contract(abi, tokenAddr);
+
+      try {
+        await token.methods.approve(routerAddress, web3.utils.toWei(amount, 'ether')).send({ from: account });
+        status.innerHTML = `✅ Token ${side} Approved`;
+      } catch (err) {
+        status.innerHTML = "❌ Approval failed";
+      }
+    }
 
     async function addLiquidity() {
-        const status = document.getElementById("status");
-        const tokenA = document.getElementById("tokenA").value.trim();
-        const tokenB = document.getElementById("tokenB").value.trim();
-        const amtA = document.getElementById("amountA").value;
-        const amtB = document.getElementById("amountB").value;
+      if (!account) return alert("Connect wallet first");
 
-        if (!ethers.isAddress(tokenA) || !ethers.isAddress(tokenB)) {
-            return status.innerHTML = `<span class="error">Invalid token address</span>`;
-        }
+      const tokenA = document.getElementById("tokenA").value;
+      const tokenB = document.getElementById("tokenB").value;
+      const amountA = document.getElementById("amountA").value;
+      const amountB = document.getElementById("amountB").value;
 
-        try {
-            status.innerText = "Connecting wallet...";
-            const provider = new ethers.BrowserProvider(window.ethereum);
-            const signer = await provider.getSigner();
-            const user = await signer.getAddress();
+      if (!tokenA || !tokenB || !amountA || !amountB) {
+        return alert("Please fill all fields");
+      }
 
-            // Approve both tokens
-            status.innerText = "Approving Token A...";
-            await new ethers.Contract(tokenA, ["function approve(address,uint256)"], signer)
-                .approve(ROUTER, ethers.MaxUint256).then(tx => tx.wait());
+      const status = document.getElementById("status");
+      status.innerHTML = "Adding Liquidity...";
 
-            status.innerText = "Approving Token B...";
-            await new ethers.Contract(tokenB, ["function approve(address,uint256)"], signer)
-                .approve(ROUTER, ethers.MaxUint256).then(tx => tx.wait());
+      const deadline = Math.floor(Date.now() / 1000) + 600; // 10 minutes
 
-            // Add Liquidity
-            status.innerText = "Adding Liquidity...";
-            const router = new ethers.Contract(ROUTER, [
-                "function addLiquidity(address tokenA, address tokenB, uint amountADesired, uint amountBDesired, uint amountAMin, uint amountBMin, address to, uint deadline) returns (uint,uint,uint)"
-            ], signer);
+      try {
+        const routerABI = [{
+          "inputs": [
+            {"name":"tokenA","type":"address"},
+            {"name":"tokenB","type":"address"},
+            {"name":"amountADesired","type":"uint256"},
+            {"name":"amountBDesired","type":"uint256"},
+            {"name":"amountAMin","type":"uint256"},
+            {"name":"amountBMin","type":"uint256"},
+            {"name":"to","type":"address"},
+            {"name":"deadline","type":"uint256"}
+          ],
+          "name": "addLiquidity",
+          "outputs": [{"name":"amountA","type":"uint256"},{"name":"amountB","type":"uint256"},{"name":"liquidity","type":"uint256"}],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        }];
 
-            const deadline = Math.floor(Date.now() / 1000) + 1800;
-            const tx = await router.addLiquidity(
-                tokenA, tokenB,
-                ethers.parseUnits(amtA, 18),
-                ethers.parseUnits(amtB, 18),
-                0, 0,
-                user,
-                deadline,
-                { gasLimit: 3000000 }
-            );
+        const router = new web3.eth.Contract(routerABI, routerAddress);
 
-            status.innerHTML = `Tx Sent → <a href="https://shibariumscan.io/tx/${tx.hash}" target="_blank">View</a>`;
-            await tx.wait();
+        await router.methods.addLiquidity(
+          tokenA,
+          tokenB,
+          web3.utils.toWei(amountA, 'ether'),
+          web3.utils.toWei(amountB, 'ether'),
+          0,   // amountAMin (0 for testing)
+          0,   // amountBMin (0 for testing)
+          account,
+          deadline
+        ).send({ from: account });
 
-            // Auto Burn LP
-            status.innerText = "Burning LP tokens to DEAD...";
-            const factory = new ethers.Contract(FACTORY, ["function getPair(address,address) view returns (address)"], provider);
-            const lpAddr = await factory.getPair(tokenA, tokenB);
+        status.innerHTML = "✅ Liquidity Added Successfully!";
+        alert("Liquidity added successfully!");
 
-            if (lpAddr !== "0x0000000000000000000000000000000000000000") {
-                const lpContract = new ethers.Contract(lpAddr, [
-                    "function balanceOf(address) view returns (uint256)",
-                    "function transfer(address,uint256) returns (bool)"
-                ], signer);
-
-                const balance = await lpContract.balanceOf(user);
-                if (balance > 0) {
-                    const burnTx = await lpContract.transfer(DEAD, balance);
-                    await burnTx.wait();
-                }
-            }
-
-            status.innerHTML = `<span class="success">✅ SUCCESS! Liquidity Added & LP Permanently Burned</span>`;
-
-        } catch (e) {
-            console.error(e);
-            status.innerHTML = `<span class="error">Error: ${e.reason || e.message}</span>`;
-        }
+      } catch (err) {
+        console.error(err);
+        status.innerHTML = "❌ Error: " + (err.message || err);
+      }
     }
-</script>
+  </script>
 </body>
 </html>
