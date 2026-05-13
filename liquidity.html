@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>RicSwap | Add Any Liquidity</title>
+  <title>RicSwap | Add Liquidity</title>
   <script src="https://cdn.jsdelivr.net/npm/web3@latest/dist/web3.min.js"></script>
   <style>
     body { background: #050505; color: #e0e0e0; font-family: 'Inter', sans-serif; margin:0; padding:20px; }
@@ -15,6 +15,7 @@
     .balance { text-align:right; font-size:13px; color:#888; cursor:pointer; }
     button { width:100%; padding:16px; margin:10px 0; border:none; border-radius:10px; font-weight:bold; cursor:pointer; }
     .approve { background:#3b82f6; color:white; }
+    .create { background:#ffaa00; color:black; }
     .supply { background:#00ff9d; color:black; font-size:18px; }
     #status { margin-top:15px; padding:14px; background:#1f1f3b; border-radius:8px; text-align:center; min-height:28px; }
   </style>
@@ -39,8 +40,9 @@
       <div class="balance" onclick="getBalance('B')">Balance: <span id="balB">0.00</span></div>
     </div>
 
-    <button class="approve" onclick="approveToken('A')">1. Approve Token A</button>
-    <button class="approve" onclick="approveToken('B')">2. Approve Token B</button>
+    <button class="create" onclick="createPair()">1. Create Pair (First Time Only)</button>
+    <button class="approve" onclick="approveToken('A')">2. Approve Token A</button>
+    <button class="approve" onclick="approveToken('B')">3. Approve Token B</button>
     <button class="supply" onclick="addLiquidity()">SUPPLY LIQUIDITY</button>
 
     <div id="status">Ready</div>
@@ -48,7 +50,8 @@
 
   <script>
     let web3, account;
-    const ROUTER = "0x8869D8B61dC440e44B9b844E43B303636982c65e";   // Your latest working router
+    const ROUTER = "0x8869D8B61dC440e44B9b844E43B303636982c65e";
+    const FACTORY = "0x78ae5cCD2f13D10aE3fF47F8418A79D99B4569d0";   // ← Your Factory
 
     async function connectWallet() {
       if (!window.ethereum) return alert("Please install MetaMask or Rabby");
@@ -73,8 +76,36 @@
         }], addr);
 
         const bal = await token.methods.balanceOf(account).call();
-        document.getElementById("bal" + side).innerText = web3.utils.fromWei(bal, 'ether');
+        const decimals = 18; // Most tokens use 18 decimals
+        document.getElementById("bal" + side).innerText = parseFloat(web3.utils.fromWei(bal, 'ether')).toFixed(4);
       } catch(e) {
+        console.error(e);
+      }
+    }
+
+    async function createPair() {
+      if (!account) return alert("Connect wallet first");
+      const tokenA = document.getElementById("tokenA").value.trim();
+      const tokenB = document.getElementById("tokenB").value.trim();
+
+      if (!tokenA || !tokenB) return alert("Enter both token addresses");
+
+      const status = document.getElementById("status");
+      status.innerHTML = "Creating Pair...";
+
+      try {
+        const factoryABI = [{
+          "inputs": [{"name":"tokenA","type":"address"},{"name":"tokenB","type":"address"}],
+          "name": "createPair",
+          "outputs": [{"name":"pair","type":"address"}],
+          "type": "function"
+        }];
+
+        const factory = new web3.eth.Contract(factoryABI, FACTORY);
+        const tx = await factory.methods.createPair(tokenA, tokenB).send({ from: account });
+        status.innerHTML = `✅ Pair Created! <a href="https://shibariumscan.io/tx/${tx.transactionHash}" target="_blank">View Tx</a>`;
+      } catch (e) {
+        status.innerHTML = "❌ " + (e.reason || e.message);
         console.error(e);
       }
     }
@@ -84,20 +115,12 @@
       const tokenAddr = document.getElementById("token" + side).value.trim();
       const amountStr = document.getElementById("amount" + side).value;
 
-      if (!tokenAddr || !web3.utils.isAddress(tokenAddr)) return alert("Invalid token address");
-      if (!amountStr || parseFloat(amountStr) <= 0) return alert("Enter amount");
+      if (!tokenAddr || !amountStr) return alert("Enter token address and amount");
 
       const status = document.getElementById("status");
       status.innerHTML = `Approving Token ${side}...`;
 
-      const abi = [{
-        "constant": false,
-        "inputs": [{"name":"spender","type":"address"},{"name":"amount","type":"uint256"}],
-        "name": "approve",
-        "outputs": [{"name":"","type":"bool"}],
-        "type": "function"
-      }];
-
+      const abi = [{"constant":false,"inputs":[{"name":"spender","type":"address"},{"name":"amount","type":"uint256"}],"name":"approve","outputs":[{"name":"","type":"bool"}],"type":"function"}];
       const token = new web3.eth.Contract(abi, tokenAddr);
       const amount = web3.utils.toWei(amountStr, 'ether');
 
@@ -149,13 +172,13 @@
           tokenB,
           web3.utils.toWei(amtA, 'ether'),
           web3.utils.toWei(amtB, 'ether'),
-          0,   // amountAMin
-          0,   // amountBMin
+          0,
+          0,
           account,
           deadline
         ).send({ from: account });
 
-        status.innerHTML = `✅ Success! <a href="https://shibariumscan.io/address/${account}" target="_blank">Check your LP</a>`;
+        status.innerHTML = `✅ Success! Liquidity Added.`;
       } catch (e) {
         console.error(e);
         status.innerHTML = "❌ " + (e.reason || e.message || "Transaction failed");
