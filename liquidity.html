@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -789,7 +788,7 @@ async function addLiquidity() {
     const tokenAContract = new ethers.Contract(addrA, ERC20_ABI, signer);
     const tokenBContract = new ethers.Contract(addrB, ERC20_ABI, signer);
 
-    // [FIX-9] Check allowance before approving
+    // ── Step 1: Check allowances ──────────────────────────────────
     setStatus("loading", null, "Checking allowances...");
 
     const [allowanceA, allowanceB] = await Promise.all([
@@ -797,56 +796,84 @@ async function addLiquidity() {
       tokenBContract.allowance(userAddress, CONFIG.ROUTER),
     ]);
 
-    // [FIX-3] Await approve tx and wait for mining
+    // ── Step 2: Approve Token A if needed ────────────────────────
     if (allowanceA < amountAWei) {
       setStatus("loading", null, `Approving ${tokenInfo.A.symbol}...`);
-      const txA = await tokenAContract.approve(CONFIG.ROUTER, amountAWei);
-      setStatus("loading", null, `Waiting for ${tokenInfo.A.symbol} approval...`);
+      let txA;
+      try {
+        txA = await tokenAContract.approve(CONFIG.ROUTER, amountAWei);
+      } catch(e) {
+        throw new Error(`${tokenInfo.A.symbol} approval rejected: ${decodeError(e)}`);
+      }
+      setStatus("loading", null, `Waiting for ${tokenInfo.A.symbol} approval to confirm...`);
       await txA.wait();
     }
 
+    // ── Step 3: Approve Token B if needed ────────────────────────
     if (allowanceB < amountBWei) {
       setStatus("loading", null, `Approving ${tokenInfo.B.symbol}...`);
-      const txB = await tokenBContract.approve(CONFIG.ROUTER, amountBWei);
-      setStatus("loading", null, `Waiting for ${tokenInfo.B.symbol} approval...`);
+      let txB;
+      try {
+        txB = await tokenBContract.approve(CONFIG.ROUTER, amountBWei);
+      } catch(e) {
+        throw new Error(`${tokenInfo.B.symbol} approval rejected: ${decodeError(e)}`);
+      }
+      setStatus("loading", null, `Waiting for ${tokenInfo.B.symbol} approval to confirm...`);
       await txB.wait();
     }
 
-    // Add liquidity
-    setStatus("loading", null, "Adding liquidity...");
+    // ── Step 4: Pre-flight simulation (catches revert before sending) ──
+    // Shibarium RPC does not return revert data on failed txs.
+    // staticCall runs the exact same call locally and surfaces the real reason.
+    setStatus("loading", null, "Simulating transaction...");
 
     const router   = new ethers.Contract(CONFIG.ROUTER, ROUTER_ABI, signer);
-    // Shibarium ~2-5s blocks; 5 min deadline is safe
     const deadline = BigInt(Math.floor(Date.now() / 1000) + 300);
+
+    try {
+      await router.addLiquidity.staticCall(
+        addrA, addrB,
+        amountAWei, amountBWei,
+        minA, minB,
+        userAddress,
+        deadline
+      );
+    } catch(simErr) {
+      // Simulation failed — decode and surface the real revert reason
+      const reason = decodeError(simErr);
+      throw new Error(`Simulation failed: ${reason}`);
+    }
+
+    // ── Step 5: Send the real transaction ────────────────────────
+    setStatus("loading", null, "Sending transaction...");
 
     const tx = await router.addLiquidity(
       addrA, addrB,
       amountAWei, amountBWei,
-      minA, minB,           // [FIX-1] slippage-protected minimums
+      minA, minB,
       userAddress,
       deadline
     );
 
-    setStatus("loading", null, "Confirming transaction...");
+    setStatus("loading", null, `Confirming... (tx: ${tx.hash.slice(0,10)}...)`);
     const receipt = await tx.wait();
 
-    // [FIX-16] Parse LP tokens received from mint event (Transfer from zero address)
+    // ── Step 6: Parse LP tokens from mint Transfer event ─────────
     let lpReceived = "—";
     try {
       const transferTopic = ethers.id("Transfer(address,address,uint256)");
-      const zeroAddr      = "0x0000000000000000000000000000000000000000";
+      const zeroAddr = "0x0000000000000000000000000000000000000000";
       for (const log of receipt.logs) {
         if (
           log.topics[0] === transferTopic &&
           log.topics.length === 3 &&
           ethers.getAddress("0x" + log.topics[1].slice(26)) === zeroAddr
         ) {
-          const amount  = BigInt(log.data);
-          lpReceived    = formatUnits(amount, 18) + " LP";
+          lpReceived = formatUnits(BigInt(log.data), 18) + " LP";
           break;
         }
       }
-    } catch(e) { /* non-critical */ }
+    } catch(_) { /* non-critical */ }
 
     document.getElementById("lpAmount").textContent = lpReceived;
     document.getElementById("lpResult").classList.add("show");
@@ -862,9 +889,7 @@ async function addLiquidity() {
 
   } catch(e) {
     console.error(e);
-    const msg = e?.reason || e?.shortMessage || e?.message || "Transaction failed";
-    // [FIX-15] Sanitize error for textContent; only link uses innerHTML
-    setStatus("error", "✕", sanitize(msg));
+    setStatus("error", "✕", sanitize(decodeError(e)));
   } finally {
     setButtonLoading(false);
   }
@@ -912,9 +937,80 @@ function setButtonLoading(loading) {
   btn.textContent = loading ? "Processing..." : "Supply Liquidity";
 }
 
-// [FIX-15] Sanitize error strings before display
+// ─────────────────────────────────────────────
+// Error decoder — handles Shibarium RPC quirks
+// Shibarium's RPC often returns "missing revert data"
+// instead of the actual revert reason. This function
+// tries every known error shape to find the real message.
+// ─────────────────────────────────────────────
+function decodeError(e) {
+  if (!e) return "Unknown error";
+
+  // 1. Ethers v6 structured error
+  if (e.reason)       return e.reason;
+  if (e.shortMessage) return e.shortMessage;
+
+  // 2. Nested revert data (common on Shibarium)
+  if (e.error?.reason)        return e.error.reason;
+  if (e.error?.error?.reason) return e.error.error.reason;
+
+  // 3. Revert data as hex — decode manually
+  // e.g. "0x08c379a0..." is Error(string)
+  const data = e?.data
+    || e?.error?.data
+    || e?.error?.error?.data
+    || e?.info?.error?.data;
+
+  if (typeof data === "string" && data.startsWith("0x08c379a0")) {
+    try {
+      // Skip 4-byte selector, decode the rest as (string)
+      const decoded = ethers.AbiCoder.defaultAbiCoder().decode(
+        ["string"],
+        "0x" + data.slice(10)
+      );
+      return decoded[0];
+    } catch(_) {}
+  }
+
+  // 4. Panic code (e.g. 0x4e487b71)
+  if (typeof data === "string" && data.startsWith("0x4e487b71")) {
+    try {
+      const decoded = ethers.AbiCoder.defaultAbiCoder().decode(
+        ["uint256"],
+        "0x" + data.slice(10)
+      );
+      const codes = {
+        1: "Assertion failed", 11: "Arithmetic overflow",
+        12: "Division by zero", 17: "Enum conversion error",
+        18: "Incorrect storage access", 21: "Invalid array pop",
+        22: "Array index out of bounds", 31: "Too much memory",
+        32: "Zero-initialised variable", 41: "Too large allocation",
+        51: "Call to zero-initialized function pointer"
+      };
+      return `Panic: ${codes[Number(decoded[0])] || "code " + decoded[0]}`;
+    } catch(_) {}
+  }
+
+  // 5. User rejected
+  if (e.code === 4001 || e.code === "ACTION_REJECTED") return "Transaction rejected by user";
+
+  // 6. Raw message fallback
+  const raw = e.message || String(e);
+
+  // Strip ethers boilerplate that obscures the real reason
+  const match = raw.match(/reason="([^"]+)"/);
+  if (match) return match[1];
+
+  const match2 = raw.match(/reverted with reason string '([^']+)'/);
+  if (match2) return match2[1];
+
+  // 7. Last resort — truncate
+  return raw.replace("missing revert data", "Contract reverted (check router/factory addresses and token approvals)").slice(0, 220);
+}
+
+// [FIX-15] Sanitize strings before inserting as textContent
 function sanitize(str) {
-  return String(str).replace(/<[^>]*>/g, "").slice(0, 200);
+  return String(str).replace(/<[^>]*>/g, "").slice(0, 220);
 }
 
 // Initialize status
