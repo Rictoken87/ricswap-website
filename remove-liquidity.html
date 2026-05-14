@@ -15,7 +15,7 @@
     *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
     body{background:var(--bg);color:var(--tx);font-family:var(--sa);min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px}
     body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(255,77,0,.025)1px,transparent 1px),linear-gradient(90deg,rgba(255,77,0,.025)1px,transparent 1px);background-size:40px 40px;pointer-events:none;z-index:0}
-    .card{position:relative;z-index:1;width:100%;max-width:560px;background:var(--su);border:1px solid var(--bd);border-radius:20px;padding:32px;box-shadow:0 32px 64px rgba(0,0,0,.6)}
+    .card{position:relative;z-index:1;width:100%;max-width:540px;background:var(--su);border:1px solid var(--bd);border-radius:20px;padding:32px;box-shadow:0 32px 64px rgba(0,0,0,.6)}
     .header{display:flex;align-items:center;justify-content:space-between;margin-bottom:24px}
     .logo{font-weight:800;font-size:22px;letter-spacing:-0.5px}.logo span{color:var(--ac)}
     .net-pill{display:flex;align-items:center;gap:6px;background:rgba(0,255,178,.07);border:1px solid rgba(0,255,178,.18);border-radius:20px;padding:5px 12px;font-family:var(--mo);font-size:11px;color:var(--gr)}
@@ -24,10 +24,14 @@
     .wallet-btn{width:100%;padding:13px;background:transparent;border:1px solid var(--b2);border-radius:12px;color:var(--t2);font-family:var(--mo);font-size:13px;display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:24px;transition:all .2s}
     .wallet-btn:hover{border-color:var(--ac);color:var(--tx)}
     .wallet-btn.con{border-color:var(--gr);color:var(--gr);background:rgba(0,255,178,.05)}
-    .tabs{display:flex;background:var(--s2);border-radius:12px;padding:4px;margin-bottom:24px}
-    .tab{flex:1;padding:11px;text-align:center;border-radius:10px;cursor:pointer;font-family:var(--mo);font-size:13px}
-    .tab.active{background:var(--su);color:var(--tx);font-weight:700}
-    .lp-card{background:var(--s2);border:1px solid var(--bd);border-radius:14px;padding:18px;margin-bottom:20px}
+    .section-title{font-family:var(--mo);font-size:11px;color:var(--mu);text-transform:uppercase;letter-spacing:1.5px;margin:20px 0 10px}
+    .input-group{background:var(--s2);border:1px solid var(--bd);border-radius:14px;padding:18px;margin-bottom:12px}
+    .addr-input{width:100%;background:rgba(255,255,255,.04);border:1px solid var(--bd);border-radius:8px;padding:10px 12px;font-family:var(--mo);font-size:13px;color:var(--tx);margin-bottom:12px}
+    .amount-row{display:flex;align-items:center;gap:12px}
+    .amount-input{flex:1;background:transparent;border:none;color:var(--tx);font-size:32px;font-weight:800;font-family:var(--sa);outline:none}
+    .balance-info{font-family:var(--mo);font-size:12px;color:var(--t2);display:flex;align-items:center;gap:8px}
+    .max-btn{font-size:10px;padding:3px 9px;background:rgba(255,77,0,.1);border:1px solid rgba(255,77,0,.3);border-radius:4px;color:var(--ac);cursor:pointer}
+    .meta{font-size:11px;color:var(--gr);margin-top:6px}
     .percent-btns{display:flex;gap:6px;margin:12px 0;flex-wrap:wrap}
     .pct-btn{padding:8px 18px;background:transparent;border:1px solid var(--b2);border-radius:8px;font-family:var(--mo);font-size:13px;cursor:pointer;transition:all .2s}
     .pct-btn.active{background:rgba(255,77,0,.15);border-color:var(--ac);color:var(--ac)}
@@ -56,44 +60,36 @@
     <span id="walletLabel">Connect Wallet</span>
   </button>
 
-  <div class="tabs">
-    <div class="tab active" onclick="switchTab(0)">Remove Liquidity</div>
-    <div class="tab" onclick="switchTab(1)">My Positions</div>
-  </div>
-
-  <div id="tab0">
-    <div class="lp-card">
-      <div class="section-title">LP Token Address</div>
-      <input class="addr-input" id="lpAddress" placeholder="0x... LP Token Address" oninput="loadLPInfo()">
-      
+  <div class="section-title">LP Token Address</div>
+  <div class="input-group">
+    <input class="addr-input" id="lpAddress" placeholder="0x... LP Token Address" oninput="loadLPInfo()">
+    <div class="amount-row">
       <input class="amount-input" id="lpAmount" type="number" placeholder="0.0" oninput="updatePreview()">
-      
-      <div class="percent-btns">
-        <button class="pct-btn" onclick="setPercent(25)">25%</button>
-        <button class="pct-btn" onclick="setPercent(50)">50%</button>
-        <button class="pct-btn" onclick="setPercent(75)">75%</button>
-        <button class="pct-btn active" onclick="setPercent(100)">MAX</button>
+      <div class="balance-info">
+        <span id="lpBalance">—</span>
       </div>
-      <div id="lpBalance" style="margin-top:8px;font-size:12px;color:var(--t2)">Balance: —</div>
     </div>
-
-    <div class="section-title">You Will Receive</div>
-    <div class="receive-box" id="receiveBox">
-      <div class="receive-row"><span id="tokenAName">Token A</span><span id="amtA">0.0000</span></div>
-      <div class="receive-row"><span id="tokenBName">Token B</span><span id="amtB">0.0000</span></div>
-    </div>
-
-    <button class="remove-btn" id="removeBtn" onclick="removeLiquidity()">REMOVE LIQUIDITY</button>
+    <div class="meta" id="lpMeta"></div>
   </div>
 
-  <div id="tab1" style="display:none">
-    <div class="section-title">Your Liquidity Positions</div>
-    <div id="positionsList">Connect wallet to load positions</div>
+  <div class="percent-btns">
+    <button class="pct-btn" onclick="setPercent(25)">25%</button>
+    <button class="pct-btn" onclick="setPercent(50)">50%</button>
+    <button class="pct-btn" onclick="setPercent(75)">75%</button>
+    <button class="pct-btn active" onclick="setPercent(100)">MAX</button>
   </div>
+
+  <div class="section-title">You Will Receive</div>
+  <div class="receive-box" id="receiveBox">
+    <div class="receive-row"><span id="tokenAName">Token A</span><span id="amtA">0.0000</span></div>
+    <div class="receive-row"><span id="tokenBName">Token B</span><span id="amtB">0.0000</span></div>
+  </div>
+
+  <button class="remove-btn" id="removeBtn" onclick="removeLiquidity()">REMOVE LIQUIDITY</button>
 
   <div class="status-box" id="statusBox">
     <span id="statusIcon">○</span>
-    <span id="statusText">Ready</span>
+    <span id="statusText">Connect wallet to begin</span>
   </div>
 </div>
 
@@ -109,53 +105,76 @@ let provider, signer, userAddress;
 let currentLP = null;
 
 async function connectWallet() {
-  if (!window.ethereum) return alert("Please install MetaMask or Rabby Wallet");
+  if (!window.ethereum) return alert("Please install MetaMask or Rabby");
+  
+  provider = new ethers.BrowserProvider(window.ethereum, { url: CONFIG.RPC });
+  signer = await provider.getSigner();
+
+  const net = await provider.getNetwork();
+  if (net.chainId !== BigInt(CONFIG.CHAIN_ID)) {
+    await window.ethereum.request({method: "wallet_switchEthereumChain", params: [{chainId: "0x6d"}]});
+  }
+
+  userAddress = await signer.getAddress();
+  document.getElementById("walletBtn").classList.add("con");
+  document.getElementById("walletLabel").textContent = userAddress.slice(0,6)+"..." + userAddress.slice(-4);
+  setStatus("", "Wallet connected");
+}
+
+async function loadLPInfo() {
+  const addr = document.getElementById("lpAddress").value.trim();
+  if (!ethers.isAddress(addr)) return;
 
   try {
-    provider = new ethers.BrowserProvider(window.ethereum);
-    signer = await provider.getSigner();
+    const pair = new ethers.Contract(addr, [
+      "function token0() view returns (address)",
+      "function token1() view returns (address)",
+      "function balanceOf(address) view returns (uint256)",
+      "function symbol() view returns (string)"
+    ], provider);
 
-    const network = await provider.getNetwork();
-    
-    if (network.chainId !== BigInt(CONFIG.CHAIN_ID)) {
-      setStatus("loading", "Switching to Shibarium...");
-      await window.ethereum.request({
-        method: "wallet_switchEthereumChain",
-        params: [{ chainId: "0x6d" }]
-      });
-      // Refresh provider after switch
-      provider = new ethers.BrowserProvider(window.ethereum);
-      signer = await provider.getSigner();
-    }
+    const [token0, token1, balance, symbol] = await Promise.all([
+      pair.token0(),
+      pair.token1(),
+      pair.balanceOf(userAddress),
+      pair.symbol().catch(() => "RIC-LP")
+    ]);
 
-    userAddress = await signer.getAddress();
+    const t0 = new ethers.Contract(token0, ["function symbol() view returns (string)"], provider);
+    const t1 = new ethers.Contract(token1, ["function symbol() view returns (string)"], provider);
     
-    document.getElementById("walletBtn").classList.add("con");
-    document.getElementById("walletLabel").textContent = userAddress.slice(0,6) + "..." + userAddress.slice(-4);
+    const [sym0, sym1] = await Promise.all([
+      t0.symbol().catch(() => token0.slice(0,8)),
+      t1.symbol().catch(() => token1.slice(0,8))
+    ]);
+
+    currentLP = {address: addr, token0, token1, balance, symbol, token0Symbol: sym0, token1Symbol: sym1};
     
-    setStatus("", "Wallet connected successfully");
-    
-  } catch (e) {
-    console.error(e);
-    setStatus("error", "Failed to connect wallet. Please try again.");
+    document.getElementById("lpBalance").textContent = `Balance: ${parseFloat(ethers.formatUnits(balance, 18)).toFixed(6)} ${symbol}`;
+    document.getElementById("lpMeta").innerHTML = `${sym0} / ${sym1}`;
+    updatePreview();
+  } catch(e) {
+    setStatus("error", "Invalid LP Token");
   }
 }
 
-function switchTab(n) {
-  document.querySelectorAll('.tab').forEach((t,i) => t.classList.toggle('active', i===n));
-  document.getElementById('tab0').style.display = n===0 ? 'block' : 'none';
-  document.getElementById('tab1').style.display = n===1 ? 'block' : 'none';
+function setPercent(pct) {
+  document.querySelectorAll('.pct-btn').forEach(b => b.classList.remove('active'));
+  event.target.classList.add('active');
+  updatePreview();
 }
 
-// ... (rest of the functions remain the same as previous version)
-async function loadLPInfo() { /* same as before */ }
-function setPercent(pct) { /* same */ }
-function updatePreview() { /* same */ }
+function updatePreview() {
+  if (!currentLP) return;
+  const pct = parseFloat(document.querySelector('.pct-btn.active').textContent) / 100;
+  const amount = currentLP.balance * BigInt(Math.floor(pct * 10000)) / 10000n;
+  document.getElementById("lpAmount").value = parseFloat(ethers.formatUnits(amount, 18)).toFixed(6);
+}
 
 async function removeLiquidity() {
   if (!currentLP) return setStatus("error", "Enter valid LP address");
   const amountStr = document.getElementById("lpAmount").value.trim();
-  if (!amountStr || parseFloat(amountStr) <= 0) return setStatus("error", "Enter amount");
+  if (!amountStr || parseFloat(amountStr) <= 0) return setStatus("error", "Enter amount to remove");
 
   setStatus("loading", "Removing Liquidity...");
 
@@ -166,7 +185,7 @@ async function removeLiquidity() {
 
     const liquidity = ethers.parseUnits(amountStr, 18);
     const deadline = BigInt(Math.floor(Date.now() / 1000) + 600);
-    const minAmount = liquidity / 1000n;   // Safe minimum
+    const minAmount = liquidity / 1000n;   // safe minimum
 
     const tx = await router.removeLiquidity(
       currentLP.token0,
@@ -182,11 +201,12 @@ async function removeLiquidity() {
     await tx.wait();
 
     setStatus("success", `✅ Successfully removed!<br><a href="https://shibariumscan.io/tx/${tx.hash}" target="_blank" style="color:var(--gr)">View Tx ↗</a>`);
+    loadLPInfo();
   } catch(e) {
     console.error(e);
     let msg = e.reason || e.message || "Transaction failed";
     if (msg.includes("OVERFLOW") || msg.includes("panic")) {
-      msg = "Overflow — try a much smaller amount";
+      msg = "Overflow — please try a smaller amount";
     }
     setStatus("error", msg);
   }
