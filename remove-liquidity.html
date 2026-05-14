@@ -111,20 +111,12 @@ let currentLP = null;
 async function connectWallet() {
   if (!window.ethereum) return alert("Please install MetaMask or Rabby");
 
-  // Force Shibarium RPC
-  provider = new ethers.BrowserProvider(window.ethereum, {
-    chainId: CONFIG.CHAIN_ID,
-    name: "Shibarium",
-    url: CONFIG.RPC
-  });
-
+  provider = new ethers.BrowserProvider(window.ethereum, { url: CONFIG.RPC });
   signer = await provider.getSigner();
 
   const net = await provider.getNetwork();
   if (net.chainId !== BigInt(CONFIG.CHAIN_ID)) {
-    try {
-      await window.ethereum.request({method: "wallet_switchEthereumChain", params: [{chainId: "0x6d"}]});
-    } catch(e) {}
+    await window.ethereum.request({method: "wallet_switchEthereumChain", params: [{chainId: "0x6d"}]});
   }
 
   userAddress = await signer.getAddress();
@@ -147,13 +139,15 @@ async function loadLPInfo() {
       "function token0() view returns (address)",
       "function token1() view returns (address)",
       "function balanceOf(address) view returns (uint256)",
+      "function totalSupply() view returns (uint256)",
       "function symbol() view returns (string)"
     ], provider);
 
-    const [token0, token1, balance, symbol] = await Promise.all([
+    const [token0, token1, balance, totalSupply, symbol] = await Promise.all([
       pair.token0(),
       pair.token1(),
       pair.balanceOf(userAddress),
+      pair.totalSupply(),
       pair.symbol().catch(() => "RIC-LP")
     ]);
 
@@ -165,7 +159,7 @@ async function loadLPInfo() {
       t1.symbol().catch(() => token1.slice(0,8))
     ]);
 
-    currentLP = {address: addr, token0, token1, balance, symbol, token0Symbol: sym0, token1Symbol: sym1};
+    currentLP = {address: addr, token0, token1, balance, totalSupply, symbol, token0Symbol: sym0, token1Symbol: sym1};
     
     document.getElementById("lpBalance").textContent = `Balance: ${parseFloat(ethers.formatUnits(balance, 18)).toFixed(6)} ${symbol}`;
     updatePreview();
@@ -189,8 +183,13 @@ function updatePreview() {
 
 async function removeLiquidity() {
   if (!currentLP) return setStatus("error", "Enter valid LP address");
-  const amountStr = document.getElementById("lpAmount").value.trim();
+  let amountStr = document.getElementById("lpAmount").value.trim();
   if (!amountStr || parseFloat(amountStr) <= 0) return setStatus("error", "Enter amount to remove");
+
+  // Safety: limit to 99% of balance to avoid totalSupply overflow edge case
+  const maxSafe = currentLP.balance * 99n / 100n;
+  let liquidity = ethers.parseUnits(amountStr, 18);
+  if (liquidity > maxSafe) liquidity = maxSafe;
 
   setStatus("loading", "Removing Liquidity...");
 
@@ -199,11 +198,8 @@ async function removeLiquidity() {
       "function removeLiquidity(address tokenA,address tokenB,uint256 liquidity,uint256 amountAMin,uint256 amountBMin,address to,uint256 deadline) external returns (uint256,uint256)"
     ], signer);
 
-    const liquidity = ethers.parseUnits(amountStr, 18);
     const deadline = BigInt(Math.floor(Date.now() / 1000) + 600);
-
-    // Strong protection against OVERFLOW(17)
-    const minAmount = liquidity / 200n;   // Very safe small minimum (0.5%)
+    const minAmount = liquidity / 1000n;   // 0.1% minimum (very safe)
 
     const tx = await router.removeLiquidity(
       currentLP.token0,
@@ -215,17 +211,17 @@ async function removeLiquidity() {
       deadline
     );
 
-    setStatus("loading", `Waiting confirmation... ${tx.hash.slice(0,10)}...`);
+    setStatus("loading", `Waiting... ${tx.hash.slice(0,10)}...`);
     await tx.wait();
 
-    setStatus("success", `✅ Successfully removed!<br><a href="https://shibariumscan.io/tx/${tx.hash}" target="_blank" style="color:var(--gr)">View on ShibariumScan ↗</a>`);
+    setStatus("success", `✅ Successfully removed!<br><a href="https://shibariumscan.io/tx/${tx.hash}" target="_blank" style="color:var(--gr)">View Tx ↗</a>`);
     
-    loadLPInfo(); // Refresh
+    loadLPInfo();
   } catch(e) {
     console.error(e);
     let msg = e.reason || e.message || "Transaction failed";
     if (msg.includes("OVERFLOW") || msg.includes("panic") || msg.includes("17")) {
-      msg = "Overflow error — please try a smaller amount";
+      msg = "Overflow — please try a much smaller amount (e.g. 10% or less)";
     }
     setStatus("error", msg);
   }
