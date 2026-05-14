@@ -71,13 +71,29 @@
     </div>
     <div class="meta" id="lpMeta"></div>
   </div>
+<style>
+  /* Base style for all percentage buttons */
+  .percent-btns .pct-btn {
+    color: white;             /* Default text color */
+    background: transparent;  /* Optional: keeps background clean */
+    border: 1px solid white;  /* Optional: adds a matching border */
+    padding: 5px 10px;        /* Optional: adds spacing inside buttons */
+    cursor: pointer;
+  }
 
-  <div class="percent-btns">
-    <button class="pct-btn" onclick="setPercent(25)">25%</button>
-    <button class="pct-btn" onclick="setPercent(50)">50%</button>
-    <button class="pct-btn" onclick="setPercent(75)">75%</button>
-    <button class="pct-btn active" onclick="setPercent(100)">MAX</button>
-  </div>
+  /* Style applied ONLY to the active button */
+  .percent-btns .pct-btn.active {
+    color: yellow;            /* Changes text to yellow when active */
+    border-color: yellow;     /* Optional: changes border to yellow */
+  }
+</style>
+
+<div class="percent-btns">
+  <button class="pct-btn" onclick="setPercent(25)">25%</button>
+  <button class="pct-btn" onclick="setPercent(50)">50%</button>
+  <button class="pct-btn" onclick="setPercent(75)">75%</button>
+  <button class="pct-btn active" onclick="setPercent(100)">MAX</button>
+</div>
 
   <div class="section-title">You Will Receive</div>
   <div class="receive-box" id="receiveBox">
