@@ -96,7 +96,6 @@
 <script>
 const CONFIG = {
   ROUTER: "0x652875c0F607CB392C0F9E5FB957A7055c2deD2e",
-  FACTORY: "0xD8fFEECfDE1698a70A26a094afBE917bA58E2F70",
   CHAIN_ID: 109,
   RPC: "https://rpc.shibarium.shib.io"
 };
@@ -104,42 +103,26 @@ const CONFIG = {
 let provider, signer, userAddress;
 let currentLP = null;
 
-// ==================== ONLY CHANGED PART ====================
 async function connectWallet() {
   if (!window.ethereum) return alert("Please install MetaMask or Rabby Wallet");
-
+  
   try {
-    // Simple and reliable way for Shibarium
-    await window.ethereum.request({ method: 'eth_requestAccounts' });
-    
-    provider = new ethers.BrowserProvider(window.ethereum);
+    provider = new ethers.BrowserProvider(window.ethereum, { url: CONFIG.RPC });
     signer = await provider.getSigner();
-    userAddress = await signer.getAddress();
 
-    // Check network
-    const network = await provider.getNetwork();
-    if (network.chainId !== BigInt(CONFIG.CHAIN_ID)) {
-      try {
-        await window.ethereum.request({
-          method: "wallet_switchEthereumChain",
-          params: [{ chainId: "0x6d" }]
-        });
-      } catch(e) {
-        return setStatus("error", "Please switch to Shibarium network manually");
-      }
+    const net = await provider.getNetwork();
+    if (net.chainId !== BigInt(CONFIG.CHAIN_ID)) {
+      await window.ethereum.request({method: "wallet_switchEthereumChain", params: [{chainId: "0x6d"}]});
     }
 
+    userAddress = await signer.getAddress();
     document.getElementById("walletBtn").classList.add("con");
-    document.getElementById("walletLabel").textContent = userAddress.slice(0,6) + "..." + userAddress.slice(-4);
-    
-    setStatus("", "✅ Wallet connected successfully");
-    
+    document.getElementById("walletLabel").textContent = userAddress.slice(0,6)+"..." + userAddress.slice(-4);
+    setStatus("", "Wallet connected");
   } catch (e) {
-    console.error(e);
-    setStatus("error", "Failed to connect wallet. Please try again.");
+    setStatus("error", "Failed to connect wallet");
   }
 }
-// =======================================================
 
 async function loadLPInfo() {
   const addr = document.getElementById("lpAddress").value.trim();
@@ -163,13 +146,9 @@ async function loadLPInfo() {
     const t0 = new ethers.Contract(token0, ["function symbol() view returns (string)"], provider);
     const t1 = new ethers.Contract(token1, ["function symbol() view returns (string)"], provider);
     
-    const [sym0, sym1] = await Promise.all([
-      t0.symbol().catch(() => token0.slice(0,8)),
-      t1.symbol().catch(() => token1.slice(0,8))
-    ]);
+    const [sym0, sym1] = await Promise.all([t0.symbol().catch(()=>token0.slice(0,8)), t1.symbol().catch(()=>token1.slice(0,8))]);
 
     currentLP = {address: addr, token0, token1, balance, symbol, token0Symbol: sym0, token1Symbol: sym1};
-    
     document.getElementById("lpBalance").textContent = `Balance: ${parseFloat(ethers.formatUnits(balance, 18)).toFixed(6)} ${symbol}`;
     document.getElementById("lpMeta").innerHTML = `${sym0} / ${sym1}`;
     updatePreview();
@@ -191,21 +170,40 @@ function updatePreview() {
   document.getElementById("lpAmount").value = parseFloat(ethers.formatUnits(amount, 18)).toFixed(6);
 }
 
+// ==================== MAIN REMOVE FUNCTION ====================
 async function removeLiquidity() {
-  if (!currentLP) return setStatus("error", "Enter valid LP address");
+  if (!currentLP) return setStatus("error", "Please enter LP Token Address first");
+  
   const amountStr = document.getElementById("lpAmount").value.trim();
-  if (!amountStr || parseFloat(amountStr) <= 0) return setStatus("error", "Enter amount to remove");
+  if (!amountStr || parseFloat(amountStr) <= 0) {
+    return setStatus("error", "Please enter amount to remove");
+  }
 
-  setStatus("loading", "Removing Liquidity...");
+  setStatus("loading", "Approving LP Token...");
 
   try {
+    const lpContract = new ethers.Contract(currentLP.address, [
+      "function approve(address,uint256) returns (bool)",
+      "function allowance(address,address) view returns (uint256)"
+    ], signer);
+
+    const liquidity = ethers.parseUnits(amountStr, 18);
+    const allowance = await lpContract.allowance(userAddress, CONFIG.ROUTER);
+
+    // Approve if needed
+    if (allowance < liquidity) {
+      const approveTx = await lpContract.approve(CONFIG.ROUTER, liquidity);
+      await approveTx.wait();
+    }
+
+    setStatus("loading", "Removing Liquidity...");
+
     const router = new ethers.Contract(CONFIG.ROUTER, [
       "function removeLiquidity(address tokenA,address tokenB,uint256 liquidity,uint256 amountAMin,uint256 amountBMin,address to,uint256 deadline) external returns (uint256,uint256)"
     ], signer);
 
-    const liquidity = ethers.parseUnits(amountStr, 18);
     const deadline = BigInt(Math.floor(Date.now() / 1000) + 600);
-    const minAmount = liquidity / 1000n;
+    const minAmount = liquidity / 200n;   // Safe 0.5%
 
     const tx = await router.removeLiquidity(
       currentLP.token0,
@@ -217,19 +215,21 @@ async function removeLiquidity() {
       deadline
     );
 
-    setStatus("loading", `Waiting... ${tx.hash.slice(0,10)}...`);
+    setStatus("loading", `Transaction sent... ${tx.hash.slice(0,10)}...`);
     await tx.wait();
 
-    setStatus("success", `✅ Successfully removed!<br><a href="https://shibariumscan.io/tx/${tx.hash}" target="_blank" style="color:var(--gr)">View Tx ↗</a>`);
+    setStatus("success", `✅ Successfully removed liquidity!<br><a href="https://shibariumscan.io/tx/${tx.hash}" target="_blank" style="color:var(--gr)">View on Explorer ↗</a>`);
+
   } catch(e) {
     console.error(e);
     let msg = e.reason || e.message || "Transaction failed";
-    if (msg.includes("OVERFLOW") || msg.includes("panic")) {
-      msg = "Overflow — please try a smaller amount";
+    if (msg.includes("OVERFLOW") || msg.includes("panic") || msg.includes("17")) {
+      msg = "Overflow error — please try a much smaller amount";
     }
     setStatus("error", msg);
   }
 }
+// ===========================================================
 
 function setStatus(type, msg) {
   const box = document.getElementById("statusBox");
