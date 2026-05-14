@@ -61,7 +61,6 @@
     <div class="tab" onclick="switchTab(1)">My Positions</div>
   </div>
 
-  <!-- REMOVE TAB -->
   <div id="tab0">
     <div class="lp-card">
       <div class="section-title">LP Token Address</div>
@@ -87,10 +86,9 @@
     <button class="remove-btn" id="removeBtn" onclick="removeLiquidity()">REMOVE LIQUIDITY</button>
   </div>
 
-  <!-- POSITIONS TAB -->
   <div id="tab1" style="display:none">
     <div class="section-title">Your Liquidity Positions</div>
-    <div id="positionsList">Connect wallet to load your positions</div>
+    <div id="positionsList">Connect wallet to load positions</div>
   </div>
 
   <div class="status-box" id="statusBox">
@@ -103,7 +101,6 @@
 const CONFIG = {
   ROUTER: "0x652875c0F607CB392C0F9E5FB957A7055c2deD2e",
   FACTORY: "0xD8fFEECfDE1698a70A26a094afBE917bA58E2F70",
-  WBONE: "0xc76f4c819d820369fb2d7c1531ab3bb18e6fe8d8",
   CHAIN_ID: 109,
   RPC: "https://rpc.shibarium.shib.io"
 };
@@ -114,11 +111,11 @@ let currentLP = null;
 async function connectWallet() {
   if (!window.ethereum) return alert("Please install MetaMask or Rabby");
 
-  // Use Shibarium RPC explicitly as fallback
+  // Force Shibarium RPC
   provider = new ethers.BrowserProvider(window.ethereum, {
     chainId: CONFIG.CHAIN_ID,
     name: "Shibarium",
-    ensAddress: null
+    url: CONFIG.RPC
   });
 
   signer = await provider.getSigner();
@@ -126,20 +123,13 @@ async function connectWallet() {
   const net = await provider.getNetwork();
   if (net.chainId !== BigInt(CONFIG.CHAIN_ID)) {
     try {
-      await window.ethereum.request({
-        method: "wallet_switchEthereumChain",
-        params: [{ chainId: "0x6d" }]
-      });
-    } catch(e) {
-      return setStatus("error", "Please switch to Shibarium network");
-    }
+      await window.ethereum.request({method: "wallet_switchEthereumChain", params: [{chainId: "0x6d"}]});
+    } catch(e) {}
   }
 
   userAddress = await signer.getAddress();
   document.getElementById("walletBtn").classList.add("con");
   document.getElementById("walletLabel").textContent = userAddress.slice(0,6)+"..." + userAddress.slice(-4);
-  
-  loadUserPositions();
 }
 
 function switchTab(n) {
@@ -148,7 +138,6 @@ function switchTab(n) {
   document.getElementById('tab1').style.display = n===1 ? 'block' : 'none';
 }
 
-// Full logic for loading LP and preview
 async function loadLPInfo() {
   const addr = document.getElementById("lpAddress").value.trim();
   if (!ethers.isAddress(addr)) return;
@@ -168,12 +157,12 @@ async function loadLPInfo() {
       pair.symbol().catch(() => "RIC-LP")
     ]);
 
-    const t0Contract = new ethers.Contract(token0, ["function symbol() view returns (string)"], provider);
-    const t1Contract = new ethers.Contract(token1, ["function symbol() view returns (string)"], provider);
+    const t0 = new ethers.Contract(token0, ["function symbol() view returns (string)"], provider);
+    const t1 = new ethers.Contract(token1, ["function symbol() view returns (string)"], provider);
     
     const [sym0, sym1] = await Promise.all([
-      t0Contract.symbol().catch(() => token0.slice(0,8)),
-      t1Contract.symbol().catch(() => token1.slice(0,8))
+      t0.symbol().catch(() => token0.slice(0,8)),
+      t1.symbol().catch(() => token1.slice(0,8))
     ]);
 
     currentLP = {address: addr, token0, token1, balance, symbol, token0Symbol: sym0, token1Symbol: sym1};
@@ -193,17 +182,15 @@ function setPercent(pct) {
 
 function updatePreview() {
   if (!currentLP) return;
-  const activeBtn = document.querySelector('.pct-btn.active');
-  const pct = activeBtn ? parseFloat(activeBtn.textContent) / 100 : 1;
-  const lpRemove = currentLP.balance * BigInt(Math.floor(pct * 10000)) / 10000n;
-  
-  document.getElementById("lpAmount").value = parseFloat(ethers.formatUnits(lpRemove, 18)).toFixed(6);
+  const pct = parseFloat(document.querySelector('.pct-btn.active').textContent) / 100;
+  const amount = currentLP.balance * BigInt(Math.floor(pct * 10000)) / 10000n;
+  document.getElementById("lpAmount").value = parseFloat(ethers.formatUnits(amount, 18)).toFixed(6);
 }
 
 async function removeLiquidity() {
   if (!currentLP) return setStatus("error", "Enter valid LP address");
   const amountStr = document.getElementById("lpAmount").value.trim();
-  if (!amountStr || parseFloat(amountStr) <= 0) return setStatus("error", "Enter amount");
+  if (!amountStr || parseFloat(amountStr) <= 0) return setStatus("error", "Enter amount to remove");
 
   setStatus("loading", "Removing Liquidity...");
 
@@ -215,32 +202,33 @@ async function removeLiquidity() {
     const liquidity = ethers.parseUnits(amountStr, 18);
     const deadline = BigInt(Math.floor(Date.now() / 1000) + 600);
 
+    // Strong protection against OVERFLOW(17)
+    const minAmount = liquidity / 200n;   // Very safe small minimum (0.5%)
+
     const tx = await router.removeLiquidity(
       currentLP.token0,
       currentLP.token1,
       liquidity,
-      0n, 0n,           // min amounts (can add slippage later)
+      minAmount,
+      minAmount,
       userAddress,
       deadline
     );
 
-    setStatus("loading", `Waiting... ${tx.hash.slice(0,10)}...`);
+    setStatus("loading", `Waiting confirmation... ${tx.hash.slice(0,10)}...`);
     await tx.wait();
 
-    setStatus("success", `✅ Removed successfully!<br><a href="https://shibariumscan.io/tx/${tx.hash}" target="_blank" style="color:var(--gr)">View on ShibariumScan ↗</a>`);
+    setStatus("success", `✅ Successfully removed!<br><a href="https://shibariumscan.io/tx/${tx.hash}" target="_blank" style="color:var(--gr)">View on ShibariumScan ↗</a>`);
     
     loadLPInfo(); // Refresh
   } catch(e) {
-    setStatus("error", e.reason || e.message || "Transaction failed");
+    console.error(e);
+    let msg = e.reason || e.message || "Transaction failed";
+    if (msg.includes("OVERFLOW") || msg.includes("panic") || msg.includes("17")) {
+      msg = "Overflow error — please try a smaller amount";
+    }
+    setStatus("error", msg);
   }
-}
-
-async function loadUserPositions() {
-  document.getElementById("positionsList").innerHTML = `
-    <p style="color:var(--t2);text-align:center;padding:40px 20px">
-      Full portfolio scanner coming soon.<br>
-      Paste your LP token address above to remove liquidity.
-    </p>`;
 }
 
 function setStatus(type, msg) {
