@@ -1,310 +1,518 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RicSwap | Pro</title>
-    <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.0/dist/ethers.umd.min.js"></script>
-    <style>
-        :root {
-            --obsidian: #050505;
-            --card-bg: #0a0a0a;
-            --input-bg: #111;
-            --gold: #ffd700;
-            --gold-dim: rgba(255, 215, 0, 0.1);
-            --magma: linear-gradient(135deg, #ff4d00 0%, #ff8c00 100%);
-            --border: #222;
-            --text: #e0e0e0;
-            --text-mute: #666;
-        }
-        body { background: var(--obsidian); color: var(--text); font-family: 'Inter', system-ui, sans-serif; margin: 0; display: flex; align-items: center; justify-content: center; min-height: 100vh; }
-        
-        .main-card { width: 100%; max-width: 460px; background: var(--card-bg); border-radius: 24px; padding: 24px; border: 1px solid var(--border); box-shadow: 0 0 100px rgba(255, 77, 0, 0.1); position: relative; overflow: hidden; }
-        
-        /* Header */
-        .nav { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
-        .logo { font-size: 22px; font-weight: 900; color: var(--gold); letter-spacing: -0.5px; }
-        .connect-btn { background: var(--gold-dim); color: var(--gold); border: 1px solid var(--gold); padding: 8px 18px; border-radius: 99px; font-weight: 600; cursor: pointer; font-size: 13px; transition: 0.2s; }
-        .connect-btn:hover { background: var(--gold); color: black; }
-
-        /* Input Containers */
-        .swap-box { background: var(--input-bg); border: 1px solid var(--border); border-radius: 18px; padding: 16px; position: relative; transition: 0.2s; }
-        .swap-box:focus-within { border-color: var(--gold); }
-        
-        .box-header { display: flex; justify-content: space-between; font-size: 12px; color: var(--text-mute); margin-bottom: 8px; }
-        .balance { color: var(--gold); cursor: pointer; }
-
-        .input-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-        input { background: transparent; border: none; color: white; font-size: 28px; width: 100%; outline: none; font-weight: 600; font-family: monospace; padding: 0; }
-        
-        /* Token Selector */
-        .token-pill { background: #222; padding: 6px 12px; border-radius: 10px; cursor: pointer; display: flex; align-items: center; gap: 8px; min-width: 90px; justify-content: center; border: 1px solid #333; transition: 0.2s; }
-        .token-pill:hover { border-color: #555; background: #2a2a2a; }
-        .token-name { font-weight: 700; font-size: 15px; }
-
-        /* Address Input */
-        .custom-addr { display: none; width: 95%; background: #000; border: 1px solid #333; color: #888; padding: 8px; border-radius: 8px; margin-top: 10px; font-size: 11px; font-family: monospace; }
-        .custom-addr.show { display: block; }
-
-        /* Quick Reset Link */
-        .quick-reset { font-size: 11px; color: var(--gold); margin-top: 8px; cursor: pointer; display: inline-block; opacity: 0.8; }
-        .quick-reset:hover { text-decoration: underline; opacity: 1; }
-
-        /* Middle Arrow */
-        .switch-btn { display: flex; justify-content: center; margin: -12px 0; position: relative; z-index: 10; }
-        .switch-btn div { background: #222; border: 4px solid var(--card-bg); padding: 8px; border-radius: 50%; cursor: pointer; color: #aaa; transition: 0.2s; }
-        .switch-btn div:hover { color: var(--gold); transform: rotate(180deg); }
-
-        /* Settings */
-        .settings { display: flex; justify-content: space-between; align-items: center; margin-top: 20px; padding: 0 4px; }
-        .slip-label { font-size: 12px; color: var(--text-mute); }
-        .slip-opts { display: flex; gap: 6px; }
-        .slip-btn { background: #1a1a1a; border: 1px solid #333; color: #666; padding: 4px 10px; border-radius: 6px; cursor: pointer; font-size: 11px; transition: 0.2s; }
-        .slip-btn.active { background: var(--gold); color: black; border-color: var(--gold); font-weight: 800; }
-
-        /* Main Button */
-        #mainBtn { background: var(--magma); color: white; border: none; width: 100%; padding: 18px; border-radius: 16px; font-size: 16px; font-weight: 800; margin-top: 20px; cursor: pointer; transition: transform 0.1s; box-shadow: 0 4px 15px rgba(255, 77, 0, 0.3); }
-        #mainBtn:disabled { background: #222; color: #555; cursor: not-allowed; box-shadow: none; }
-        #mainBtn:active { transform: scale(0.98); }
-
-        .info-row { display: flex; justify-content: space-between; font-size: 12px; color: #666; margin-top: 12px; padding: 0 4px; }
-        .status-msg { text-align: center; margin-top: 15px; font-size: 13px; height: 20px; color: #888; }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RicSwap | Swap</title>
+<script src="https://cdn.jsdelivr.net/npm/ethers@6.13.0/dist/ethers.umd.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#04050f;--su:#0b0d1f;--s2:#111328;--s3:#0d0f24;--bd:#1e2040;--b2:#2a2d55;--ac:#ff4d00;--ac2:#ff8c00;--gr:#00ffb2;--bl:#3b6bff;--yw:#ffd84a;--rd:#ff3366;--tx:#d8daf5;--t2:#8385a8;--mu:#555880;--mo:'Space Mono',monospace;--sa:'Syne',sans-serif}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--tx);font-family:var(--sa);min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px}
+body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;background-image:linear-gradient(rgba(255,77,0,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(255,77,0,.025) 1px,transparent 1px);background-size:40px 40px}
+.card{position:relative;z-index:1;width:100%;max-width:480px;background:var(--su);border:1px solid var(--bd);border-radius:20px;padding:28px;box-shadow:0 32px 64px rgba(0,0,0,.6),inset 0 1px 0 rgba(255,255,255,.04);animation:fadeUp .4s ease both}
+@keyframes fadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+@keyframes spin{to{transform:rotate(360deg)}}
+.header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
+.logo{font-weight:800;font-size:20px;letter-spacing:-.5px}.logo span{color:var(--ac)}.logo a{color:inherit;text-decoration:none}
+.hdr-r{display:flex;align-items:center;gap:8px}
+.net-pill{display:flex;align-items:center;gap:6px;background:rgba(0,255,178,.07);border:1px solid rgba(0,255,178,.18);border-radius:20px;padding:4px 10px;font-family:var(--mo);font-size:10px;color:var(--gr)}
+.dot{width:5px;height:5px;border-radius:50%;background:var(--gr);animation:pulse 2s infinite}
+.set-btn{width:30px;height:30px;background:transparent;border:1px solid var(--b2);border-radius:8px;cursor:pointer;color:var(--mu);display:flex;align-items:center;justify-content:center;transition:all .2s}
+.set-btn:hover{border-color:var(--ac);color:var(--ac)}.set-btn svg{width:14px;height:14px}
+.w-btn{width:100%;padding:11px;background:transparent;border:1px solid var(--b2);border-radius:10px;color:var(--t2);font-family:var(--mo);font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:14px;transition:all .2s}
+.w-btn:hover{border-color:var(--ac);color:var(--tx);background:rgba(255,77,0,.05)}
+.w-btn.con{border-color:var(--gr);color:var(--gr);background:rgba(0,255,178,.05);cursor:default}
+.mode-tabs{display:flex;gap:4px;background:var(--s2);border:1px solid var(--bd);border-radius:10px;padding:4px;margin-bottom:12px}
+.m-tab{flex:1;padding:7px;font-family:var(--mo);font-size:11px;text-align:center;border-radius:7px;cursor:pointer;color:var(--mu);border:none;background:transparent;transition:all .15s}
+.m-tab.active{background:var(--su);color:var(--tx);border:1px solid var(--b2)}
+.set-panel{display:none;background:var(--s2);border:1px solid var(--b2);border-radius:12px;padding:16px;margin-bottom:12px}
+.set-panel.open{display:block}
+.set-ttl{font-family:var(--mo);font-size:10px;color:var(--mu);text-transform:uppercase;letter-spacing:1px;margin-bottom:12px}
+.set-row{display:flex;align-items:center;justify-content:space-between;padding:4px 0}
+.set-row label{font-family:var(--mo);font-size:10px;color:var(--t2)}
+.sl-btns{display:flex;gap:4px}
+.sl-btn{font-family:var(--mo);font-size:10px;padding:4px 10px;background:transparent;border:1px solid var(--b2);border-radius:6px;color:var(--mu);cursor:pointer;transition:all .15s}
+.sl-btn:hover{border-color:var(--ac);color:var(--tx)}.sl-btn.active{background:rgba(255,77,0,.15);border-color:var(--ac);color:var(--ac)}
+.dl-wrap{display:flex;align-items:center;gap:8px}
+.dl-inp{width:60px;background:var(--s3);border:1px solid var(--b2);border-radius:7px;color:var(--tx);padding:5px 8px;font-family:var(--mo);font-size:12px;outline:none;text-align:right}
+.dl-inp:focus{border-color:var(--ac)}.dl-unit{font-family:var(--mo);font-size:11px;color:var(--mu)}
+.exp-row{display:flex;align-items:center;justify-content:space-between;margin-top:10px}
+.exp-lbl{font-family:var(--mo);font-size:11px;color:var(--t2)}
+.toggle{position:relative;width:36px;height:20px;cursor:pointer}.toggle input{opacity:0;width:0;height:0}
+.tg-track{position:absolute;inset:0;background:var(--b2);border-radius:10px;transition:.2s}
+.toggle input:checked+.tg-track{background:var(--ac)}
+.tg-thumb{position:absolute;top:3px;left:3px;width:14px;height:14px;background:#fff;border-radius:50%;transition:.2s}
+.toggle input:checked~.tg-thumb{transform:translateX(16px)}
+.tbox{background:var(--s2);border:1px solid var(--bd);border-radius:14px;padding:14px 16px;transition:border-color .2s}
+.tbox:focus-within{border-color:var(--b2)}
+.bx-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.bx-lbl{font-family:var(--mo);font-size:10px;color:var(--mu);text-transform:uppercase;letter-spacing:1px}
+.bal-row{display:flex;align-items:center;gap:5px;font-family:var(--mo);font-size:10px;color:var(--t2)}
+.bal-v{cursor:pointer;transition:color .15s}.bal-v:hover{color:var(--tx)}
+.max-b{font-size:9px;color:var(--ac);background:rgba(255,77,0,.1);border:1px solid rgba(255,77,0,.2);border-radius:4px;padding:1px 6px;cursor:pointer;font-family:var(--mo);transition:all .15s}
+.max-b:hover{background:rgba(255,77,0,.2)}
+.bx-main{display:flex;align-items:center;gap:10px}
+.amt-inp{flex:1;background:transparent;border:none;color:var(--tx);font-family:var(--sa);font-size:28px;font-weight:800;outline:none;width:100%;min-width:0}
+.amt-inp::placeholder{color:var(--b2)}.amt-inp::-webkit-inner-spin-button,.amt-inp::-webkit-outer-spin-button{-webkit-appearance:none}.amt-inp[type=number]{-moz-appearance:textfield}
+.usd-v{font-family:var(--mo);font-size:11px;color:var(--mu);margin-top:4px}
+.tk-sel{display:flex;align-items:center;gap:7px;flex-shrink:0;background:rgba(255,255,255,.04);border:1px solid var(--b2);border-radius:10px;padding:8px 12px;cursor:pointer;transition:all .15s;white-space:nowrap;min-width:100px}
+.tk-sel:hover{background:rgba(255,255,255,.08);border-color:var(--ac)}
+.tk-av{width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--mo);font-size:9px;font-weight:700;flex-shrink:0}
+.tk-sym{font-family:var(--mo);font-size:12px;font-weight:700}.tk-sel svg{width:10px;height:10px;color:var(--mu);flex-shrink:0}
+.flip-w{display:flex;justify-content:center;margin:6px 0;position:relative;z-index:2}
+.flip-b{width:34px;height:34px;background:var(--s2);border:1px solid var(--b2);border-radius:10px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--mu);transition:all .25s}
+.flip-b:hover{border-color:var(--ac);color:var(--ac);transform:rotate(180deg)}.flip-b svg{width:15px;height:15px}
+.info-p{background:var(--s2);border:1px solid var(--bd);border-radius:10px;padding:10px 14px;margin:10px 0;font-family:var(--mo);font-size:11px}
+.i-line{display:flex;justify-content:space-between;padding:4px 0}.i-line:not(:last-child){border-bottom:1px solid var(--bd)}
+.i-k{color:var(--mu)}.i-v{color:var(--t2)}.i-v.g{color:var(--gr)}.i-v.y{color:var(--yw)}.i-v.r{color:var(--rd)}
+.ref-row{display:flex;align-items:center;gap:6px;padding:2px 0}
+.ref-lbl{font-family:var(--mo);font-size:10px;color:var(--mu)}
+.ref-bw{flex:1;height:2px;background:var(--bd);border-radius:1px;overflow:hidden}
+.ref-bar{height:100%;background:var(--ac);border-radius:1px;transition:width 1s linear}
+.ref-cnt{font-family:var(--mo);font-size:10px;color:var(--mu);min-width:20px;text-align:right}
+.sw-btn{width:100%;padding:16px;border:none;border-radius:12px;font-family:var(--sa);font-size:16px;font-weight:800;letter-spacing:.3px;cursor:pointer;margin-top:12px;transition:all .2s;position:relative;overflow:hidden;background:linear-gradient(135deg,var(--ac),var(--ac2));color:#fff}
+.sw-btn::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(255,255,255,.1),transparent);opacity:0;transition:opacity .2s}
+.sw-btn:hover:not(:disabled)::before{opacity:1}.sw-btn:hover:not(:disabled){transform:translateY(-1px);box-shadow:0 8px 24px rgba(255,77,0,.35)}
+.sw-btn:active:not(:disabled){transform:translateY(0)}.sw-btn:disabled{background:var(--s2);color:var(--mu);cursor:not-allowed;transform:none;box-shadow:none}
+.st-box{margin-top:10px;padding:11px 14px;background:var(--s2);border:1px solid var(--bd);border-radius:10px;font-family:var(--mo);font-size:11px;color:var(--t2);display:flex;align-items:center;gap:8px;min-height:38px;transition:border-color .3s}
+.st-box.success{border-color:var(--gr);color:var(--gr)}.st-box.error{border-color:var(--rd);color:var(--rd)}.st-box.loading{border-color:var(--ac);color:var(--ac)}.st-box.warning{border-color:var(--yw);color:var(--yw)}.st-box a{color:inherit;text-decoration:underline}
+.spinner{width:12px;height:12px;border:2px solid rgba(255,77,0,.2);border-top-color:var(--ac);border-radius:50%;animation:spin .7s linear infinite;flex-shrink:0}
+.share-row{text-align:center;margin-top:6px}
+.shr-btn{font-family:var(--mo);font-size:10px;color:var(--mu);background:transparent;border:none;cursor:pointer;text-decoration:underline;padding:0}
+.shr-btn:hover{color:var(--t2)}
+.txs-w{margin-top:10px}.txs-lbl{font-family:var(--mo);font-size:10px;color:var(--mu);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px}
+.tx-i{display:flex;align-items:center;justify-content:space-between;padding:7px 12px;background:var(--s2);border:1px solid var(--bd);border-radius:8px;margin-bottom:4px;font-family:var(--mo);font-size:10px;color:var(--t2)}
+.tx-i a{color:var(--bl);text-decoration:none}.tx-i a:hover{text-decoration:underline}
+.mo-ov{display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:100;align-items:center;justify-content:center;padding:24px}
+.mo-ov.open{display:flex}
+.modal{background:var(--su);border:1px solid var(--b2);border-radius:16px;width:100%;max-width:420px;max-height:80vh;display:flex;flex-direction:column;animation:fadeUp .25s ease both}
+.mo-hdr{display:flex;align-items:center;justify-content:space-between;padding:18px 20px;border-bottom:1px solid var(--bd)}
+.mo-ttl{font-weight:700;font-size:16px}
+.mo-cls{background:transparent;border:none;color:var(--mu);cursor:pointer;font-size:18px;padding:4px;line-height:1}.mo-cls:hover{color:var(--tx)}
+.mo-srch{padding:12px 16px;border-bottom:1px solid var(--bd)}
+.mo-srch input{width:100%;background:var(--s2);border:1px solid var(--b2);border-radius:10px;color:var(--tx);padding:10px 14px;font-family:var(--mo);font-size:12px;outline:none}
+.mo-srch input::placeholder{color:var(--mu)}.mo-srch input:focus{border-color:var(--ac)}
+.mo-list{overflow-y:auto;flex:1;padding:8px}
+.tk-row{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:10px;cursor:pointer;transition:background .15s}
+.tk-row:hover{background:var(--s2)}
+.tk-row-inf{flex:1;min-width:0}.tk-row-sym{font-weight:700;font-size:14px}.tk-row-nm{font-family:var(--mo);font-size:11px;color:var(--mu)}
+.tk-row-bal{font-family:var(--mo);font-size:11px;color:var(--t2);text-align:right}
+.imp-tag{font-family:var(--mo);font-size:9px;color:var(--yw);background:rgba(255,216,74,.1);border:1px solid rgba(255,216,74,.2);border-radius:3px;padding:1px 5px;margin-left:6px}
+.imp-warn{display:none;background:rgba(255,216,74,.05);border:1px solid rgba(255,216,74,.25);border-radius:10px;padding:12px 14px;margin:8px 16px;font-family:var(--mo);font-size:11px}
+.imp-warn.show{display:block}.imp-wttl{color:var(--yw);font-weight:700;margin-bottom:4px}
+.imp-warn p{color:var(--t2);line-height:1.5}
+.imp-wbtns{display:flex;gap:8px;margin-top:10px}
+.imp-wbtns button{flex:1;padding:7px;border-radius:7px;font-family:var(--mo);font-size:11px;cursor:pointer;transition:all .15s}
+.btn-no{background:transparent;border:1px solid var(--b2);color:var(--mu)}
+.btn-yes{background:rgba(255,216,74,.15);border:1px solid rgba(255,216,74,.3);color:var(--yw)}
+.btn-yes:hover{background:rgba(255,216,74,.25)}
+.cf-ov{display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:200;align-items:center;justify-content:center;padding:24px}
+.cf-ov.open{display:flex}
+.cf-inner{background:var(--su);border:1px solid var(--b2);border-radius:16px;width:100%;max-width:400px;padding:24px;animation:fadeUp .25s ease both}
+.cf-ttl{font-size:17px;font-weight:700;margin-bottom:18px}
+.cf-amts{background:var(--s2);border:1px solid var(--bd);border-radius:12px;padding:16px;margin-bottom:14px}
+.cf-lbl{font-family:var(--mo);font-size:11px;color:var(--mu);margin-bottom:3px}
+.cf-amt{font-size:26px;font-weight:800}.cf-arr{text-align:center;color:var(--mu);font-size:18px;margin:8px 0}
+.cf-dets{margin-bottom:16px}
+.cf-line{display:flex;justify-content:space-between;padding:5px 0;font-family:var(--mo);font-size:11px;border-bottom:1px solid var(--bd)}
+.cf-line:last-child{border-bottom:none}.cf-k{color:var(--mu)}.cf-v{color:var(--t2)}
+.cf-btns{display:flex;gap:10px}
+.btn-cf-no{flex:1;padding:13px;background:transparent;border:1px solid var(--b2);border-radius:10px;color:var(--mu);font-family:var(--sa);font-size:14px;font-weight:700;cursor:pointer;transition:all .2s}
+.btn-cf-no:hover{border-color:var(--rd);color:var(--rd)}
+.btn-cf-go{flex:2;padding:13px;background:linear-gradient(135deg,var(--ac),var(--ac2));border:none;border-radius:10px;color:#fff;font-family:var(--sa);font-size:14px;font-weight:800;cursor:pointer;transition:all .2s}
+.btn-cf-go:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(255,77,0,.35)}
+</style>
 </head>
 <body>
 
-<div class="main-card">
-    <div class="nav">
-        <div class="logo"><a href="index.html">RicSwap</a></div>
-        <button id="connectBtn" class="connect-btn">Connect Wallet</button>
+<div class="mo-ov" id="tokenModal">
+  <div class="modal">
+    <div class="mo-hdr"><span class="mo-ttl">Select Token</span><button class="mo-cls" onclick="closeTkMo()">✕</button></div>
+    <div class="mo-srch"><input id="tkSearch" placeholder="Search or paste address..." oninput="filterTk()"></div>
+    <div class="imp-warn" id="impWarn">
+      <div class="imp-wttl">⚠ Unknown Token</div>
+      <p>This token is not in the RicSwap list. Anyone can create a token with any name. Trade at your own risk.</p>
+      <div class="imp-wbtns">
+        <button class="btn-no" onclick="cancelImp()">Cancel</button>
+        <button class="btn-yes" onclick="confirmImp()">Import Anyway</button>
+      </div>
     </div>
+    <div class="mo-list" id="tkList"></div>
+  </div>
+</div>
 
-    <!-- FROM -->
-    <div class="swap-box">
-        <div class="box-header">
-            <span>You Pay</span>
-            <span onclick="setMax()" class="balance">Bal: <span id="balIn">0.00</span></span>
-        </div>
-        <div class="input-row">
-            <input type="number" id="amountIn" placeholder="0.0" value="1">
-            <div class="token-pill" onclick="toggleAddr('in')">
-                <span class="token-name" id="symIn">BONE</span> ▾
-            </div>
-        </div>
-        <!-- YOUR NEW FEATURE IS HERE -->
-        <div class="quick-reset" onclick="resetToBone()">↺ Reset to BONE</div>
-        
-        <input type="text" id="addrIn" class="custom-addr" placeholder="Paste Token Address (0x...)" onchange="importToken('in')">
+<div class="cf-ov" id="cfModal">
+  <div class="cf-inner">
+    <div class="cf-ttl">Confirm Swap</div>
+    <div class="cf-amts">
+      <div class="cf-lbl">You pay</div>
+      <div class="cf-amt" id="cfAmtIn">—</div>
+      <div class="cf-arr">↓</div>
+      <div class="cf-lbl">You receive (minimum)</div>
+      <div class="cf-amt" id="cfAmtOut" style="color:var(--gr)">—</div>
     </div>
-
-    <div class="switch-btn">
-        <div onclick="switchSides()">⬇</div>
+    <div class="cf-dets">
+      <div class="cf-line"><span class="cf-k">Price impact</span><span class="cf-v" id="cfImpact">—</span></div>
+      <div class="cf-line"><span class="cf-k">Min received</span><span class="cf-v" id="cfMin">—</span></div>
+      <div class="cf-line"><span class="cf-k">Route</span><span class="cf-v" id="cfRoute">—</span></div>
+      <div class="cf-line"><span class="cf-k">Slippage</span><span class="cf-v" id="cfSlip">—</span></div>
+      <div class="cf-line"><span class="cf-k">Est. gas</span><span class="cf-v" id="cfGas">—</span></div>
     </div>
-
-    <!-- TO -->
-    <div class="swap-box">
-        <div class="box-header">
-            <span>You Receive</span>
-            <span class="balance">Bal: <span id="balOut">0.00</span></span>
-        </div>
-        <div class="input-row">
-            <input type="number" id="amountOut" placeholder="0.0" readonly style="color:var(--gold)">
-            <div class="token-pill" onclick="toggleAddr('out')">
-                <span class="token-name" id="symOut">RIC</span> ▾
-            </div>
-        </div>
-        <input type="text" id="addrOut" class="custom-addr" placeholder="Paste Token Address (0x...)" onchange="importToken('out')">
+    <div class="cf-btns">
+      <button class="btn-cf-no" onclick="closeCf()">Cancel</button>
+      <button class="btn-cf-go" onclick="execSwap()">Confirm Swap</button>
     </div>
+  </div>
+</div>
 
-    <div class="settings">
-        <span class="slip-label">Slippage Tolerance</span>
-        <div class="slip-opts">
-            <button class="slip-btn" onclick="setSlippage(0.3)">0.3%</button>
-            <button class="slip-btn active" onclick="setSlippage(0.5)">0.5%</button>
-            <button class="slip-btn" onclick="setSlippage(1.0)">1.0%</button>
-        </div>
+<div class="card">
+  <div class="header">
+    <div class="logo"><a href="index.html">Ric<span>Swap</span></a></div>
+    <div class="hdr-r">
+      <div class="net-pill"><div class="dot"></div>Shibarium</div>
+      <button class="set-btn" onclick="toggleSet()" title="Settings">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+      </button>
     </div>
+  </div>
 
-    <div class="info-row">
-        <span>Min Received:</span>
-        <span id="minOutVal">0.00</span>
+  <button class="w-btn" id="wBtn" onclick="connWallet()">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 3H8a2 2 0 00-2 2v2h12V5a2 2 0 00-2-2z"/><circle cx="17" cy="14" r="1.5" fill="currentColor" stroke="none"/></svg>
+    <span id="wLbl">Connect Wallet</span>
+  </button>
+
+  <div class="set-panel" id="setPanel">
+    <div class="set-ttl">Transaction Settings</div>
+    <div class="set-row">
+      <label>Slippage</label>
+      <div class="sl-btns">
+        <button class="sl-btn" onclick="setSlip(.5)">0.5%</button>
+        <button class="sl-btn active" onclick="setSlip(1)">1%</button>
+        <button class="sl-btn" onclick="setSlip(3)">3%</button>
+      </div>
     </div>
+    <div class="set-row" style="margin-top:10px">
+      <label>Deadline</label>
+      <div class="dl-wrap"><input class="dl-inp" id="dlInp" type="number" value="5" min="1" max="30"><span class="dl-unit">min</span></div>
+    </div>
+    <div class="exp-row">
+      <span class="exp-lbl">Expert mode (skip confirmation)</span>
+      <label class="toggle"><input type="checkbox" id="expMode"><div class="tg-track"></div><div class="tg-thumb"></div></label>
+    </div>
+  </div>
 
-    <button id="mainBtn">Connect Wallet</button>
-    <div id="status" class="status-msg"></div>
+  <div class="mode-tabs">
+    <button class="m-tab active" onclick="setMode('exactIn')">Exact In</button>
+    <button class="m-tab" onclick="setMode('exactOut')">Exact Out</button>
+  </div>
+
+  <div class="tbox">
+    <div class="bx-top">
+      <span class="bx-lbl" id="lblIn">You Pay</span>
+      <div class="bal-row"><span>BAL</span><span class="bal-v" id="balIn" onclick="setMax()">—</span><span class="max-b" onclick="setMax()">MAX</span></div>
+    </div>
+    <div class="bx-main">
+      <input class="amt-inp" type="number" id="amtIn" placeholder="0.0" step="any" oninput="onAmt('in')">
+      <div class="tk-sel" onclick="openTkMo('in')">
+        <div class="tk-av" id="avIn" style="background:rgba(255,77,0,.2);color:var(--ac)"></div>
+        <span class="tk-sym" id="symIn">BONE</span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+      </div>
+    </div>
+    <div class="usd-v" id="usdIn"></div>
+  </div>
+
+  <div class="flip-w"><div class="flip-b" onclick="flipTk()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="7 16 3 12 7 8"/><polyline points="17 8 21 12 17 16"/><line x1="3" y1="12" x2="21" y2="12"/></svg></div></div>
+
+  <div class="tbox">
+    <div class="bx-top">
+      <span class="bx-lbl" id="lblOut">You Receive</span>
+      <div class="bal-row"><span>BAL</span><span class="bal-v" id="balOut">—</span></div>
+    </div>
+    <div class="bx-main">
+      <input class="amt-inp" id="amtOut" placeholder="0.0" style="color:var(--gr)" oninput="onAmt('out')">
+      <div class="tk-sel" onclick="openTkMo('out')">
+        <div class="tk-av" id="avOut" style="background:rgba(255,77,0,.15);color:var(--ac2)"></div>
+        <span class="tk-sym" id="symOut">RIC</span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+      </div>
+    </div>
+    <div class="usd-v" id="usdOut"></div>
+  </div>
+
+  <div class="info-p" id="infoP" style="display:none">
+    <div class="i-line"><span class="i-k">Rate</span><span class="i-v" id="iRate">—</span></div>
+    <div class="i-line"><span class="i-k">Price impact</span><span class="i-v" id="iImpact">—</span></div>
+    <div class="i-line"><span class="i-k">Min received</span><span class="i-v" id="iMin">—</span></div>
+    <div class="i-line"><span class="i-k">Route</span><span class="i-v" id="iRoute">—</span></div>
+    <div class="i-line"><span class="i-k">Est. gas</span><span class="i-v" id="iGas">—</span></div>
+  </div>
+
+  <div class="ref-row" id="refRow" style="display:none">
+    <span class="ref-lbl">Refresh</span>
+    <div class="ref-bw"><div class="ref-bar" id="refBar" style="width:100%"></div></div>
+    <span class="ref-cnt" id="refCnt">15s</span>
+  </div>
+
+  <button class="sw-btn" id="swBtn" disabled>Connect Wallet</button>
+
+  <div class="st-box" id="stBox"><span>○</span><span id="stTxt">Connect wallet to begin</span></div>
+
+  <div class="share-row"><button class="shr-btn" onclick="copyLink()">Copy share link ↗</button></div>
+
+  <div class="txs-w" id="txsW" style="display:none">
+    <div class="txs-lbl">Recent</div>
+    <div id="txsList"></div>
+  </div>
 </div>
 
 <script>
-    // --- CONFIGURATION ---
-    const CONFIG = {
-        RPC: "https://rpc.shibarium.shib.io",
-        ROUTER: "0x652875c0F607CB392C0F9E5FB957A7055c2deD2e", // Matches your deployment
-        WBONE: "0xC76F4c819D820369Fb2d7C1531aB3Bb18e6fE8d8",
-        RIC: "0x12C94d3A30daa09f81Ea6c037004E6e99A4A3dfc"
-    };
+const CFG={ROUTER:"0x652875c0F607CB392C0F9E5FB957A7055c2deD2e",FACTORY:"0xD8fFEECfDE1698a70A26a094afBE917bA58E2F70",WBONE:"0xc76f4c819d820369fb2d7c1531ab3bb18e6fe8d8",RIC:"0x12C94d3A30daa09f81Ea6c037004E6e99A4A3dfc",CHAIN_ID:109n,EXP:"https://shibariumscan.io"};
+const TK_LIST=[
+  {symbol:"BONE",name:"Bone ShibaSwap",address:"NATIVE",decimals:18,color:"#ff4d00",official:true,isNative:true,isWBONE:false},
+  {symbol:"WBONE",name:"Wrapped BONE",address:CFG.WBONE,decimals:18,color:"#ff8800",official:true,isNative:false,isWBONE:true},
+  {symbol:"RIC",name:"RicSwap Token",address:CFG.RIC,decimals:18,color:"#ff4d00",official:true,isNative:false,isWBONE:false},
+  {symbol:"SHIB",name:"Shiba Inu",address:"0x495eea66b0f8b636d441dc6a98d8f5c3d455c4c0",decimals:18,color:"#ff6b6b",official:true,isNative:false,isWBONE:false},
+  {symbol:"LEASH",name:"Doge Killer",address:"0x53cd0b4b8d92e0c58d5aae2a95e5eeae9cd2c10d",decimals:18,color:"#9b59b6",official:true,isNative:false,isWBONE:false},
+  {symbol:"TREAT",name:"TREAT",address:"0x3f1ede1feb0fe88b7e30f74a73e3d36ccacd21b2",decimals:18,color:"#e67e22",official:true,isNative:false,isWBONE:false},
+];
+// ── Logo CDN + Price API ─────────────────────────────────
+const LOGO_CDN = "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/shibarium/assets";
+const DEXSCREENER = "https://api.dexscreener.com/latest/dex/tokens";
+const _priceCache = {};
 
-    // --- STATE ---
-    let state = {
-        provider: null, signer: null, userAddr: null, slippage: 1.0,
-        tokens: {
-            in: { symbol: "BONE", address: "NATIVE", decimals: 18, isNative: true },
-            out: { symbol: "RIC", address: CONFIG.RIC, decimals: 18, isNative: false }
-        }
-    };
+const E20=["function balanceOf(address) view returns (uint256)","function decimals() view returns (uint8)","function symbol() view returns (string)","function name() view returns (string)","function allowance(address,address) view returns (uint256)","function approve(address,uint256) returns (bool)"];
+const RABI=["function getAmountsOut(uint256,address[]) view returns (uint256[])","function getAmountsIn(uint256,address[]) view returns (uint256[])","function swapExactETHForTokens(uint256,address[],address,uint256) payable returns (uint256[])","function swapExactTokensForETH(uint256,uint256,address[],address,uint256) returns (uint256[])","function swapExactTokensForTokens(uint256,uint256,address[],address,uint256) returns (uint256[])","function swapETHForExactTokens(uint256,address[],address,uint256) payable returns (uint256[])","function swapTokensForExactETH(uint256,uint256,address[],address,uint256) returns (uint256[])","function swapTokensForExactTokens(uint256,uint256,address[],address,uint256) returns (uint256[])","function swapExactETHForTokensSupportingFeeOnTransferTokens(uint256,address[],address,uint256) payable","function swapExactTokensForETHSupportingFeeOnTransferTokens(uint256,uint256,address[],address,uint256)","function swapExactTokensForTokensSupportingFeeOnTransferTokens(uint256,uint256,address[],address,uint256)"];
+let prov,sign,uAddr,slipBps=100n,mode="exactIn",qTimer,refTimer,refSecs=15,lastQ=null,moSide="in",pendImp=null;
+const BONE_T={symbol:"BONE",name:"Bone ShibaSwap",address:"NATIVE",decimals:18,isNative:true,isWBONE:false,color:"#ff4d00",official:true};
+const WBONE_T={symbol:"WBONE",name:"Wrapped BONE",address:CFG.WBONE,decimals:18,isNative:false,isWBONE:true,color:"#ff8800",official:true};
+let tks={in:{...BONE_T},out:{symbol:"RIC",name:"RicSwap Token",address:CFG.RIC,decimals:18,isNative:false,isWBONE:false,color:"#ff4d00",official:true}};
 
-    const ABIS = {
-        ERC20: ["function balanceOf(address) view returns (uint)", "function decimals() view returns (uint8)", "function symbol() view returns (string)", "function allowance(address, address) view returns (uint)", "function approve(address, uint) returns (bool)"],
-        ROUTER: ["function getAmountsOut(uint amountIn, address[] memory path) view returns (uint[] memory amounts)", "function swapExactETHForTokens(uint amountOutMin, address[] calldata path, address to, uint deadline) payable returns (uint[] memory)", "function swapExactTokensForETH(uint amountIn, uint amountOutMin, address[] calldata path, address to, uint deadline) returns (uint[] memory)", "function swapExactTokensForTokens(uint amountIn, uint amountOutMin, address[] calldata path, address to, uint deadline) returns (uint[] memory)"]
-    };
+// ── Token logo (Trust Wallet CDN with letter fallback) ───────
+function setAvatar(elId, token, size) {
+  size = size || 22;
+  const el    = document.getElementById(elId);
+  if (!el) return;
+  const color = token.color || "#555880";
+  el.style.background = color + "22";
+  el.style.color       = color;
+  el.innerHTML         = "";
+  const addr = token.isNative || token.isWBONE ? CFG.WBONE : token.address;
+  if (addr && addr !== "NATIVE") {
+    try {
+      const cs  = ethers.getAddress(addr);
+      const img = document.createElement("img");
+      img.src   = LOGO_CDN + "/" + cs + "/logo.png";
+      img.style.cssText = "width:100%;height:100%;object-fit:cover;border-radius:50%";
+      img.onerror = () => { img.remove(); el.textContent = (token.symbol||"?").slice(0,2).toUpperCase(); };
+      el.appendChild(img);
+    } catch(_) { el.textContent = (token.symbol||"?").slice(0,2).toUpperCase(); }
+  } else {
+    el.textContent = (token.symbol||"?").slice(0,2).toUpperCase();
+  }
+}
 
-    // --- LOGIC ---
-    async function init() {
-        if(window.ethereum) {
-            state.provider = new ethers.BrowserProvider(window.ethereum);
-            const accs = await state.provider.listAccounts();
-            if(accs.length > 0) connect();
-        }
+// ── USD Price (DexScreener, cached 60s) ───────────────────
+async function getUSDPrice(address) {
+  if (!address || address === "NATIVE") address = CFG.WBONE;
+  const key = address.toLowerCase();
+  if (_priceCache[key] && Date.now() - _priceCache[key].ts < 60000) return _priceCache[key];
+  try {
+    const res  = await fetch(DEXSCREENER + "/" + address, { signal: AbortSignal.timeout(4000) });
+    const data = await res.json();
+    const pairs = (data?.pairs || [])
+      .filter(p => p.chainId === "shibarium")
+      .sort((a,b) => parseFloat(b.liquidity?.usd||0) - parseFloat(a.liquidity?.usd||0));
+    if (!pairs.length) return null;
+    const p = parseFloat(pairs[0].priceUsd || 0);
+    if (!p) return null;
+    const priceStr = p < 0.000001 ? "$"+p.toExponential(2) : p < 0.01 ? "$"+p.toFixed(6) : p < 1 ? "$"+p.toFixed(4) : "$"+p.toFixed(2);
+    const result   = { priceNum:p, priceStr, ts:Date.now() };
+    _priceCache[key] = result;
+    return result;
+  } catch(_) { return null; }
+}
+
+async function showUSDValue(elId, amountStr, token) {
+  const el = document.getElementById(elId);
+  if (!el) return;
+  if (!amountStr || parseFloat(amountStr) <= 0) { el.textContent = ""; return; }
+  const addr = token.isNative || token.isWBONE ? CFG.WBONE : token.address;
+  const pr   = await getUSDPrice(addr);
+  if (!pr) { el.textContent = ""; return; }
+  const val = parseFloat(amountStr) * pr.priceNum;
+  if (!val) { el.textContent = ""; return; }
+  el.textContent = "≈ $" + (val < 0.01 ? val.toFixed(6) : val < 10000 ? val.toFixed(2) : val.toLocaleString(undefined,{maximumFractionDigits:0}));
+}
+
+function initURL(){const p=new URLSearchParams(location.search);if(p.get("tokenIn"))loadTkParam("in",p.get("tokenIn"));if(p.get("tokenOut"))loadTkParam("out",p.get("tokenOut"));if(p.get("amountIn"))document.getElementById("amtIn").value=p.get("amountIn")}
+function loadTkParam(s,a){if(a.toUpperCase()==="NATIVE"||a.toLowerCase()==="bone"){tks[s]={...BONE_T};updTkUI(s);return}const f=TK_LIST.find(t=>t.address.toLowerCase()===a.toLowerCase());if(f){tks[s]={...f};updTkUI(s)}}
+function copyLink(){const ai=tks.in.isNative?"NATIVE":tks.in.address,ao=tks.out.address,am=document.getElementById("amtIn").value||"";const u=`${location.origin}${location.pathname}?tokenIn=${ai}&tokenOut=${ao}${am?"&amountIn="+am:""}`;navigator.clipboard.writeText(u).then(()=>setSt("success","✓","Share link copied!"))}
+
+async function connWallet() {
+  if (!window.ethereum) return alert("Please install MetaMask or Rabby Wallet");
+  const btn = document.getElementById("wBtn");
+  btn.style.opacity = "0.6";
+  try {
+    // Step 1: Request accounts explicitly — works on ALL wallet types
+    await window.ethereum.request({ method: "eth_requestAccounts" });
+
+    // Step 2: Build provider + signer after accounts confirmed
+    prov  = new ethers.BrowserProvider(window.ethereum);
+    sign  = await prov.getSigner();
+    uAddr = await sign.getAddress();
+
+    // Step 3: Network check — failure bubbles to outer catch (user sees error)
+    const net = await prov.getNetwork();
+    if (net.chainId !== CFG.CHAIN_ID) {
+      setSt("loading", null, "Switching to Shibarium...");
+      await window.ethereum.request({
+        method: "wallet_switchEthereumChain",
+        params: [{ chainId: "0x6d" }]
+      });
+      // Rebuild provider after network switch
+      prov  = new ethers.BrowserProvider(window.ethereum);
+      sign  = await prov.getSigner();
+      uAddr = await sign.getAddress();
     }
 
-    async function connect() {
-        if(!window.ethereum) return alert("Install Metamask");
-        try {
-            state.provider = new ethers.BrowserProvider(window.ethereum);
-            state.signer = await state.provider.getSigner();
-            state.userAddr = await state.signer.getAddress();
-            document.getElementById("connectBtn").textContent = state.userAddr.slice(0,6) + "...";
-            document.getElementById("mainBtn").textContent = "Enter Amount";
-            refreshBalances();
-        } catch(e) { console.error(e); }
+    // Step 4: Update UI
+    btn.classList.add("con");
+    document.getElementById("wLbl").textContent = uAddr.slice(0,6) + "..." + uAddr.slice(-4);
+    window.ethereum.on("accountsChanged", () => location.reload());
+    window.ethereum.on("chainChanged",    () => location.reload());
+
+    setSt("", "○", "Wallet connected");
+    await refBals();
+    schedQ();
+    loadTxH();
+    startRef();
+
+  } catch(e) {
+    setSt("error", "✕", decErr(e));
+  } finally {
+    btn.style.opacity = "1"; // always restore — even if error thrown
+  }
+}
+
+function setMode(m){mode=m;document.querySelectorAll(".m-tab").forEach((t,i)=>t.classList.toggle("active",(i===0&&m==="exactIn")||(i===1&&m==="exactOut")));document.getElementById("amtOut").readOnly=m==="exactIn";document.getElementById("amtIn").readOnly=m==="exactOut";document.getElementById("lblIn").textContent=m==="exactIn"?"You Pay":"You Pay (max)";document.getElementById("lblOut").textContent=m==="exactOut"?"You Receive (exact)":"You Receive";document.getElementById("amtIn").value="";document.getElementById("amtOut").value="";schedQ()}
+function onAmt(s){if(s==="in"&&mode==="exactIn")schedQ();if(s==="out"&&mode==="exactOut")schedQ()}
+function toggleSet(){document.getElementById("setPanel").classList.toggle("open")}
+function setSlip(p){slipBps=BigInt(Math.round(p*100));document.querySelectorAll(".sl-btn").forEach(b=>b.classList.toggle("active",b.textContent===p+"%"));if(lastQ)schedQ()}
+function getDL(){const m=parseInt(document.getElementById("dlInp").value)||5;return BigInt(Math.floor(Date.now()/1000)+m*60)}
+function setMax(){const b=parseFloat(document.getElementById("balIn").textContent);if(isNaN(b)||b<=0)return;const s=(tks.in.isNative||tks.in.isWBONE)&&b>.01?b-.01:b;document.getElementById("amtIn").value=s.toFixed(6);schedQ()}
+
+function openTkMo(s){moSide=s;document.getElementById("tkSearch").value="";document.getElementById("impWarn").classList.remove("show");pendImp=null;renderTkList(TK_LIST);document.getElementById("tokenModal").classList.add("open");setTimeout(()=>document.getElementById("tkSearch").focus(),50)}
+function closeTkMo(){document.getElementById("tokenModal").classList.remove("open")}
+function renderTkList(list){
+  const el=document.getElementById("tkList");
+  el.innerHTML=list.map(t=>{
+    const c=t.color||"#555880",imp=t.official?"":`<span class="imp-tag">imported</span>`;
+    const addr=t.isNative||t.isWBONE?CFG.WBONE:t.address;
+    let logoHtml;
+    try{const cs=ethers.getAddress(addr);logoHtml=`<img src="${LOGO_CDN}/${cs}/logo.png" style="width:100%;height:100%;object-fit:cover;border-radius:50%" onerror="this.remove();this.parentElement.textContent='${t.symbol.slice(0,2).toUpperCase()}'">` }
+    catch{logoHtml=t.symbol.slice(0,2).toUpperCase()}
+    return`<div class="tk-row" onclick="selTk('${t.address}','${t.symbol}','${t.name}',${t.decimals},${!!t.official},${!!t.isNative},${!!t.isWBONE},'${c}')"><div class="tk-av" style="background:${c}22;color:${c};font-size:11px;overflow:hidden">${logoHtml}</div><div class="tk-row-inf"><div class="tk-row-sym">${t.symbol}${imp}</div><div class="tk-row-nm">${t.name}</div></div></div>`;
+  }).join("");
+}
+async function filterTk(){const q=document.getElementById("tkSearch").value.trim().toLowerCase();document.getElementById("impWarn").classList.remove("show");pendImp=null;if(!q){renderTkList(TK_LIST);return}const f=TK_LIST.filter(t=>t.symbol.toLowerCase().includes(q)||t.name.toLowerCase().includes(q)||t.address.toLowerCase()===q);if(f.length){renderTkList(f);return}if(ethers.isAddress(q)&&prov){document.getElementById("tkList").innerHTML='<div style="text-align:center;padding:24px;font-family:var(--mo);font-size:11px;color:var(--mu)">Loading...</div>';try{const c=new ethers.Contract(q,E20,prov);let sy,na,de;de=await c.decimals();try{sy=await c.symbol()}catch{sy=q.slice(0,6)+"..."};try{na=await c.name()}catch{na="Unknown"};pendImp={symbol:sy,name:na,address:q,decimals:de,isNative:false,isWBONE:false,color:"#555880",official:false};renderTkList([pendImp]);document.getElementById("impWarn").classList.add("show")}catch{document.getElementById("tkList").innerHTML='<div style="text-align:center;padding:24px;font-family:var(--mo);font-size:11px;color:var(--rd)">Invalid address</div>'}}else{document.getElementById("tkList").innerHTML='<div style="text-align:center;padding:24px;font-family:var(--mo);font-size:11px;color:var(--mu)">No tokens found</div>'}}
+function cancelImp(){pendImp=null;document.getElementById("tkSearch").value="";document.getElementById("impWarn").classList.remove("show");renderTkList(TK_LIST)}
+function confirmImp(){if(!pendImp)return;TK_LIST.push(pendImp);selTk(pendImp.address,pendImp.symbol,pendImp.name,pendImp.decimals,false,false,false,pendImp.color)}
+function selTk(addr,sym,name,dec,official,isNative,isWBONE,color){const oth=moSide==="in"?"out":"in";if(tks[oth].address.toLowerCase()===addr.toLowerCase()){flipTkData();closeTkMo();return}tks[moSide]={symbol:sym,name,address:addr,decimals:parseInt(dec),isNative:isNative===true||isNative==="true",isWBONE:isWBONE===true||isWBONE==="true",color:color||"#555880",official:official===true||official==="true"};updTkUI(moSide);closeTkMo();refBals();schedQ()}
+function updTkUI(s){const t=tks[s],id=s==="in"?"In":"Out";document.getElementById("sym"+id).textContent=t.symbol;setAvatar("av"+id,t,22)}
+function flipTkData(){const tmp=tks.in;tks.in=tks.out;tks.out=tmp;updTkUI("in");updTkUI("out")}
+function flipTk(){flipTkData();const ai=document.getElementById("amtIn").value,ao=document.getElementById("amtOut").value;document.getElementById("amtIn").value=ao||"";document.getElementById("amtOut").value="";refBals();schedQ()}
+
+async function refBals(){
+  if(!uAddr||!prov)return;
+  document.getElementById("balIn").textContent="...";
+  document.getElementById("balOut").textContent="...";
+  const g=async t=>{try{if(t.isNative||t.isWBONE)return await prov.getBalance(uAddr);return await new ethers.Contract(t.address,E20,prov).balanceOf(uAddr)}catch{return 0n}};
+  const[bi,bo]=await Promise.all([g(tks.in),g(tks.out)]);
+  document.getElementById("balIn").textContent=fmtU(bi,tks.in.decimals);
+  document.getElementById("balOut").textContent=fmtU(bo,tks.out.decimals);
+  // Prefetch prices and show USD balance values
+  const inAddr=tks.in.isNative||tks.in.isWBONE?CFG.WBONE:tks.in.address;
+  const outAddr=tks.out.isNative||tks.out.isWBONE?CFG.WBONE:tks.out.address;
+  const[prIn,prOut]=await Promise.all([getUSDPrice(inAddr),getUSDPrice(outAddr)]);
+  if(prIn){const v=parseFloat(ethers.formatUnits(bi,tks.in.decimals))*prIn.priceNum;if(v>0)document.getElementById("usdIn").textContent="Balance ≈ $"+(v<0.01?v.toFixed(6):v<10000?v.toFixed(2):v.toLocaleString(undefined,{maximumFractionDigits:0}));}
+  if(prOut){const v=parseFloat(ethers.formatUnits(bo,tks.out.decimals))*prOut.priceNum;if(v>0)document.getElementById("usdOut").textContent="Balance ≈ $"+(v<0.01?v.toFixed(6):v<10000?v.toFixed(2):v.toLocaleString(undefined,{maximumFractionDigits:0}));}
+}
+
+function startRef(){clearInterval(refTimer);refSecs=15;document.getElementById("refRow").style.display="flex";updRefBar();refTimer=setInterval(()=>{refSecs--;updRefBar();if(refSecs<=0){refSecs=15;if(lastQ)fetchQ()}},1000)}
+function updRefBar(){document.getElementById("refBar").style.width=(refSecs/15*100)+"%";document.getElementById("refCnt").textContent=refSecs+"s"}
+function schedQ(){clearTimeout(qTimer);qTimer=setTimeout(fetchQ,400)}
+
+async function fetchQ(){const btn=document.getElementById("swBtn"),isEI=mode==="exactIn",inEl=document.getElementById("amtIn"),outEl=document.getElementById("amtOut"),val=(isEI?inEl:outEl).value.trim();outEl.value="";document.getElementById("infoP").style.display="none";lastQ=null;if(!val||parseFloat(val)<=0){btn.disabled=true;btn.textContent=uAddr?"Enter an amount":"Connect Wallet";return}if(!uAddr){btn.disabled=true;btn.textContent="Connect Wallet";return}btn.disabled=true;btn.textContent="Getting quote...";try{const router=new ethers.Contract(CFG.ROUTER,RABI,prov),ai=tks.in.isNative||tks.in.isWBONE?CFG.WBONE:tks.in.address,ao=tks.out.isNative||tks.out.isWBONE?CFG.WBONE:tks.out.address;if(ai===ao){const a=ethers.parseUnits(val,18);(isEI?outEl:inEl).value=val;lastQ={amountIn:a,amountOut:a,minOut:a,path:[ai],isWrap:true,isFOT:false};showInfo({rate:"1:1 (wrap/unwrap)",impact:"0%",impClass:"g",min:val+" "+(tks.out.isNative?"BONE":tks.out.symbol),route:"Direct wrap/unwrap",gas:"~0.0001 BONE"});btn.textContent=tks.in.isNative?"Wrap BONE":"Unwrap BONE";btn.disabled=false;btn.onclick=doSwapOrCf;return}let ams,path,multi=false;const amtW=ethers.parseUnits(val,isEI?tks.in.decimals:tks.out.decimals);const tryP=async p=>{try{return{ams:isEI?await router.getAmountsOut(amtW,p):await router.getAmountsIn(amtW,p),path:p}}catch{return null}};let r=await tryP([ai,ao]);if(!r&&ai!==CFG.WBONE&&ao!==CFG.WBONE){r=await tryP([ai,CFG.WBONE,ao]);if(r)multi=true}if(!r){btn.textContent="No liquidity";btn.disabled=true;setSt("","○","No liquidity for this pair");return}ams=r.ams;path=r.path;const amIn=isEI?amtW:ams[0],amOut=isEI?ams[ams.length-1]:amtW,minOut=amOut*(10000n-slipBps)/10000n,maxIn=amIn*(10000n+slipBps)/10000n;
+
+    // ── Guard: amOut === 0n means pool is empty or dust input ──
+    if (amOut === 0n) {
+      btn.textContent = "No liquidity";
+      btn.disabled = true;
+      setSt("", "○", "Pool has no liquidity or input amount is too small");
+      return;
     }
 
-    // --- YOUR NEW FUNCTION (Integrated Properly) ---
-    function resetToBone() {
-        state.tokens.in = { symbol: "BONE", address: "NATIVE", decimals: 18, isNative: true };
-        document.getElementById("symIn").textContent = "BONE";
-        document.getElementById("addrIn").classList.remove("show"); // Hide input if open
-        document.getElementById("addrIn").value = "";
-        refreshBalances();
-        updateQuote();
-    }
+    // ── Guard: minOut === 0n means slippage would remove all protection ──
+    // Happens when amOut is very small and BigInt truncation rounds to 0.
+    // Sending minOut=0n to the router means it accepts ANY output — sandwich risk.
+    if (minOut === 0n) {
+      btn.textContent = "Amount too small";
+      btn.disabled = true;
+      setSt("error", "⚠", "Output too small — increase amount or reduce slippage tolerance");
+      return;
+    }let imp=0,impC="g";try{if(!multi){const sp=await router.getAmountsOut(ethers.parseUnits("1",tks.in.decimals),[ai,ao]);const exp=sp[1]*amIn/ethers.parseUnits("1",tks.in.decimals);if(exp>0n){imp=Number((exp-amOut)*10000n/exp)/100;if(imp<0)imp=0}}impC=imp>15?"r":imp>2?"y":"g"}catch{}let gas="~0.001 BONE";try{const dl=getDL();let gu;if(tks.in.isNative||tks.in.isWBONE)gu=await router.swapExactETHForTokens.estimateGas(minOut,path,uAddr,dl,{value:amIn});else if(tks.out.isNative||tks.out.isWBONE)gu=await router.swapExactTokensForETH.estimateGas(amIn,minOut,path,uAddr,dl);else gu=await router.swapExactTokensForTokens.estimateGas(amIn,minOut,path,uAddr,dl);const fd=await prov.getFeeData();gas="~"+parseFloat(ethers.formatEther(gu*(fd.gasPrice||1000000000n))).toFixed(6)+" BONE"}catch{}lastQ={amountIn:amIn,amountOut:amOut,minOut,maxIn,path,isMultiHop:multi,isFOT:false,impactPct:imp,impactClass:impC,isWrap:false};(isEI?outEl:inEl).value=parseFloat(ethers.formatUnits(isEI?amOut:amIn,isEI?tks.out.decimals:tks.in.decimals)).toFixed(6);const rate=parseFloat(ethers.formatUnits(amOut,tks.out.decimals))/parseFloat(ethers.formatUnits(amIn,tks.in.decimals));showInfo({rate:`1 ${tks.in.symbol} = ${rate.toFixed(6)} ${tks.out.symbol}`,impact:imp>0?imp.toFixed(2)+"%":"< 0.01%",impClass:impC,min:parseFloat(ethers.formatUnits(minOut,tks.out.decimals)).toFixed(6)+" "+tks.out.symbol,route:multi?`${tks.in.symbol} → WBONE → ${tks.out.symbol}`:`${tks.in.symbol} → ${tks.out.symbol}`,gas});if(imp>15)setSt("error","⚠",`Very high impact (${imp.toFixed(2)}%) — reduce amount`);else if(imp>5)setSt("warning","⚠",`High impact: ${imp.toFixed(2)}%`);else setSt("","○","Quote ready — refreshes in "+refSecs+"s");const balN=parseFloat(document.getElementById("balIn").textContent),amIF=parseFloat(ethers.formatUnits(amIn,tks.in.decimals));if(!isNaN(balN)&&amIF>balN){btn.disabled=true;btn.textContent="Insufficient "+tks.in.symbol;return}if(!tks.in.isNative&&!tks.in.isWBONE){const al=await new ethers.Contract(tks.in.address,E20,prov).allowance(uAddr,CFG.ROUTER);if(al<amIn){btn.textContent="Approve "+tks.in.symbol;btn.disabled=false;btn.onclick=doApprove;return}}btn.textContent=imp>15?"⚠ Swap Anyway":"Swap";btn.disabled=false;btn.onclick=doSwapOrCf}catch(e){btn.textContent="Error";btn.disabled=true;console.error(e)}}
 
-    async function importToken(side) {
-        const id = side === 'in' ? 'addrIn' : 'addrOut';
-        const val = document.getElementById(id).value.trim();
-        if(!ethers.isAddress(val)) return;
+function showInfo(d){
+  document.getElementById("infoP").style.display="block";
+  document.getElementById("iRate").textContent=d.rate;
+  document.getElementById("iImpact").textContent=d.impact;
+  document.getElementById("iImpact").className="i-v "+d.impClass;
+  document.getElementById("iMin").textContent=d.min;
+  document.getElementById("iRoute").textContent=d.route;
+  document.getElementById("iGas").textContent=d.gas;
+  // Update USD display for amounts
+  if(lastQ){
+    const inAmt=ethers.formatUnits(lastQ.amountIn,tks.in.decimals);
+    const outAmt=ethers.formatUnits(lastQ.amountOut,tks.out.decimals);
+    showUSDValue("usdIn",inAmt,tks.in);
+    showUSDValue("usdOut",outAmt,tks.out);
+  }
+}
 
-        if(val.toLowerCase() === CONFIG.WBONE.toLowerCase()) {
-            state.tokens[side] = { symbol: "BONE", address: "NATIVE", decimals: 18, isNative: true };
-        } else {
-            try {
-                const c = new ethers.Contract(val, ABIS.ERC20, state.provider);
-                const sym = await c.symbol();
-                const dec = await c.decimals();
-                state.tokens[side] = { symbol: sym, address: val, decimals: dec, isNative: false };
-            } catch(e) { return alert("Invalid Token"); }
-        }
-        document.getElementById(side==='in'?'symIn':'symOut').textContent = state.tokens[side].symbol;
-        document.getElementById(id).classList.remove('show');
-        refreshBalances();
-        updateQuote();
-    }
+async function doApprove(){const btn=document.getElementById("swBtn");btn.disabled=true;btn.textContent="Approving...";setSt("loading",null,"Approving "+tks.in.symbol+"...");try{const a=lastQ?lastQ.amountIn:ethers.parseUnits(document.getElementById("amtIn").value,tks.in.decimals);const tx=await new ethers.Contract(tks.in.address,E20,sign).approve(CFG.ROUTER,a);setSt("loading",null,"Waiting for approval...");await tx.wait();setSt("success","✓","Approved — ready to swap");fetchQ()}catch(e){setSt("error","✕",decErr(e));btn.disabled=false;btn.textContent="Approve "+tks.in.symbol}}
 
-    async function refreshBalances() {
-        if(!state.userAddr) return;
-        const getBal = async (t) => t.isNative ? ethers.formatEther(await state.provider.getBalance(state.userAddr)) : ethers.formatUnits(await (new ethers.Contract(t.address, ABIS.ERC20, state.provider)).balanceOf(state.userAddr), t.decimals);
-        document.getElementById("balIn").textContent = parseFloat(await getBal(state.tokens.in)).toFixed(4);
-        document.getElementById("balOut").textContent = parseFloat(await getBal(state.tokens.out)).toFixed(4);
-    }
+function doSwapOrCf(){if(!lastQ)return;if(lastQ.isWrap||document.getElementById("expMode").checked){execSwap();return}const{amountIn:ai,amountOut:ao,minOut:mn,impactPct:imp,impactClass:ic,path}=lastQ;document.getElementById("cfAmtIn").textContent=parseFloat(ethers.formatUnits(ai,tks.in.decimals)).toFixed(6)+" "+tks.in.symbol;document.getElementById("cfAmtOut").textContent=parseFloat(ethers.formatUnits(mn,tks.out.decimals)).toFixed(6)+" "+tks.out.symbol;document.getElementById("cfImpact").textContent=(imp||0).toFixed(2)+"%";document.getElementById("cfImpact").style.color=ic==="g"?"var(--gr)":ic==="y"?"var(--yw)":"var(--rd)";document.getElementById("cfMin").textContent=document.getElementById("iMin").textContent;document.getElementById("cfRoute").textContent=document.getElementById("iRoute").textContent;document.getElementById("cfSlip").textContent=Number(slipBps)/100+"%";document.getElementById("cfGas").textContent=document.getElementById("iGas").textContent;document.getElementById("cfModal").classList.add("open")}
+function closeCf(){document.getElementById("cfModal").classList.remove("open")}
 
-    async function updateQuote() {
-        const btn = document.getElementById("mainBtn");
-        const val = document.getElementById("amountIn").value;
-        if(!val || parseFloat(val)===0) { document.getElementById("amountOut").value = ""; return; }
-        if(!state.userAddr) { btn.textContent = "Connect Wallet"; return; }
+async function execSwap(){closeCf();if(!lastQ)return;const btn=document.getElementById("swBtn");btn.disabled=true;btn.textContent="Simulating...";const{amountIn:ai,amountOut:ao,minOut:mn,maxIn:mxi,path,isWrap,isFOT}=lastQ,dl=getDL(),router=new ethers.Contract(CFG.ROUTER,RABI,sign),niIn=tks.in.isNative||tks.in.isWBONE,niOut=tks.out.isNative||tks.out.isWBONE,isEI=mode==="exactIn";
+if(isWrap){try{setSt("loading",null,tks.in.isNative?"Wrapping BONE...":"Unwrapping WBONE...");const wbi=["function deposit() payable","function withdraw(uint256)"],wb=new ethers.Contract(CFG.WBONE,wbi,sign);const tx=tks.in.isNative?await wb.deposit({value:ai}):await wb.withdraw(ai);await tx.wait();setSt("success","✓",tks.in.isNative?"BONE wrapped to WBONE!":"WBONE unwrapped to BONE!");await refBals()}catch(e){setSt("error","✕",decErr(e))}finally{btn.disabled=false;btn.textContent="Swap"}return}
+let fn;if(isEI){if(niIn)fn="swapExactETHForTokens";else if(niOut)fn="swapExactTokensForETH";else fn="swapExactTokensForTokens"}else{if(niIn)fn="swapETHForExactTokens";else if(niOut)fn="swapTokensForExactETH";else fn="swapTokensForExactTokens"}
+try{setSt("loading",null,"Simulating...");if(fn==="swapExactETHForTokens")await router.swapExactETHForTokens.staticCall(mn,path,uAddr,dl,{value:ai});else if(fn==="swapExactTokensForETH")await router.swapExactTokensForETH.staticCall(ai,mn,path,uAddr,dl);else if(fn==="swapExactTokensForTokens")await router.swapExactTokensForTokens.staticCall(ai,mn,path,uAddr,dl);else if(fn==="swapETHForExactTokens")await router.swapETHForExactTokens.staticCall(ao,path,uAddr,dl,{value:mxi});else if(fn==="swapTokensForExactETH")await router.swapTokensForExactETH.staticCall(ao,mxi,path,uAddr,dl);else await router.swapTokensForExactTokens.staticCall(ao,mxi,path,uAddr,dl)}catch(se){setSt("error","✕","Simulation failed: "+decErr(se));btn.disabled=false;btn.textContent="Swap";return}
+try{setSt("loading",null,"Confirm in wallet...");btn.textContent="Confirming...";let tx;if(fn==="swapExactETHForTokens")tx=await router.swapExactETHForTokens(mn,path,uAddr,dl,{value:ai});else if(fn==="swapExactTokensForETH")tx=await router.swapExactTokensForETH(ai,mn,path,uAddr,dl);else if(fn==="swapExactTokensForTokens")tx=await router.swapExactTokensForTokens(ai,mn,path,uAddr,dl);else if(fn==="swapETHForExactTokens")tx=await router.swapETHForExactTokens(ao,path,uAddr,dl,{value:mxi});else if(fn==="swapTokensForExactETH")tx=await router.swapTokensForExactETH(ao,mxi,path,uAddr,dl);else tx=await router.swapTokensForExactTokens(ao,mxi,path,uAddr,dl);setSt("loading",null,"Tx sent — "+tx.hash.slice(0,10)+"...");await tx.wait();saveTx({hash:tx.hash,summary:ethers.formatUnits(ai,tks.in.decimals).slice(0,8)+" "+tks.in.symbol+" → "+tks.out.symbol,time:Date.now()});setSt("success","✓",`Swapped! <a href="${CFG.EXP}/tx/${tx.hash}" target="_blank">View ↗</a>`);document.getElementById("amtIn").value="";document.getElementById("amtOut").value="";lastQ=null;await refBals();loadTxH()}catch(e){setSt("error","✕",decErr(e))}finally{btn.disabled=false;btn.textContent="Swap";fetchQ()}}
 
-        try {
-            btn.disabled = true; btn.textContent = "Loading...";
-            const router = new ethers.Contract(CONFIG.ROUTER, ABIS.ROUTER, state.provider);
-            const amountInWei = ethers.parseUnits(val, state.tokens.in.decimals);
-            const path = [state.tokens.in.isNative ? CONFIG.WBONE : state.tokens.in.address, state.tokens.out.isNative ? CONFIG.WBONE : state.tokens.out.address];
-            
-            const amts = await router.getAmountsOut(amountInWei, path);
-            const outWei = amts[1];
-            document.getElementById("amountOut").value = parseFloat(ethers.formatUnits(outWei, state.tokens.out.decimals)).toFixed(6);
-            
-            const minWei = (outWei * (10000n - BigInt(state.slippage*100))) / 10000n;
-            document.getElementById("minOutVal").textContent = parseFloat(ethers.formatUnits(minWei, state.tokens.out.decimals)).toFixed(6);
+function saveTx(tx){try{const k="rs_txs_"+(uAddr||""),p=JSON.parse(localStorage.getItem(k)||"[]");p.unshift(tx);localStorage.setItem(k,JSON.stringify(p.slice(0,5)))}catch{}}
+function loadTxH(){try{const k="rs_txs_"+(uAddr||""),txs=JSON.parse(localStorage.getItem(k)||"[]"),w=document.getElementById("txsW");if(!txs.length){w.style.display="none";return}w.style.display="block";document.getElementById("txsList").innerHTML=txs.map(t=>`<div class="tx-i"><span>${t.summary}</span><a href="${CFG.EXP}/tx/${t.hash}" target="_blank">${t.hash.slice(0,8)}... ↗</a></div>`).join("")}catch{}}
 
-            if(!state.tokens.in.isNative) {
-                const allow = await (new ethers.Contract(state.tokens.in.address, ABIS.ERC20, state.provider)).allowance(state.userAddr, CONFIG.ROUTER);
-                if(allow < amountInWei) {
-                    btn.textContent = `Approve ${state.tokens.in.symbol}`;
-                    btn.onclick = doApprove;
-                    btn.disabled = false;
-                    return;
-                }
-            }
-            btn.textContent = "SWAP";
-            btn.onclick = doSwap;
-            btn.disabled = false;
-        } catch(e) { btn.textContent = "No Liquidity"; }
-    }
+function fmtU(v,d){const s=ethers.formatUnits(v,d),n=parseFloat(s);if(n===0)return"0";if(n<.00001)return"< 0.00001";return n.toLocaleString(undefined,{maximumFractionDigits:6})}
+function setSt(t,ic,msg){const box=document.getElementById("stBox"),txt=document.getElementById("stTxt");box.className="st-box"+(t?" "+t:"");let ie=box.querySelector(".st-icon,.spinner");if(ie)ie.remove();const el=document.createElement(t==="loading"?"div":"span");el.className=t==="loading"?"spinner":"st-icon";if(t!=="loading"&&ic)el.textContent=ic;box.insertBefore(el,txt);if(t==="success")txt.innerHTML=msg;else txt.textContent=msg}
+function decErr(e){if(!e)return"Unknown";if(e.reason)return e.reason;if(e.shortMessage)return e.shortMessage;if(e.error?.reason)return e.error.reason;const d=e?.data||e?.error?.data||e?.info?.error?.data;if(typeof d==="string"&&d.startsWith("0x08c379a0")){try{return ethers.AbiCoder.defaultAbiCoder().decode(["string"],"0x"+d.slice(10))[0]}catch{}}if(e.code===4001||e.code==="ACTION_REJECTED")return"Rejected by user";const r=e.message||String(e),m=r.match(/reason="([^"]+)"/);if(m)return m[1];return r.replace("missing revert data","Transaction reverted — check liquidity and slippage").slice(0,180)}
 
-    async function doApprove() {
-        const btn = document.getElementById("mainBtn");
-        try {
-            btn.textContent = "Approving..."; btn.disabled = true;
-            const tx = await (new ethers.Contract(state.tokens.in.address, ABIS.ERC20, state.signer)).approve(CONFIG.ROUTER, ethers.MaxUint256);
-            await tx.wait();
-            updateQuote();
-        } catch(e) { btn.textContent = "Approve Failed"; btn.disabled = false; }
-    }
-
-    async function doSwap() {
-        const btn = document.getElementById("mainBtn");
-        const status = document.getElementById("status");
-        try {
-            btn.textContent = "Confirming..."; btn.disabled = true;
-            const router = new ethers.Contract(CONFIG.ROUTER, ABIS.ROUTER, state.signer);
-            const amtIn = ethers.parseUnits(document.getElementById("amountIn").value, state.tokens.in.decimals);
-            const minOut = ethers.parseUnits(document.getElementById("minOutVal").textContent, state.tokens.out.decimals);
-            const path = [state.tokens.in.isNative ? CONFIG.WBONE : state.tokens.in.address, state.tokens.out.isNative ? CONFIG.WBONE : state.tokens.out.address];
-            const dl = Math.floor(Date.now()/1000) + 1200;
-
-            let tx;
-            if(state.tokens.in.isNative) tx = await router.swapExactETHForTokens(minOut, path, state.userAddr, dl, {value: amtIn});
-            else if(state.tokens.out.isNative) tx = await router.swapExactTokensForETH(amtIn, minOut, path, state.userAddr, dl);
-            else tx = await router.swapExactTokensForTokens(amtIn, minOut, path, state.userAddr, dl);
-
-            status.innerHTML = `Tx Sent! <a href="https://shibariumscan.io/tx/${tx.hash}" target="_blank">View</a>`;
-            await tx.wait();
-            status.textContent = "Swap Success!";
-            refreshBalances();
-        } catch(e) { status.textContent = "Failed: " + (e.reason || "Error"); }
-        finally { btn.disabled = false; updateQuote(); }
-    }
-
-    function toggleAddr(side) { document.getElementById(side==='in'?'addrIn':'addrOut').classList.toggle('show'); }
-    function switchSides() {
-        const t = state.tokens.in; state.tokens.in = state.tokens.out; state.tokens.out = t;
-        document.getElementById("symIn").textContent = state.tokens.in.symbol;
-        document.getElementById("symOut").textContent = state.tokens.out.symbol;
-        refreshBalances(); updateQuote();
-    }
-    function setSlippage(v) { state.slippage = v; document.querySelectorAll('.slip-btn').forEach(b => b.classList.toggle('active', b.textContent.includes(v))); updateQuote(); }
-    function setMax() {
-        if(state.tokens.in.isNative) {
-            const bal = parseFloat(document.getElementById("balIn").textContent);
-            document.getElementById("amountIn").value = bal > 0.5 ? bal - 0.5 : 0;
-        } else {
-            document.getElementById("amountIn").value = document.getElementById("balIn").textContent;
-        }
-        updateQuote();
-    }
-
-    document.getElementById("connectBtn").addEventListener("click", connect);
-    document.getElementById("amountIn").addEventListener("input", updateQuote);
-    init();
+document.getElementById("tokenModal").addEventListener("click",e=>{if(e.target===e.currentTarget)closeTkMo()});
+document.getElementById("cfModal").addEventListener("click",e=>{if(e.target===e.currentTarget)closeCf()});
+document.addEventListener("keydown",e=>{if(e.key==="Enter"){const b=document.getElementById("swBtn");if(!b.disabled)b.click()}});
+initURL();
+// Render initial token avatars
+setTimeout(()=>{updTkUI("in");updTkUI("out");},0);
+// Prefetch prices on load
+Promise.all([
+  getUSDPrice(CFG.WBONE),
+  getUSDPrice(CFG.RIC),
+]).catch(()=>{});
+(async()=>{if(window.ethereum){try{const a=await window.ethereum.request({method:"eth_accounts"});if(a.length>0)connWallet()}catch{}}})();
 </script>
 </body>
 </html>
