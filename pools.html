@@ -9,34 +9,55 @@
         :root {
             --obsidian: #080808;
             --card-bg: #121212;
-            --magma: linear-gradient(135deg, #ff4d00 0%, #ff8c00 100%);
             --gold: #ffd700;
+            --border: #222;
         }
-        body { background: var(--obsidian); color: white; font-family: system-ui, sans-serif; margin: 0; padding: 0; }
-        .nav { padding: 20px 40px; display: flex; align-items: center; border-bottom: 1px solid rgba(255,215,0,0.1); }
-        .logo { font-size: 28px; font-weight: bold; color: var(--gold); }
-        .nav-links { display: flex; gap: 30px; margin-left: 40px; }
-        .nav-links a { color: white; text-decoration: none; font-weight: 500; }
-        .nav-links a:hover, .nav-links a.active { color: var(--gold); }
+        body { background: var(--obsidian); color: white; font-family: 'Inter', system-ui, sans-serif; margin: 0; }
+        
+        /* Nav */
+        .nav { padding: 20px 40px; display: flex; align-items: center; border-bottom: 1px solid #333; background: rgba(0,0,0,0.5); backdrop-filter: blur(10px); }
+        .logo { font-size: 24px; font-weight: 800; letter-spacing: -1px; color: var(--gold); }
+        .nav-links { display: flex; gap: 24px; margin-left: 40px; }
+        .nav-links a { color: #888; text-decoration: none; font-weight: 500; transition: 0.2s; }
+        .nav-links a:hover, .nav-links a.active { color: white; }
         .connect-btn { 
-            background: #222; color: white; border: 1px solid #444; padding: 6px 18px; 
-            border-radius: 9999px; font-size: 14px; font-weight: 500; cursor: pointer; 
-            white-space: nowrap; margin-left: auto; flex-shrink: 0; 
+            background: white; color: black; border: none; padding: 8px 20px; 
+            border-radius: 8px; font-weight: 700; cursor: pointer; margin-left: auto; 
+            transition: 0.2s;
         }
-        .connect-btn:hover { background: #333; border-color: var(--gold); }
-        .card { max-width: 1000px; margin: 40px auto; background: var(--card-bg); border-radius: 24px; padding: 32px; box-shadow: 0 20px 40px rgba(0,0,0,0.8); border: 1px solid #222; }
+        .connect-btn:hover { transform: scale(1.05); box-shadow: 0 0 15px rgba(255,255,255,0.3); }
+
+        /* Container */
+        .container { max-width: 1100px; margin: 40px auto; padding: 0 20px; }
+        
+        .card { background: var(--card-bg); border-radius: 16px; border: 1px solid var(--border); overflow: hidden; }
+        .card-header { padding: 24px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+        .card-title { margin: 0; font-size: 20px; font-weight: 600; }
+        
+        /* Table */
         table { width: 100%; border-collapse: collapse; }
-        th, td { padding: 16px; text-align: left; border-bottom: 1px solid #333; }
-        th { color: var(--gold); font-weight: 600; text-transform: uppercase; font-size: 13px; }
+        th { text-align: left; padding: 16px 24px; color: #666; font-size: 12px; text-transform: uppercase; letter-spacing: 1px; border-bottom: 1px solid var(--border); }
+        td { padding: 20px 24px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+        tr:last-child td { border-bottom: none; }
         tr:hover { background: #1a1a1a; }
-        .pool-name { font-weight: bold; font-size: 18px; }
-        .action-btn { background: #222; color: white; padding: 6px 12px; border-radius: 8px; text-decoration: none; font-size: 13px; margin-right: 6px; }
-        .status { text-align: center; margin-top: 20px; font-size: 14px; }
-        .lock-note { color: #ff4d00; font-size: 13px; text-align: center; margin-top: 10px; }
-        .no-liquidity { color: #ffaa00; font-style: italic; }
+
+        .token-pair { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 16px; }
+        .reserves-row { font-size: 13px; color: #bbb; margin-top: 4px; }
+        
+        .action-btn { 
+            text-decoration: none; background: #222; color: white; padding: 6px 12px; 
+            border-radius: 6px; font-size: 12px; font-weight: 600; margin-right: 8px; 
+            border: 1px solid #333; transition: 0.2s;
+        }
+        .action-btn:hover { border-color: var(--gold); color: var(--gold); }
+
+        .factory-tag { font-size: 10px; background: #333; padding: 2px 6px; border-radius: 4px; color: #888; margin-left: 8px; font-weight: normal; }
+
+        .loading { text-align: center; padding: 40px; color: #666; font-style: italic; }
     </style>
 </head>
 <body>
+
     <div class="nav">
         <div class="logo">RicSwap</div>
         <div class="nav-links">
@@ -44,40 +65,48 @@
             <a href="swap.html">Swap</a>
             <a href="pools.html" class="active">Pools</a>
             <a href="liquidity.html">Add Liquidity</a>
-            <a href="reward.html">Rewards </a>
-            <a href="launch.html">Create Token</a>
-
         </div>
-        <button id="connectBtn" class="connect-btn">Connect Wallet</button>
+        <button id="connectBtn" class="connect-btn" onclick="connectWallet()">Connect Wallet</button>
     </div>
 
-    <div class="card">
-        <h2 style="text-align:center; margin-bottom:8px;">All Liquidity Pools</h2>
-        <p class="lock-note">🔒 Liquidity is permanently locked — no withdrawal possible</p>
-        <table>
-            <thead>
-                <tr>
-                    <th>Pool</th>
-                    <th>Reserves</th>
-                    <th>Your Position</th>
-                    <th>Actions</th>
-                </tr>
-            </thead>
-            <tbody id="poolsTable"></tbody>
-        </table>
-        <div class="status" id="status"></div>
+    <div class="container">
+        <div class="card">
+            <div class="card-header">
+                <h2 class="card-title">Active Liquidity Pools</h2>
+                <div style="font-size: 12px; color: #666;">Shibarium Network</div>
+            </div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Token Pair</th>
+                        <th>Liquidity Reserves</th>
+                        <th>Your Share</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="poolsTable">
+                    <!-- Pools load here -->
+                </tbody>
+            </table>
+            <div id="status" class="loading">Connect wallet to view pools</div>
+        </div>
     </div>
 
     <script>
-        const FACTORY_ADDRESS = "0x78ae5cCD2f13D10aE3fF47F8418A79D99B4569d0";
+        // --- CONFIGURATION ---
+        // Updated to support MULTIPLE Factory Addresses
+        const FACTORY_ADDRESSES = [
+            "0x78ae5cCD2f13D10aE3fF47F8418A79D99B4569d0", // Factory 1
+            "0xD8fFEECfDE1698a70A26a094afBE917bA58E2F70"  // Factory 2
+        ];
+        
         const WBONE = "0xC76F4c819D820369Fb2d7C1531aB3Bb18e6fE8d8";
 
         let provider, signer, userAddress;
 
         const FACTORY_ABI = [
             "function allPairs(uint256) external view returns (address)",
-            "function allPairsLength() external view returns (uint256)",
-            "function getBurner(address lpToken) external view returns (address)"
+            "function allPairsLength() external view returns (uint256)"
         ];
 
         const PAIR_ABI = [
@@ -88,7 +117,10 @@
             "function token1() external view returns (address)"
         ];
 
-        const ERC20_ABI = ["function symbol() external view returns (string)"];
+        const ERC20_ABI = [
+            "function symbol() external view returns (string)",
+            "function decimals() external view returns (uint8)"
+        ];
 
         async function connectWallet() {
             if (!window.ethereum) return alert("Please install MetaMask");
@@ -96,87 +128,117 @@
             await provider.send("eth_requestAccounts", []);
             signer = await provider.getSigner();
             userAddress = await signer.getAddress();
+            
             document.getElementById("connectBtn").textContent = userAddress.slice(0,6) + "..." + userAddress.slice(-4);
+            document.getElementById("connectBtn").onclick = null;
             loadAllPools();
         }
 
         async function loadAllPools() {
             const tableBody = document.getElementById("poolsTable");
             const status = document.getElementById("status");
-            status.textContent = "Loading pools...";
+            
+            status.style.display = "block";
+            status.innerHTML = "Scanning Factories...<br><span style='font-size:12px; color:#444'>This reads both factory contracts</span>";
             tableBody.innerHTML = "";
 
-            try {
-                const factory = new ethers.Contract(FACTORY_ADDRESS, FACTORY_ABI, provider);
-                const length = await factory.allPairsLength();
+            let totalPoolsFound = 0;
 
-                if (length === 0) {
-                    status.innerHTML = `<span style="color:#ffaa00">No pairs created yet. Go to Add Liquidity page first.</span>`;
-                    return;
+            // OUTER LOOP: Iterate through all factories
+            for (let fIndex = 0; fIndex < FACTORY_ADDRESSES.length; fIndex++) {
+                const factoryAddr = FACTORY_ADDRESSES[fIndex];
+                const factoryLabel = `Factory ${fIndex + 1}`;
+
+                try {
+                    const factory = new ethers.Contract(factoryAddr, FACTORY_ABI, provider);
+                    const length = await factory.allPairsLength();
+                    
+                    console.log(`${factoryLabel} (${factoryAddr}) has ${length} pairs.`);
+
+                    if (Number(length) === 0) continue;
+
+                    // INNER LOOP: Iterate through pools in this factory (Newest First)
+                    for (let i = Number(length) - 1; i >= 0; i--) {
+                        try {
+                            const pairAddr = await factory.allPairs(i);
+                            const pair = new ethers.Contract(pairAddr, PAIR_ABI, provider);
+
+                            const [reserves, totalSupply, userLP, t0, t1] = await Promise.all([
+                                pair.getReserves(),
+                                pair.totalSupply(),
+                                pair.balanceOf(userAddress),
+                                pair.token0(),
+                                pair.token1()
+                            ]);
+
+                            // Identify Tokens
+                            const isBone0 = t0.toLowerCase() === WBONE.toLowerCase();
+                            const otherAddr = isBone0 ? t1 : t0;
+                            
+                            // Fetch Token Info
+                            const tokenContract = new ethers.Contract(otherAddr, ERC20_ABI, provider);
+                            let sym, dec;
+                            try {
+                                [sym, dec] = await Promise.all([tokenContract.symbol(), tokenContract.decimals()]);
+                            } catch (err) {
+                                sym = "UNKNOWN"; dec = 18; // Fallback
+                            }
+
+                            // Format Amounts
+                            const resBone = isBone0 ? reserves[0] : reserves[1];
+                            const resToken = isBone0 ? reserves[1] : reserves[0];
+                            
+                            const fmtBone = parseFloat(ethers.formatEther(resBone)).toLocaleString(undefined, {maximumFractionDigits: 2});
+                            const fmtToken = parseFloat(ethers.formatUnits(resToken, dec)).toLocaleString(undefined, {maximumFractionDigits: 2});
+                            const fmtUser = parseFloat(ethers.formatEther(userLP)).toFixed(4);
+                            const share = totalSupply > 0n ? (Number(userLP) * 100 / Number(ethers.formatEther(totalSupply) * 1e18)).toFixed(2) : "0.00";
+                            
+                            // Proper share calculation handling bigints safely for display
+                            const shareDisplay = totalSupply > 0n 
+                                ? (Number(ethers.formatEther(userLP)) / Number(ethers.formatEther(totalSupply)) * 100).toFixed(2) 
+                                : "0.00";
+
+                            // Add Row
+                            const row = `
+                                <tr>
+                                    <td>
+                                        <div class="token-pair">
+                                            <span style="color:gold">BONE</span> / ${sym}
+                                            <span class="factory-tag">${factoryLabel}</span>
+                                        </div>
+                                        <div style="font-size:10px; color:#444; margin-top:2px">${pairAddr}</div>
+                                    </td>
+                                    <td>
+                                        <div>${fmtBone} BONE</div>
+                                        <div class="reserves-row">${fmtToken} ${sym}</div>
+                                    </td>
+                                    <td>
+                                        <div style="font-weight:bold; color:white;">${fmtUser} LP</div>
+                                        <div class="reserves-row">${shareDisplay}% Pool Share</div>
+                                    </td>
+                                    <td>
+                                        <a href="https://shibariumscan.io/address/${pairAddr}" target="_blank" class="action-btn">View</a>
+                                        <a href="liquidity.html?pair=${pairAddr}" class="action-btn">Add</a>
+                                    </td>
+                                </tr>
+                            `;
+                            tableBody.innerHTML += row;
+                            totalPoolsFound++;
+
+                        } catch (err) {
+                            console.error(`Error loading pair ${i} from ${factoryLabel}:`, err);
+                        }
+                    }
+                } catch (err) {
+                    console.error(`Error connecting to ${factoryLabel}:`, err);
                 }
+            }
 
-                for (let i = 0; i < length; i++) {
-                    const pairAddress = await factory.allPairs(i);
-                    const pairContract = new ethers.Contract(pairAddress, PAIR_ABI, provider);
-
-                    const [reserves, totalSupply, userLP, token0Addr, token1Addr, burner] = await Promise.all([
-                        pairContract.getReserves(),
-                        pairContract.totalSupply(),
-                        signer ? pairContract.balanceOf(userAddress) : Promise.resolve(0),
-                        pairContract.token0(),
-                        pairContract.token1(),
-                        factory.getBurner(pairAddress)
-                    ]);
-
-                    const isBoneFirst = token0Addr.toLowerCase() === WBONE.toLowerCase();
-                    const boneRes = isBoneFirst ? reserves[0] : reserves[1];
-                    const otherRes = isBoneFirst ? reserves[1] : reserves[0];
-                    const otherTokenAddr = isBoneFirst ? token1Addr : token0Addr;
-
-                    let tokenSymbol = "Unknown";
-                    try {
-                        const tokenContract = new ethers.Contract(otherTokenAddr, ERC20_ABI, provider);
-                        tokenSymbol = await tokenContract.symbol();
-                    } catch (e) {}
-
-                    const share = totalSupply > 0n ? (userLP * 1000000000000n / totalSupply) / 10000000000n : 0n;
-
-                    tableBody.innerHTML += `
-                        <tr>
-                            <td class="pool-name">BONE / ${tokenSymbol}</td>
-                            <td>
-                                <div>${ethers.formatEther(boneRes)} BONE</div>
-                                <div>${ethers.formatEther(otherRes)} ${tokenSymbol}</div>
-                            </td>
-                            <td>
-                                <div style="font-weight:bold; color:var(--gold);">${ethers.formatEther(userLP)} LP</div>
-                                <div style="font-size:13px; color:#888;">≈ ${(Number(share)/100).toFixed(2)}% of pool</div>
-                            </td>
-                            <td>
-                                <a href="https://shibariumscan.io/address/${pairAddress}" target="_blank" class="action-btn">Pair</a>
-                                ${burner && burner !== "0x0000000000000000000000000000000000000000" ? `<a href="https://shibariumscan.io/address/${burner}" target="_blank" class="action-btn">Burner</a>` : ''}
-                            </td>
-                        </tr>
-                    `;
-                }
-
-                status.innerHTML = `<span style="color:#0f0">✅ Loaded ${length} permanently locked pool(s)</span>`;
-            } catch (e) {
-                console.error(e);
-                status.style.color = "#f00";
-                status.textContent = "Error loading pools. Check console.";
+            status.style.display = totalPoolsFound > 0 ? "none" : "block";
+            if(totalPoolsFound === 0) {
+                status.innerHTML = "No pools found in any factory. <a href='liquidity.html' style='color:gold'>Create one!</a>";
             }
         }
-
-        document.getElementById("connectBtn").addEventListener("click", connectWallet);
-
-        window.addEventListener("load", () => {
-            if (window.ethereum) {
-                window.ethereum.request({ method: 'eth_accounts' }).then(accounts => {
-                    if (accounts.length > 0) connectWallet();
-                });
-            }
-        });
     </script>
 </body>
 </html>
