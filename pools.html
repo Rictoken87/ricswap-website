@@ -3,242 +3,176 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RicSwap • Liquidity Pools</title>
+    <title>RicSwap • Pools</title>
     <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.0/dist/ethers.umd.min.js"></script>
     <style>
-        :root {
-            --obsidian: #080808;
-            --card-bg: #121212;
-            --gold: #ffd700;
-            --border: #222;
-        }
-        body { background: var(--obsidian); color: white; font-family: 'Inter', system-ui, sans-serif; margin: 0; }
+        :root { --bg: #050505; --card: #111; --border: #222; --gold: #ffd700; --green: #00ff88; }
+        body { background: var(--bg); color: white; font-family: 'Inter', sans-serif; margin: 0; padding: 20px; }
         
-        /* Nav */
-        .nav { padding: 20px 40px; display: flex; align-items: center; border-bottom: 1px solid #333; background: rgba(0,0,0,0.5); backdrop-filter: blur(10px); }
-        .logo { font-size: 24px; font-weight: 800; letter-spacing: -1px; color: var(--gold); }
-        .nav-links { display: flex; gap: 24px; margin-left: 40px; }
-        .nav-links a { color: #888; text-decoration: none; font-weight: 500; transition: 0.2s; }
-        .nav-links a:hover, .nav-links a.active { color: white; }
-        .connect-btn { 
-            background: white; color: black; border: none; padding: 8px 20px; 
-            border-radius: 8px; font-weight: 700; cursor: pointer; margin-left: auto; 
-            transition: 0.2s;
-        }
-        .connect-btn:hover { transform: scale(1.05); box-shadow: 0 0 15px rgba(255,255,255,0.3); }
-
-        /* Container */
-        .container { max-width: 1100px; margin: 40px auto; padding: 0 20px; }
+        .nav { display: flex; justify-content: space-between; align-items: center; padding: 10px 20px; background: #161616; border-radius: 12px; margin-bottom: 20px; }
+        .logo { font-weight: 800; color: var(--gold); text-decoration: none; font-size: 20px; }
         
-        .card { background: var(--card-bg); border-radius: 16px; border: 1px solid var(--border); overflow: hidden; }
-        .card-header { padding: 24px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
-        .card-title { margin: 0; font-size: 20px; font-weight: 600; }
+        .container { max-width: 900px; margin: 0 auto; }
+        .card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 20px; }
         
-        /* Table */
-        table { width: 100%; border-collapse: collapse; }
-        th { text-align: left; padding: 16px 24px; color: #666; font-size: 12px; text-transform: uppercase; letter-spacing: 1px; border-bottom: 1px solid var(--border); }
-        td { padding: 20px 24px; border-bottom: 1px solid var(--border); vertical-align: middle; }
-        tr:last-child td { border-bottom: none; }
-        tr:hover { background: #1a1a1a; }
-
-        .token-pair { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 16px; }
-        .reserves-row { font-size: 13px; color: #bbb; margin-top: 4px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th { text-align: left; color: #666; font-size: 12px; padding-bottom: 10px; border-bottom: 1px solid var(--border); }
+        td { padding: 15px 0; border-bottom: 1px solid #1a1a1a; vertical-align: middle; }
         
-        .action-btn { 
-            text-decoration: none; background: #222; color: white; padding: 6px 12px; 
-            border-radius: 6px; font-size: 12px; font-weight: 600; margin-right: 8px; 
-            border: 1px solid #333; transition: 0.2s;
-        }
-        .action-btn:hover { border-color: var(--gold); color: var(--gold); }
-
-        .factory-tag { font-size: 10px; background: #333; padding: 2px 6px; border-radius: 4px; color: #888; margin-left: 8px; font-weight: normal; }
-
-        .loading { text-align: center; padding: 40px; color: #666; font-style: italic; }
+        .pair-name { font-weight: 700; font-size: 16px; display: flex; align-items: center; gap: 8px; }
+        .tag { background: #222; color: #888; font-size: 10px; padding: 2px 6px; border-radius: 4px; }
+        
+        .reserves { font-size: 13px; color: #aaa; margin-top: 4px; }
+        .user-share { font-weight: bold; color: var(--green); }
+        
+        .btn { background: #222; color: white; text-decoration: none; padding: 6px 12px; border-radius: 6px; font-size: 12px; border: 1px solid #333; }
+        .btn:hover { border-color: var(--gold); color: var(--gold); }
+        
+        .status-box { background: #1a1a1a; padding: 10px; border-radius: 8px; font-family: monospace; font-size: 12px; color: var(--gold); margin-bottom: 20px; display: none; }
     </style>
 </head>
 <body>
 
+<div class="container">
     <div class="nav">
-        <div class="logo">RicSwap</div>
-        <div class="nav-links">
-            <a href="index.html">Home</a>
-            <a href="swap.html">Swap</a>
-            <a href="pools.html" class="active">Pools</a>
-            <a href="liquidity.html">Add Liquidity</a>
-        </div>
-        <button id="connectBtn" class="connect-btn" onclick="connectWallet()">Connect Wallet</button>
+        <a href="#" class="logo">RicSwap</a>
+        <button id="connectBtn" class="btn" style="background:white; color:black; border:none; font-weight:700" onclick="connect()">Connect Wallet</button>
     </div>
 
-    <div class="container">
-        <div class="card">
-            <div class="card-header">
-                <h2 class="card-title">Active Liquidity Pools</h2>
-                <div style="font-size: 12px; color: #666;">Shibarium Network</div>
-            </div>
-            <table>
-                <thead>
-                    <tr>
-                        <th>Token Pair</th>
-                        <th>Liquidity Reserves</th>
-                        <th>Your Share</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody id="poolsTable">
-                    <!-- Pools load here -->
-                </tbody>
-            </table>
-            <div id="status" class="loading">Connect wallet to view pools</div>
-        </div>
-    </div>
+    <div id="console" class="status-box"></div>
 
-    <script>
-        // --- CONFIGURATION ---
-        // Updated to support MULTIPLE Factory Addresses
-        const FACTORY_ADDRESSES = [
-            "0x78ae5cCD2f13D10aE3fF47F8418A79D99B4569d0", // Factory 1
-            "0xD8fFEECfDE1698a70A26a094afBE917bA58E2F70"  // Factory 2
-        ];
+    <div class="card">
+        <h2 style="margin-top:0">Liquidity Pools</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th width="40%">Pair</th>
+                    <th width="30%">Liquidity</th>
+                    <th width="30%">Actions</th>
+                </tr>
+            </thead>
+            <tbody id="list"></tbody>
+        </table>
+        <div id="empty" style="text-align:center; padding:40px; color:#444;">Connect wallet to load.</div>
+    </div>
+</div>
+
+<script>
+    // --- CONFIGURATION ---
+    // We scan both factories to ensure we find everything
+    const FACTORIES = [
+        "0x78ae5cCD2f13D10aE3fF47F8418A79D99B4569d0", // Old Factory
+        "0xD8fFEECfDE1698a70A26a094afBE917bA58E2F70"  // New Factory (Owner of your invisible pair)
+    ];
+    const WBONE = "0xC76F4c819D820369Fb2d7C1531aB3Bb18e6fE8d8";
+
+    // --- ABIS ---
+    const ABIS = {
+        FACTORY: ["function allPairsLength() view returns (uint)", "function allPairs(uint) view returns (address)"],
+        PAIR: ["function token0() view returns (address)", "function token1() view returns (address)", "function getReserves() view returns (uint112,uint112,uint32)", "function balanceOf(address) view returns (uint)", "function totalSupply() view returns (uint)"],
+        ERC20: ["function symbol() view returns (string)", "function decimals() view returns (uint8)"]
+    };
+
+    let provider, signer, userAddr;
+    const logBox = document.getElementById("console");
+
+    function log(msg) {
+        logBox.style.display = "block";
+        logBox.innerHTML += `> ${msg}<br>`;
+        console.log(msg);
+    }
+
+    async function connect() {
+        if (!window.ethereum) return alert("MetaMask needed");
+        provider = new ethers.BrowserProvider(window.ethereum);
+        signer = await provider.getSigner();
+        userAddr = await signer.getAddress();
+        document.getElementById("connectBtn").innerText = "Connected";
+        document.getElementById("list").innerHTML = "";
+        document.getElementById("empty").style.display = "none";
         
-        const WBONE = "0xC76F4c819D820369Fb2d7C1531aB3Bb18e6fE8d8";
+        loadPools();
+    }
 
-        let provider, signer, userAddress;
-
-        const FACTORY_ABI = [
-            "function allPairs(uint256) external view returns (address)",
-            "function allPairsLength() external view returns (uint256)"
-        ];
-
-        const PAIR_ABI = [
-            "function getReserves() external view returns (uint112 reserve0, uint112 reserve1, uint32 blockTimestampLast)",
-            "function totalSupply() external view returns (uint256)",
-            "function balanceOf(address account) external view returns (uint256)",
-            "function token0() external view returns (address)",
-            "function token1() external view returns (address)"
-        ];
-
-        const ERC20_ABI = [
-            "function symbol() external view returns (string)",
-            "function decimals() external view returns (uint8)"
-        ];
-
-        async function connectWallet() {
-            if (!window.ethereum) return alert("Please install MetaMask");
-            provider = new ethers.BrowserProvider(window.ethereum);
-            await provider.send("eth_requestAccounts", []);
-            signer = await provider.getSigner();
-            userAddress = await signer.getAddress();
-            
-            document.getElementById("connectBtn").textContent = userAddress.slice(0,6) + "..." + userAddress.slice(-4);
-            document.getElementById("connectBtn").onclick = null;
-            loadAllPools();
-        }
-
-        async function loadAllPools() {
-            const tableBody = document.getElementById("poolsTable");
-            const status = document.getElementById("status");
-            
-            status.style.display = "block";
-            status.innerHTML = "Scanning Factories...<br><span style='font-size:12px; color:#444'>This reads both factory contracts</span>";
-            tableBody.innerHTML = "";
-
-            let totalPoolsFound = 0;
-
-            // OUTER LOOP: Iterate through all factories
-            for (let fIndex = 0; fIndex < FACTORY_ADDRESSES.length; fIndex++) {
-                const factoryAddr = FACTORY_ADDRESSES[fIndex];
-                const factoryLabel = `Factory ${fIndex + 1}`;
-
-                try {
-                    const factory = new ethers.Contract(factoryAddr, FACTORY_ABI, provider);
-                    const length = await factory.allPairsLength();
-                    
-                    console.log(`${factoryLabel} (${factoryAddr}) has ${length} pairs.`);
-
-                    if (Number(length) === 0) continue;
-
-                    // INNER LOOP: Iterate through pools in this factory (Newest First)
-                    for (let i = Number(length) - 1; i >= 0; i--) {
-                        try {
-                            const pairAddr = await factory.allPairs(i);
-                            const pair = new ethers.Contract(pairAddr, PAIR_ABI, provider);
-
-                            const [reserves, totalSupply, userLP, t0, t1] = await Promise.all([
-                                pair.getReserves(),
-                                pair.totalSupply(),
-                                pair.balanceOf(userAddress),
-                                pair.token0(),
-                                pair.token1()
-                            ]);
-
-                            // Identify Tokens
-                            const isBone0 = t0.toLowerCase() === WBONE.toLowerCase();
-                            const otherAddr = isBone0 ? t1 : t0;
-                            
-                            // Fetch Token Info
-                            const tokenContract = new ethers.Contract(otherAddr, ERC20_ABI, provider);
-                            let sym, dec;
-                            try {
-                                [sym, dec] = await Promise.all([tokenContract.symbol(), tokenContract.decimals()]);
-                            } catch (err) {
-                                sym = "UNKNOWN"; dec = 18; // Fallback
-                            }
-
-                            // Format Amounts
-                            const resBone = isBone0 ? reserves[0] : reserves[1];
-                            const resToken = isBone0 ? reserves[1] : reserves[0];
-                            
-                            const fmtBone = parseFloat(ethers.formatEther(resBone)).toLocaleString(undefined, {maximumFractionDigits: 2});
-                            const fmtToken = parseFloat(ethers.formatUnits(resToken, dec)).toLocaleString(undefined, {maximumFractionDigits: 2});
-                            const fmtUser = parseFloat(ethers.formatEther(userLP)).toFixed(4);
-                            const share = totalSupply > 0n ? (Number(userLP) * 100 / Number(ethers.formatEther(totalSupply) * 1e18)).toFixed(2) : "0.00";
-                            
-                            // Proper share calculation handling bigints safely for display
-                            const shareDisplay = totalSupply > 0n 
-                                ? (Number(ethers.formatEther(userLP)) / Number(ethers.formatEther(totalSupply)) * 100).toFixed(2) 
-                                : "0.00";
-
-                            // Add Row
-                            const row = `
-                                <tr>
-                                    <td>
-                                        <div class="token-pair">
-                                            <span style="color:gold">BONE</span> / ${sym}
-                                            <span class="factory-tag">${factoryLabel}</span>
-                                        </div>
-                                        <div style="font-size:10px; color:#444; margin-top:2px">${pairAddr}</div>
-                                    </td>
-                                    <td>
-                                        <div>${fmtBone} BONE</div>
-                                        <div class="reserves-row">${fmtToken} ${sym}</div>
-                                    </td>
-                                    <td>
-                                        <div style="font-weight:bold; color:white;">${fmtUser} LP</div>
-                                        <div class="reserves-row">${shareDisplay}% Pool Share</div>
-                                    </td>
-                                    <td>
-                                        <a href="https://shibariumscan.io/address/${pairAddr}" target="_blank" class="action-btn">View</a>
-                                        <a href="liquidity.html?pair=${pairAddr}" class="action-btn">Add</a>
-                                    </td>
-                                </tr>
-                            `;
-                            tableBody.innerHTML += row;
-                            totalPoolsFound++;
-
-                        } catch (err) {
-                            console.error(`Error loading pair ${i} from ${factoryLabel}:`, err);
-                        }
-                    }
-                } catch (err) {
-                    console.error(`Error connecting to ${factoryLabel}:`, err);
+    async function loadPools() {
+        log("Scanning factories...");
+        
+        for (let i = 0; i < FACTORIES.length; i++) {
+            const factoryAddr = FACTORIES[i];
+            try {
+                const factory = new ethers.Contract(factoryAddr, ABIS.FACTORY, provider);
+                const len = await factory.allPairsLength();
+                log(`Factory ${i+1} (${factoryAddr.slice(0,6)}...): Found ${len} pairs.`);
+                
+                // Loop backwards (newest first)
+                for (let j = Number(len) - 1; j >= 0; j--) {
+                    const pairAddr = await factory.allPairs(j);
+                    await loadSinglePair(pairAddr);
+                    // RPC DELAY (Prevents congestion errors)
+                    await new Promise(r => setTimeout(r, 200)); 
                 }
-            }
-
-            status.style.display = totalPoolsFound > 0 ? "none" : "block";
-            if(totalPoolsFound === 0) {
-                status.innerHTML = "No pools found in any factory. <a href='liquidity.html' style='color:gold'>Create one!</a>";
+            } catch (e) {
+                log(`Error reading Factory ${i+1}: ${e.message}`);
             }
         }
-    </script>
+        log("Scan complete.");
+    }
+
+    async function loadSinglePair(pairAddr) {
+        try {
+            const pair = new ethers.Contract(pairAddr, ABIS.PAIR, provider);
+            
+            // 1. Get Token Addresses
+            const [t0, t1] = await Promise.all([pair.token0(), pair.token1()]);
+            
+            // 2. Identify BONE vs Token
+            const isBone0 = t0.toLowerCase() === WBONE.toLowerCase();
+            const tokenAddr = isBone0 ? t1 : t0;
+            
+            // 3. Get Token Details
+            const token = new ethers.Contract(tokenAddr, ABIS.ERC20, provider);
+            let symbol = "???", decimals = 18;
+            try {
+                [symbol, decimals] = await Promise.all([token.symbol(), token.decimals()]);
+            } catch(e) {} // Continue even if symbol fails
+
+            // 4. Get Reserves & Balance
+            const [reserves, balance, totalSupply] = await Promise.all([
+                pair.getReserves(),
+                pair.balanceOf(userAddr),
+                pair.totalSupply()
+            ]);
+
+            const resBone = isBone0 ? reserves[0] : reserves[1];
+            const resToken = isBone0 ? reserves[1] : reserves[0];
+
+            // 5. Render
+            const html = `
+                <tr>
+                    <td>
+                        <div class="pair-name">
+                            <span style="color:gold">BONE</span> / ${symbol}
+                            <span class="tag">${pairAddr.slice(0,6)}...</span>
+                        </div>
+                    </td>
+                    <td>
+                        <div class="reserves">${parseFloat(ethers.formatEther(resBone)).toFixed(2)} BONE</div>
+                        <div class="reserves">${parseFloat(ethers.formatUnits(resToken, decimals)).toFixed(2)} ${symbol}</div>
+                    </td>
+                    <td>
+                        <div class="user-share">${parseFloat(ethers.formatEther(balance)).toFixed(4)} LP</div>
+                        <a href="liquidity.html?pair=${pairAddr}" class="btn">Manage</a>
+                        <a href="https://shibariumscan.io/address/${pairAddr}" target="_blank" class="btn" style="background:#333; border:none">Scan</a>
+                    </td>
+                </tr>
+            `;
+            document.getElementById("list").innerHTML += html;
+
+        } catch (e) {
+            log(`Skipped pair ${pairAddr}: ${e.shortMessage || "RPC Error"}`);
+        }
+    }
+</script>
+
 </body>
 </html>
