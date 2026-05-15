@@ -2,88 +2,94 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Router Doctor</title>
+    <title>RicSwap • Pair Detective</title>
     <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.0/dist/ethers.umd.min.js"></script>
     <style>
-        body { background: #111; color: #eee; font-family: monospace; padding: 40px; text-align: center; }
-        .box { background: #222; padding: 20px; border: 1px solid #444; max-width: 500px; margin: 0 auto; border-radius: 10px; }
-        button { padding: 15px; background: #ff4d00; color: white; border: none; font-weight: bold; cursor: pointer; width: 100%; margin-top: 20px; }
-        .val { color: #00ff88; font-size: 14px; word-break: break-all; margin-top: 5px; display: block; }
-        .err { color: #ff4444; }
+        body { background: #111; color: #fff; font-family: monospace; padding: 40px; }
+        input { background: #222; border: 1px solid #444; color: #0f0; padding: 10px; width: 400px; }
+        button { padding: 10px 20px; cursor: pointer; font-weight: bold; }
+        .box { border: 1px solid #333; padding: 20px; margin-top: 20px; border-radius: 8px; }
+        .label { color: #888; font-size: 12px; }
+        .val { font-size: 16px; color: #ffd700; margin-bottom: 10px; display: block; }
+        .error { color: #ff4444; }
+        .success { color: #00ff88; }
     </style>
 </head>
 <body>
-    <div class="box">
-        <h2>🩺 Router Diagnostic</h2>
-        <p>Target: 0xcfBF0917F2fCDC4F5170aC991fa26F2Bc3da9Fd4</p>
-        
-        <div style="text-align:left; margin-top:20px;">
-            <p>1. FACTORY Variable: <span id="fact" class="val">Waiting...</span></p>
-            <p>2. WETH/WBONE Variable: <span id="weth" class="val">Waiting...</span></p>
-            <p>3. Code Check: <span id="code" class="val">Waiting...</span></p>
-        </div>
 
-        <button onclick="diagnose()">RUN DIAGNOSIS</button>
-        <div id="status" style="margin-top:15px;"></div>
+    <h2>🕵️ Pair Detective</h2>
+    <p>Paste the "Invisible" LP Address below to trace its origin.</p>
+    
+    <input id="pairInput" value="0x5f2dDDB082cC8f5BE3A1279F1B0DD8870e81FA56" placeholder="0x...">
+    <button onclick="investigate()">Investigate</button>
+
+    <div id="report" class="box" style="display:none">
+        <span class="label">PAIR ADDRESS</span>
+        <span class="val" id="pAddr"></span>
+
+        <span class="label">TOKEN 0</span>
+        <span class="val" id="t0"></span>
+
+        <span class="label">TOKEN 1</span>
+        <span class="val" id="t1"></span>
+
+        <hr style="border-color:#333">
+
+        <span class="label">PARENT FACTORY (The Creator)</span>
+        <span class="val" id="creator"></span>
+
+        <div id="verdict" style="margin-top:20px; font-weight:bold;"></div>
     </div>
 
-<script>
-    const ROUTER = "0xcfBF0917F2fCDC4F5170aC991fa26F2Bc3da9Fd4";
-    const RPC = "https://rpc.shibarium.shib.io";
+    <script>
+        // YOUR FACTORIES (Copy from pools.html)
+        const MY_FACTORIES = [
+            "0x78ae5cCD2f13D10aE3fF47F8418A79D99B4569d0", 
+            "0xD8fFEECfDE1698a70A26a094afBE917bA58E2F70"
+        ].map(x => x.toLowerCase());
 
-    const ABI = [
-        "function factory() view returns (address)",
-        "function WETH() view returns (address)",
-        "function weth() view returns (address)" // Try lowercase too
-    ];
+        const PAIR_ABI = [
+            "function factory() view returns (address)",
+            "function token0() view returns (address)",
+            "function token1() view returns (address)"
+        ];
 
-    async function diagnose() {
-        const status = document.getElementById("status");
-        status.innerText = "Connecting to Shibarium...";
-        
-        try {
-            const provider = new ethers.JsonRpcProvider(RPC);
+        async function investigate() {
+            const addr = document.getElementById("pairInput").value.trim();
+            const report = document.getElementById("report");
+            const verdict = document.getElementById("verdict");
             
-            // 1. Check if contract exists
-            const code = await provider.getCode(ROUTER);
-            if(code === "0x") {
-                document.getElementById("code").innerText = "❌ NO CONTRACT FOUND (EOA)";
-                document.getElementById("code").className = "val err";
-                return status.innerText = "CRITICAL: This address is empty.";
-            } else {
-                document.getElementById("code").innerText = "✅ Contract Exists (" + code.length + " bytes)";
-            }
+            report.style.display = "block";
+            verdict.innerHTML = "Scanning...";
 
-            // 2. Read Variables
-            const router = new ethers.Contract(ROUTER, ABI, provider);
-            
+            if (!window.ethereum) return alert("No Wallet Found");
+            const provider = new ethers.BrowserProvider(window.ethereum);
+
             try {
-                const f = await router.factory();
-                document.getElementById("fact").innerText = f;
-                if(f === "0x0000000000000000000000000000000000000000") {
-                     document.getElementById("fact").className = "val err";
-                     status.innerHTML = "<b style='color:red'>FATAL: Factory is Zero Address. Router needs Redeploy.</b>";
+                const pair = new ethers.Contract(addr, PAIR_ABI, provider);
+                
+                // 1. Trace the Factory
+                const factoryAddr = await pair.factory();
+                const t0 = await pair.token0();
+                const t1 = await pair.token1();
+
+                document.getElementById("pAddr").innerText = addr;
+                document.getElementById("t0").innerText = t0;
+                document.getElementById("t1").innerText = t1;
+                document.getElementById("creator").innerText = factoryAddr;
+
+                // 2. Compare with YOUR list
+                if (MY_FACTORIES.includes(factoryAddr.toLowerCase())) {
+                    verdict.innerHTML = `<span class="success">✅ GOOD NEWS: This pair IS managed by your factories.<br>Reason for missing: Check if your loop limit is too small or RPC is lagging.</span>`;
+                } else {
+                    verdict.innerHTML = `<span class="error">❌ CASE SOLVED: This pair belongs to a different Factory.<br>Your Pools page scans Factory ending in ...${MY_FACTORIES[0].slice(-4)} and ...${MY_FACTORIES[1].slice(-4)}.<br>But this pair belongs to: ${factoryAddr}.<br><br>Solution: Add ${factoryAddr} to your FACTORY_ADDRESSES list in pools.html.</span>`;
                 }
-            } catch(e) {
-                document.getElementById("fact").innerText = "❌ REVERT (Function missing?)";
-                document.getElementById("fact").className = "val err";
+
+            } catch (e) {
+                console.error(e);
+                verdict.innerHTML = `<span class="error">💀 DEAD END: This address is NOT a Uniswap V2 Pair.<br>It might be a wallet, a token, or a V3 pool.<br>Error: ${e.message}</span>`;
             }
-
-            try {
-                const w = await router.WETH().catch(() => router.weth()); // Try both cases
-                document.getElementById("weth").innerText = w;
-            } catch(e) {
-                document.getElementById("weth").innerText = "❌ REVERT";
-                document.getElementById("weth").className = "val err";
-            }
-
-            if(status.innerText.includes("FATAL")) return;
-            status.innerText = "Diagnosis Complete.";
-
-        } catch(e) {
-            status.innerText = "Network Error: " + e.message;
         }
-    }
-</script>
+    </script>
 </body>
 </html>
