@@ -42,7 +42,7 @@ hr{border:none;border-top:1px solid var(--bd);margin:18px 0}
 .btn-stake:hover:not(:disabled){transform:translateY(-1px);box-shadow:0 8px 24px rgba(255,77,0,.4)}
 .st{margin-top:12px;padding:11px 14px;background:var(--s2);border:1px solid var(--bd);
   border-radius:10px;font-family:monospace;font-size:11px;color:var(--t2);
-  min-height:40px;line-height:1.5;word-break:break-all}
+  min-height:40px;line-height:1.6;word-break:break-all}
 .st.ok{border-color:var(--gr);color:var(--gr)}
 .st.err{border-color:var(--rd);color:var(--rd)}
 .st.warn{border-color:var(--yw);color:var(--yw)}
@@ -53,63 +53,57 @@ hr{border:none;border-top:1px solid var(--bd);margin:18px 0}
 .cell-val{font-family:monospace;font-size:13px;font-weight:700;color:var(--tx)}
 .cell-val.ok{color:var(--gr)}
 .cell-val.warn{color:var(--yw)}
+.raw-box{background:var(--s2);border:1px solid var(--bd);border-radius:8px;
+  padding:10px 12px;font-family:monospace;font-size:10px;color:var(--mu);
+  word-break:break-all;margin-top:8px;display:none}
 </style>
 </head>
 <body>
 <div class="card">
 
   <h1>Ric<span>Paymaster</span> Stake Manager</h1>
-  <p class="sub">Diagnose + fix EntryPoint staking without Remix</p>
+  <p class="sub">All calls routed via MetaMask to bypass CORS</p>
 
   <div class="field">
     <label>RicPaymaster</label>
     <div class="addr">0xeBb6F86CBc6841D074E72d317b8C5ad922ec35c4</div>
   </div>
-
   <div class="field">
     <label>EntryPoint v0.6</label>
     <div class="addr">0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789</div>
   </div>
 
   <hr>
-
-  <button class="btn btn-connect" id="connectBtn" onclick="connectWallet()">
-    Connect MetaMask
-  </button>
-
+  <button class="btn btn-connect" id="connectBtn" onclick="connectWallet()">Connect MetaMask</button>
   <hr>
 
-  <!-- STEP 1: Diagnose -->
   <button class="btn btn-diagnose" id="diagnoseBtn" onclick="diagnose()" disabled>
     Step 1: Read EntryPoint State (Diagnose)
   </button>
 
-  <!-- STEP 2: Stake -->
-  <div class="field" id="stakeFields" style="display:none">
-    <label>BONE Amount to Stake</label>
-    <div class="row">
-      <input type="number" id="stakeAmt" value="5" min="0.1" step="0.1">
-      <div class="unit">BONE</div>
+  <div id="stakeSection" style="display:none">
+    <div class="field" style="margin-top:14px">
+      <label>BONE Amount to Stake</label>
+      <div class="row">
+        <input type="number" id="stakeAmt" value="5" min="0.1" step="0.1">
+        <div class="unit">BONE</div>
+      </div>
     </div>
+    <div class="field">
+      <label>Unstake Delay (auto-set from EntryPoint)</label>
+      <div class="row">
+        <input type="number" id="unstakeDelay" value="86400">
+        <div class="unit">seconds</div>
+      </div>
+      <div class="note">Must be >= existing delay. Auto-corrected by Step 1.</div>
+    </div>
+    <button class="btn btn-stake" id="stakeBtn" onclick="doStake()">
+      Step 2: Add Stake to EntryPoint
+    </button>
   </div>
 
-  <div class="field" id="delayField" style="display:none">
-    <label>Unstake Delay Seconds (auto-set from EntryPoint)</label>
-    <div class="row">
-      <input type="number" id="unstakeDelay" value="86400">
-      <div class="unit">seconds</div>
-    </div>
-    <div class="note">Must be >= existing delay in EntryPoint. Auto-corrected after diagnose.</div>
-  </div>
-
-  <button class="btn btn-stake" id="stakeBtn" onclick="doStake()" disabled style="display:none">
-    Step 2: Add Stake to EntryPoint
-  </button>
-
-  <!-- Status -->
   <div class="st" id="st">Connect wallet to begin</div>
 
-  <!-- Result grid -->
   <div class="grid" id="grid" style="display:none">
     <div class="cell"><div class="cell-lbl">Deposit</div><div class="cell-val" id="rDeposit">--</div></div>
     <div class="cell"><div class="cell-lbl">Staked</div><div class="cell-val" id="rStaked">--</div></div>
@@ -117,88 +111,107 @@ hr{border:none;border-top:1px solid var(--bd);margin:18px 0}
     <div class="cell"><div class="cell-lbl">Unstake Delay</div><div class="cell-val" id="rDelay">--</div></div>
   </div>
 
+  <div class="raw-box" id="rawBox"></div>
+
 </div>
 <script>
-// -- Constants ---------------------------------------------
+// ---- Constants ----
 var RICPAYMASTER = "0xeBb6F86CBc6841D074E72d317b8C5ad922ec35c4";
 var ENTRYPOINT   = "0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789";
-var CHAIN_ID     = 109n;
+var CHAIN_HEX    = "0x6d";  // 109 decimal
+var CHAIN_ID_NUM = 109;
 
+// Function selectors (keccak256 verified against etherscan source)
+// getDepositInfo(address) = 0x5287ce12
+// balanceOf(address)      = 0x70a08231
+// addStakeToEntryPoint(uint32) on RicPaymaster
+var SEL_GET_DEPOSIT_INFO = "5287ce12";
+var SEL_BALANCE_OF       = "70a08231";
+
+// RicPaymaster ABI -- only addStakeToEntryPoint needed for signing
 var PAYMASTER_ABI = [
   "function addStakeToEntryPoint(uint32 unstakeDelaySec) external payable",
   "function owner() external view returns (address)",
 ];
 
-var EP_ABI = [
-  "function balanceOf(address) view returns (uint256)",
-];
-// getDepositInfo selector: keccak256("getDepositInfo(address)")[0:4]
-// = 0x5287ce12  (verified from etherscan EntryPoint source)
-var GET_DEPOSIT_INFO_SEL = "0x5287ce12";
+var signer, userAddr;
 
-// -- State -------------------------------------------------
-var provider, signer, userAddr;
+// ---- eth_call via MetaMask (bypasses CORS completely) ----
+// All read calls go through window.ethereum.request
+// This routes through MetaMask's own RPC -- no CORS issue
+async function ethCall(to, data) {
+  var result = await window.ethereum.request({
+    method: "eth_call",
+    params: [{ to: to, data: "0x" + data }, "latest"],
+  });
+  return result; // returns hex string e.g. "0x000...123"
+}
 
-// -- Connect wallet ----------------------------------------
+// Pad address to 32 bytes for ABI encoding
+function padAddr(addr) {
+  return "000000000000000000000000" + addr.slice(2).toLowerCase();
+}
+
+// Decode uint256 from 32-byte hex slot
+function decodeUint(hex32) {
+  return BigInt("0x" + hex32);
+}
+
+// ---- Connect wallet ----
 async function connectWallet() {
   if (!window.ethereum) {
-    setSt("err", "MetaMask not found. Please install MetaMask.");
-    return;
+    return setSt("err", "MetaMask not found.");
   }
   setSt("loading", "Requesting accounts...");
   try {
-    // Step 1: request accounts first
+    // Request accounts via MetaMask
     await window.ethereum.request({ method: "eth_requestAccounts" });
 
-    // Step 2: build provider
-    provider = new ethers.BrowserProvider(window.ethereum);
-    signer   = await provider.getSigner();
-    userAddr = await signer.getAddress();
-
-    // Step 3: check network
-    var net = await provider.getNetwork();
-    if (net.chainId !== CHAIN_ID) {
+    // Check chain
+    var chainHex = await window.ethereum.request({ method: "eth_chainId" });
+    if (parseInt(chainHex, 16) !== CHAIN_ID_NUM) {
       setSt("loading", "Switching to Shibarium...");
       try {
         await window.ethereum.request({
           method: "wallet_switchEthereumChain",
-          params: [{ chainId: "0x6d" }]
+          params: [{ chainId: CHAIN_HEX }],
         });
-        provider = new ethers.BrowserProvider(window.ethereum);
-        signer   = await provider.getSigner();
-        userAddr = await signer.getAddress();
-      } catch(switchErr) {
-        setSt("err", "Switch to Shibarium (Chain ID 109) in MetaMask then try again.");
-        return;
+      } catch(e) {
+        return setSt("err", "Switch to Shibarium (Chain ID 109) in MetaMask.");
       }
     }
 
-    // Step 4: check owner
-    var pm    = new ethers.Contract(RICPAYMASTER, PAYMASTER_ABI, provider);
-    var owner = await pm.owner();
+    // Get address
+    var accounts = await window.ethereum.request({ method: "eth_accounts" });
+    userAddr = accounts[0];
+
+    // Check owner via ethCall
+    setSt("loading", "Checking contract owner...");
+    var ownerRaw = await ethCall(RICPAYMASTER, "8da5cb5b"); // owner() selector
+    var owner = "0x" + ownerRaw.slice(-40);
+
     var isOwner = owner.toLowerCase() === userAddr.toLowerCase();
 
-    // Update connect button
+    // Build signer for transactions (write calls)
+    var provider = new ethers.BrowserProvider(window.ethereum);
+    signer = await provider.getSigner();
+
     var cb = document.getElementById("connectBtn");
     cb.textContent = userAddr.slice(0,6) + "..." + userAddr.slice(-4) + " connected";
     cb.style.borderColor = "var(--gr)";
     cb.style.color = "var(--gr)";
-
-    // Enable diagnose
     document.getElementById("diagnoseBtn").disabled = false;
 
     if (!isOwner) {
-      setSt("err",
-        "NOT the owner. Connected: " + userAddr.slice(0,10) +
-        " Owner: " + owner.slice(0,10) +
-        " -- Switch MetaMask to the owner wallet."
+      return setSt("err",
+        "NOT owner. You: " + userAddr.slice(0,10) +
+        " | Owner: " + owner.slice(0,10) +
+        " Switch wallet in MetaMask."
       );
-      return;
     }
 
-    setSt("ok", "Connected as owner. Click Step 1 to read EntryPoint state.");
+    setSt("ok", "Connected as owner. Click Step 1 to diagnose.");
 
-    // Reload on account/chain change
     window.ethereum.on("accountsChanged", function() { location.reload(); });
     window.ethereum.on("chainChanged",    function() { location.reload(); });
 
@@ -207,138 +220,133 @@ async function connectWallet() {
   }
 }
 
-// -- Diagnose ----------------------------------------------
+// ---- Diagnose: read EntryPoint state via MetaMask eth_call ----
 async function diagnose() {
-  if (!provider) { setSt("err", "Connect wallet first."); return; }
-  setSt("loading", "Reading EntryPoint state via raw eth_call...");
+  setSt("loading", "Reading EntryPoint state via MetaMask...");
+  var rawBox = document.getElementById("rawBox");
+  rawBox.style.display = "none";
+
   try {
-    // Use raw eth_call with manual hex decoding to avoid ABI tuple mismatch
-    // getDepositInfo(address) selector = 0x5287ce12
-    var paddedAddr = "000000000000000000000000" + RICPAYMASTER.slice(2).toLowerCase();
-    var callData   = GET_DEPOSIT_INFO_SEL + paddedAddr;
+    // Call getDepositInfo(RICPAYMASTER) through MetaMask
+    var callData = SEL_GET_DEPOSIT_INFO + padAddr(RICPAYMASTER);
+    var raw = await ethCall(ENTRYPOINT, callData);
 
-    var rawResult  = await provider.call({
-      to:   ENTRYPOINT,
-      data: callData,
-    });
+    rawBox.textContent = "Raw: " + raw;
+    rawBox.style.display = "block";
 
-    // Also get balance via contract (simple uint256, no tuple issue)
-    var ep  = new ethers.Contract(ENTRYPOINT, EP_ABI, provider);
-    var bal = await ep.balanceOf(RICPAYMASTER);
+    var hex = raw.startsWith("0x") ? raw.slice(2) : raw;
 
-    // Decode raw result manually
-    // DepositInfo ABI-encodes as 5 x uint256 slots (each field padded to 32 bytes):
-    // slot 0: deposit (uint112)
-    // slot 1: staked  (bool)
-    // slot 2: stake   (uint112)
-    // slot 3: unstakeDelaySec (uint32)
-    // slot 4: withdrawTime (uint48)
-    var raw = rawResult.slice(2); // remove 0x
-    if (raw.length < 320) {
-      // Try alternative: some EntryPoints pack differently
-      // Just show raw hex so we can see what came back
-      setSt("warn", "Raw data: " + rawResult.slice(0, 100) + " | Balance: " + ethers.formatEther(bal) + " BONE");
-      alert("Raw getDepositInfo data:
-" + rawResult + "
-
-Balance: " + ethers.formatEther(bal) + " BONE
-
-Please share this with the developer.");
+    if (!hex || hex.length < 64) {
+      setSt("warn",
+        "EntryPoint returned empty or short data (" + hex.length + " chars). " +
+        "Raw: " + raw.slice(0, 60) + " | " +
+        "Trying balanceOf..."
+      );
+      // Try balanceOf as fallback
+      var balRaw = await ethCall(ENTRYPOINT, SEL_BALANCE_OF + padAddr(RICPAYMASTER));
+      var balWei = BigInt(balRaw || "0x0");
+      setSt("warn",
+        "getDepositInfo returned no data. " +
+        "balanceOf: " + ethers.formatEther(balWei) + " BONE. " +
+        "Shibarium EntryPoint may use different selectors."
+      );
+      // Show stake section anyway with default delay
+      document.getElementById("unstakeDelay").value = 86400;
+      document.getElementById("stakeSection").style.display = "block";
       return;
     }
-    var slot0 = BigInt("0x" + raw.slice(0,   64));
-    var slot1 = BigInt("0x" + raw.slice(64,  128));
-    var slot2 = BigInt("0x" + raw.slice(128, 192));
-    var slot3 = BigInt("0x" + raw.slice(192, 256));
-    var slot4 = BigInt("0x" + raw.slice(256, 320));
 
-    var deposit       = slot0;
-    var staked        = slot1 === 1n;
-    var stakeAmt      = slot2;
-    var existingDelay = Number(slot3);
-    var withdrawTime  = Number(slot4);
-
-    var depositFmt    = parseFloat(ethers.formatEther(deposit)).toFixed(6);
-    var stakeAmtFmt   = parseFloat(ethers.formatEther(stakeAmt)).toFixed(6);
-    var balFmt        = parseFloat(ethers.formatEther(bal)).toFixed(6);
-
-    // Show in grid using decoded values
-    document.getElementById("rDeposit").textContent  = depositFmt + " BONE";
-    document.getElementById("rDeposit").className    = "cell-val ok";
-    document.getElementById("rStaked").textContent   = staked ? "YES" : "NO";
-    document.getElementById("rStaked").className     = "cell-val " + (staked ? "ok" : "warn");
-    document.getElementById("rStakeAmt").textContent = stakeAmtFmt + " BONE";
-    document.getElementById("rDelay").textContent    = existingDelay + " sec";
-    document.getElementById("rDelay").className      = existingDelay > 0 ? "cell-val warn" : "cell-val";
-    document.getElementById("grid").style.display    = "grid";
-
-    // Auto-correct delay: must be >= existing (the key fix for "cannot decrease unstake time")
-    var safeDelay = existingDelay > 0 ? existingDelay : 86400;
-    document.getElementById("unstakeDelay").value = safeDelay;
-
-    // Show stake fields
-    document.getElementById("stakeFields").style.display = "block";
-    document.getElementById("delayField").style.display  = "block";
-    document.getElementById("stakeBtn").style.display    = "block";
-    document.getElementById("stakeBtn").disabled         = false;
-
-    // Build status message
-    var msg = "";
-    if (staked) {
-      msg = "Already staked: " + stakeAmtFmt + " BONE, delay=" + existingDelay + "s. " +
-            "Click Step 2 to ADD more stake.";
-      setSt("ok", msg);
-    } else if (existingDelay > 0) {
-      msg = "Not staked but delay=" + existingDelay + "s already set. " +
-            "Delay auto-set to " + safeDelay + "s. Click Step 2 to stake.";
-      setSt("warn", msg);
-    } else {
-      msg = "No stake yet. Delay set to " + safeDelay + "s. Click Step 2 to stake.";
-      setSt("loading", msg);
+    // Decode 5 slots of 32 bytes each
+    var slots = [];
+    for (var i = 0; i < 5; i++) {
+      var start = i * 64;
+      var end   = start + 64;
+      if (hex.length >= end) {
+        slots.push(hex.slice(start, end));
+      } else {
+        slots.push("0".repeat(64));
+      }
     }
 
-    // Also alert so nothing is missed
-    var details =
+    var deposit       = decodeUint(slots[0]);
+    var staked        = decodeUint(slots[1]) === 1n;
+    var stakeAmt      = decodeUint(slots[2]);
+    var existingDelay = Number(decodeUint(slots[3]));
+    var withdrawTime  = Number(decodeUint(slots[4]));
+
+    var depositFmt  = parseFloat(ethers.formatEther(deposit)).toFixed(6);
+    var stakeAmtFmt = parseFloat(ethers.formatEther(stakeAmt)).toFixed(6);
+
+    // Update grid
+    document.getElementById("rDeposit").textContent = depositFmt + " BONE";
+    document.getElementById("rDeposit").className   = "cell-val ok";
+    document.getElementById("rStaked").textContent  = staked ? "YES" : "NO";
+    document.getElementById("rStaked").className    = "cell-val " + (staked ? "ok" : "warn");
+    document.getElementById("rStakeAmt").textContent= stakeAmtFmt + " BONE";
+    document.getElementById("rDelay").textContent   = existingDelay + " sec";
+    document.getElementById("rDelay").className     = existingDelay > 0 ? "cell-val warn" : "cell-val";
+    document.getElementById("grid").style.display   = "grid";
+
+    // Auto-correct delay
+    var safeDelay = existingDelay > 0 ? existingDelay : 86400;
+    document.getElementById("unstakeDelay").value = safeDelay;
+    document.getElementById("stakeSection").style.display = "block";
+
+    // Alert with full details
+    var msg =
       "EntryPoint State for RicPaymaster:\n" +
       "deposit:         " + depositFmt + " BONE\n" +
-      "balanceOf:       " + balFmt + " BONE\n" +
       "staked:          " + staked + "\n" +
       "stake amount:    " + stakeAmtFmt + " BONE\n" +
       "unstakeDelaySec: " + existingDelay + "\n" +
       "withdrawTime:    " + withdrawTime + "\n\n" +
-      "Safe delay to use: " + safeDelay;
-    console.log(details);
-    alert(details);
+      "Safe delay to use: " + safeDelay + "\n" +
+      "Delay input auto-set to: " + safeDelay;
+
+    console.log(msg);
+    alert(msg);
+
+    if (staked && stakeAmt > 0n) {
+      setSt("ok", "Staked: " + stakeAmtFmt + " BONE | Deposit: " + depositFmt + " BONE | Delay: " + existingDelay + "s");
+    } else if (existingDelay > 0) {
+      setSt("warn", "Not staked yet. Existing delay=" + existingDelay + "s. Auto-set delay=" + safeDelay + ". Click Step 2.");
+    } else {
+      setSt("loading", "No stake yet. Delay set to " + safeDelay + "s. Click Step 2 to stake.");
+    }
 
   } catch(e) {
     setSt("err", "Diagnose failed: " + decErr(e));
   }
 }
 
-// -- Add Stake ---------------------------------------------
+// ---- Add Stake ----
 async function doStake() {
-  if (!signer) { setSt("err", "Connect wallet first."); return; }
+  if (!signer) { return setSt("err", "Connect wallet first."); }
 
-  var amtStr    = document.getElementById("stakeAmt").value.trim();
-  var delay     = parseInt(document.getElementById("unstakeDelay").value);
-  var stakeWei  = ethers.parseEther(amtStr);
-  var btn       = document.getElementById("stakeBtn");
-  btn.disabled  = true;
+  var amtStr = document.getElementById("stakeAmt").value.trim();
+  var delay  = parseInt(document.getElementById("unstakeDelay").value);
+
+  if (!amtStr || parseFloat(amtStr) <= 0) return setSt("err", "Enter BONE amount.");
+  if (!delay || delay < 1)               return setSt("err", "Invalid delay.");
+
+  var stakeWei = ethers.parseEther(amtStr);
+  var btn      = document.getElementById("stakeBtn");
+  btn.disabled = true;
 
   try {
     var pm = new ethers.Contract(RICPAYMASTER, PAYMASTER_ABI, signer);
 
-    // Estimate gas
+    // Gas estimate with fallback
     var gasLimit;
     try {
-      var est = await pm.addStakeToEntryPoint.estimateGas(delay, { value: stakeWei });
+      var est  = await pm.addStakeToEntryPoint.estimateGas(delay, { value: stakeWei });
       gasLimit = est * 130n / 100n;
     } catch(_) {
-      gasLimit = 200000n;
+      gasLimit = 300000n;
     }
 
-    // Simulate first to catch revert reason before sending to MetaMask
-    setSt("loading", "Simulating call (checking for revert)...");
+    // Simulate first
+    setSt("loading", "Simulating...");
     try {
       await pm.addStakeToEntryPoint.staticCall(delay, { value: stakeWei });
     } catch(simErr) {
@@ -347,22 +355,21 @@ async function doStake() {
       return;
     }
 
-    setSt("loading", "Simulation passed. Confirm " + amtStr + " BONE in MetaMask...");
-
+    setSt("loading", "Confirm " + amtStr + " BONE in MetaMask...");
     var tx = await pm.addStakeToEntryPoint(delay, {
       value:    stakeWei,
       gasLimit: gasLimit,
     });
 
-    setSt("loading", "Sent. Waiting for confirmation...");
+    setSt("loading", "Sent. Waiting...");
     var receipt = await tx.wait();
 
     setSt("ok",
       "SUCCESS. Stake added. Tx: " + tx.hash.slice(0,10) + "..." +
-      " Gas used: " + receipt.gasUsed.toString()
+      " | Gas: " + receipt.gasUsed.toString()
     );
 
-    // Re-read state
+    // Re-diagnose
     await diagnose();
 
   } catch(e) {
@@ -372,7 +379,7 @@ async function doStake() {
   }
 }
 
-// -- Helpers -----------------------------------------------
+// ---- Helpers ----
 function setSt(type, msg) {
   var el = document.getElementById("st");
   el.className = "st" + (type ? " " + type : "");
@@ -380,56 +387,33 @@ function setSt(type, msg) {
 }
 
 function decErr(e) {
-  if (!e) return "Unknown error";
-  if (e.reason)                               return e.reason;
-  if (e.shortMessage)                         return e.shortMessage;
-  if (e.error && e.error.reason)              return e.error.reason;
-  if (e.error && e.error.error && e.error.error.reason) return e.error.error.reason;
-
-  var data = e.data || (e.error && e.error.data) ||
-             (e.error && e.error.error && e.error.error.data) ||
-             (e.info && e.info.error && e.info.error.data);
-
+  if (!e) return "Unknown";
+  if (e.reason) return e.reason;
+  if (e.shortMessage) return e.shortMessage;
+  if (e.error && e.error.reason) return e.error.reason;
+  var data = e.data || (e.error && e.error.data);
   if (typeof data === "string" && data.length > 2) {
     if (data.startsWith("0x08c379a0")) {
       try {
-        return ethers.AbiCoder.defaultAbiCoder().decode(
-          ["string"], "0x" + data.slice(10)
-        )[0];
+        return ethers.AbiCoder.defaultAbiCoder()
+          .decode(["string"], "0x" + data.slice(10))[0];
       } catch(_) {}
     }
-    if (data.startsWith("0x4e487b71")) {
-      try {
-        var code = ethers.AbiCoder.defaultAbiCoder().decode(
-          ["uint256"], "0x" + data.slice(10)
-        )[0];
-        return "Panic code: " + code.toString();
-      } catch(_) {}
-    }
-    return "Revert data: " + data.slice(0, 80);
+    return "Revert: " + data.slice(0, 60);
   }
-
   if (e.code === 4001 || e.code === "ACTION_REJECTED") return "Rejected in MetaMask";
-
   var raw = e.message || String(e);
-  var patterns = [
-    /reason="([^"]+)"/,
-    /reverted with reason string '([^']+)'/,
-    /execution reverted: ([^\n]+)/,
-  ];
-  for (var i = 0; i < patterns.length; i++) {
-    var m = raw.match(patterns[i]);
-    if (m) return m[1];
-  }
-  return raw.slice(0, 200);
+  var m = raw.match(/reason="([^"]+)"/);
+  if (m) return m[1];
+  return raw.slice(0, 160);
 }
 
-// Auto-connect if already approved
+// Auto-connect
 (function() {
   if (window.ethereum) {
-    window.ethereum.request({ method: "eth_accounts" }).then(function(accs) {
-      if (accs && accs.length > 0) connectWallet();
-    }).catch(function() {});
+    window.ethereum.request({ method: "eth_accounts" })
+      .then(function(a) { if (a && a.length) connectWallet(); })
+      .catch(function() {});
   }
 })();
 </script>
