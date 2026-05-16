@@ -1,169 +1,1243 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RicSwap | Obsidian Tier DEX</title>
-    <style>
-        :root {
-            --obsidian: #080808;
-            --card-bg: #121212;
-            --magma: linear-gradient(135deg, #ff4d00 0%, #ff8c00 100%);
-            --gold: #ffd700;
-        }
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body {
-            background: var(--obsidian);
-            color: white;
-            font-family: system-ui, sans-serif;
-            line-height: 1.6;
-            overflow-x: hidden;
-        }
-        .nav {
-            padding: 18px 40px;
-            display: flex;
-            align-items: center;
-            border-bottom: 1px solid rgba(255,215,0,0.1);
-            background: rgba(8,8,8,0.95);
-            position: fixed;
-            top: 0;
-            width: 100%;
-            z-index: 1000;
-        }
-        .logo { font-size: 26px; font-weight: 800; color: var(--gold); letter-spacing: -1px; }
-        .nav-links { display: flex; gap: 32px; margin-left: 50px; }
-        .nav-links a { color: #ddd; text-decoration: none; font-weight: 500; transition: color 0.3s; }
-        .nav-links a:hover { color: var(--gold); }
-        .launch-btn {
-            margin-left: auto;
-            background: var(--magma);
-            color: white;
-            border: none;
-            padding: 12px 32px;
-            border-radius: 9999px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-        .launch-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 25px rgba(255,77,0,0.4);
-        }
-        .hero {
-            height: 100vh;
-            background: radial-gradient(circle at 50% 30%, #2a1500 0%, var(--obsidian) 60%);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            text-align: center;
-            position: relative;
-        }
-        .hero-content h1 {
-            font-size: clamp(3rem, 8vw, 5.5rem);
-            font-weight: 900;
-            margin-bottom: 20px;
-            background: linear-gradient(90deg, var(--gold), #ffffff);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-        .hero-content p {
-            font-size: 1.35rem;
-            color: #ccc;
-            max-width: 600px;
-            margin: 0 auto 40px;
-        }
-        .cta-large {
-            background: var(--magma);
-            color: white;
-            padding: 20px 52px;
-            font-size: 1.3rem;
-            font-weight: 700;
-            border: none;
-            border-radius: 9999px;
-            cursor: pointer;
-            transition: all 0.4s;
-        }
-        .cta-large:hover {
-            transform: scale(1.05);
-            box-shadow: 0 0 40px rgba(255,77,0,0.6);
-        }
-        .features {
-            padding: 120px 40px;
-            background: #0a0a0a;
-            text-align: center;
-        }
-        .stats {
-            display: flex;
-            justify-content: center;
-            gap: 80px;
-            flex-wrap: wrap;
-            margin-top: 60px;
-        }
-        .stat {
-            min-width: 160px;
-        }
-        .stat-number {
-            font-size: 3.2rem;
-            font-weight: 800;
-            color: var(--gold);
-        }
-        .stat-label {
-            color: #777;
-            text-transform: uppercase;
-            font-size: 13px;
-            letter-spacing: 2px;
-            margin-top: 8px;
-        }
-        .footer {
-            padding: 60px 40px;
-            text-align: center;
-            color: #555;
-            border-top: 1px solid #1a1a1a;
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RicSwap — The Obsidian Tier DEX</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&family=JetBrains+Mono:wght@300;400&display=swap" rel="stylesheet">
+<style>
+/* ═══════════════════════════════════════════════════
+   TOKENS
+═══════════════════════════════════════════════════ */
+:root {
+  --void:    #030407;
+  --deep:    #060810;
+  --well:    #0b0e1a;
+  --glass:   rgba(255,255,255,0.03);
+  --rim:     rgba(255,255,255,0.06);
+  --rim2:    rgba(255,77,0,0.2);
+  --magma:   #ff4d00;
+  --ember:   #ff8c00;
+  --gold:    #e8b84b;
+  --ash:     #4a4d60;
+  --smoke:   #8385a0;
+  --fog:     #c0c2d8;
+  --white:   #eef0f8;
+  --mono:    'JetBrains Mono', monospace;
+  --display: 'Bebas Neue', sans-serif;
+  --body:    'DM Sans', sans-serif;
+}
+
+/* ═══════════════════════════════════════════════════
+   RESET + BASE
+═══════════════════════════════════════════════════ */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+  background: var(--void);
+  color: var(--fog);
+  font-family: var(--body);
+  font-size: 16px;
+  line-height: 1.6;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+a { color: inherit; text-decoration: none; }
+button { font-family: var(--body); cursor: pointer; border: none; outline: none; }
+
+/* ═══════════════════════════════════════════════════
+   NOISE TEXTURE OVERLAY
+═══════════════════════════════════════════════════ */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");
+  opacity: 0.025;
+  pointer-events: none;
+  z-index: 9999;
+}
+
+/* ═══════════════════════════════════════════════════
+   AMBIENT GLOW ORBS
+═══════════════════════════════════════════════════ */
+.orb {
+  position: fixed;
+  border-radius: 50%;
+  filter: blur(120px);
+  pointer-events: none;
+  z-index: 0;
+  animation: drift 20s ease-in-out infinite alternate;
+}
+.orb-1 {
+  width: 700px; height: 700px;
+  background: radial-gradient(circle, rgba(255,77,0,0.12) 0%, transparent 70%);
+  top: -200px; left: -200px;
+  animation-delay: 0s;
+}
+.orb-2 {
+  width: 500px; height: 500px;
+  background: radial-gradient(circle, rgba(232,184,75,0.08) 0%, transparent 70%);
+  bottom: -100px; right: -100px;
+  animation-delay: -7s;
+}
+.orb-3 {
+  width: 400px; height: 400px;
+  background: radial-gradient(circle, rgba(255,140,0,0.07) 0%, transparent 70%);
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  animation-delay: -14s;
+}
+@keyframes drift {
+  0% { transform: translate(0, 0) scale(1); }
+  100% { transform: translate(40px, -40px) scale(1.1); }
+}
+
+/* ═══════════════════════════════════════════════════
+   NAV
+═══════════════════════════════════════════════════ */
+.nav {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 100;
+  padding: 0 48px;
+  height: 72px;
+  display: flex;
+  align-items: center;
+  gap: 48px;
+  background: rgba(3,4,7,0.7);
+  backdrop-filter: blur(20px) saturate(180%);
+  border-bottom: 1px solid var(--rim);
+}
+.nav::after {
+  content: '';
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255,77,0,0.4), transparent);
+}
+.logo {
+  font-family: var(--display);
+  font-size: 28px;
+  letter-spacing: 2px;
+  background: linear-gradient(135deg, var(--gold), var(--magma));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  flex-shrink: 0;
+}
+.nav-links {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex: 1;
+}
+.nav-links a {
+  padding: 6px 14px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--smoke);
+  letter-spacing: 0.3px;
+  transition: all 0.2s;
+  position: relative;
+}
+.nav-links a:hover {
+  color: var(--white);
+  background: var(--glass);
+}
+.nav-cta {
+  margin-left: auto;
+  padding: 10px 28px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  background: linear-gradient(135deg, var(--magma), var(--ember));
+  color: #fff;
+  transition: all 0.3s;
+  position: relative;
+  overflow: hidden;
+}
+.nav-cta::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(255,255,255,0.15), transparent);
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+.nav-cta:hover::before { opacity: 1; }
+.nav-cta:hover { transform: translateY(-1px); box-shadow: 0 8px 24px rgba(255,77,0,0.35); }
+.net-pill {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border-radius: 20px;
+  border: 1px solid rgba(0,255,180,0.2);
+  background: rgba(0,255,180,0.05);
+  font-family: var(--mono);
+  font-size: 11px;
+  color: #00ffb2;
+  letter-spacing: 0.5px;
+}
+.net-dot {
+  width: 5px; height: 5px;
+  border-radius: 50%;
+  background: #00ffb2;
+  animation: blink 2s ease-in-out infinite;
+}
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+/* ═══════════════════════════════════════════════════
+   HERO
+═══════════════════════════════════════════════════ */
+.hero {
+  position: relative;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  padding: 120px 48px 80px;
+  overflow: hidden;
+}
+.hero-grid {
+  display: grid;
+  grid-template-columns: 1fr 420px;
+  gap: 80px;
+  align-items: center;
+  max-width: 1280px;
+  margin: 0 auto;
+  width: 100%;
+  position: relative;
+  z-index: 1;
+}
+.hero-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--magma);
+  margin-bottom: 24px;
+}
+.hero-eyebrow::before {
+  content: '';
+  width: 24px; height: 1px;
+  background: var(--magma);
+}
+.hero h1 {
+  font-family: var(--display);
+  font-size: clamp(64px, 8vw, 108px);
+  line-height: 0.92;
+  letter-spacing: 2px;
+  margin-bottom: 28px;
+  color: var(--white);
+}
+.hero h1 .accent {
+  background: linear-gradient(135deg, var(--magma) 0%, var(--gold) 60%, var(--ember) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  display: block;
+}
+.hero-sub {
+  font-size: 18px;
+  font-weight: 300;
+  color: var(--smoke);
+  max-width: 480px;
+  line-height: 1.7;
+  margin-bottom: 44px;
+}
+.hero-actions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.btn-primary {
+  padding: 16px 40px;
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  background: linear-gradient(135deg, var(--magma), var(--ember));
+  color: #fff;
+  transition: all 0.3s;
+  position: relative;
+  overflow: hidden;
+}
+.btn-primary::after {
+  content: '';
+  position: absolute;
+  top: 0; left: -100%;
+  width: 60%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent);
+  transition: left 0.5s;
+}
+.btn-primary:hover::after { left: 150%; }
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 16px 40px rgba(255,77,0,0.4);
+}
+.btn-ghost {
+  padding: 16px 32px;
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--fog);
+  border: 1px solid var(--rim);
+  background: var(--glass);
+  backdrop-filter: blur(10px);
+  transition: all 0.3s;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.btn-ghost:hover {
+  border-color: var(--rim2);
+  color: var(--white);
+  background: rgba(255,77,0,0.05);
+}
+.hero-badges {
+  display: flex;
+  gap: 20px;
+  margin-top: 48px;
+  flex-wrap: wrap;
+}
+.badge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--ash);
+  letter-spacing: 0.5px;
+}
+.badge-dot {
+  width: 4px; height: 4px;
+  border-radius: 50%;
+  background: var(--magma);
+}
+
+/* ═══════════════════════════════════════════════════
+   SWAP CARD (HERO RIGHT)
+═══════════════════════════════════════════════════ */
+.swap-card {
+  background: rgba(11,14,26,0.8);
+  border: 1px solid var(--rim);
+  border-radius: 20px;
+  padding: 28px;
+  backdrop-filter: blur(40px);
+  box-shadow:
+    0 0 0 1px rgba(255,255,255,0.03),
+    0 40px 80px rgba(0,0,0,0.6),
+    inset 0 1px 0 rgba(255,255,255,0.05);
+  animation: cardFloat 6s ease-in-out infinite;
+  position: relative;
+}
+@keyframes cardFloat {
+  0%,100% { transform: translateY(0px); }
+  50% { transform: translateY(-12px); }
+}
+.swap-card::before {
+  content: '';
+  position: absolute;
+  top: -1px; left: 20%; right: 20%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--magma), transparent);
+}
+.card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+.card-title {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--ash);
+}
+.card-badge {
+  font-family: var(--mono);
+  font-size: 10px;
+  padding: 3px 8px;
+  border-radius: 4px;
+  background: rgba(255,77,0,0.1);
+  color: var(--magma);
+  border: 1px solid rgba(255,77,0,0.2);
+}
+.token-box {
+  background: rgba(3,4,7,0.6);
+  border: 1px solid rgba(255,255,255,0.05);
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 8px;
+  transition: border-color 0.2s;
+}
+.token-box:focus-within { border-color: rgba(255,77,0,0.3); }
+.token-label {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--ash);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  margin-bottom: 10px;
+}
+.token-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.token-amount {
+  font-family: var(--display);
+  font-size: 36px;
+  letter-spacing: 1px;
+  color: var(--white);
+  background: transparent;
+  border: none;
+  outline: none;
+  width: 160px;
+}
+.token-amount::placeholder { color: var(--ash); }
+.token-pill {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.08);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.token-pill:hover { background: rgba(255,255,255,0.08); }
+.token-icon {
+  width: 22px; height: 22px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 700;
+}
+.bone-icon { background: rgba(255,77,0,0.2); color: var(--magma); }
+.ric-icon  { background: rgba(232,184,75,0.2); color: var(--gold); }
+.token-sym {
+  font-family: var(--mono);
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--white);
+}
+.token-usd {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--ash);
+  margin-top: 6px;
+}
+.swap-arrow {
+  display: flex;
+  justify-content: center;
+  margin: 4px 0;
+}
+.swap-arrow-btn {
+  width: 34px; height: 34px;
+  border-radius: 50%;
+  background: var(--well);
+  border: 2px solid var(--rim);
+  color: var(--smoke);
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+.swap-arrow-btn:hover {
+  border-color: var(--magma);
+  color: var(--magma);
+  transform: rotate(180deg);
+}
+.swap-info {
+  display: flex;
+  justify-content: space-between;
+  padding: 12px 0;
+  margin: 12px 0;
+  border-top: 1px solid var(--rim);
+  border-bottom: 1px solid var(--rim);
+}
+.info-item { font-family: var(--mono); font-size: 11px; color: var(--ash); }
+.info-val  { font-family: var(--mono); font-size: 11px; color: var(--fog); }
+.swap-btn {
+  width: 100%;
+  padding: 16px;
+  border-radius: 12px;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  background: linear-gradient(135deg, var(--magma), var(--ember));
+  color: #fff;
+  margin-top: 12px;
+  transition: all 0.3s;
+  position: relative;
+  overflow: hidden;
+}
+.swap-btn::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(255,255,255,0.1), transparent);
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+.swap-btn:hover::after { opacity: 1; }
+.swap-btn:hover { box-shadow: 0 12px 32px rgba(255,77,0,0.5); }
+
+/* ═══════════════════════════════════════════════════
+   STATS TICKER
+═══════════════════════════════════════════════════ */
+.ticker-bar {
+  position: relative;
+  z-index: 1;
+  border-top: 1px solid var(--rim);
+  border-bottom: 1px solid var(--rim);
+  background: rgba(6,8,16,0.9);
+  overflow: hidden;
+  padding: 14px 0;
+}
+.ticker-track {
+  display: flex;
+  gap: 60px;
+  animation: ticker 30s linear infinite;
+  width: max-content;
+}
+.ticker-track:hover { animation-play-state: paused; }
+@keyframes ticker { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
+.ticker-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  white-space: nowrap;
+  font-family: var(--mono);
+  font-size: 12px;
+}
+.ticker-name { color: var(--smoke); }
+.ticker-price { color: var(--white); font-weight: 400; }
+.ticker-change-up   { color: #00ffb2; }
+.ticker-change-down { color: #ff4466; }
+
+/* ═══════════════════════════════════════════════════
+   FEATURES
+═══════════════════════════════════════════════════ */
+.section {
+  position: relative;
+  z-index: 1;
+  padding: 120px 48px;
+  max-width: 1280px;
+  margin: 0 auto;
+}
+.section-eyebrow {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--magma);
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.section-eyebrow::before {
+  content: '';
+  width: 20px; height: 1px;
+  background: var(--magma);
+}
+.section-title {
+  font-family: var(--display);
+  font-size: clamp(42px, 5vw, 68px);
+  letter-spacing: 2px;
+  line-height: 1;
+  color: var(--white);
+  margin-bottom: 16px;
+}
+.section-sub {
+  font-size: 16px;
+  font-weight: 300;
+  color: var(--smoke);
+  max-width: 480px;
+  line-height: 1.7;
+}
+.features-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+  margin-top: 64px;
+}
+.feat-card {
+  background: rgba(11,14,26,0.5);
+  border: 1px solid var(--rim);
+  border-radius: 16px;
+  padding: 32px;
+  transition: all 0.4s;
+  position: relative;
+  overflow: hidden;
+  cursor: default;
+}
+.feat-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(255,77,0,0.04) 0%, transparent 60%);
+  opacity: 0;
+  transition: opacity 0.4s;
+}
+.feat-card:hover::before { opacity: 1; }
+.feat-card:hover {
+  border-color: rgba(255,77,0,0.25);
+  transform: translateY(-4px);
+  box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+}
+.feat-icon {
+  width: 48px; height: 48px;
+  border-radius: 12px;
+  background: rgba(255,77,0,0.1);
+  border: 1px solid rgba(255,77,0,0.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  margin-bottom: 20px;
+}
+.feat-title {
+  font-family: var(--display);
+  font-size: 24px;
+  letter-spacing: 1px;
+  color: var(--white);
+  margin-bottom: 10px;
+}
+.feat-desc {
+  font-size: 14px;
+  font-weight: 300;
+  color: var(--smoke);
+  line-height: 1.7;
+}
+.feat-card.large {
+  grid-column: span 2;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 32px;
+  align-items: center;
+}
+.feat-card.large .feat-visual {
+  background: rgba(3,4,7,0.8);
+  border: 1px solid var(--rim);
+  border-radius: 12px;
+  height: 180px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  position: relative;
+}
+.lp-burn-viz {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--ash);
+}
+.lp-number {
+  font-family: var(--display);
+  font-size: 52px;
+  letter-spacing: 2px;
+  background: linear-gradient(135deg, var(--magma), var(--gold));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: countUp 3s ease-out forwards;
+}
+@keyframes countUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+
+/* ═══════════════════════════════════════════════════
+   STATS ROW
+═══════════════════════════════════════════════════ */
+.stats-section {
+  position: relative;
+  z-index: 1;
+  border-top: 1px solid var(--rim);
+  border-bottom: 1px solid var(--rim);
+  background: rgba(6,8,16,0.7);
+  backdrop-filter: blur(20px);
+  padding: 60px 48px;
+}
+.stats-inner {
+  max-width: 1280px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 40px;
+}
+.stat-item {
+  text-align: center;
+  position: relative;
+}
+.stat-item::after {
+  content: '';
+  position: absolute;
+  top: 20%; right: 0;
+  width: 1px; height: 60%;
+  background: var(--rim);
+}
+.stat-item:last-child::after { display: none; }
+.stat-val {
+  font-family: var(--display);
+  font-size: 52px;
+  letter-spacing: 2px;
+  line-height: 1;
+  background: linear-gradient(135deg, var(--white), var(--fog));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.stat-val.fire {
+  background: linear-gradient(135deg, var(--magma), var(--gold));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.stat-label-txt {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--ash);
+  margin-top: 8px;
+}
+
+/* ═══════════════════════════════════════════════════
+   HOW IT WORKS
+═══════════════════════════════════════════════════ */
+.steps-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 24px;
+  margin-top: 64px;
+}
+.step-card {
+  position: relative;
+  padding: 28px;
+  border-radius: 14px;
+  background: rgba(11,14,26,0.4);
+  border: 1px solid var(--rim);
+  transition: all 0.3s;
+}
+.step-card:hover {
+  border-color: rgba(255,77,0,0.2);
+  transform: translateY(-3px);
+}
+.step-num {
+  font-family: var(--display);
+  font-size: 56px;
+  letter-spacing: 2px;
+  color: rgba(255,77,0,0.1);
+  line-height: 1;
+  margin-bottom: 16px;
+  transition: color 0.3s;
+}
+.step-card:hover .step-num { color: rgba(255,77,0,0.25); }
+.step-title {
+  font-family: var(--display);
+  font-size: 20px;
+  letter-spacing: 1px;
+  color: var(--white);
+  margin-bottom: 8px;
+}
+.step-desc {
+  font-size: 13px;
+  font-weight: 300;
+  color: var(--smoke);
+  line-height: 1.7;
+}
+.step-connector {
+  position: absolute;
+  top: 50%; right: -13px;
+  width: 24px; height: 1px;
+  background: linear-gradient(90deg, var(--rim), transparent);
+  z-index: 1;
+}
+.step-card:last-child .step-connector { display: none; }
+
+/* ═══════════════════════════════════════════════════
+   CTA SECTION
+═══════════════════════════════════════════════════ */
+.cta-section {
+  position: relative;
+  z-index: 1;
+  padding: 100px 48px;
+  text-align: center;
+  overflow: hidden;
+}
+.cta-section::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse 800px 500px at 50% 50%, rgba(255,77,0,0.06) 0%, transparent 70%);
+}
+.cta-box {
+  position: relative;
+  max-width: 700px;
+  margin: 0 auto;
+  background: rgba(11,14,26,0.6);
+  border: 1px solid var(--rim);
+  border-radius: 24px;
+  padding: 72px 60px;
+  backdrop-filter: blur(30px);
+  box-shadow: 0 0 0 1px rgba(255,255,255,0.02), 0 60px 120px rgba(0,0,0,0.5);
+}
+.cta-box::before {
+  content: '';
+  position: absolute;
+  top: -1px; left: 10%; right: 10%;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--magma), var(--gold), transparent);
+}
+.cta-title {
+  font-family: var(--display);
+  font-size: clamp(40px, 6vw, 64px);
+  letter-spacing: 2px;
+  line-height: 1;
+  color: var(--white);
+  margin-bottom: 20px;
+}
+.cta-sub {
+  font-size: 16px;
+  font-weight: 300;
+  color: var(--smoke);
+  margin-bottom: 40px;
+  line-height: 1.7;
+}
+.cta-actions {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+/* ═══════════════════════════════════════════════════
+   FOOTER
+═══════════════════════════════════════════════════ */
+footer {
+  position: relative;
+  z-index: 1;
+  border-top: 1px solid var(--rim);
+  background: rgba(3,4,7,0.9);
+  padding: 60px 48px 40px;
+}
+.footer-inner {
+  max-width: 1280px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr 1fr;
+  gap: 48px;
+  margin-bottom: 48px;
+}
+.footer-brand .logo { font-size: 24px; margin-bottom: 12px; display: block; }
+.footer-brand p {
+  font-size: 13px;
+  font-weight: 300;
+  color: var(--ash);
+  line-height: 1.7;
+  max-width: 200px;
+}
+.footer-col h4 {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--smoke);
+  margin-bottom: 20px;
+}
+.footer-col a {
+  display: block;
+  font-size: 13px;
+  font-weight: 300;
+  color: var(--ash);
+  margin-bottom: 10px;
+  transition: color 0.2s;
+}
+.footer-col a:hover { color: var(--fog); }
+.footer-bottom {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding-top: 24px;
+  border-top: 1px solid var(--rim);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--ash);
+}
+.footer-status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* ═══════════════════════════════════════════════════
+   SCROLL REVEAL
+═══════════════════════════════════════════════════ */
+.reveal {
+  opacity: 0;
+  transform: translateY(32px);
+  transition: opacity 0.8s ease, transform 0.8s ease;
+}
+.reveal.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+.reveal-delay-1 { transition-delay: 0.1s; }
+.reveal-delay-2 { transition-delay: 0.2s; }
+.reveal-delay-3 { transition-delay: 0.3s; }
+.reveal-delay-4 { transition-delay: 0.4s; }
+
+/* ═══════════════════════════════════════════════════
+   RESPONSIVE
+═══════════════════════════════════════════════════ */
+@media (max-width: 1024px) {
+  .hero-grid { grid-template-columns: 1fr; gap: 60px; }
+  .swap-card { max-width: 400px; animation: none; }
+  .features-grid { grid-template-columns: 1fr 1fr; }
+  .feat-card.large { grid-column: span 2; }
+  .steps-grid { grid-template-columns: 1fr 1fr; }
+  .stats-inner { grid-template-columns: 1fr 1fr; }
+  .footer-inner { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 768px) {
+  .nav { padding: 0 20px; gap: 16px; }
+  .nav-links { display: none; }
+  .hero { padding: 100px 20px 60px; }
+  .section { padding: 80px 20px; }
+  .features-grid { grid-template-columns: 1fr; }
+  .feat-card.large { grid-column: span 1; grid-template-columns: 1fr; }
+  .steps-grid { grid-template-columns: 1fr; }
+  .stats-inner { grid-template-columns: 1fr 1fr; gap: 20px; }
+  .stats-section { padding: 40px 20px; }
+  .cta-box { padding: 48px 28px; }
+  .footer-inner { grid-template-columns: 1fr; }
+}
+</style>
 </head>
 <body>
-    <nav class="nav">
-        <div class="logo">RicSwap</div>
-        <div class="nav-links">
-            <a href="dashboard.html">Dashboard</a>
-            <a href="swap.html">Swap</a>
-            <a href="pools.html">Pools</a>
-            <a href="liquidity.html">Add Liquidity</a>
-            <a href="reward.html">Rewards </a>
-            <a href="launch.html">Create Token </a>
-        </div>
-        <button onclick="window.location.href='swap.html'" class="launch-btn">Launch App</button>
-    </nav>
 
-    <section class="hero">
-        <div class="hero-content">
-            <h1>The Obsidian Tier DEX</h1>
-            <p>Permanent Liquidity • No Rugs • Built for Shibarium</p>
-            <button onclick="window.location.href='swap.html'" class="cta-large">Start Swapping Now</button>
-        </div>
-    </section>
+<!-- Ambient orbs -->
+<div class="orb orb-1"></div>
+<div class="orb orb-2"></div>
+<div class="orb orb-3"></div>
 
-    <section class="features">
-        <h2 style="font-size:2.2rem; margin-bottom:60px;">Why Traders Choose RicSwap</h2>
-        <div class="stats">
-            <div class="stat">
-                <div class="stat-number">100%</div>
-                <div class="stat-label">LP Burned Forever</div>
-            </div>
-            <div class="stat">
-                <div class="stat-number">0.3%</div>
-                <div class="stat-label">Trading Fee</div>
-            </div>
-            <div class="stat">
-                <div class="stat-number">∞</div>
-                <div class="stat-label">Permissionless Pairs</div>
-            </div>
-        </div>
-    </section>
+<!-- ═══ NAV ═══ -->
+<nav class="nav">
+  <div class="logo">RICSWAP</div>
+  <div class="nav-links">
+    <a href="dashboard.html">Dashboard</a>
+    <a href="swap.html">Swap</a>
+    <a href="liquidity.html">Liquidity</a>
+    <a href="pools.html">Pools</a>
+    <a href="reward.html">Rewards</a>
+    <a href="launch.html">Create Token</a>
+  </div>
+  <div class="net-pill">
+    <div class="net-dot"></div>
+    SHIBARIUM
+  </div>
+  <button class="nav-cta" onclick="location.href='swap.html'">Launch App</button>
+</nav>
 
-    <footer class="footer">
-        RicSwap © 2026 • Permanently Locked Liquidity on Shibarium
-    </footer>
+<!-- ═══ HERO ═══ -->
+<section class="hero">
+  <div class="hero-grid">
+    <div class="hero-left">
+      <div class="hero-eyebrow">Built for Shibarium</div>
+      <h1>
+        THE OBSIDIAN
+        <span class="accent">TIER DEX</span>
+      </h1>
+      <p class="hero-sub">
+        Permanent liquidity. Zero rugs. Trade with confidence on Shibarium's most trusted decentralized exchange.
+      </p>
+      <div class="hero-actions">
+        <button class="btn-primary" onclick="location.href='swap.html'">Start Swapping</button>
+        <button class="btn-ghost" onclick="location.href='liquidity.html'">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+          Add Liquidity
+        </button>
+      </div>
+      <div class="hero-badges">
+        <div class="badge"><div class="badge-dot"></div> 100% LP Burned</div>
+        <div class="badge"><div class="badge-dot"></div> 0.3% Fee</div>
+        <div class="badge"><div class="badge-dot"></div> Permissionless</div>
+        <div class="badge"><div class="badge-dot"></div> Non-Custodial</div>
+      </div>
+    </div>
+    <div class="hero-right">
+      <div class="swap-card">
+        <div class="card-header">
+          <span class="card-title">Quick Swap</span>
+          <span class="card-badge">LIVE</span>
+        </div>
+        <div class="token-box">
+          <div class="token-label">You Pay</div>
+          <div class="token-row">
+            <input class="token-amount" type="number" placeholder="0.0" value="100">
+            <div class="token-pill">
+              <div class="token-icon bone-icon">B</div>
+              <span class="token-sym">BONE</span>
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:#4a4d60"><polyline points="6 9 12 15 18 9"/></svg>
+            </div>
+          </div>
+          <div class="token-usd">≈ $0.042 USD</div>
+        </div>
+        <div class="swap-arrow">
+          <button class="swap-arrow-btn">⇅</button>
+        </div>
+        <div class="token-box">
+          <div class="token-label">You Receive</div>
+          <div class="token-row">
+            <input class="token-amount" type="number" placeholder="0.0" value="2,847" style="color:#e8b84b">
+            <div class="token-pill">
+              <div class="token-icon ric-icon">R</div>
+              <span class="token-sym">RIC</span>
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:#4a4d60"><polyline points="6 9 12 15 18 9"/></svg>
+            </div>
+          </div>
+          <div class="token-usd">≈ $0.041 USD</div>
+        </div>
+        <div class="swap-info">
+          <div>
+            <div class="info-item">Rate</div>
+            <div class="info-val">1 BONE = 154 RIC</div>
+          </div>
+          <div style="text-align:right">
+            <div class="info-item">Price Impact</div>
+            <div class="info-val" style="color:#00ffb2">0.12%</div>
+          </div>
+        </div>
+        <button class="swap-btn" onclick="location.href='swap.html'">CONNECT & SWAP</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ TICKER ═══ -->
+<div class="ticker-bar">
+  <div class="ticker-track" id="ticker">
+    <div class="ticker-item"><span class="ticker-name">BONE/USD</span><span class="ticker-price">$0.000421</span><span class="ticker-change-up">+3.2%</span></div>
+    <div class="ticker-item"><span class="ticker-name">RIC/BONE</span><span class="ticker-price">28.47</span><span class="ticker-change-up">+1.8%</span></div>
+    <div class="ticker-item"><span class="ticker-name">SHIB/BONE</span><span class="ticker-price">0.00031</span><span class="ticker-change-down">-0.4%</span></div>
+    <div class="ticker-item"><span class="ticker-name">LEASH/BONE</span><span class="ticker-price">142.3</span><span class="ticker-change-up">+5.1%</span></div>
+    <div class="ticker-item"><span class="ticker-name">TREAT/BONE</span><span class="ticker-price">0.087</span><span class="ticker-change-up">+2.7%</span></div>
+    <div class="ticker-item"><span class="ticker-name">TVL</span><span class="ticker-price">$1.24M</span><span class="ticker-change-up">+12.4%</span></div>
+    <div class="ticker-item"><span class="ticker-name">24H VOL</span><span class="ticker-price">$84.2K</span><span class="ticker-change-up">+6.8%</span></div>
+    <!-- duplicate for seamless loop -->
+    <div class="ticker-item"><span class="ticker-name">BONE/USD</span><span class="ticker-price">$0.000421</span><span class="ticker-change-up">+3.2%</span></div>
+    <div class="ticker-item"><span class="ticker-name">RIC/BONE</span><span class="ticker-price">28.47</span><span class="ticker-change-up">+1.8%</span></div>
+    <div class="ticker-item"><span class="ticker-name">SHIB/BONE</span><span class="ticker-price">0.00031</span><span class="ticker-change-down">-0.4%</span></div>
+    <div class="ticker-item"><span class="ticker-name">LEASH/BONE</span><span class="ticker-price">142.3</span><span class="ticker-change-up">+5.1%</span></div>
+    <div class="ticker-item"><span class="ticker-name">TREAT/BONE</span><span class="ticker-price">0.087</span><span class="ticker-change-up">+2.7%</span></div>
+    <div class="ticker-item"><span class="ticker-name">TVL</span><span class="ticker-price">$1.24M</span><span class="ticker-change-up">+12.4%</span></div>
+    <div class="ticker-item"><span class="ticker-name">24H VOL</span><span class="ticker-price">$84.2K</span><span class="ticker-change-up">+6.8%</span></div>
+  </div>
+</div>
+
+<!-- ═══ STATS ═══ -->
+<div class="stats-section reveal">
+  <div class="stats-inner">
+    <div class="stat-item">
+      <div class="stat-val fire">$1.24M</div>
+      <div class="stat-label-txt">Total Value Locked</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-val">$84.2K</div>
+      <div class="stat-label-txt">24h Volume</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-val fire">100%</div>
+      <div class="stat-label-txt">LP Burned Forever</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-val">0.3%</div>
+      <div class="stat-label-txt">Trading Fee</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ FEATURES ═══ -->
+<div class="section">
+  <div class="reveal">
+    <div class="section-eyebrow">Why RicSwap</div>
+    <h2 class="section-title">BUILT<br>DIFFERENT</h2>
+    <p class="section-sub">Every design decision made with one goal: protecting traders and liquidity providers on Shibarium.</p>
+  </div>
+  <div class="features-grid">
+    <div class="feat-card large reveal reveal-delay-1">
+      <div>
+        <div class="feat-icon">🔥</div>
+        <div class="feat-title">PERMANENT LIQUIDITY</div>
+        <p class="feat-desc">All LP tokens burned at launch. No developer can pull liquidity. Ever. Your trades are always backed by locked reserves — the floor holds.</p>
+      </div>
+      <div class="feat-visual">
+        <div class="lp-burn-viz">
+          <div class="lp-number">100%</div>
+          <div>LP TOKENS BURNED</div>
+        </div>
+      </div>
+    </div>
+    <div class="feat-card reveal reveal-delay-2">
+      <div class="feat-icon">⚡</div>
+      <div class="feat-title">INSTANT SWAPS</div>
+      <p class="feat-desc">Optimized AMM routing across all pairs. Multi-hop execution finds the best rate automatically with zero slippage surprises.</p>
+    </div>
+    <div class="feat-card reveal reveal-delay-1">
+      <div class="feat-icon">🛡️</div>
+      <div class="feat-title">AUDITED CONTRACTS</div>
+      <p class="feat-desc">Battle-tested Uniswap V2 core with Shibarium-specific optimizations. Security-first architecture built to last.</p>
+    </div>
+    <div class="feat-card reveal reveal-delay-2">
+      <div class="feat-icon">🌊</div>
+      <div class="feat-title">DEEP LIQUIDITY</div>
+      <p class="feat-desc">Earn 0.3% on every trade by providing liquidity. Rewards auto-compound as the pool grows with volume.</p>
+    </div>
+    <div class="feat-card reveal reveal-delay-3">
+      <div class="feat-icon">∞</div>
+      <div class="feat-title">PERMISSIONLESS</div>
+      <p class="feat-desc">Any token. Any pair. No gatekeepers. Create liquidity pools and launch tokens without permission from anyone.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ HOW IT WORKS ═══ -->
+<div style="border-top:1px solid var(--rim); border-bottom:1px solid var(--rim); background:rgba(6,8,16,0.5); position:relative; z-index:1;">
+<div class="section">
+  <div class="reveal">
+    <div class="section-eyebrow">How It Works</div>
+    <h2 class="section-title">SWAP IN<br>FOUR STEPS</h2>
+  </div>
+  <div class="steps-grid">
+    <div class="step-card reveal reveal-delay-1">
+      <div class="step-connector"></div>
+      <div class="step-num">01</div>
+      <div class="step-title">CONNECT</div>
+      <p class="step-desc">Connect MetaMask or Rabby to Shibarium. No account needed. Your keys, your assets.</p>
+    </div>
+    <div class="step-card reveal reveal-delay-2">
+      <div class="step-connector"></div>
+      <div class="step-num">02</div>
+      <div class="step-title">SELECT</div>
+      <p class="step-desc">Choose your input and output tokens. RicSwap finds the optimal route automatically.</p>
+    </div>
+    <div class="step-card reveal reveal-delay-3">
+      <div class="step-connector"></div>
+      <div class="step-num">03</div>
+      <div class="step-title">CONFIRM</div>
+      <p class="step-desc">Review your rate, price impact, and minimum received. Adjust slippage if needed.</p>
+    </div>
+    <div class="step-card reveal reveal-delay-4">
+      <div class="step-num">04</div>
+      <div class="step-title">DONE</div>
+      <p class="step-desc">Transaction confirmed on Shibarium in seconds. Tokens arrive in your wallet immediately.</p>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- ═══ CTA ═══ -->
+<div class="cta-section reveal">
+  <div class="cta-box">
+    <h2 class="cta-title">READY TO<br>TRADE?</h2>
+    <p class="cta-sub">Join thousands of traders on Shibarium's most trusted DEX. No sign-up. No KYC. Just connect and swap.</p>
+    <div class="cta-actions">
+      <button class="btn-primary" onclick="location.href='swap.html'">Launch App →</button>
+      <button class="btn-ghost" onclick="location.href='liquidity.html'">Provide Liquidity</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ FOOTER ═══ -->
+<footer>
+  <div class="footer-inner">
+    <div class="footer-brand">
+      <span class="logo">RICSWAP</span>
+      <p>The Obsidian Tier DEX on Shibarium. Permanent liquidity. Zero compromise.</p>
+    </div>
+    <div class="footer-col">
+      <h4>Product</h4>
+      <a href="swap.html">Swap</a>
+      <a href="liquidity.html">Add Liquidity</a>
+      <a href="pools.html">Pools</a>
+      <a href="reward.html">Rewards</a>
+      <a href="launch.html">Create Token</a>
+    </div>
+    <div class="footer-col">
+      <h4>Resources</h4>
+      <a href="#">Documentation</a>
+      <a href="#">Smart Contracts</a>
+      <a href="#">Audit Report</a>
+      <a href="#">Brand Kit</a>
+    </div>
+    <div class="footer-col">
+      <h4>Community</h4>
+      <a href="#">Twitter / X</a>
+      <a href="#">Telegram</a>
+      <a href="#">Discord</a>
+      <a href="#">GitHub</a>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <span>RicSwap © 2026 — Permanently Locked Liquidity on Shibarium</span>
+    <div class="footer-status">
+      <div class="net-dot"></div>
+      <span>All systems operational</span>
+    </div>
+  </div>
+</footer>
+
+<script>
+// Scroll reveal
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      e.target.classList.add('visible');
+    }
+  });
+}, { threshold: 0.1 });
+document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+
+// Swap card interactivity
+const swapBtn = document.querySelector('.swap-arrow-btn');
+swapBtn.addEventListener('click', () => {
+  swapBtn.style.transform = 'rotate(180deg)';
+  setTimeout(() => swapBtn.style.transform = '', 300);
+});
+
+// Smooth number ticker
+const amounts = document.querySelectorAll('.token-amount');
+amounts[0].addEventListener('input', () => {
+  const val = parseFloat(amounts[0].value) || 0;
+  amounts[1].value = (val * 28.47).toLocaleString();
+});
+
+// Nav scroll effect
+window.addEventListener('scroll', () => {
+  const nav = document.querySelector('.nav');
+  if (window.scrollY > 20) {
+    nav.style.background = 'rgba(3,4,7,0.95)';
+  } else {
+    nav.style.background = 'rgba(3,4,7,0.7)';
+  }
+});
+</script>
 </body>
 </html>
