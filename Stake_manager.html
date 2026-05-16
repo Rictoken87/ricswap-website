@@ -16,8 +16,21 @@ body{background:var(--bg);color:var(--tx);font-family:'Segoe UI',sans-serif;
   border-radius:16px;padding:28px;box-shadow:0 32px 64px rgba(0,0,0,.6)}
 h1{font-size:20px;font-weight:700;margin-bottom:4px}
 h1 span{color:var(--ac)}
-.sub{font-size:12px;color:var(--t2);margin-bottom:24px}
-.field{margin-bottom:14px}
+.sub{font-size:12px;color:var(--t2);margin-bottom:20px}
+.addr{font-family:monospace;font-size:11px;color:var(--gr);background:var(--s2);
+  border:1px solid var(--bd);border-radius:8px;padding:8px 12px;
+  word-break:break-all;margin-bottom:8px}
+hr{border:none;border-top:1px solid var(--bd);margin:16px 0}
+.btn{width:100%;padding:14px;border:none;border-radius:10px;cursor:pointer;
+  font-size:14px;font-weight:700;margin-bottom:8px;transition:all .2s}
+.btn:disabled{background:var(--s2);color:var(--mu);cursor:not-allowed}
+.btn-connect{background:transparent;border:1px solid var(--b2);color:var(--t2)}
+.btn-connect:hover:not(:disabled){border-color:var(--ac);color:var(--tx)}
+.btn-auto{background:linear-gradient(135deg,#9b59b6,#6c3483);color:#fff}
+.btn-auto:hover:not(:disabled){transform:translateY(-1px);box-shadow:0 8px 24px rgba(155,89,182,.4)}
+.btn-manual{background:linear-gradient(135deg,#ff4d00,#ff8c00);color:#fff;margin-top:4px}
+.btn-manual:hover:not(:disabled){transform:translateY(-1px);box-shadow:0 8px 24px rgba(255,77,0,.4)}
+.field{margin-bottom:12px}
 label{display:block;font-size:10px;font-family:monospace;color:var(--mu);
   text-transform:uppercase;letter-spacing:1px;margin-bottom:5px}
 .row{display:flex;gap:8px}
@@ -26,109 +39,73 @@ input[type=number]{flex:1;background:var(--s2);border:1px solid var(--b2);
 input[type=number]:focus{border-color:var(--ac)}
 .unit{background:var(--s2);border:1px solid var(--b2);border-radius:8px;
   padding:10px 12px;font-family:monospace;font-size:12px;color:var(--t2);white-space:nowrap}
-.addr{font-family:monospace;font-size:11px;color:var(--gr);background:var(--s2);
-  border:1px solid var(--bd);border-radius:8px;padding:10px 12px;
-  word-break:break-all;margin-bottom:6px}
-.note{font-size:11px;color:var(--mu);font-family:monospace;margin-top:4px}
-hr{border:none;border-top:1px solid var(--bd);margin:18px 0}
-.btn{width:100%;padding:14px;border:none;border-radius:10px;cursor:pointer;
-  font-size:14px;font-weight:700;margin-bottom:8px;transition:all .2s}
-.btn:disabled{background:var(--s2);color:var(--mu);cursor:not-allowed}
-.btn-connect{background:transparent;border:1px solid var(--b2);color:var(--t2)}
-.btn-connect:hover:not(:disabled){border-color:var(--ac);color:var(--tx)}
-.btn-diagnose{background:transparent;border:1px solid #9b59b6;color:#9b59b6}
-.btn-diagnose:hover:not(:disabled){background:rgba(155,89,182,.1)}
-.btn-stake{background:linear-gradient(135deg,#ff4d00,#ff8c00);color:#fff}
-.btn-stake:hover:not(:disabled){transform:translateY(-1px);box-shadow:0 8px 24px rgba(255,77,0,.4)}
-.st{margin-top:12px;padding:11px 14px;background:var(--s2);border:1px solid var(--bd);
+.st{margin-top:12px;padding:12px 14px;background:var(--s2);border:1px solid var(--bd);
   border-radius:10px;font-family:monospace;font-size:11px;color:var(--t2);
-  min-height:40px;line-height:1.6;word-break:break-all}
+  min-height:44px;line-height:1.7;word-break:break-all}
 .st.ok{border-color:var(--gr);color:var(--gr)}
 .st.err{border-color:var(--rd);color:var(--rd)}
 .st.warn{border-color:var(--yw);color:var(--yw)}
 .st.loading{border-color:var(--ac);color:var(--ac)}
-.grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
-.cell{background:var(--s2);border:1px solid var(--bd);border-radius:8px;padding:10px 12px}
-.cell-lbl{font-family:monospace;font-size:10px;color:var(--mu);margin-bottom:3px}
-.cell-val{font-family:monospace;font-size:13px;font-weight:700;color:var(--tx)}
-.cell-val.ok{color:var(--gr)}
-.cell-val.warn{color:var(--yw)}
-.raw-box{background:var(--s2);border:1px solid var(--bd);border-radius:8px;
+.log{margin-top:10px;background:var(--s2);border:1px solid var(--bd);border-radius:8px;
   padding:10px 12px;font-family:monospace;font-size:10px;color:var(--mu);
-  word-break:break-all;margin-top:8px;display:none}
+  max-height:180px;overflow-y:auto;display:none;line-height:1.8}
+.log.show{display:block}
+.log-line{padding:1px 0}
+.log-line.ok{color:var(--gr)}
+.log-line.err{color:var(--rd)}
+.log-line.info{color:var(--t2)}
 </style>
 </head>
 <body>
 <div class="card">
+  <h1>Ric<span>Paymaster</span> Stake</h1>
+  <p class="sub">Auto-finds correct delay by simulation. No RPC reads needed.</p>
 
-  <h1>Ric<span>Paymaster</span> Stake Manager</h1>
-  <p class="sub">All calls routed via MetaMask to bypass CORS</p>
-
-  <div class="field">
-    <label>RicPaymaster</label>
-    <div class="addr">0xeBb6F86CBc6841D074E72d317b8C5ad922ec35c4</div>
-  </div>
-  <div class="field">
-    <label>EntryPoint v0.6</label>
-    <div class="addr">0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789</div>
-  </div>
+  <div class="addr">RicPaymaster: 0xeBb6F86CBc6841D074E72d317b8C5ad922ec35c4</div>
+  <div class="addr">EntryPoint:   0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789</div>
 
   <hr>
   <button class="btn btn-connect" id="connectBtn" onclick="connectWallet()">Connect MetaMask</button>
   <hr>
 
-  <button class="btn btn-diagnose" id="diagnoseBtn" onclick="diagnose()" disabled>
-    Step 1: Read EntryPoint State (Diagnose)
+  <div class="field">
+    <label>BONE Amount to Stake</label>
+    <div class="row">
+      <input type="number" id="stakeAmt" value="5" min="0.1" step="0.1">
+      <div class="unit">BONE</div>
+    </div>
+  </div>
+
+  <!-- AUTO: tries delays 86400, 172800, 604800, 31536000 -->
+  <button class="btn btn-auto" id="autoBtn" onclick="autoStake()" disabled>
+    Auto-Stake (finds correct delay automatically)
   </button>
 
-  <div id="stakeSection" style="display:none">
-    <div class="field" style="margin-top:14px">
-      <label>BONE Amount to Stake</label>
-      <div class="row">
-        <input type="number" id="stakeAmt" value="5" min="0.1" step="0.1">
-        <div class="unit">BONE</div>
-      </div>
+  <!-- MANUAL: if you know the delay -->
+  <div class="field" style="margin-top:8px">
+    <label>Manual Delay Override (seconds)</label>
+    <div class="row">
+      <input type="number" id="manualDelay" value="86400">
+      <div class="unit">sec</div>
     </div>
-    <div class="field">
-      <label>Unstake Delay (auto-set from EntryPoint)</label>
-      <div class="row">
-        <input type="number" id="unstakeDelay" value="86400">
-        <div class="unit">seconds</div>
-      </div>
-      <div class="note">Must be >= existing delay. Auto-corrected by Step 1.</div>
-    </div>
-    <button class="btn btn-stake" id="stakeBtn" onclick="doStake()">
-      Step 2: Add Stake to EntryPoint
-    </button>
   </div>
+  <button class="btn btn-manual" id="manualBtn" onclick="manualStake()" disabled>
+    Manual Stake with Above Delay
+  </button>
 
   <div class="st" id="st">Connect wallet to begin</div>
 
-  <div class="grid" id="grid" style="display:none">
-    <div class="cell"><div class="cell-lbl">Deposit</div><div class="cell-val" id="rDeposit">--</div></div>
-    <div class="cell"><div class="cell-lbl">Staked</div><div class="cell-val" id="rStaked">--</div></div>
-    <div class="cell"><div class="cell-lbl">Stake Amount</div><div class="cell-val" id="rStakeAmt">--</div></div>
-    <div class="cell"><div class="cell-lbl">Unstake Delay</div><div class="cell-val" id="rDelay">--</div></div>
-  </div>
-
-  <div class="raw-box" id="rawBox"></div>
-
+  <div class="log" id="log"></div>
 </div>
+
 <script>
-// ---- Constants ----
 var RICPAYMASTER = "0xeBb6F86CBc6841D074E72d317b8C5ad922ec35c4";
-var ENTRYPOINT   = "0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789";
-var CHAIN_HEX    = "0x6d";  // 109 decimal
+var CHAIN_HEX    = "0x6d";
 var CHAIN_ID_NUM = 109;
 
-// Function selectors (keccak256 verified against etherscan source)
-// getDepositInfo(address) = 0x5287ce12
-// balanceOf(address)      = 0x70a08231
-// addStakeToEntryPoint(uint32) on RicPaymaster
-var SEL_GET_DEPOSIT_INFO = "5287ce12";
-var SEL_BALANCE_OF       = "70a08231";
+// Delays to try in order -- covers any existing delay up to 1 year
+var DELAYS = [86400, 172800, 259200, 604800, 2592000, 31536000];
 
-// RicPaymaster ABI -- only addStakeToEntryPoint needed for signing
 var PAYMASTER_ABI = [
   "function addStakeToEntryPoint(uint32 unstakeDelaySec) external payable",
   "function owner() external view returns (address)",
@@ -136,38 +113,12 @@ var PAYMASTER_ABI = [
 
 var signer, userAddr;
 
-// ---- eth_call via MetaMask (bypasses CORS completely) ----
-// All read calls go through window.ethereum.request
-// This routes through MetaMask's own RPC -- no CORS issue
-async function ethCall(to, data) {
-  var result = await window.ethereum.request({
-    method: "eth_call",
-    params: [{ to: to, data: "0x" + data }, "latest"],
-  });
-  return result; // returns hex string e.g. "0x000...123"
-}
-
-// Pad address to 32 bytes for ABI encoding
-function padAddr(addr) {
-  return "000000000000000000000000" + addr.slice(2).toLowerCase();
-}
-
-// Decode uint256 from 32-byte hex slot
-function decodeUint(hex32) {
-  return BigInt("0x" + hex32);
-}
-
-// ---- Connect wallet ----
+// --- Connect ---
 async function connectWallet() {
-  if (!window.ethereum) {
-    return setSt("err", "MetaMask not found.");
-  }
-  setSt("loading", "Requesting accounts...");
+  if (!window.ethereum) return setSt("err", "MetaMask not found.");
+  setSt("loading", "Connecting...");
   try {
-    // Request accounts via MetaMask
     await window.ethereum.request({ method: "eth_requestAccounts" });
-
-    // Check chain
     var chainHex = await window.ethereum.request({ method: "eth_chainId" });
     if (parseInt(chainHex, 16) !== CHAIN_ID_NUM) {
       setSt("loading", "Switching to Shibarium...");
@@ -180,163 +131,178 @@ async function connectWallet() {
         return setSt("err", "Switch to Shibarium (Chain ID 109) in MetaMask.");
       }
     }
-
-    // Get address
     var accounts = await window.ethereum.request({ method: "eth_accounts" });
     userAddr = accounts[0];
-
-    // Check owner via ethCall
-    setSt("loading", "Checking contract owner...");
-    var ownerRaw = await ethCall(RICPAYMASTER, "8da5cb5b"); // owner() selector
-    var owner = "0x" + ownerRaw.slice(-40);
-
-    var isOwner = owner.toLowerCase() === userAddr.toLowerCase();
-
-    // Build signer for transactions (write calls)
     var provider = new ethers.BrowserProvider(window.ethereum);
     signer = await provider.getSigner();
+
+    // Check owner
+    var pm    = new ethers.Contract(RICPAYMASTER, PAYMASTER_ABI, provider);
+    var owner = await pm.owner();
+    var isOwner = owner.toLowerCase() === userAddr.toLowerCase();
 
     var cb = document.getElementById("connectBtn");
     cb.textContent = userAddr.slice(0,6) + "..." + userAddr.slice(-4) + " connected";
     cb.style.borderColor = "var(--gr)";
     cb.style.color = "var(--gr)";
-    document.getElementById("diagnoseBtn").disabled = false;
 
     if (!isOwner) {
       return setSt("err",
         "NOT owner. You: " + userAddr.slice(0,10) +
-        " | Owner: " + owner.slice(0,10) +
-        " Switch wallet in MetaMask."
+        " Owner: " + owner.slice(0,10)
       );
     }
 
-    setSt("ok", "Connected as owner. Click Step 1 to diagnose.");
+    document.getElementById("autoBtn").disabled   = false;
+    document.getElementById("manualBtn").disabled = false;
+    setSt("ok", "Connected as owner. Click Auto-Stake to begin.");
 
     window.ethereum.on("accountsChanged", function() { location.reload(); });
     window.ethereum.on("chainChanged",    function() { location.reload(); });
-
   } catch(e) {
     setSt("err", "Connect failed: " + decErr(e));
   }
 }
 
-// ---- Diagnose: read EntryPoint state via MetaMask eth_call ----
-async function diagnose() {
-  setSt("loading", "Reading EntryPoint state via MetaMask...");
-  var rawBox = document.getElementById("rawBox");
-  rawBox.style.display = "none";
+// --- Auto Stake: simulate with increasing delays until one works ---
+async function autoStake() {
+  if (!signer) return setSt("err", "Connect wallet first.");
 
-  try {
-    // Call getDepositInfo(RICPAYMASTER) through MetaMask
-    var callData = SEL_GET_DEPOSIT_INFO + padAddr(RICPAYMASTER);
-    var raw = await ethCall(ENTRYPOINT, callData);
+  var amtStr   = document.getElementById("stakeAmt").value.trim();
+  var stakeWei = ethers.parseEther(amtStr);
+  var pm       = new ethers.Contract(RICPAYMASTER, PAYMASTER_ABI, signer);
+  var logEl    = document.getElementById("log");
 
-    rawBox.textContent = "Raw: " + raw;
-    rawBox.style.display = "block";
+  logEl.innerHTML = "";
+  logEl.classList.add("show");
+  document.getElementById("autoBtn").disabled   = true;
+  document.getElementById("manualBtn").disabled = true;
 
-    var hex = raw.startsWith("0x") ? raw.slice(2) : raw;
+  addLog("info", "Starting auto-stake with " + amtStr + " BONE...");
+  addLog("info", "Testing " + DELAYS.length + " delay values via simulation...");
+  setSt("loading", "Finding correct delay by simulation...");
 
-    if (!hex || hex.length < 64) {
-      setSt("warn",
-        "EntryPoint returned empty or short data (" + hex.length + " chars). " +
-        "Raw: " + raw.slice(0, 60) + " | " +
-        "Trying balanceOf..."
-      );
-      // Try balanceOf as fallback
-      var balRaw = await ethCall(ENTRYPOINT, SEL_BALANCE_OF + padAddr(RICPAYMASTER));
-      var balWei = BigInt(balRaw || "0x0");
-      setSt("warn",
-        "getDepositInfo returned no data. " +
-        "balanceOf: " + ethers.formatEther(balWei) + " BONE. " +
-        "Shibarium EntryPoint may use different selectors."
-      );
-      // Show stake section anyway with default delay
-      document.getElementById("unstakeDelay").value = 86400;
-      document.getElementById("stakeSection").style.display = "block";
-      return;
-    }
+  var workingDelay = null;
 
-    // Decode 5 slots of 32 bytes each
-    var slots = [];
-    for (var i = 0; i < 5; i++) {
-      var start = i * 64;
-      var end   = start + 64;
-      if (hex.length >= end) {
-        slots.push(hex.slice(start, end));
-      } else {
-        slots.push("0".repeat(64));
+  for (var i = 0; i < DELAYS.length; i++) {
+    var delay = DELAYS[i];
+    addLog("info", "Testing delay = " + delay + "s (" + (delay/86400).toFixed(1) + " days)...");
+
+    try {
+      await pm.addStakeToEntryPoint.staticCall(delay, { value: stakeWei });
+      // Simulation passed
+      workingDelay = delay;
+      addLog("ok", "Simulation PASSED with delay = " + delay + "s");
+      break;
+    } catch(simErr) {
+      var reason = decErr(simErr);
+      addLog("err", "delay=" + delay + "s FAILED: " + reason);
+
+      // If reason is NOT "cannot decrease" then something else is wrong
+      if (reason.indexOf("cannot decrease") === -1 &&
+          reason.indexOf("decrease unstake") === -1) {
+        setSt("err", "Unexpected revert (not a delay issue): " + reason);
+        document.getElementById("autoBtn").disabled   = false;
+        document.getElementById("manualBtn").disabled = false;
+        return;
       }
     }
-
-    var deposit       = decodeUint(slots[0]);
-    var staked        = decodeUint(slots[1]) === 1n;
-    var stakeAmt      = decodeUint(slots[2]);
-    var existingDelay = Number(decodeUint(slots[3]));
-    var withdrawTime  = Number(decodeUint(slots[4]));
-
-    var depositFmt  = parseFloat(ethers.formatEther(deposit)).toFixed(6);
-    var stakeAmtFmt = parseFloat(ethers.formatEther(stakeAmt)).toFixed(6);
-
-    // Update grid
-    document.getElementById("rDeposit").textContent = depositFmt + " BONE";
-    document.getElementById("rDeposit").className   = "cell-val ok";
-    document.getElementById("rStaked").textContent  = staked ? "YES" : "NO";
-    document.getElementById("rStaked").className    = "cell-val " + (staked ? "ok" : "warn");
-    document.getElementById("rStakeAmt").textContent= stakeAmtFmt + " BONE";
-    document.getElementById("rDelay").textContent   = existingDelay + " sec";
-    document.getElementById("rDelay").className     = existingDelay > 0 ? "cell-val warn" : "cell-val";
-    document.getElementById("grid").style.display   = "grid";
-
-    // Auto-correct delay
-    var safeDelay = existingDelay > 0 ? existingDelay : 86400;
-    document.getElementById("unstakeDelay").value = safeDelay;
-    document.getElementById("stakeSection").style.display = "block";
-
-    // Alert with full details
-    var msg =
-      "EntryPoint State for RicPaymaster:\n" +
-      "deposit:         " + depositFmt + " BONE\n" +
-      "staked:          " + staked + "\n" +
-      "stake amount:    " + stakeAmtFmt + " BONE\n" +
-      "unstakeDelaySec: " + existingDelay + "\n" +
-      "withdrawTime:    " + withdrawTime + "\n\n" +
-      "Safe delay to use: " + safeDelay + "\n" +
-      "Delay input auto-set to: " + safeDelay;
-
-    console.log(msg);
-    alert(msg);
-
-    if (staked && stakeAmt > 0n) {
-      setSt("ok", "Staked: " + stakeAmtFmt + " BONE | Deposit: " + depositFmt + " BONE | Delay: " + existingDelay + "s");
-    } else if (existingDelay > 0) {
-      setSt("warn", "Not staked yet. Existing delay=" + existingDelay + "s. Auto-set delay=" + safeDelay + ". Click Step 2.");
-    } else {
-      setSt("loading", "No stake yet. Delay set to " + safeDelay + "s. Click Step 2 to stake.");
-    }
-
-  } catch(e) {
-    setSt("err", "Diagnose failed: " + decErr(e));
   }
-}
 
-// ---- Add Stake ----
-async function doStake() {
-  if (!signer) { return setSt("err", "Connect wallet first."); }
+  if (workingDelay === null) {
+    addLog("err", "No delay worked. Max tried: " + DELAYS[DELAYS.length-1] + "s");
+    setSt("err",
+      "All delays failed. The existing delay in EntryPoint is > " +
+      DELAYS[DELAYS.length-1] + "s (> 1 year). This is abnormal. " +
+      "Contact support."
+    );
+    document.getElementById("autoBtn").disabled   = false;
+    document.getElementById("manualBtn").disabled = false;
+    return;
+  }
 
-  var amtStr = document.getElementById("stakeAmt").value.trim();
-  var delay  = parseInt(document.getElementById("unstakeDelay").value);
-
-  if (!amtStr || parseFloat(amtStr) <= 0) return setSt("err", "Enter BONE amount.");
-  if (!delay || delay < 1)               return setSt("err", "Invalid delay.");
-
-  var stakeWei = ethers.parseEther(amtStr);
-  var btn      = document.getElementById("stakeBtn");
-  btn.disabled = true;
+  // Send with the working delay
+  addLog("info", "Sending transaction with delay = " + workingDelay + "s...");
+  setSt("loading", "Confirm " + amtStr + " BONE in MetaMask (delay=" + workingDelay + "s)...");
 
   try {
-    var pm = new ethers.Contract(RICPAYMASTER, PAYMASTER_ABI, signer);
+    var gasLimit;
+    try {
+      var est  = await pm.addStakeToEntryPoint.estimateGas(workingDelay, { value: stakeWei });
+      gasLimit = est * 130n / 100n;
+    } catch(_) {
+      gasLimit = 300000n;
+    }
 
-    // Gas estimate with fallback
+    var tx = await pm.addStakeToEntryPoint(workingDelay, {
+      value:    stakeWei,
+      gasLimit: gasLimit,
+    });
+
+    addLog("info", "Tx sent: " + tx.hash);
+    setSt("loading", "Waiting for confirmation...");
+    var receipt = await tx.wait();
+
+    addLog("ok", "CONFIRMED. Gas used: " + receipt.gasUsed.toString());
+    setSt("ok",
+      "SUCCESS. Staked " + amtStr + " BONE with delay=" + workingDelay + "s. " +
+      "Tx: " + tx.hash.slice(0,14) + "..."
+    );
+
+    alert(
+      "Stake successful!\n\n" +
+      "Amount: " + amtStr + " BONE\n" +
+      "Delay:  " + workingDelay + " seconds\n" +
+      "Tx:     " + tx.hash
+    );
+
+  } catch(e) {
+    addLog("err", "Transaction failed: " + decErr(e));
+    setSt("err", "Failed: " + decErr(e));
+  }
+
+  document.getElementById("autoBtn").disabled   = false;
+  document.getElementById("manualBtn").disabled = false;
+}
+
+// --- Manual stake with specific delay ---
+async function manualStake() {
+  if (!signer) return setSt("err", "Connect wallet first.");
+
+  var amtStr = document.getElementById("stakeAmt").value.trim();
+  var delay  = parseInt(document.getElementById("manualDelay").value);
+
+  if (!amtStr || parseFloat(amtStr) <= 0) return setSt("err", "Enter BONE amount.");
+  if (!delay  || delay < 1)               return setSt("err", "Enter delay in seconds.");
+
+  var stakeWei = ethers.parseEther(amtStr);
+  var pm       = new ethers.Contract(RICPAYMASTER, PAYMASTER_ABI, signer);
+  var logEl    = document.getElementById("log");
+
+  logEl.innerHTML = "";
+  logEl.classList.add("show");
+  document.getElementById("autoBtn").disabled   = true;
+  document.getElementById("manualBtn").disabled = true;
+
+  addLog("info", "Manual stake: " + amtStr + " BONE, delay=" + delay + "s");
+
+  // Simulate
+  addLog("info", "Simulating...");
+  setSt("loading", "Simulating...");
+  try {
+    await pm.addStakeToEntryPoint.staticCall(delay, { value: stakeWei });
+    addLog("ok", "Simulation passed.");
+  } catch(simErr) {
+    var r = decErr(simErr);
+    addLog("err", "Simulation failed: " + r);
+    setSt("err", "Will revert: " + r);
+    document.getElementById("autoBtn").disabled   = false;
+    document.getElementById("manualBtn").disabled = false;
+    return;
+  }
+
+  setSt("loading", "Confirm " + amtStr + " BONE in MetaMask...");
+  try {
     var gasLimit;
     try {
       var est  = await pm.addStakeToEntryPoint.estimateGas(delay, { value: stakeWei });
@@ -345,41 +311,44 @@ async function doStake() {
       gasLimit = 300000n;
     }
 
-    // Simulate first
-    setSt("loading", "Simulating...");
-    try {
-      await pm.addStakeToEntryPoint.staticCall(delay, { value: stakeWei });
-    } catch(simErr) {
-      setSt("err", "Will revert: " + decErr(simErr));
-      btn.disabled = false;
-      return;
-    }
-
-    setSt("loading", "Confirm " + amtStr + " BONE in MetaMask...");
     var tx = await pm.addStakeToEntryPoint(delay, {
       value:    stakeWei,
       gasLimit: gasLimit,
     });
 
-    setSt("loading", "Sent. Waiting...");
+    addLog("info", "Tx: " + tx.hash);
+    setSt("loading", "Waiting...");
     var receipt = await tx.wait();
-
+    addLog("ok", "CONFIRMED. Gas: " + receipt.gasUsed.toString());
     setSt("ok",
-      "SUCCESS. Stake added. Tx: " + tx.hash.slice(0,10) + "..." +
-      " | Gas: " + receipt.gasUsed.toString()
+      "SUCCESS. Staked " + amtStr + " BONE, delay=" + delay + "s. " +
+      "Tx: " + tx.hash.slice(0,14) + "..."
     );
-
-    // Re-diagnose
-    await diagnose();
-
+    alert(
+      "Stake successful!\n\n" +
+      "Amount: " + amtStr + " BONE\n" +
+      "Delay:  " + delay + " seconds\n" +
+      "Tx:     " + tx.hash
+    );
   } catch(e) {
+    addLog("err", "Failed: " + decErr(e));
     setSt("err", "Failed: " + decErr(e));
-  } finally {
-    btn.disabled = false;
   }
+
+  document.getElementById("autoBtn").disabled   = false;
+  document.getElementById("manualBtn").disabled = false;
 }
 
-// ---- Helpers ----
+// --- Helpers ---
+function addLog(type, msg) {
+  var el  = document.getElementById("log");
+  var div = document.createElement("div");
+  div.className = "log-line " + type;
+  div.textContent = msg;
+  el.appendChild(div);
+  el.scrollTop = el.scrollHeight;
+}
+
 function setSt(type, msg) {
   var el = document.getElementById("st");
   el.className = "st" + (type ? " " + type : "");
@@ -399,16 +368,17 @@ function decErr(e) {
           .decode(["string"], "0x" + data.slice(10))[0];
       } catch(_) {}
     }
-    return "Revert: " + data.slice(0, 60);
+    return "Revert data: " + data.slice(0, 60);
   }
   if (e.code === 4001 || e.code === "ACTION_REJECTED") return "Rejected in MetaMask";
   var raw = e.message || String(e);
   var m = raw.match(/reason="([^"]+)"/);
   if (m) return m[1];
+  m = raw.match(/reverted with reason string '([^']+)'/);
+  if (m) return m[1];
   return raw.slice(0, 160);
 }
 
-// Auto-connect
 (function() {
   if (window.ethereum) {
     window.ethereum.request({ method: "eth_accounts" })
