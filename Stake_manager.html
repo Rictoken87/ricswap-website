@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RicPaymaster — Stake Manager</title>
+<script src="https://cdn.jsdelivr.net/npm/ethers@6.13.0/dist/ethers.umd.min.js"></script>
+<style>
+  :root {
+    --bg:#04050f;--su:#0b0d1f;--s2:#111328;--bd:#1e2040;--b2:#2a2d55;
+    --ac:#ff4d00;--gr:#00ffb2;--rd:#ff3366;--tx:#d8daf5;--t2:#8385a8;--mu:#555880;
+    --mo:'Space Mono',monospace;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--tx);font-family:'Segoe UI',sans-serif;
+    min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px}
+  .card{width:100%;max-width:500px;background:var(--su);border:1px solid var(--bd);
+    border-radius:16px;padding:28px;box-shadow:0 32px 64px rgba(0,0,0,.6)}
+  h1{font-size:20px;font-weight:700;margin-bottom:6px}
+  h1 span{color:var(--ac)}
+  .sub{font-size:13px;color:var(--t2);margin-bottom:24px}
+  .field{margin-bottom:16px}
+  label{display:block;font-size:11px;font-family:var(--mo);color:var(--mu);
+    text-transform:uppercase;letter-spacing:1px;margin-bottom:6px}
+  .val-row{display:flex;gap:8px}
+  input{flex:1;background:var(--s2);border:1px solid var(--b2);border-radius:8px;
+    color:var(--tx);padding:10px 14px;font-family:var(--mo);font-size:14px;outline:none}
+  input:focus{border-color:var(--ac)}
+  .unit{background:var(--s2);border:1px solid var(--b2);border-radius:8px;
+    padding:10px 14px;font-family:var(--mo);font-size:13px;color:var(--t2)}
+  .addr{font-family:var(--mo);font-size:11px;color:var(--mu);background:var(--s2);
+    border:1px solid var(--bd);border-radius:8px;padding:10px 14px;word-break:break-all;
+    line-height:1.6}
+  .addr span{color:var(--gr)}
+  .btn{width:100%;padding:16px;border:none;border-radius:12px;cursor:pointer;
+    font-size:15px;font-weight:700;margin-top:8px;transition:all .2s}
+  .btn-connect{background:transparent;border:1px solid var(--b2);color:var(--t2)}
+  .btn-connect:hover{border-color:var(--ac);color:var(--tx)}
+  .btn-stake{background:linear-gradient(135deg,#ff4d00,#ff8c00);color:#fff;margin-top:12px}
+  .btn-stake:hover{transform:translateY(-1px);box-shadow:0 8px 24px rgba(255,77,0,.4)}
+  .btn-stake:disabled{background:var(--s2);color:var(--mu);cursor:not-allowed;transform:none;box-shadow:none}
+  .btn-verify{background:transparent;border:1px solid var(--b2);color:var(--t2);margin-top:8px}
+  .btn-verify:hover{border-color:var(--gr);color:var(--gr)}
+  .status{margin-top:16px;padding:12px 16px;background:var(--s2);border:1px solid var(--bd);
+    border-radius:10px;font-family:var(--mo);font-size:12px;color:var(--t2);
+    min-height:44px;display:flex;align-items:center;gap:10px;transition:all .3s}
+  .status.ok{border-color:var(--gr);color:var(--gr)}
+  .status.err{border-color:var(--rd);color:var(--rd)}
+  .status.loading{border-color:var(--ac);color:var(--ac)}
+  .divider{border:none;border-top:1px solid var(--bd);margin:20px 0}
+  .result-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
+  .result-cell{background:var(--s2);border:1px solid var(--bd);border-radius:8px;padding:10px 12px}
+  .result-label{font-family:var(--mo);font-size:10px;color:var(--mu);margin-bottom:3px}
+  .result-val{font-family:var(--mo);font-size:13px;font-weight:700;color:var(--tx)}
+  .result-val.ok{color:var(--gr)}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .spinner{width:14px;height:14px;border:2px solid rgba(255,77,0,.2);
+    border-top-color:var(--ac);border-radius:50%;animation:spin .7s linear infinite;flex-shrink:0}
+</style>
+</head>
+<body>
+<div class="card">
+  <h1>Ric<span>Paymaster</span> Stake Manager</h1>
+  <p class="sub">Directly stakes BONE in EntryPoint — no Remix required</p>
+
+  <!-- Addresses -->
+  <div class="field">
+    <label>RicPaymaster Address</label>
+    <div class="addr">
+      <span>0xeBb6F86CBc6841D074E72d317b8C5ad922ec35c4</span>
+    </div>
+  </div>
+
+  <div class="field">
+    <label>EntryPoint Address</label>
+    <div class="addr">
+      <span>0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789</span>
+    </div>
+  </div>
+
+  <hr class="divider">
+
+  <!-- Connect -->
+  <button class="btn btn-connect" id="connectBtn" onclick="connectWallet()">
+    Connect MetaMask
+  </button>
+
+  <hr class="divider">
+
+  <!-- Stake config -->
+  <div class="field">
+    <label>BONE Amount to Stake</label>
+    <div class="val-row">
+      <input type="number" id="stakeAmt" value="5" min="0.1" step="0.1">
+      <div class="unit">BONE</div>
+    </div>
+  </div>
+
+  <div class="field">
+    <label>Unstake Delay</label>
+    <div class="val-row">
+      <input type="number" id="unstakeDelay" value="86400" readonly>
+      <div class="unit">sec (1 day)</div>
+    </div>
+  </div>
+
+  <button class="btn btn-stake" id="stakeBtn" onclick="doStake()" disabled>
+    Add Stake to EntryPoint
+  </button>
+
+  <button class="btn btn-verify" onclick="verifyStake()">
+    Verify Current Stake Status
+  </button>
+
+  <div class="status" id="status">
+    <span>○</span>
+    <span id="statusText">Connect wallet to begin</span>
+  </div>
+
+  <!-- Results -->
+  <div class="result-grid" id="resultGrid" style="display:none">
+    <div class="result-cell">
+      <div class="result-label">Deposit</div>
+      <div class="result-val" id="resDeposit">—</div>
+    </div>
+    <div class="result-cell">
+      <div class="result-label">Staked</div>
+      <div class="result-val" id="resStaked">—</div>
+    </div>
+    <div class="result-cell">
+      <div class="result-label">Stake Amount</div>
+      <div class="result-val" id="resStakeAmt">—</div>
+    </div>
+    <div class="result-cell">
+      <div class="result-label">Unlock Delay</div>
+      <div class="result-val" id="resDelay">—</div>
+    </div>
+  </div>
+</div>
+
+<script>
+const RICPAYMASTER = "0xeBb6F86CBc6841D074E72d317b8C5ad922ec35c4";
+const ENTRYPOINT   = "0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789";
+const CHAIN_ID     = 109n;
+
+const PAYMASTER_ABI = [
+  "function addStakeToEntryPoint(uint32 unstakeDelaySec) external payable",
+  "function getDeposit() external view returns (uint256)",
+  "function getDepositInfo() external view returns (tuple(uint112 deposit, bool staked, uint112 stake, uint32 unstakeDelaySec, uint48 withdrawTime))",
+  "function owner() external view returns (address)",
+];
+
+let provider, signer, userAddr;
+
+async function connectWallet() {
+  if (!window.ethereum) return setSt("err","No MetaMask detected");
+  try {
+    setSt("loading","Connecting...");
+    await window.ethereum.request({ method:"eth_requestAccounts" });
+    provider = new ethers.BrowserProvider(window.ethereum);
+    signer   = await provider.getSigner();
+    userAddr = await signer.getAddress();
+
+    const net = await provider.getNetwork();
+    if (net.chainId !== CHAIN_ID) {
+      setSt("loading","Switching to Shibarium...");
+      try {
+        await window.ethereum.request({
+          method:"wallet_switchEthereumChain",
+          params:[{chainId:"0x6d"}]
+        });
+        provider = new ethers.BrowserProvider(window.ethereum);
+        signer   = await provider.getSigner();
+        userAddr = await signer.getAddress();
+      } catch(e) {
+        return setSt("err","Please switch to Shibarium (Chain ID 109) in MetaMask");
+      }
+    }
+
+    // Check ownership
+    const contract = new ethers.Contract(RICPAYMASTER, PAYMASTER_ABI, provider);
+    const owner    = await contract.owner();
+    const isOwner  = owner.toLowerCase() === userAddr.toLowerCase();
+
+    document.getElementById("connectBtn").textContent =
+      userAddr.slice(0,6) + "..." + userAddr.slice(-4) + " (connected)";
+    document.getElementById("connectBtn").style.borderColor = "var(--gr)";
+    document.getElementById("connectBtn").style.color = "var(--gr)";
+    document.getElementById("stakeBtn").disabled = false;
+
+    if (!isOwner) {
+      setSt("err",
+        "Connected wallet is NOT the contract owner. " +
+        "Owner: " + owner.slice(0,6) + "..." + owner.slice(-4)
+      );
+      document.getElementById("stakeBtn").disabled = true;
+      return;
+    }
+
+    setSt("ok","Wallet connected. Owner verified. Ready to stake.");
+    await verifyStake();
+
+    window.ethereum.on("accountsChanged", ()=>location.reload());
+    window.ethereum.on("chainChanged",    ()=>location.reload());
+
+  } catch(e) {
+    setSt("err", decErr(e));
+  }
+}
+
+async function doStake() {
+  if (!signer) return setSt("err","Connect wallet first");
+
+  const amtStr = document.getElementById("stakeAmt").value.trim();
+  const delay  = parseInt(document.getElementById("unstakeDelay").value);
+  const amt    = parseFloat(amtStr);
+
+  if (isNaN(amt) || amt <= 0) return setSt("err","Enter a valid BONE amount");
+  if (isNaN(delay) || delay < 1) return setSt("err","Invalid delay");
+
+  const stakeWei = ethers.parseEther(amtStr);
+  const btn      = document.getElementById("stakeBtn");
+  btn.disabled   = true;
+
+  try {
+    setSt("loading","Preparing transaction...");
+
+    const contract = new ethers.Contract(RICPAYMASTER, PAYMASTER_ABI, signer);
+
+    // Estimate gas with explicit value
+    let gasEstimate;
+    try {
+      gasEstimate = await contract.addStakeToEntryPoint.estimateGas(
+        delay, { value: stakeWei }
+      );
+      gasEstimate = gasEstimate * 130n / 100n; // +30% buffer
+    } catch(_) {
+      gasEstimate = 200000n; // fallback gas limit
+    }
+
+    setSt("loading","Confirm in MetaMask — sending " + amtStr + " BONE...");
+
+    // Send transaction with explicit value and gas limit
+    const tx = await contract.addStakeToEntryPoint(delay, {
+      value:    stakeWei,
+      gasLimit: gasEstimate,
+    });
+
+    setSt("loading","Transaction sent — waiting for confirmation...");
+    const receipt = await tx.wait();
+
+    setSt("ok",
+      "Stake successful! Tx: " + tx.hash.slice(0,10) + "..." +
+      " | Gas used: " + receipt.gasUsed.toString()
+    );
+
+    await verifyStake();
+
+  } catch(e) {
+    setSt("err", decErr(e));
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+async function verifyStake() {
+  if (!provider) return;
+  try {
+    setSt("loading","Checking stake status...");
+    const contract = new ethers.Contract(RICPAYMASTER, PAYMASTER_ABI, provider);
+
+    const [deposit, info] = await Promise.all([
+      contract.getDeposit(),
+      contract.getDepositInfo(),
+    ]);
+
+    const depositBone   = parseFloat(ethers.formatEther(deposit)).toFixed(4);
+    const stakeBone     = parseFloat(ethers.formatEther(info.stake)).toFixed(4);
+    const staked        = info.staked;
+    const delayDays     = (info.unstakeDelaySec / 86400).toFixed(1);
+
+    document.getElementById("resDeposit").textContent  = depositBone + " BONE";
+    document.getElementById("resDeposit").className    = "result-val ok";
+    document.getElementById("resStaked").textContent   = staked ? "YES" : "NO";
+    document.getElementById("resStaked").className     = "result-val " + (staked?"ok":"");
+    document.getElementById("resStakeAmt").textContent = stakeBone + " BONE";
+    document.getElementById("resDelay").textContent    = delayDays + " days";
+
+    document.getElementById("resultGrid").style.display = "grid";
+
+    if (staked && info.stake > 0n) {
+      setSt("ok","Staked: " + stakeBone + " BONE | Deposit: " + depositBone + " BONE");
+    } else {
+      setSt("loading","Deposit: " + depositBone + " BONE | Not yet staked");
+    }
+  } catch(e) {
+    setSt("err","Could not read contract: " + decErr(e));
+  }
+}
+
+function setSt(type, msg) {
+  const box  = document.getElementById("status");
+  const text = document.getElementById("statusText");
+  box.className = "status" + (type==="ok"?" ok":type==="err"?" err":type==="loading"?" loading":"");
+  const old = box.querySelector(".spinner,.ico");
+  if (old) old.remove();
+  const el = document.createElement(type==="loading"?"div":"span");
+  el.className = type==="loading"?"spinner":"ico";
+  if (type!=="loading") el.textContent = type==="ok"?"✓":type==="err"?"✕":"○";
+  box.insertBefore(el, text);
+  text.textContent = msg;
+}
+
+function decErr(e) {
+  if (e.reason)        return e.reason;
+  if (e.shortMessage)  return e.shortMessage;
+  if (e.code===4001||e.code==="ACTION_REJECTED") return "Rejected in MetaMask";
+  const raw = e.message||String(e);
+  const m   = raw.match(/reason="([^"]+)"/);
+  if (m) return m[1];
+  return raw.slice(0,150);
+}
+
+// Auto-connect if already connected
+(async()=>{
+  if(window.ethereum){
+    try{
+      const accs = await window.ethereum.request({method:"eth_accounts"});
+      if(accs.length>0) connectWallet();
+    }catch(_){}
+  }
+})();
+</script>
+</body>
+</html>
