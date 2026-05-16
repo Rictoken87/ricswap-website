@@ -130,9 +130,11 @@ var PAYMASTER_ABI = [
 ];
 
 var EP_ABI = [
-  "function getDepositInfo(address) view returns (tuple(uint112 deposit, bool staked, uint112 stake, uint32 unstakeDelaySec, uint48 withdrawTime))",
   "function balanceOf(address) view returns (uint256)",
 ];
+// getDepositInfo selector: keccak256("getDepositInfo(address)")[0:4]
+// = 0x5287ce12  (verified from etherscan EntryPoint source)
+var GET_DEPOSIT_INFO_SEL = "0x5287ce12";
 
 // -- State -------------------------------------------------
 var provider, signer, userAddr;
@@ -208,29 +210,69 @@ async function connectWallet() {
 // -- Diagnose ----------------------------------------------
 async function diagnose() {
   if (!provider) { setSt("err", "Connect wallet first."); return; }
-  setSt("loading", "Reading EntryPoint state for RicPaymaster...");
+  setSt("loading", "Reading EntryPoint state via raw eth_call...");
   try {
-    var ep   = new ethers.Contract(ENTRYPOINT, EP_ABI, provider);
-    var info = await ep.getDepositInfo(RICPAYMASTER);
-    var bal  = await ep.balanceOf(RICPAYMASTER);
+    // Use raw eth_call with manual hex decoding to avoid ABI tuple mismatch
+    // getDepositInfo(address) selector = 0x5287ce12
+    var paddedAddr = "000000000000000000000000" + RICPAYMASTER.slice(2).toLowerCase();
+    var callData   = GET_DEPOSIT_INFO_SEL + paddedAddr;
 
-    var deposit       = ethers.formatEther(info.deposit);
-    var stakeAmt      = ethers.formatEther(info.stake);
-    var staked        = info.staked;
-    var existingDelay = Number(info.unstakeDelaySec);
-    var withdrawTime  = Number(info.withdrawTime);
+    var rawResult  = await provider.call({
+      to:   ENTRYPOINT,
+      data: callData,
+    });
 
-    // Show in grid
-    document.getElementById("rDeposit").textContent  = deposit + " BONE";
+    // Also get balance via contract (simple uint256, no tuple issue)
+    var ep  = new ethers.Contract(ENTRYPOINT, EP_ABI, provider);
+    var bal = await ep.balanceOf(RICPAYMASTER);
+
+    // Decode raw result manually
+    // DepositInfo ABI-encodes as 5 x uint256 slots (each field padded to 32 bytes):
+    // slot 0: deposit (uint112)
+    // slot 1: staked  (bool)
+    // slot 2: stake   (uint112)
+    // slot 3: unstakeDelaySec (uint32)
+    // slot 4: withdrawTime (uint48)
+    var raw = rawResult.slice(2); // remove 0x
+    if (raw.length < 320) {
+      // Try alternative: some EntryPoints pack differently
+      // Just show raw hex so we can see what came back
+      setSt("warn", "Raw data: " + rawResult.slice(0, 100) + " | Balance: " + ethers.formatEther(bal) + " BONE");
+      alert("Raw getDepositInfo data:
+" + rawResult + "
+
+Balance: " + ethers.formatEther(bal) + " BONE
+
+Please share this with the developer.");
+      return;
+    }
+    var slot0 = BigInt("0x" + raw.slice(0,   64));
+    var slot1 = BigInt("0x" + raw.slice(64,  128));
+    var slot2 = BigInt("0x" + raw.slice(128, 192));
+    var slot3 = BigInt("0x" + raw.slice(192, 256));
+    var slot4 = BigInt("0x" + raw.slice(256, 320));
+
+    var deposit       = slot0;
+    var staked        = slot1 === 1n;
+    var stakeAmt      = slot2;
+    var existingDelay = Number(slot3);
+    var withdrawTime  = Number(slot4);
+
+    var depositFmt    = parseFloat(ethers.formatEther(deposit)).toFixed(6);
+    var stakeAmtFmt   = parseFloat(ethers.formatEther(stakeAmt)).toFixed(6);
+    var balFmt        = parseFloat(ethers.formatEther(bal)).toFixed(6);
+
+    // Show in grid using decoded values
+    document.getElementById("rDeposit").textContent  = depositFmt + " BONE";
     document.getElementById("rDeposit").className    = "cell-val ok";
     document.getElementById("rStaked").textContent   = staked ? "YES" : "NO";
     document.getElementById("rStaked").className     = "cell-val " + (staked ? "ok" : "warn");
-    document.getElementById("rStakeAmt").textContent = stakeAmt + " BONE";
+    document.getElementById("rStakeAmt").textContent = stakeAmtFmt + " BONE";
     document.getElementById("rDelay").textContent    = existingDelay + " sec";
     document.getElementById("rDelay").className      = existingDelay > 0 ? "cell-val warn" : "cell-val";
     document.getElementById("grid").style.display    = "grid";
 
-    // Auto-correct delay: must be >= existing
+    // Auto-correct delay: must be >= existing (the key fix for "cannot decrease unstake time")
     var safeDelay = existingDelay > 0 ? existingDelay : 86400;
     document.getElementById("unstakeDelay").value = safeDelay;
 
@@ -243,7 +285,7 @@ async function diagnose() {
     // Build status message
     var msg = "";
     if (staked) {
-      msg = "Already staked: " + stakeAmt + " BONE, delay=" + existingDelay + "s. " +
+      msg = "Already staked: " + stakeAmtFmt + " BONE, delay=" + existingDelay + "s. " +
             "Click Step 2 to ADD more stake.";
       setSt("ok", msg);
     } else if (existingDelay > 0) {
@@ -258,9 +300,10 @@ async function diagnose() {
     // Also alert so nothing is missed
     var details =
       "EntryPoint State for RicPaymaster:\n" +
-      "deposit:         " + deposit + " BONE\n" +
+      "deposit:         " + depositFmt + " BONE\n" +
+      "balanceOf:       " + balFmt + " BONE\n" +
       "staked:          " + staked + "\n" +
-      "stake amount:    " + stakeAmt + " BONE\n" +
+      "stake amount:    " + stakeAmtFmt + " BONE\n" +
       "unstakeDelaySec: " + existingDelay + "\n" +
       "withdrawTime:    " + withdrawTime + "\n\n" +
       "Safe delay to use: " + safeDelay;
