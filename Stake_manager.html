@@ -111,8 +111,8 @@
     Add Stake to EntryPoint
   </button>
 
-  <button class="btn btn-verify" onclick="verifyStake()">
-    Verify Current Stake Status
+  <button class="btn btn-verify" onclick="diagnose()" style="margin-top:6px;border-color:#9b59b6;color:#9b59b6">
+    Diagnose — Read Raw EntryPoint State
   </button>
 
   <div class="status" id="status">
@@ -241,6 +241,18 @@ async function doStake() {
       gasEstimate = 200000n; // fallback gas limit
     }
 
+    // PRE-FLIGHT: simulate the call first to get exact revert reason
+    setSt("loading","Simulating call to get exact revert reason...");
+    try {
+      await contract.addStakeToEntryPoint.staticCall(delay, { value: stakeWei });
+    } catch(simErr) {
+      // Simulation failed — decode the exact reason
+      const reason = decErr(simErr);
+      setSt("err", "Simulation failed: " + reason);
+      btn.disabled = false;
+      return;
+    }
+
     setSt("loading","Confirm in MetaMask — sending " + amtStr + " BONE...");
 
     // Send transaction with explicit value and gas limit
@@ -266,7 +278,62 @@ async function doStake() {
   }
 }
 
+async function diagnose() {
+  if (!provider) { setSt("err","Connect wallet first"); return; }
+  setSt("loading","Reading raw EntryPoint state for RicPaymaster...");
+  try {
+    // Call EntryPoint.getDepositInfo(RicPaymaster) directly
+    const EP_ABI = [
+      "function getDepositInfo(address account) view returns (tuple(uint112 deposit, bool staked, uint112 stake, uint32 unstakeDelaySec, uint48 withdrawTime))",
+      "function balanceOf(address account) view returns (uint256)",
+    ];
+    const ep   = new ethers.Contract(ENTRYPOINT, EP_ABI, provider);
+    const info = await ep.getDepositInfo(RICPAYMASTER);
+    const bal  = await ep.balanceOf(RICPAYMASTER);
+
+    const lines = [
+      "=== RAW ENTRYPOINT STATE ===",
+      "deposit         : " + ethers.formatEther(info.deposit) + " BONE",
+      "balanceOf       : " + ethers.formatEther(bal) + " BONE",
+      "staked          : " + info.staked,
+      "stake           : " + ethers.formatEther(info.stake) + " BONE",
+      "unstakeDelaySec : " + info.unstakeDelaySec.toString(),
+      "withdrawTime    : " + info.withdrawTime.toString(),
+    ];
+
+    const existingDelay = Number(info.unstakeDelaySec);
+    const safeDelay     = Math.max(86400, existingDelay + 1);
+
+    lines.push("");
+    lines.push("Safe delay to use: " + safeDelay + " (existing=" + existingDelay + " + 1)");
+
+    // Auto-set
+    document.getElementById("unstakeDelay").value = safeDelay;
+
+    // Show in result grid
+    document.getElementById("resDeposit").textContent  = ethers.formatEther(info.deposit) + " BONE";
+    document.getElementById("resStaked").textContent   = info.staked ? "YES" : "NO";
+    document.getElementById("resStaked").className     = "result-val " + (info.staked?"ok":"");
+    document.getElementById("resStakeAmt").textContent = ethers.formatEther(info.stake) + " BONE";
+    document.getElementById("resDelay").textContent    = existingDelay + "s";
+    document.getElementById("resultGrid").style.display = "grid";
+
+    setSt(
+      info.staked ? "ok" : "loading",
+      lines.join(" | ")
+    );
+
+    console.log(lines.join("\n"));
+    alert(lines.join("\n"));
+
+  } catch(e) {
+    setSt("err", "Diagnose failed: " + decErr(e));
+  }
+}
+
 async function verifyStake() {
+  await diagnose();
+}
   if (!provider) return;
   try {
     setSt("loading","Checking stake status from EntryPoint...");
@@ -325,13 +392,54 @@ function setSt(type, msg) {
 }
 
 function decErr(e) {
-  if (e.reason)        return e.reason;
-  if (e.shortMessage)  return e.shortMessage;
-  if (e.code===4001||e.code==="ACTION_REJECTED") return "Rejected in MetaMask";
-  const raw = e.message||String(e);
-  const m   = raw.match(/reason="([^"]+)"/);
-  if (m) return m[1];
-  return raw.slice(0,150);
+  if (!e) return "Unknown error";
+  // Direct reason
+  if (e.reason)       return e.reason;
+  if (e.shortMessage) return e.shortMessage;
+  if (e.error?.reason) return e.error.reason;
+  if (e.error?.error?.reason) return e.error.error.reason;
+
+  // Decode hex revert data
+  const data = e?.data || e?.error?.data || e?.error?.error?.data || e?.info?.error?.data;
+  if (typeof data === "string" && data !== "0x") {
+    // Error(string) selector
+    if (data.startsWith("0x08c379a0")) {
+      try {
+        return ethers.AbiCoder.defaultAbiCoder().decode(
+          ["string"], "0x" + data.slice(10)
+        )[0];
+      } catch(_) {}
+    }
+    // Panic
+    if (data.startsWith("0x4e487b71")) {
+      try {
+        const code = ethers.AbiCoder.defaultAbiCoder().decode(
+          ["uint256"], "0x" + data.slice(10)
+        )[0];
+        return "Panic code: " + code.toString();
+      } catch(_) {}
+    }
+    // Return raw hex so we can see it
+    return "Revert data: " + data.slice(0, 80);
+  }
+
+  if (e.code === 4001 || e.code === "ACTION_REJECTED") return "Rejected in MetaMask";
+
+  const raw = e.message || String(e);
+
+  // Extract known patterns
+  const patterns = [
+    /reason="([^"]+)"/,
+    /reverted with reason string '([^']+)'/,
+    /execution reverted: ([^"]+)/,
+    /"message":"([^"]+)"/,
+  ];
+  for (const p of patterns) {
+    const m = raw.match(p);
+    if (m) return m[1];
+  }
+
+  return raw.slice(0, 200);
 }
 
 // Auto-connect if already connected
