@@ -97,10 +97,13 @@
   </div>
 
   <div class="field">
-    <label>Unstake Delay</label>
+    <label>Unstake Delay (seconds) — auto-set from current EntryPoint record</label>
     <div class="val-row">
-      <input type="number" id="unstakeDelay" value="86400" readonly>
-      <div class="unit">sec (1 day)</div>
+      <input type="number" id="unstakeDelay" value="86400">
+      <div class="unit">seconds</div>
+    </div>
+    <div style="font-size:11px;color:var(--mu);margin-top:5px;font-family:var(--mo)">
+      Must be >= current delay in EntryPoint. Click Verify to check.
     </div>
   </div>
 
@@ -266,7 +269,7 @@ async function doStake() {
 async function verifyStake() {
   if (!provider) return;
   try {
-    setSt("loading","Checking stake status...");
+    setSt("loading","Checking stake status from EntryPoint...");
     const contract = new ethers.Contract(RICPAYMASTER, PAYMASTER_ABI, provider);
 
     const [deposit, info] = await Promise.all([
@@ -277,21 +280,31 @@ async function verifyStake() {
     const depositBone   = parseFloat(ethers.formatEther(deposit)).toFixed(4);
     const stakeBone     = parseFloat(ethers.formatEther(info.stake)).toFixed(4);
     const staked        = info.staked;
-    const delayDays     = (info.unstakeDelaySec / 86400).toFixed(1);
+    const existingDelay = Number(info.unstakeDelaySec);
+    const delayDays     = (existingDelay / 86400).toFixed(1);
+
+    // KEY FIX: auto-set the delay input to existing value or 86400, whichever is higher
+    const safeDelay = Math.max(86400, existingDelay);
+    document.getElementById("unstakeDelay").value = safeDelay;
 
     document.getElementById("resDeposit").textContent  = depositBone + " BONE";
     document.getElementById("resDeposit").className    = "result-val ok";
     document.getElementById("resStaked").textContent   = staked ? "YES" : "NO";
     document.getElementById("resStaked").className     = "result-val " + (staked?"ok":"");
     document.getElementById("resStakeAmt").textContent = stakeBone + " BONE";
-    document.getElementById("resDelay").textContent    = delayDays + " days";
+    document.getElementById("resDelay").textContent    = existingDelay + "s (" + delayDays + " days)";
 
     document.getElementById("resultGrid").style.display = "grid";
 
-    if (staked && info.stake > 0n) {
-      setSt("ok","Staked: " + stakeBone + " BONE | Deposit: " + depositBone + " BONE");
+    if (existingDelay > 86400) {
+      setSt("loading",
+        "Existing delay in EntryPoint: " + existingDelay + "s. " +
+        "Delay input auto-set to " + safeDelay + "s. Now click Add Stake."
+      );
+    } else if (staked && info.stake > 0n) {
+      setSt("ok","Staked: " + stakeBone + " BONE | Deposit: " + depositBone + " BONE | Delay: " + existingDelay + "s");
     } else {
-      setSt("loading","Deposit: " + depositBone + " BONE | Not yet staked");
+      setSt("loading","Deposit: " + depositBone + " BONE | Not yet staked | Delay will be: " + safeDelay + "s");
     }
   } catch(e) {
     setSt("err","Could not read contract: " + decErr(e));
