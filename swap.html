@@ -1,518 +1,2822 @@
+swap.html 
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#030407">
+<meta name="description" content="RicSwap DEX -- Trade tokens on Shibarium with zero gas fees">
+<meta property="og:title" content="RicSwap -- The Obsidian Tier DEX">
+<meta property="og:description" content="Trade any Shibarium token. Zero gas fees with RIC.">
 <title>RicSwap | Swap</title>
-<script src="https://cdn.jsdelivr.net/npm/ethers@6.13.0/dist/ethers.umd.min.js"></script>
-<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;800&display=swap" rel="stylesheet">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+
 <style>
-:root{--bg:#04050f;--su:#0b0d1f;--s2:#111328;--s3:#0d0f24;--bd:#1e2040;--b2:#2a2d55;--ac:#ff4d00;--ac2:#ff8c00;--gr:#00ffb2;--bl:#3b6bff;--yw:#ffd84a;--rd:#ff3366;--tx:#d8daf5;--t2:#8385a8;--mu:#555880;--mo:'Space Mono',monospace;--sa:'Syne',sans-serif}
-*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-body{background:var(--bg);color:var(--tx);font-family:var(--sa);min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px}
-body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;background-image:linear-gradient(rgba(255,77,0,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(255,77,0,.025) 1px,transparent 1px);background-size:40px 40px}
-.card{position:relative;z-index:1;width:100%;max-width:480px;background:var(--su);border:1px solid var(--bd);border-radius:20px;padding:28px;box-shadow:0 32px 64px rgba(0,0,0,.6),inset 0 1px 0 rgba(255,255,255,.04);animation:fadeUp .4s ease both}
-@keyframes fadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
-@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
-@keyframes spin{to{transform:rotate(360deg)}}
-.header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
-.logo{font-weight:800;font-size:20px;letter-spacing:-.5px}.logo span{color:var(--ac)}.logo a{color:inherit;text-decoration:none}
-.hdr-r{display:flex;align-items:center;gap:8px}
-.net-pill{display:flex;align-items:center;gap:6px;background:rgba(0,255,178,.07);border:1px solid rgba(0,255,178,.18);border-radius:20px;padding:4px 10px;font-family:var(--mo);font-size:10px;color:var(--gr)}
-.dot{width:5px;height:5px;border-radius:50%;background:var(--gr);animation:pulse 2s infinite}
-.set-btn{width:30px;height:30px;background:transparent;border:1px solid var(--b2);border-radius:8px;cursor:pointer;color:var(--mu);display:flex;align-items:center;justify-content:center;transition:all .2s}
-.set-btn:hover{border-color:var(--ac);color:var(--ac)}.set-btn svg{width:14px;height:14px}
-.w-btn{width:100%;padding:11px;background:transparent;border:1px solid var(--b2);border-radius:10px;color:var(--t2);font-family:var(--mo);font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:14px;transition:all .2s}
-.w-btn:hover{border-color:var(--ac);color:var(--tx);background:rgba(255,77,0,.05)}
-.w-btn.con{border-color:var(--gr);color:var(--gr);background:rgba(0,255,178,.05);cursor:default}
-.mode-tabs{display:flex;gap:4px;background:var(--s2);border:1px solid var(--bd);border-radius:10px;padding:4px;margin-bottom:12px}
-.m-tab{flex:1;padding:7px;font-family:var(--mo);font-size:11px;text-align:center;border-radius:7px;cursor:pointer;color:var(--mu);border:none;background:transparent;transition:all .15s}
-.m-tab.active{background:var(--su);color:var(--tx);border:1px solid var(--b2)}
-.set-panel{display:none;background:var(--s2);border:1px solid var(--b2);border-radius:12px;padding:16px;margin-bottom:12px}
-.set-panel.open{display:block}
-.set-ttl{font-family:var(--mo);font-size:10px;color:var(--mu);text-transform:uppercase;letter-spacing:1px;margin-bottom:12px}
-.set-row{display:flex;align-items:center;justify-content:space-between;padding:4px 0}
-.set-row label{font-family:var(--mo);font-size:10px;color:var(--t2)}
-.sl-btns{display:flex;gap:4px}
-.sl-btn{font-family:var(--mo);font-size:10px;padding:4px 10px;background:transparent;border:1px solid var(--b2);border-radius:6px;color:var(--mu);cursor:pointer;transition:all .15s}
-.sl-btn:hover{border-color:var(--ac);color:var(--tx)}.sl-btn.active{background:rgba(255,77,0,.15);border-color:var(--ac);color:var(--ac)}
-.dl-wrap{display:flex;align-items:center;gap:8px}
-.dl-inp{width:60px;background:var(--s3);border:1px solid var(--b2);border-radius:7px;color:var(--tx);padding:5px 8px;font-family:var(--mo);font-size:12px;outline:none;text-align:right}
-.dl-inp:focus{border-color:var(--ac)}.dl-unit{font-family:var(--mo);font-size:11px;color:var(--mu)}
-.exp-row{display:flex;align-items:center;justify-content:space-between;margin-top:10px}
-.exp-lbl{font-family:var(--mo);font-size:11px;color:var(--t2)}
-.toggle{position:relative;width:36px;height:20px;cursor:pointer}.toggle input{opacity:0;width:0;height:0}
-.tg-track{position:absolute;inset:0;background:var(--b2);border-radius:10px;transition:.2s}
-.toggle input:checked+.tg-track{background:var(--ac)}
-.tg-thumb{position:absolute;top:3px;left:3px;width:14px;height:14px;background:#fff;border-radius:50%;transition:.2s}
-.toggle input:checked~.tg-thumb{transform:translateX(16px)}
-.tbox{background:var(--s2);border:1px solid var(--bd);border-radius:14px;padding:14px 16px;transition:border-color .2s}
-.tbox:focus-within{border-color:var(--b2)}
-.bx-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
-.bx-lbl{font-family:var(--mo);font-size:10px;color:var(--mu);text-transform:uppercase;letter-spacing:1px}
-.bal-row{display:flex;align-items:center;gap:5px;font-family:var(--mo);font-size:10px;color:var(--t2)}
-.bal-v{cursor:pointer;transition:color .15s}.bal-v:hover{color:var(--tx)}
-.max-b{font-size:9px;color:var(--ac);background:rgba(255,77,0,.1);border:1px solid rgba(255,77,0,.2);border-radius:4px;padding:1px 6px;cursor:pointer;font-family:var(--mo);transition:all .15s}
-.max-b:hover{background:rgba(255,77,0,.2)}
-.bx-main{display:flex;align-items:center;gap:10px}
-.amt-inp{flex:1;background:transparent;border:none;color:var(--tx);font-family:var(--sa);font-size:28px;font-weight:800;outline:none;width:100%;min-width:0}
-.amt-inp::placeholder{color:var(--b2)}.amt-inp::-webkit-inner-spin-button,.amt-inp::-webkit-outer-spin-button{-webkit-appearance:none}.amt-inp[type=number]{-moz-appearance:textfield}
-.usd-v{font-family:var(--mo);font-size:11px;color:var(--mu);margin-top:4px}
-.tk-sel{display:flex;align-items:center;gap:7px;flex-shrink:0;background:rgba(255,255,255,.04);border:1px solid var(--b2);border-radius:10px;padding:8px 12px;cursor:pointer;transition:all .15s;white-space:nowrap;min-width:100px}
-.tk-sel:hover{background:rgba(255,255,255,.08);border-color:var(--ac)}
-.tk-av{width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--mo);font-size:9px;font-weight:700;flex-shrink:0}
-.tk-sym{font-family:var(--mo);font-size:12px;font-weight:700}.tk-sel svg{width:10px;height:10px;color:var(--mu);flex-shrink:0}
-.flip-w{display:flex;justify-content:center;margin:6px 0;position:relative;z-index:2}
-.flip-b{width:34px;height:34px;background:var(--s2);border:1px solid var(--b2);border-radius:10px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--mu);transition:all .25s}
-.flip-b:hover{border-color:var(--ac);color:var(--ac);transform:rotate(180deg)}.flip-b svg{width:15px;height:15px}
-.info-p{background:var(--s2);border:1px solid var(--bd);border-radius:10px;padding:10px 14px;margin:10px 0;font-family:var(--mo);font-size:11px}
-.i-line{display:flex;justify-content:space-between;padding:4px 0}.i-line:not(:last-child){border-bottom:1px solid var(--bd)}
-.i-k{color:var(--mu)}.i-v{color:var(--t2)}.i-v.g{color:var(--gr)}.i-v.y{color:var(--yw)}.i-v.r{color:var(--rd)}
-.ref-row{display:flex;align-items:center;gap:6px;padding:2px 0}
-.ref-lbl{font-family:var(--mo);font-size:10px;color:var(--mu)}
-.ref-bw{flex:1;height:2px;background:var(--bd);border-radius:1px;overflow:hidden}
-.ref-bar{height:100%;background:var(--ac);border-radius:1px;transition:width 1s linear}
-.ref-cnt{font-family:var(--mo);font-size:10px;color:var(--mu);min-width:20px;text-align:right}
-.sw-btn{width:100%;padding:16px;border:none;border-radius:12px;font-family:var(--sa);font-size:16px;font-weight:800;letter-spacing:.3px;cursor:pointer;margin-top:12px;transition:all .2s;position:relative;overflow:hidden;background:linear-gradient(135deg,var(--ac),var(--ac2));color:#fff}
-.sw-btn::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(255,255,255,.1),transparent);opacity:0;transition:opacity .2s}
-.sw-btn:hover:not(:disabled)::before{opacity:1}.sw-btn:hover:not(:disabled){transform:translateY(-1px);box-shadow:0 8px 24px rgba(255,77,0,.35)}
-.sw-btn:active:not(:disabled){transform:translateY(0)}.sw-btn:disabled{background:var(--s2);color:var(--mu);cursor:not-allowed;transform:none;box-shadow:none}
-.st-box{margin-top:10px;padding:11px 14px;background:var(--s2);border:1px solid var(--bd);border-radius:10px;font-family:var(--mo);font-size:11px;color:var(--t2);display:flex;align-items:center;gap:8px;min-height:38px;transition:border-color .3s}
-.st-box.success{border-color:var(--gr);color:var(--gr)}.st-box.error{border-color:var(--rd);color:var(--rd)}.st-box.loading{border-color:var(--ac);color:var(--ac)}.st-box.warning{border-color:var(--yw);color:var(--yw)}.st-box a{color:inherit;text-decoration:underline}
-.spinner{width:12px;height:12px;border:2px solid rgba(255,77,0,.2);border-top-color:var(--ac);border-radius:50%;animation:spin .7s linear infinite;flex-shrink:0}
-.share-row{text-align:center;margin-top:6px}
-.shr-btn{font-family:var(--mo);font-size:10px;color:var(--mu);background:transparent;border:none;cursor:pointer;text-decoration:underline;padding:0}
-.shr-btn:hover{color:var(--t2)}
-.txs-w{margin-top:10px}.txs-lbl{font-family:var(--mo);font-size:10px;color:var(--mu);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px}
-.tx-i{display:flex;align-items:center;justify-content:space-between;padding:7px 12px;background:var(--s2);border:1px solid var(--bd);border-radius:8px;margin-bottom:4px;font-family:var(--mo);font-size:10px;color:var(--t2)}
-.tx-i a{color:var(--bl);text-decoration:none}.tx-i a:hover{text-decoration:underline}
-.mo-ov{display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:100;align-items:center;justify-content:center;padding:24px}
-.mo-ov.open{display:flex}
-.modal{background:var(--su);border:1px solid var(--b2);border-radius:16px;width:100%;max-width:420px;max-height:80vh;display:flex;flex-direction:column;animation:fadeUp .25s ease both}
-.mo-hdr{display:flex;align-items:center;justify-content:space-between;padding:18px 20px;border-bottom:1px solid var(--bd)}
-.mo-ttl{font-weight:700;font-size:16px}
-.mo-cls{background:transparent;border:none;color:var(--mu);cursor:pointer;font-size:18px;padding:4px;line-height:1}.mo-cls:hover{color:var(--tx)}
-.mo-srch{padding:12px 16px;border-bottom:1px solid var(--bd)}
-.mo-srch input{width:100%;background:var(--s2);border:1px solid var(--b2);border-radius:10px;color:var(--tx);padding:10px 14px;font-family:var(--mo);font-size:12px;outline:none}
-.mo-srch input::placeholder{color:var(--mu)}.mo-srch input:focus{border-color:var(--ac)}
-.mo-list{overflow-y:auto;flex:1;padding:8px}
-.tk-row{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:10px;cursor:pointer;transition:background .15s}
-.tk-row:hover{background:var(--s2)}
-.tk-row-inf{flex:1;min-width:0}.tk-row-sym{font-weight:700;font-size:14px}.tk-row-nm{font-family:var(--mo);font-size:11px;color:var(--mu)}
-.tk-row-bal{font-family:var(--mo);font-size:11px;color:var(--t2);text-align:right}
-.imp-tag{font-family:var(--mo);font-size:9px;color:var(--yw);background:rgba(255,216,74,.1);border:1px solid rgba(255,216,74,.2);border-radius:3px;padding:1px 5px;margin-left:6px}
-.imp-warn{display:none;background:rgba(255,216,74,.05);border:1px solid rgba(255,216,74,.25);border-radius:10px;padding:12px 14px;margin:8px 16px;font-family:var(--mo);font-size:11px}
-.imp-warn.show{display:block}.imp-wttl{color:var(--yw);font-weight:700;margin-bottom:4px}
-.imp-warn p{color:var(--t2);line-height:1.5}
-.imp-wbtns{display:flex;gap:8px;margin-top:10px}
-.imp-wbtns button{flex:1;padding:7px;border-radius:7px;font-family:var(--mo);font-size:11px;cursor:pointer;transition:all .15s}
-.btn-no{background:transparent;border:1px solid var(--b2);color:var(--mu)}
-.btn-yes{background:rgba(255,216,74,.15);border:1px solid rgba(255,216,74,.3);color:var(--yw)}
-.btn-yes:hover{background:rgba(255,216,74,.25)}
-.cf-ov{display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:200;align-items:center;justify-content:center;padding:24px}
-.cf-ov.open{display:flex}
-.cf-inner{background:var(--su);border:1px solid var(--b2);border-radius:16px;width:100%;max-width:400px;padding:24px;animation:fadeUp .25s ease both}
-.cf-ttl{font-size:17px;font-weight:700;margin-bottom:18px}
-.cf-amts{background:var(--s2);border:1px solid var(--bd);border-radius:12px;padding:16px;margin-bottom:14px}
-.cf-lbl{font-family:var(--mo);font-size:11px;color:var(--mu);margin-bottom:3px}
-.cf-amt{font-size:26px;font-weight:800}.cf-arr{text-align:center;color:var(--mu);font-size:18px;margin:8px 0}
-.cf-dets{margin-bottom:16px}
-.cf-line{display:flex;justify-content:space-between;padding:5px 0;font-family:var(--mo);font-size:11px;border-bottom:1px solid var(--bd)}
-.cf-line:last-child{border-bottom:none}.cf-k{color:var(--mu)}.cf-v{color:var(--t2)}
-.cf-btns{display:flex;gap:10px}
-.btn-cf-no{flex:1;padding:13px;background:transparent;border:1px solid var(--b2);border-radius:10px;color:var(--mu);font-family:var(--sa);font-size:14px;font-weight:700;cursor:pointer;transition:all .2s}
-.btn-cf-no:hover{border-color:var(--rd);color:var(--rd)}
-.btn-cf-go{flex:2;padding:13px;background:linear-gradient(135deg,var(--ac),var(--ac2));border:none;border-radius:10px;color:#fff;font-family:var(--sa);font-size:14px;font-weight:800;cursor:pointer;transition:all .2s}
-.btn-cf-go:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(255,77,0,.35)}
+/* ============================================================
+   RICSWAP DEX v2 -- OBSIDIAN FORGE DESIGN SYSTEM
+   ============================================================ */
+:root {
+  --void:   #030407;
+  --deep:   #05060e;
+  --well:   #08091a;
+  --pit:    #0c0e20;
+  --card:   #0f1126;
+  --lift:   #131530;
+  --rim:    rgba(255,255,255,0.05);
+  --rim2:   rgba(255,77,0,0.3);
+  --rim3:   rgba(232,184,75,0.2);
+
+  --magma:  #ff4d00;
+  --ember:  #ff8c00;
+  --gold:   #e8b84b;
+  --green:  #00ffb2;
+  --red:    #ff3366;
+  --blue:   #4d9fff;
+  --purple: #9b59ff;
+
+  --ash:    #3a3d55;
+  --smoke:  #6a6d88;
+  --fog:    #a8aac4;
+  --mist:   #c8cae0;
+  --white:  #eef0f8;
+
+  --mono:    'JetBrains Mono', monospace;
+  --display: 'Bebas Neue', sans-serif;
+  --body:    'DM Sans', sans-serif;
+
+  --r-sm:   8px;
+  --r-md:   12px;
+  --r-lg:   16px;
+  --r-xl:   20px;
+
+  --chart-h: 280px;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+
+body {
+  background: var(--void);
+  color: var(--fog);
+  font-family: var(--body);
+  font-size: 15px;
+  line-height: 1.6;
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+a { color: inherit; text-decoration: none; }
+button { font-family: var(--body); cursor: pointer; border: none; outline: none; }
+input { font-family: var(--body); outline: none; border: none; }
+
+/* Grid overlay background */
+body::before {
+  content: '';
+  position: fixed; inset: 0;
+  background-image:
+    linear-gradient(rgba(255,77,0,.018) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,77,0,.018) 1px, transparent 1px);
+  background-size: 48px 48px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Noise texture */
+body::after {
+  content: '';
+  position: fixed; inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  opacity: 0.015;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ============================================================
+   TICKER BAR
+   ============================================================ */
+.ticker-wrap {
+  position: sticky; top: 0;
+  background: rgba(3,4,7,0.95);
+  backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--rim);
+  overflow: hidden;
+  height: 32px;
+  z-index: 200;
+}
+
+.ticker-track {
+  display: flex;
+  align-items: center;
+  height: 100%;
+  animation: ticker 40s linear infinite;
+  white-space: nowrap;
+  width: max-content;
+}
+
+@keyframes ticker {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+.ticker-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 28px;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.5px;
+  border-right: 1px solid var(--rim);
+}
+
+.ticker-sym  { color: var(--mist); font-weight: 500; }
+.ticker-price { color: var(--white); }
+.ticker-up   { color: var(--green); }
+.ticker-down { color: var(--red); }
+.ticker-dot  { width: 4px; height: 4px; border-radius: 50%; background: var(--ash); }
+
+/* ============================================================
+   HEADER
+   ============================================================ */
+.header {
+  position: sticky; top: 32px;
+  z-index: 100;
+  background: rgba(3,4,7,0.9);
+  backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--rim);
+  padding: 0 24px;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.logo {
+  font-family: var(--display);
+  font-size: 26px;
+  letter-spacing: 2px;
+  background: linear-gradient(135deg, var(--gold), var(--magma));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  flex-shrink: 0;
+}
+
+.header-nav {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.nav-link {
+  padding: 6px 14px;
+  border-radius: var(--r-sm);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--smoke);
+  cursor: pointer;
+  transition: all .2s;
+  white-space: nowrap;
+}
+
+.nav-link:hover { color: var(--fog); background: var(--rim); }
+.nav-link.active { color: var(--magma); background: rgba(255,77,0,.08); }
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.net-pill {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border-radius: 20px;
+  background: rgba(0,255,178,.06);
+  border: 1px solid rgba(0,255,178,.15);
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--green);
+  letter-spacing: 0.5px;
+}
+
+.pulse { width: 5px; height: 5px; border-radius: 50%; background: var(--green); animation: pulse 2s infinite; }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.3} }
+
+.lang-pill {
+  padding: 5px 10px;
+  border-radius: var(--r-sm);
+  background: var(--well);
+  border: 1px solid var(--rim);
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--smoke);
+  cursor: pointer;
+  transition: all .2s;
+  position: relative;
+}
+
+.lang-pill:hover { border-color: var(--rim2); color: var(--white); }
+
+.lang-dropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  background: var(--card);
+  border: 1px solid var(--rim);
+  border-radius: var(--r-md);
+  overflow: hidden;
+  min-width: 140px;
+  z-index: 300;
+  display: none;
+  box-shadow: 0 16px 40px rgba(0,0,0,.6);
+}
+
+.lang-dropdown.open { display: block; }
+
+.lang-opt {
+  padding: 10px 16px;
+  font-size: 13px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: background .15s;
+  color: var(--fog);
+}
+
+.lang-opt:hover { background: rgba(255,255,255,.04); }
+.lang-opt.active { color: var(--magma); }
+
+.connect-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border-radius: var(--r-md);
+  background: linear-gradient(135deg, var(--magma), var(--ember));
+  color: white;
+  font-size: 13px;
+  font-weight: 500;
+  transition: all .2s;
+  white-space: nowrap;
+}
+
+.connect-btn:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(255,77,0,.4); }
+.connect-btn.connected {
+  background: transparent;
+  border: 1px solid rgba(0,255,178,.3);
+  color: var(--green);
+}
+.connect-btn.connected:hover { background: rgba(0,255,178,.05); transform: none; box-shadow: none; }
+
+/* ============================================================
+   MAIN LAYOUT
+   ============================================================ */
+.main {
+  position: relative;
+  z-index: 1;
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 24px 24px 80px;
+  display: grid;
+  grid-template-columns: 1fr 440px;
+  gap: 20px;
+  align-items: start;
+}
+
+/* ============================================================
+   CHART PANEL
+   ============================================================ */
+.chart-panel {
+  background: var(--card);
+  border: 1px solid var(--rim);
+  border-radius: var(--r-xl);
+  overflow: hidden;
+  position: relative;
+}
+
+.chart-panel::before {
+  content: '';
+  position: absolute;
+  top: -1px; left: 10%; right: 10%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(232,184,75,.4), transparent);
+}
+
+.chart-header {
+  padding: 20px 20px 12px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.chart-token-info { display: flex; align-items: center; gap: 12px; }
+
+.chart-token-avatar {
+  width: 44px; height: 44px;
+  border-radius: 50%;
+  background: rgba(255,77,0,.15);
+  border: 2px solid rgba(255,77,0,.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--mono);
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--magma);
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.chart-token-avatar img {
+  width: 100%; height: 100%;
+  object-fit: cover;
+}
+
+.chart-price {
+  font-family: var(--display);
+  font-size: 36px;
+  letter-spacing: 1px;
+  color: var(--white);
+  line-height: 1;
+}
+
+.chart-change {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-family: var(--mono);
+  font-size: 12px;
+  padding: 3px 8px;
+  border-radius: 20px;
+  margin-top: 4px;
+}
+
+.chart-change.up   { background: rgba(0,255,178,.1); color: var(--green); }
+.chart-change.down { background: rgba(255,51,102,.1); color: var(--red); }
+
+.chart-meta {
+  display: flex;
+  gap: 20px;
+  margin-top: 6px;
+  flex-wrap: wrap;
+}
+
+.chart-meta-item {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--ash);
+  letter-spacing: 0.5px;
+}
+
+.chart-meta-item span { color: var(--fog); }
+
+.chart-timeframes {
+  display: flex;
+  gap: 4px;
+}
+
+.tf-btn {
+  padding: 5px 10px;
+  border-radius: var(--r-sm);
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 1px;
+  background: transparent;
+  border: 1px solid var(--rim);
+  color: var(--ash);
+  cursor: pointer;
+  transition: all .15s;
+}
+
+.tf-btn:hover { border-color: var(--rim2); color: var(--fog); }
+.tf-btn.active { background: rgba(255,77,0,.12); border-color: rgba(255,77,0,.3); color: var(--magma); }
+
+.chart-container {
+  height: var(--chart-h);
+  position: relative;
+}
+
+#priceChart { width: 100%; height: 100%; }
+
+.chart-loading {
+  position: absolute; inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--card);
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--ash);
+  gap: 8px;
+}
+
+.chart-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  border-top: 1px solid var(--rim);
+}
+
+.stat-cell {
+  padding: 14px 16px;
+  border-right: 1px solid var(--rim);
+}
+
+.stat-cell:last-child { border-right: none; }
+
+.stat-label {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--ash);
+  margin-bottom: 4px;
+}
+
+.stat-value {
+  font-family: var(--mono);
+  font-size: 13px;
+  color: var(--white);
+  font-weight: 500;
+}
+
+.stat-value.green { color: var(--green); }
+.stat-value.red   { color: var(--red); }
+
+/* Pair selector tabs */
+.pair-tabs {
+  display: flex;
+  gap: 6px;
+  padding: 16px 20px 0;
+}
+
+.pair-tab {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  border-radius: var(--r-sm);
+  border: 1px solid var(--rim);
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--ash);
+  cursor: pointer;
+  transition: all .15s;
+  background: transparent;
+}
+
+.pair-tab:hover { border-color: var(--rim2); color: var(--fog); }
+.pair-tab.active { background: rgba(255,77,0,.08); border-color: rgba(255,77,0,.25); color: var(--magma); }
+
+/* Recent transactions panel */
+.txs-panel {
+  margin-top: 20px;
+  background: var(--card);
+  border: 1px solid var(--rim);
+  border-radius: var(--r-xl);
+  overflow: hidden;
+}
+
+.txs-header {
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--rim);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.txs-title {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--ash);
+}
+
+.txs-list { padding: 8px; }
+
+.tx-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: var(--r-sm);
+  transition: background .15s;
+  cursor: pointer;
+}
+
+.tx-item:hover { background: rgba(255,255,255,.02); }
+
+.tx-icon {
+  width: 32px; height: 32px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  font-size: 13px;
+}
+
+.tx-icon.swap { background: rgba(255,77,0,.1); }
+.tx-icon.wrap { background: rgba(77,159,255,.1); }
+
+.tx-info { flex: 1; }
+.tx-pair { font-size: 13px; font-weight: 500; color: var(--mist); }
+.tx-time { font-family: var(--mono); font-size: 10px; color: var(--ash); }
+.tx-amount { font-family: var(--mono); font-size: 11px; color: var(--fog); text-align: right; }
+.tx-hash { font-family: var(--mono); font-size: 10px; color: var(--ash); text-align: right; }
+
+.txs-empty {
+  padding: 24px;
+  text-align: center;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--ash);
+}
+
+/* ============================================================
+   SWAP PANEL
+   ============================================================ */
+.swap-panel {
+  background: var(--card);
+  border: 1px solid var(--rim);
+  border-radius: var(--r-xl);
+  overflow: hidden;
+  position: sticky;
+  top: 116px;
+}
+
+.swap-panel::before {
+  content: '';
+  position: absolute;
+  top: -1px; left: 15%; right: 15%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255,77,0,.5), transparent);
+}
+
+.swap-tabs {
+  display: flex;
+  border-bottom: 1px solid var(--rim);
+}
+
+.swap-tab {
+  flex: 1;
+  padding: 14px;
+  text-align: center;
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--ash);
+  cursor: pointer;
+  transition: all .2s;
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+}
+
+.swap-tab.active { color: var(--magma); border-bottom-color: var(--magma); }
+.swap-tab:hover:not(.active) { color: var(--fog); }
+
+.swap-body { padding: 16px; }
+
+/* Gasless toggle */
+.gasless-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  border-radius: var(--r-md);
+  background: rgba(255,77,0,.05);
+  border: 1px solid rgba(255,77,0,.15);
+  margin-bottom: 12px;
+  cursor: pointer;
+  transition: all .2s;
+}
+
+.gasless-toggle:hover { background: rgba(255,77,0,.08); }
+
+.gasless-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--magma);
+}
+
+.gasless-desc {
+  font-size: 10px;
+  color: var(--ash);
+  margin-top: 1px;
+}
+
+/* Toggle switch */
+.toggle-sw {
+  position: relative;
+  width: 40px; height: 22px;
+  flex-shrink: 0;
+}
+
+.toggle-sw input { opacity: 0; width: 0; height: 0; }
+
+.toggle-track {
+  position: absolute; inset: 0;
+  background: var(--ash);
+  border-radius: 11px;
+  transition: .2s;
+  cursor: pointer;
+}
+
+.toggle-sw input:checked + .toggle-track { background: var(--magma); }
+
+.toggle-thumb {
+  position: absolute;
+  top: 3px; left: 3px;
+  width: 16px; height: 16px;
+  background: white;
+  border-radius: 50%;
+  transition: .2s;
+  pointer-events: none;
+}
+
+.toggle-sw input:checked ~ .toggle-thumb { transform: translateX(18px); }
+
+/* Token boxes */
+.token-box {
+  background: var(--pit);
+  border: 1px solid var(--rim);
+  border-radius: var(--r-lg);
+  padding: 14px 16px;
+  transition: border-color .2s;
+  position: relative;
+}
+
+.token-box:focus-within { border-color: rgba(255,77,0,.3); }
+
+.box-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.box-label {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--ash);
+}
+
+.bal-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--smoke);
+}
+
+.bal-val { cursor: pointer; transition: color .15s; }
+.bal-val:hover { color: var(--white); }
+
+.max-btn {
+  font-size: 9px;
+  padding: 2px 7px;
+  border-radius: 4px;
+  background: rgba(255,77,0,.1);
+  border: 1px solid rgba(255,77,0,.2);
+  color: var(--magma);
+  cursor: pointer;
+  transition: all .15s;
+  font-family: var(--mono);
+}
+
+.max-btn:hover { background: rgba(255,77,0,.2); }
+
+.box-main { display: flex; align-items: center; gap: 10px; }
+
+.amt-input {
+  flex: 1;
+  background: transparent;
+  color: var(--white);
+  font-family: var(--display);
+  font-size: 30px;
+  letter-spacing: 1px;
+  min-width: 0;
+  width: 100%;
+}
+
+.amt-input::placeholder { color: var(--ash); }
+.amt-input::-webkit-inner-spin-button,
+.amt-input::-webkit-outer-spin-button { -webkit-appearance: none; }
+
+.usd-val {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--ash);
+  margin-top: 4px;
+}
+
+.token-sel {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  flex-shrink: 0;
+  background: var(--lift);
+  border: 1px solid var(--rim);
+  border-radius: var(--r-md);
+  padding: 8px 12px;
+  cursor: pointer;
+  transition: all .15s;
+  min-width: 110px;
+}
+
+.token-sel:hover { border-color: var(--rim2); background: rgba(255,77,0,.05); }
+
+.token-avatar {
+  width: 24px; height: 24px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--mono);
+  font-size: 9px;
+  font-weight: 700;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.token-avatar img { width: 100%; height: 100%; object-fit: cover; }
+
+.token-sym {
+  font-family: var(--mono);
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--white);
+}
+
+/* Flip button */
+.flip-wrap { display: flex; justify-content: center; margin: 6px 0; position: relative; z-index: 2; }
+
+.flip-btn {
+  width: 36px; height: 36px;
+  background: var(--pit);
+  border: 1px solid var(--rim);
+  border-radius: var(--r-md);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  color: var(--ash);
+  transition: all .25s;
+}
+
+.flip-btn:hover { border-color: var(--magma); color: var(--magma); transform: rotate(180deg); }
+.flip-btn svg { width: 15px; height: 15px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
+/* Price info panel */
+.price-info {
+  background: var(--pit);
+  border: 1px solid var(--rim);
+  border-radius: var(--r-md);
+  padding: 10px 14px;
+  margin: 10px 0;
+  display: none;
+}
+
+.price-info.show { display: block; }
+
+.info-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 4px 0;
+  font-family: var(--mono);
+  font-size: 11px;
+}
+
+.info-row:not(:last-child) { border-bottom: 1px solid var(--rim); }
+.info-key { color: var(--ash); }
+.info-val { color: var(--fog); }
+.info-val.green  { color: var(--green); }
+.info-val.yellow { color: #ffd84a; }
+.info-val.red    { color: var(--red); }
+
+/* Swap button */
+.swap-btn {
+  width: 100%;
+  padding: 16px;
+  border-radius: var(--r-lg);
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  background: linear-gradient(135deg, var(--magma), var(--ember));
+  color: white;
+  transition: all .2s;
+  margin-top: 10px;
+  position: relative;
+  overflow: hidden;
+}
+
+.swap-btn::before {
+  content: '';
+  position: absolute; inset: 0;
+  background: linear-gradient(135deg, rgba(255,255,255,.1), transparent);
+  opacity: 0;
+  transition: opacity .2s;
+}
+
+.swap-btn:hover:not(:disabled)::before { opacity: 1; }
+.swap-btn:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 10px 28px rgba(255,77,0,.4); }
+.swap-btn:disabled { background: var(--well); color: var(--ash); transform: none; box-shadow: none; cursor: not-allowed; }
+
+/* Status box */
+.status-box {
+  margin-top: 10px;
+  padding: 10px 14px;
+  background: var(--pit);
+  border: 1px solid var(--rim);
+  border-radius: var(--r-md);
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--smoke);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 38px;
+  transition: all .2s;
+}
+
+.status-box.success { border-color: rgba(0,255,178,.3); color: var(--green); }
+.status-box.error   { border-color: rgba(255,51,102,.3); color: var(--red); }
+.status-box.loading { border-color: rgba(255,77,0,.3);   color: var(--magma); }
+.status-box.warning { border-color: rgba(255,216,74,.3); color: #ffd84a; }
+.status-box a { color: inherit; text-decoration: underline; }
+
+/* Settings panel */
+.settings-panel {
+  background: var(--pit);
+  border: 1px solid var(--rim);
+  border-radius: var(--r-md);
+  padding: 14px;
+  margin-bottom: 10px;
+  display: none;
+}
+
+.settings-panel.open { display: block; }
+
+.settings-title {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--ash);
+  margin-bottom: 12px;
+}
+
+.settings-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 5px 0;
+}
+
+.settings-label {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--smoke);
+}
+
+.slip-btns { display: flex; gap: 4px; }
+
+.slip-btn {
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-family: var(--mono);
+  font-size: 10px;
+  background: transparent;
+  border: 1px solid var(--rim);
+  color: var(--ash);
+  cursor: pointer;
+  transition: all .15s;
+}
+
+.slip-btn:hover { border-color: var(--rim2); color: var(--fog); }
+.slip-btn.active { background: rgba(255,77,0,.12); border-color: rgba(255,77,0,.3); color: var(--magma); }
+
+.settings-input {
+  width: 60px;
+  background: var(--well);
+  border: 1px solid var(--rim);
+  border-radius: 6px;
+  color: var(--white);
+  padding: 4px 8px;
+  font-family: var(--mono);
+  font-size: 12px;
+  text-align: right;
+}
+
+.settings-input:focus { border-color: var(--rim2); }
+
+.settings-btn {
+  width: 32px; height: 32px;
+  background: transparent;
+  border: 1px solid var(--rim);
+  border-radius: var(--r-sm);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  color: var(--ash);
+  transition: all .2s;
+}
+
+.settings-btn:hover { border-color: var(--rim2); color: var(--magma); }
+.settings-btn svg { width: 14px; height: 14px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
+/* Token modal */
+.modal-overlay {
+  position: fixed; inset: 0;
+  background: rgba(3,4,7,.85);
+  backdrop-filter: blur(12px);
+  z-index: 400;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .2s;
+}
+
+.modal-overlay.open { opacity: 1; pointer-events: all; }
+
+.modal {
+  background: var(--card);
+  border: 1px solid var(--rim);
+  border-radius: var(--r-xl);
+  width: 100%;
+  max-width: 440px;
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  transform: translateY(20px);
+  transition: transform .2s;
+  overflow: hidden;
+}
+
+.modal-overlay.open .modal { transform: translateY(0); }
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 20px;
+  border-bottom: 1px solid var(--rim);
+}
+
+.modal-title { font-weight: 600; font-size: 15px; color: var(--white); }
+
+.modal-close {
+  width: 28px; height: 28px;
+  background: transparent;
+  border: none;
+  color: var(--ash);
+  font-size: 18px;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: var(--r-sm);
+  transition: all .15s;
+}
+
+.modal-close:hover { background: var(--rim); color: var(--white); }
+
+.modal-search {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--rim);
+}
+
+.modal-search input {
+  width: 100%;
+  background: var(--pit);
+  border: 1px solid var(--rim);
+  border-radius: var(--r-md);
+  color: var(--white);
+  padding: 10px 14px;
+  font-family: var(--mono);
+  font-size: 12px;
+  transition: border-color .2s;
+}
+
+.modal-search input::placeholder { color: var(--ash); }
+.modal-search input:focus { border-color: rgba(255,77,0,.3); }
+
+.modal-list { overflow-y: auto; flex: 1; padding: 8px; }
+.modal-list::-webkit-scrollbar { width: 0; }
+
+.token-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: var(--r-md);
+  cursor: pointer;
+  transition: background .15s;
+}
+
+.token-row:hover { background: var(--pit); }
+.token-row-info { flex: 1; }
+.token-row-sym { font-weight: 600; font-size: 14px; color: var(--white); }
+.token-row-name { font-family: var(--mono); font-size: 11px; color: var(--ash); }
+.token-row-bal { font-family: var(--mono); font-size: 11px; color: var(--smoke); text-align: right; }
+
+.imp-tag {
+  font-family: var(--mono);
+  font-size: 9px;
+  color: #ffd84a;
+  background: rgba(255,216,74,.1);
+  border: 1px solid rgba(255,216,74,.2);
+  border-radius: 3px;
+  padding: 1px 5px;
+  margin-left: 6px;
+}
+
+/* Confirm modal */
+.cf-modal {
+  background: var(--card);
+  border: 1px solid var(--rim);
+  border-radius: var(--r-xl);
+  width: 100%;
+  max-width: 400px;
+  padding: 24px;
+  transform: translateY(20px);
+  transition: transform .2s;
+}
+
+.modal-overlay.open .cf-modal { transform: translateY(0); }
+
+.cf-title { font-size: 17px; font-weight: 600; color: var(--white); margin-bottom: 18px; }
+
+.cf-amounts {
+  background: var(--pit);
+  border: 1px solid var(--rim);
+  border-radius: var(--r-lg);
+  padding: 16px;
+  margin-bottom: 14px;
+}
+
+.cf-lbl { font-family: var(--mono); font-size: 10px; color: var(--ash); margin-bottom: 3px; letter-spacing: 1px; text-transform: uppercase; }
+.cf-amt { font-family: var(--display); font-size: 28px; color: var(--white); }
+.cf-arrow { text-align: center; color: var(--ash); font-size: 18px; margin: 8px 0; }
+
+.cf-details { margin-bottom: 18px; }
+.cf-line {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 0;
+  font-family: var(--mono);
+  font-size: 11px;
+  border-bottom: 1px solid var(--rim);
+}
+.cf-line:last-child { border-bottom: none; }
+.cf-k { color: var(--ash); }
+.cf-v { color: var(--fog); }
+
+.cf-btns { display: flex; gap: 10px; }
+.btn-cancel {
+  flex: 1; padding: 13px;
+  background: transparent;
+  border: 1px solid var(--rim);
+  border-radius: var(--r-md);
+  color: var(--ash);
+  font-size: 14px; font-weight: 600;
+  cursor: pointer; transition: all .2s;
+}
+.btn-cancel:hover { border-color: var(--red); color: var(--red); }
+
+.btn-confirm {
+  flex: 2; padding: 13px;
+  background: linear-gradient(135deg, var(--magma), var(--ember));
+  border: none;
+  border-radius: var(--r-md);
+  color: white;
+  font-size: 14px; font-weight: 700;
+  cursor: pointer; transition: all .2s;
+}
+.btn-confirm:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(255,77,0,.4); }
+
+/* Unknown token warning */
+.imp-warn {
+  display: none;
+  background: rgba(255,216,74,.04);
+  border: 1px solid rgba(255,216,74,.2);
+  border-radius: var(--r-md);
+  padding: 12px 14px;
+  margin: 8px 16px;
+  font-family: var(--mono);
+  font-size: 11px;
+}
+.imp-warn.show { display: block; }
+.imp-warn-title { color: #ffd84a; font-weight: 700; margin-bottom: 4px; }
+.imp-warn p { color: var(--smoke); line-height: 1.5; }
+.imp-warn-btns { display: flex; gap: 8px; margin-top: 10px; }
+.imp-warn-btns button {
+  flex: 1; padding: 7px;
+  border-radius: 7px;
+  font-family: var(--mono); font-size: 11px;
+  cursor: pointer; transition: all .15s;
+}
+.btn-imp-no { background: transparent; border: 1px solid var(--rim); color: var(--ash); }
+.btn-imp-yes { background: rgba(255,216,74,.1); border: 1px solid rgba(255,216,74,.25); color: #ffd84a; }
+.btn-imp-yes:hover { background: rgba(255,216,74,.2); }
+
+/* Spinner */
+.spinner {
+  width: 14px; height: 14px;
+  border: 2px solid rgba(255,77,0,.2);
+  border-top-color: var(--magma);
+  border-radius: 50%;
+  animation: spin .7s linear infinite;
+  flex-shrink: 0;
+  display: inline-block;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Refresh countdown */
+.refresh-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 0 8px;
+  display: none;
+}
+.refresh-row.show { display: flex; }
+.refresh-label { font-family: var(--mono); font-size: 10px; color: var(--ash); }
+.refresh-track { flex: 1; height: 2px; background: var(--rim); border-radius: 1px; overflow: hidden; }
+.refresh-bar { height: 100%; background: var(--magma); border-radius: 1px; transition: width 1s linear; }
+.refresh-count { font-family: var(--mono); font-size: 10px; color: var(--ash); min-width: 24px; text-align: right; }
+
+/* Animations */
+.fade-in { animation: fadeIn .3s ease both; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+
+/* Responsive */
+@media (max-width: 900px) {
+  .main { grid-template-columns: 1fr; }
+  .swap-panel { position: static; }
+  .chart-stats { grid-template-columns: repeat(2, 1fr); }
+  .stat-cell:nth-child(2) { border-right: none; }
+  .header-nav { display: none; }
+}
+
+@media (max-width: 480px) {
+  .header { padding: 0 14px; }
+  .main { padding: 14px 14px 60px; }
+  .swap-body { padding: 12px; }
+  .chart-stats { grid-template-columns: 1fr 1fr; }
+  .net-pill { display: none; }
+  .logo { font-size: 20px; }
+}
 </style>
 </head>
 <body>
 
-<div class="mo-ov" id="tokenModal">
-  <div class="modal">
-    <div class="mo-hdr"><span class="mo-ttl">Select Token</span><button class="mo-cls" onclick="closeTkMo()">✕</button></div>
-    <div class="mo-srch"><input id="tkSearch" placeholder="Search or paste address..." oninput="filterTk()"></div>
-    <div class="imp-warn" id="impWarn">
-      <div class="imp-wttl">⚠ Unknown Token</div>
-      <p>This token is not in the RicSwap list. Anyone can create a token with any name. Trade at your own risk.</p>
-      <div class="imp-wbtns">
-        <button class="btn-no" onclick="cancelImp()">Cancel</button>
-        <button class="btn-yes" onclick="confirmImp()">Import Anyway</button>
+<!-- ============================================================
+     PRICE TICKER
+     ============================================================ -->
+<div class="ticker-wrap">
+  <div class="ticker-track" id="tickerTrack">
+    <!-- Filled by JS x2 for seamless loop -->
+  </div>
+</div>
+
+<!-- ============================================================
+     HEADER
+     ============================================================ -->
+<div class="header">
+  <a href="index.html" class="logo">RicSwap</a>
+
+  <nav class="header-nav">
+    <a href="dashboard.html" class="nav-link" id="nav-dashboard">Dashboard</a>
+    <a href="swap.html"      class="nav-link active" id="nav-swap">Swap</a>
+    <a href="liquidity.html" class="nav-link" id="nav-liquidity">Liquidity</a>
+    <a href="pools.html"     class="nav-link" id="nav-pools">Pools</a>
+    <a href="reward.html"    class="nav-link" id="nav-rewards">Rewards</a>
+  </nav>
+
+  <div class="header-right">
+    <div class="net-pill">
+      <div class="pulse"></div>
+      <span id="net-label">Shibarium</span>
+    </div>
+
+    <div style="position:relative">
+      <button class="lang-pill" id="langBtn" onclick="toggleLang()">EN</button>
+      <div class="lang-dropdown" id="langMenu">
+        <div class="lang-opt" data-lang="en" onclick="setLang('en')">&#127468;&#127463; English</div>
+        <div class="lang-opt" data-lang="kh" onclick="setLang('kh')">&#127472;&#127469; Khmer</div>
+        <div class="lang-opt" data-lang="vi" onclick="setLang('vi')">&#127483;&#127475; Tieng Viet</div>
+        <div class="lang-opt" data-lang="zh" onclick="setLang('zh')">&#127464;&#127475; Zhongwen</div>
       </div>
     </div>
-    <div class="mo-list" id="tkList"></div>
+
+    <button class="settings-btn" onclick="toggleSettings()" title="Settings">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+    </button>
+
+    <button class="connect-btn" id="connectBtn" onclick="connectWallet()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 3H8a2 2 0 00-2 2v2h12V5a2 2 0 00-2-2z"/></svg>
+      <span id="connectLabel">Connect Wallet</span>
+    </button>
   </div>
 </div>
 
-<div class="cf-ov" id="cfModal">
-  <div class="cf-inner">
-    <div class="cf-ttl">Confirm Swap</div>
-    <div class="cf-amts">
-      <div class="cf-lbl">You pay</div>
-      <div class="cf-amt" id="cfAmtIn">—</div>
-      <div class="cf-arr">↓</div>
-      <div class="cf-lbl">You receive (minimum)</div>
-      <div class="cf-amt" id="cfAmtOut" style="color:var(--gr)">—</div>
-    </div>
-    <div class="cf-dets">
-      <div class="cf-line"><span class="cf-k">Price impact</span><span class="cf-v" id="cfImpact">—</span></div>
-      <div class="cf-line"><span class="cf-k">Min received</span><span class="cf-v" id="cfMin">—</span></div>
-      <div class="cf-line"><span class="cf-k">Route</span><span class="cf-v" id="cfRoute">—</span></div>
-      <div class="cf-line"><span class="cf-k">Slippage</span><span class="cf-v" id="cfSlip">—</span></div>
-      <div class="cf-line"><span class="cf-k">Est. gas</span><span class="cf-v" id="cfGas">—</span></div>
-    </div>
-    <div class="cf-btns">
-      <button class="btn-cf-no" onclick="closeCf()">Cancel</button>
-      <button class="btn-cf-go" onclick="execSwap()">Confirm Swap</button>
-    </div>
-  </div>
-</div>
+<!-- ============================================================
+     MAIN CONTENT
+     ============================================================ -->
+<div class="main">
 
-<div class="card">
-  <div class="header">
-    <div class="logo"><a href="index.html">Ric<span>Swap</span></a></div>
-    <div class="hdr-r">
-      <div class="net-pill"><div class="dot"></div>Shibarium</div>
-      <button class="set-btn" onclick="toggleSet()" title="Settings">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+  <!-- LEFT: Chart + Recent Txs -->
+  <div>
+
+    <!-- Pair selector -->
+    <div class="pair-tabs" id="pairTabs">
+      <button class="pair-tab active" data-in="NATIVE" data-out="RIC" onclick="setPair(this)">
+        BONE / RIC
+      </button>
+      <button class="pair-tab" data-in="RIC" data-out="NATIVE" onclick="setPair(this)">
+        RIC / BONE
+      </button>
+      <button class="pair-tab" data-in="NATIVE" data-out="SHIB" onclick="setPair(this)">
+        BONE / SHIB
       </button>
     </div>
-  </div>
 
-  <button class="w-btn" id="wBtn" onclick="connWallet()">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 3H8a2 2 0 00-2 2v2h12V5a2 2 0 00-2-2z"/><circle cx="17" cy="14" r="1.5" fill="currentColor" stroke="none"/></svg>
-    <span id="wLbl">Connect Wallet</span>
-  </button>
+    <!-- Chart panel -->
+    <div class="chart-panel fade-in" style="margin-top:12px">
+      <div class="chart-header">
+        <div class="chart-token-info">
+          <div class="chart-token-avatar" id="chartAvatar">
+            <span>B</span>
+          </div>
+          <div>
+            <div style="font-family:var(--mono);font-size:11px;color:var(--ash);margin-bottom:2px" id="chartPairLabel">BONE / RIC</div>
+            <div class="chart-price" id="chartPrice">--</div>
+            <div style="display:flex;align-items:center;gap:8px;margin-top:4px">
+              <span class="chart-change up" id="chartChange">--</span>
+              <span style="font-family:var(--mono);font-size:10px;color:var(--ash)" id="chartChangeLabel">24h</span>
+            </div>
+          </div>
+        </div>
+        <div>
+          <div class="chart-timeframes" id="tfButtons">
+            <button class="tf-btn active" data-tf="1H"  onclick="setTF(this)">1H</button>
+            <button class="tf-btn"        data-tf="4H"  onclick="setTF(this)">4H</button>
+            <button class="tf-btn"        data-tf="1D"  onclick="setTF(this)">1D</button>
+            <button class="tf-btn"        data-tf="1W"  onclick="setTF(this)">1W</button>
+          </div>
+        </div>
+      </div>
 
-  <div class="set-panel" id="setPanel">
-    <div class="set-ttl">Transaction Settings</div>
-    <div class="set-row">
-      <label>Slippage</label>
-      <div class="sl-btns">
-        <button class="sl-btn" onclick="setSlip(.5)">0.5%</button>
-        <button class="sl-btn active" onclick="setSlip(1)">1%</button>
-        <button class="sl-btn" onclick="setSlip(3)">3%</button>
+      <div class="chart-container">
+        <div id="priceChart"></div>
+        <div class="chart-loading" id="chartLoading">
+          <div class="spinner"></div>
+          <span id="chartLoadingText">Loading chart...</span>
+        </div>
+      </div>
+
+      <div class="chart-stats">
+        <div class="stat-cell">
+          <div class="stat-label" id="lbl-vol24">24H VOLUME</div>
+          <div class="stat-value" id="stat-vol24">--</div>
+        </div>
+        <div class="stat-cell">
+          <div class="stat-label" id="lbl-liq">LIQUIDITY</div>
+          <div class="stat-value" id="stat-liq">--</div>
+        </div>
+        <div class="stat-cell">
+          <div class="stat-label" id="lbl-high">24H HIGH</div>
+          <div class="stat-value green" id="stat-high">--</div>
+        </div>
+        <div class="stat-cell">
+          <div class="stat-label" id="lbl-low">24H LOW</div>
+          <div class="stat-value red" id="stat-low">--</div>
+        </div>
       </div>
     </div>
-    <div class="set-row" style="margin-top:10px">
-      <label>Deadline</label>
-      <div class="dl-wrap"><input class="dl-inp" id="dlInp" type="number" value="5" min="1" max="30"><span class="dl-unit">min</span></div>
-    </div>
-    <div class="exp-row">
-      <span class="exp-lbl">Expert mode (skip confirmation)</span>
-      <label class="toggle"><input type="checkbox" id="expMode"><div class="tg-track"></div><div class="tg-thumb"></div></label>
-    </div>
-  </div>
 
-  <div class="mode-tabs">
-    <button class="m-tab active" onclick="setMode('exactIn')">Exact In</button>
-    <button class="m-tab" onclick="setMode('exactOut')">Exact Out</button>
-  </div>
-
-  <div class="tbox">
-    <div class="bx-top">
-      <span class="bx-lbl" id="lblIn">You Pay</span>
-      <div class="bal-row"><span>BAL</span><span class="bal-v" id="balIn" onclick="setMax()">—</span><span class="max-b" onclick="setMax()">MAX</span></div>
-    </div>
-    <div class="bx-main">
-      <input class="amt-inp" type="number" id="amtIn" placeholder="0.0" step="any" oninput="onAmt('in')">
-      <div class="tk-sel" onclick="openTkMo('in')">
-        <div class="tk-av" id="avIn" style="background:rgba(255,77,0,.2);color:var(--ac)"></div>
-        <span class="tk-sym" id="symIn">BONE</span>
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+    <!-- Recent transactions -->
+    <div class="txs-panel fade-in" style="margin-top:20px">
+      <div class="txs-header">
+        <div class="txs-title" id="lbl-recentTxs">Recent Transactions</div>
+        <button style="background:none;border:none;font-family:var(--mono);font-size:10px;color:var(--ash);cursor:pointer" onclick="clearTxHistory()" id="btn-clearTxs">Clear</button>
+      </div>
+      <div class="txs-list" id="txsList">
+        <div class="txs-empty" id="txsEmpty">No recent transactions</div>
       </div>
     </div>
-    <div class="usd-v" id="usdIn"></div>
+
   </div>
 
-  <div class="flip-w"><div class="flip-b" onclick="flipTk()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="7 16 3 12 7 8"/><polyline points="17 8 21 12 17 16"/><line x1="3" y1="12" x2="21" y2="12"/></svg></div></div>
+  <!-- RIGHT: Swap Panel -->
+  <div class="swap-panel fade-in">
 
-  <div class="tbox">
-    <div class="bx-top">
-      <span class="bx-lbl" id="lblOut">You Receive</span>
-      <div class="bal-row"><span>BAL</span><span class="bal-v" id="balOut">—</span></div>
+    <!-- Swap / Wrap tabs -->
+    <div class="swap-tabs">
+      <button class="swap-tab active" id="tab-swap" onclick="setSwapMode('swap')">Swap</button>
+      <button class="swap-tab" id="tab-wrap" onclick="setSwapMode('wrap')">Wrap / Unwrap</button>
     </div>
-    <div class="bx-main">
-      <input class="amt-inp" id="amtOut" placeholder="0.0" style="color:var(--gr)" oninput="onAmt('out')">
-      <div class="tk-sel" onclick="openTkMo('out')">
-        <div class="tk-av" id="avOut" style="background:rgba(255,77,0,.15);color:var(--ac2)"></div>
-        <span class="tk-sym" id="symOut">RIC</span>
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+
+    <div class="swap-body">
+
+      <!-- Settings panel (hidden by default) -->
+      <div class="settings-panel" id="settingsPanel">
+        <div class="settings-title" id="lbl-txSettings">Transaction Settings</div>
+        <div class="settings-row">
+          <span class="settings-label" id="lbl-slippage">Slippage</span>
+          <div class="slip-btns">
+            <button class="slip-btn" onclick="setSlippage(0.5)">0.5%</button>
+            <button class="slip-btn active" onclick="setSlippage(1)">1%</button>
+            <button class="slip-btn" onclick="setSlippage(3)">3%</button>
+          </div>
+        </div>
+        <div class="settings-row" style="margin-top:8px">
+          <span class="settings-label" id="lbl-deadline">Deadline</span>
+          <div style="display:flex;align-items:center;gap:6px">
+            <input class="settings-input" id="deadlineInput" type="number" value="5" min="1" max="30">
+            <span style="font-family:var(--mono);font-size:11px;color:var(--ash)" id="lbl-min">min</span>
+          </div>
+        </div>
+        <div class="settings-row" style="margin-top:8px">
+          <span class="settings-label" id="lbl-expertMode">Expert mode</span>
+          <label class="toggle-sw">
+            <input type="checkbox" id="expertMode">
+            <div class="toggle-track"></div>
+            <div class="toggle-thumb"></div>
+          </label>
+        </div>
+      </div>
+
+      <!-- Gasless toggle -->
+      <div class="gasless-toggle" onclick="toggleGasless()">
+        <div>
+          <div class="gasless-label">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+            <span id="lbl-gasless">Gasless Swap</span>
+          </div>
+          <div class="gasless-desc" id="lbl-gaslessDesc">Pay gas in RIC instead of BONE</div>
+        </div>
+        <label class="toggle-sw" onclick="event.stopPropagation()">
+          <input type="checkbox" id="gaslessToggle" onchange="onGaslessChange()">
+          <div class="toggle-track"></div>
+          <div class="toggle-thumb"></div>
+        </label>
+      </div>
+
+      <!-- Token In -->
+      <div class="token-box">
+        <div class="box-top">
+          <span class="box-label" id="lbl-youPay">You Pay</span>
+          <div class="bal-row">
+            <span id="lbl-bal">BAL</span>
+            <span class="bal-val" id="balIn" onclick="setMax()">--</span>
+            <button class="max-btn" onclick="setMax()" id="btn-max">MAX</button>
+          </div>
+        </div>
+        <div class="box-main">
+          <div>
+            <input class="amt-input" type="number" id="amtIn" placeholder="0.0" step="any" oninput="onAmountInput('in')">
+            <div class="usd-val" id="usdIn"></div>
+          </div>
+          <div class="token-sel" onclick="openTokenModal('in')">
+            <div class="token-avatar" id="avatarIn" style="background:rgba(255,77,0,.15);color:var(--magma)">B</div>
+            <span class="token-sym" id="symIn">BONE</span>
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+          </div>
+        </div>
+      </div>
+
+      <!-- Flip -->
+      <div class="flip-wrap">
+        <button class="flip-btn" onclick="flipTokens()">
+          <svg viewBox="0 0 24 24"><polyline points="7 16 3 12 7 8"/><polyline points="17 8 21 12 17 16"/><line x1="3" y1="12" x2="21" y2="12"/></svg>
+        </button>
+      </div>
+
+      <!-- Token Out -->
+      <div class="token-box">
+        <div class="box-top">
+          <span class="box-label" id="lbl-youReceive">You Receive</span>
+          <div class="bal-row">
+            <span id="lbl-bal2">BAL</span>
+            <span class="bal-val" id="balOut">--</span>
+          </div>
+        </div>
+        <div class="box-main">
+          <div>
+            <input class="amt-input" id="amtOut" placeholder="0.0" style="color:var(--green)" oninput="onAmountInput('out')">
+            <div class="usd-val" id="usdOut"></div>
+          </div>
+          <div class="token-sel" onclick="openTokenModal('out')">
+            <div class="token-avatar" id="avatarOut" style="background:rgba(255,77,0,.12);color:var(--ember)">R</div>
+            <span class="token-sym" id="symOut">RIC</span>
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+          </div>
+        </div>
+      </div>
+
+      <!-- Price info -->
+      <div class="price-info" id="priceInfo">
+        <div class="info-row">
+          <span class="info-key" id="lbl-rate">Rate</span>
+          <span class="info-val" id="infoRate">--</span>
+        </div>
+        <div class="info-row">
+          <span class="info-key" id="lbl-impact">Price Impact</span>
+          <span class="info-val" id="infoImpact">--</span>
+        </div>
+        <div class="info-row">
+          <span class="info-key" id="lbl-minReceived">Min Received</span>
+          <span class="info-val" id="infoMin">--</span>
+        </div>
+        <div class="info-row">
+          <span class="info-key" id="lbl-route">Route</span>
+          <span class="info-val" id="infoRoute">--</span>
+        </div>
+        <div class="info-row">
+          <span class="info-key" id="lbl-gas">Est. Gas</span>
+          <span class="info-val" id="infoGas">--</span>
+        </div>
+      </div>
+
+      <!-- Refresh bar -->
+      <div class="refresh-row" id="refreshRow">
+        <span class="refresh-label" id="lbl-refresh">Refresh</span>
+        <div class="refresh-track"><div class="refresh-bar" id="refreshBar" style="width:100%"></div></div>
+        <span class="refresh-count" id="refreshCount">15s</span>
+      </div>
+
+      <!-- Swap button -->
+      <button class="swap-btn" id="swapBtn" disabled>
+        <span id="swapBtnLabel">Connect Wallet</span>
+      </button>
+
+      <!-- Status -->
+      <div class="status-box" id="statusBox">
+        <span>&#9675;</span>
+        <span id="statusText">Connect wallet to begin</span>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+
+<!-- ============================================================
+     TOKEN MODAL
+     ============================================================ -->
+<div class="modal-overlay" id="tokenModal" onclick="onModalOverlayClick(event)">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title" id="lbl-selectToken">Select Token</span>
+      <button class="modal-close" onclick="closeTokenModal()">&#10005;</button>
+    </div>
+    <div class="modal-search">
+      <input id="tokenSearch" placeholder="Search name or paste address..." oninput="filterTokens()">
+    </div>
+    <div class="imp-warn" id="impWarn">
+      <div class="imp-warn-title">&#9888; Unknown Token</div>
+      <p id="impWarnText">This token is not in the RicSwap list. Anyone can create a token. Trade at your own risk.</p>
+      <div class="imp-warn-btns">
+        <button class="btn-imp-no" onclick="cancelImport()">Cancel</button>
+        <button class="btn-imp-yes" onclick="confirmImport()">Import Anyway</button>
       </div>
     </div>
-    <div class="usd-v" id="usdOut"></div>
-  </div>
-
-  <div class="info-p" id="infoP" style="display:none">
-    <div class="i-line"><span class="i-k">Rate</span><span class="i-v" id="iRate">—</span></div>
-    <div class="i-line"><span class="i-k">Price impact</span><span class="i-v" id="iImpact">—</span></div>
-    <div class="i-line"><span class="i-k">Min received</span><span class="i-v" id="iMin">—</span></div>
-    <div class="i-line"><span class="i-k">Route</span><span class="i-v" id="iRoute">—</span></div>
-    <div class="i-line"><span class="i-k">Est. gas</span><span class="i-v" id="iGas">—</span></div>
-  </div>
-
-  <div class="ref-row" id="refRow" style="display:none">
-    <span class="ref-lbl">Refresh</span>
-    <div class="ref-bw"><div class="ref-bar" id="refBar" style="width:100%"></div></div>
-    <span class="ref-cnt" id="refCnt">15s</span>
-  </div>
-
-  <button class="sw-btn" id="swBtn" disabled>Connect Wallet</button>
-
-  <div class="st-box" id="stBox"><span>○</span><span id="stTxt">Connect wallet to begin</span></div>
-
-  <div class="share-row"><button class="shr-btn" onclick="copyLink()">Copy share link ↗</button></div>
-
-  <div class="txs-w" id="txsW" style="display:none">
-    <div class="txs-lbl">Recent</div>
-    <div id="txsList"></div>
+    <div class="modal-list" id="tokenList"></div>
   </div>
 </div>
 
+<!-- ============================================================
+     CONFIRM MODAL
+     ============================================================ -->
+<div class="modal-overlay" id="confirmModal" onclick="if(event.target===this)closeConfirm()">
+  <div class="cf-modal">
+    <div class="cf-title" id="lbl-confirmSwap">Confirm Swap</div>
+    <div class="cf-amounts">
+      <div class="cf-lbl" id="lbl-youPay2">You Pay</div>
+      <div class="cf-amt" id="cfAmtIn">--</div>
+      <div class="cf-arrow">&#8595;</div>
+      <div class="cf-lbl" id="lbl-youReceiveMin">You Receive (minimum)</div>
+      <div class="cf-amt" id="cfAmtOut" style="color:var(--green)">--</div>
+    </div>
+    <div class="cf-details">
+      <div class="cf-line"><span class="cf-k" id="lbl-cfImpact">Price impact</span><span class="cf-v" id="cfImpact">--</span></div>
+      <div class="cf-line"><span class="cf-k" id="lbl-cfMin">Min received</span><span class="cf-v" id="cfMin">--</span></div>
+      <div class="cf-line"><span class="cf-k" id="lbl-cfRoute">Route</span><span class="cf-v" id="cfRoute">--</span></div>
+      <div class="cf-line"><span class="cf-k" id="lbl-cfSlip">Slippage</span><span class="cf-v" id="cfSlip">--</span></div>
+      <div class="cf-line"><span class="cf-k" id="lbl-cfGas">Est. gas</span><span class="cf-v" id="cfGas">--</span></div>
+    </div>
+    <div class="cf-btns">
+      <button class="btn-cancel" onclick="closeConfirm()" id="btn-cfCancel">Cancel</button>
+      <button class="btn-confirm" onclick="executeSwap()" id="btn-cfConfirm">Confirm Swap</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     JAVASCRIPT
+     ============================================================ -->
 <script>
-const CFG={ROUTER:"0x652875c0F607CB392C0F9E5FB957A7055c2deD2e",FACTORY:"0xD8fFEECfDE1698a70A26a094afBE917bA58E2F70",WBONE:"0xc76f4c819d820369fb2d7c1531ab3bb18e6fe8d8",RIC:"0x12C94d3A30daa09f81Ea6c037004E6e99A4A3dfc",CHAIN_ID:109n,EXP:"https://shibariumscan.io"};
-const TK_LIST=[
-  {symbol:"BONE",name:"Bone ShibaSwap",address:"NATIVE",decimals:18,color:"#ff4d00",official:true,isNative:true,isWBONE:false},
-  {symbol:"WBONE",name:"Wrapped BONE",address:CFG.WBONE,decimals:18,color:"#ff8800",official:true,isNative:false,isWBONE:true},
-  {symbol:"RIC",name:"RicSwap Token",address:CFG.RIC,decimals:18,color:"#ff4d00",official:true,isNative:false,isWBONE:false},
-  {symbol:"SHIB",name:"Shiba Inu",address:"0x495eea66b0f8b636d441dc6a98d8f5c3d455c4c0",decimals:18,color:"#ff6b6b",official:true,isNative:false,isWBONE:false},
-  {symbol:"LEASH",name:"Doge Killer",address:"0x53cd0b4b8d92e0c58d5aae2a95e5eeae9cd2c10d",decimals:18,color:"#9b59b6",official:true,isNative:false,isWBONE:false},
-  {symbol:"TREAT",name:"TREAT",address:"0x3f1ede1feb0fe88b7e30f74a73e3d36ccacd21b2",decimals:18,color:"#e67e22",official:true,isNative:false,isWBONE:false},
+//  Config 
+const CFG = {
+  ROUTER:    '0x652875c0F607CB392C0F9E5FB957A7055c2deD2e',
+  FACTORY:   '0xD8fFEECfDE1698a70A26a094afBE917bA58E2F70',
+  WBONE:     '0xc76f4c819d820369fb2d7c1531ab3bb18e6fe8d8',
+  RIC:       '0x12C94d3A30daa09f81Ea6c037004E6e99A4A3dfc',
+  FORWARDER: '0xFC07CB6a642d66A7a10eee53871C8F47F9787346',
+  RICGAS:    '0x6B908238AA7FcF2B0815E9CBfBDDBF97AE668285',
+  RELAYER:   'https://api.ricswap.com',
+  CHAIN_ID:  109n,
+  CHAIN_HEX: '0x6d',
+  EXPLORER:  'https://shibariumscan.io',
+  RPC:       'https://rpc.shibarium.shib.io',
+  LOGO_CDN:  'https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/shibarium/assets',
+  DEXSCREEN: 'https://api.dexscreener.com/latest/dex',
+  REOWN_ID:  '1c43100e3c61b6035a38f761f2ad1ad1',
+};
+
+//  Token list 
+const TOKEN_LIST = [
+  { symbol:'BONE',  name:'Bone ShibaSwap',  address:'NATIVE',                                        decimals:18, color:'#ff4d00', official:true,  isNative:true,  isWBONE:false },
+  { symbol:'WBONE', name:'Wrapped BONE',     address:CFG.WBONE,                                      decimals:18, color:'#ff8800', official:true,  isNative:false, isWBONE:true  },
+  { symbol:'RIC',   name:'RicSwap Token',    address:CFG.RIC,                                        decimals:18, color:'#ff4d00', official:true,  isNative:false, isWBONE:false },
+  { symbol:'SHIB',  name:'Shiba Inu',        address:'0x495eea66b0f8b636d441dc6a98d8f5c3d455c4c0',  decimals:18, color:'#ff6b6b', official:true,  isNative:false, isWBONE:false },
+  { symbol:'LEASH', name:'Doge Killer',      address:'0x53cd0b4b8d92e0c58d5aae2a95e5eeae9cd2c10d',  decimals:18, color:'#9b59b6', official:true,  isNative:false, isWBONE:false },
+  { symbol:'TREAT', name:'TREAT',            address:'0x3f1ede1feb0fe88b7e30f74a73e3d36ccacd21b2',  decimals:18, color:'#e67e22', official:true,  isNative:false, isWBONE:false },
 ];
-// ── Logo CDN + Price API ─────────────────────────────────
-const LOGO_CDN = "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/shibarium/assets";
-const DEXSCREENER = "https://api.dexscreener.com/latest/dex/tokens";
-const _priceCache = {};
 
-const E20=["function balanceOf(address) view returns (uint256)","function decimals() view returns (uint8)","function symbol() view returns (string)","function name() view returns (string)","function allowance(address,address) view returns (uint256)","function approve(address,uint256) returns (bool)"];
-const RABI=["function getAmountsOut(uint256,address[]) view returns (uint256[])","function getAmountsIn(uint256,address[]) view returns (uint256[])","function swapExactETHForTokens(uint256,address[],address,uint256) payable returns (uint256[])","function swapExactTokensForETH(uint256,uint256,address[],address,uint256) returns (uint256[])","function swapExactTokensForTokens(uint256,uint256,address[],address,uint256) returns (uint256[])","function swapETHForExactTokens(uint256,address[],address,uint256) payable returns (uint256[])","function swapTokensForExactETH(uint256,uint256,address[],address,uint256) returns (uint256[])","function swapTokensForExactTokens(uint256,uint256,address[],address,uint256) returns (uint256[])","function swapExactETHForTokensSupportingFeeOnTransferTokens(uint256,address[],address,uint256) payable","function swapExactTokensForETHSupportingFeeOnTransferTokens(uint256,uint256,address[],address,uint256)","function swapExactTokensForTokensSupportingFeeOnTransferTokens(uint256,uint256,address[],address,uint256)"];
-let prov,sign,uAddr,slipBps=100n,mode="exactIn",qTimer,refTimer,refSecs=15,lastQ=null,moSide="in",pendImp=null;
-const BONE_T={symbol:"BONE",name:"Bone ShibaSwap",address:"NATIVE",decimals:18,isNative:true,isWBONE:false,color:"#ff4d00",official:true};
-const WBONE_T={symbol:"WBONE",name:"Wrapped BONE",address:CFG.WBONE,decimals:18,isNative:false,isWBONE:true,color:"#ff8800",official:true};
-let tks={in:{...BONE_T},out:{symbol:"RIC",name:"RicSwap Token",address:CFG.RIC,decimals:18,isNative:false,isWBONE:false,color:"#ff4d00",official:true}};
+//  i18n 
+const I18N = {
+  en: {
+    connectWallet:'Connect Wallet', swap:'Swap', youPay:'You Pay', youReceive:'You Receive',
+    balance:'BAL', max:'MAX', rate:'Rate', impact:'Price Impact', minReceived:'Min Received',
+    route:'Route', gas:'Est. Gas', refresh:'Refresh', selectToken:'Select Token',
+    confirmSwap:'Confirm Swap', cancel:'Cancel', gasless:'Gasless Swap',
+    gaslessDesc:'Pay gas in RIC instead of BONE', txSettings:'Transaction Settings',
+    slippage:'Slippage', deadline:'Deadline', expertMode:'Expert mode', min:'min',
+    recentTxs:'Recent Transactions', clear:'Clear', noTxs:'No recent transactions',
+    volume24:'24H VOLUME', liquidity:'LIQUIDITY', high24:'24H HIGH', low24:'24H LOW',
+    swapMode:'Swap', wrapMode:'Wrap / Unwrap', loadingChart:'Loading chart...',
+    connectBegin:'Connect wallet to begin', gettingQuote:'Getting best price...',
+    confirmWallet:'Confirm in wallet...', swapping:'Swapping...',
+    swapSuccess:'Swapped successfully!', swapFailed:'Swap failed',
+    insufficientBalance:'Insufficient', approveToken:'Approve', enterAmount:'Enter an amount',
+    noLiquidity:'No liquidity', simulation:'Simulating...', approved:'Approved!',
+    approving:'Approving...', switchNetwork:'Switching to Shibarium...',
+  },
+  kh: {
+    connectWallet:'តភ្ជាប់កាបូប', swap:'ដូរ', youPay:'អ្នកបង់', youReceive:'អ្នកទទួល',
+    balance:'សមតុល្យ', max:'អតិបរមា', rate:'អត្រា', impact:'ផលប៉ះពាល់', minReceived:'ទទួលបានតិចបំផុត',
+    route:'ផ្លូវ', gas:'ថ្លៃ Gas', refresh:'ធ្វើថ្មី', selectToken:'ជ្រើស Token',
+    confirmSwap:'បញ្ជាក់ការដូរ', cancel:'លុបចោល', gasless:'ដូរដោយឥតគិតថ្លៃ Gas',
+    gaslessDesc:'បង់ Gas ជា RIC', recentTxs:'ប្រតិបត្តិការថ្មីៗ', noTxs:'មិនទាន់មានប្រតិបត្តិការ',
+    connectBegin:'តភ្ជាប់កាបូប ដើម្បីចាប់ផ្តើម', enterAmount:'បញ្ចូលចំនួន',
+    insufficientBalance:'មិនគ្រប់គ្រាន់', approveToken:'អនុម័ត', swapping:'កំពុងដូរ...',
+    swapSuccess:'ដូរបានជោគជ័យ!', slippage:'Slippage', deadline:'ពេលវេលា',
+    txSettings:'ការកំណត់', expertMode:'របៀបអ្នកជំនាញ', min:'នាទី', clear:'លុប',
+    volume24:'ទំហំ 24H', liquidity:'សភាពទ្រព្យ', high24:'ខ្ពស់ 24H', low24:'ទាប 24H',
+    swapMode:'ដូរ', wrapMode:'រំ / ដោះ', loadingChart:'ផ្ទុកតារាង...',
+    gettingQuote:'ទទួលតម្លៃ...', confirmWallet:'បញ្ជាក់ក្នុងកាបូប...',
+    noLiquidity:'គ្មានសន្ទនភាព', approving:'កំពុងអនុម័ត...', approved:'បានអនុម័ត!',
+    simulation:'ត្រួតពិនិត្យ...', swapFailed:'ការដូរបរាជ័យ', switchNetwork:'ផ្លាស់ប្តូរទៅ Shibarium...',
+    gaslessDesc_:'', txSettings_:'', expertMode_:'',
+  },
+  vi: {
+    connectWallet:'Ket Noi Vi', swap:'Hoan Doi', youPay:'Ban Tra', youReceive:'Ban Nhan',
+    balance:'So Du', max:'Toi Da', rate:'Ti Le', impact:'Tac Dong Gia', minReceived:'Nhan Toi Thieu',
+    route:'Tuyen Duong', gas:'Phi Gas', refresh:'Lam Moi', selectToken:'Chon Token',
+    confirmSwap:'Xac Nhan Hoan Doi', cancel:'Huy', gasless:'Hoan Doi Mien Phi Gas',
+    gaslessDesc:'Tra gas bang RIC thay vi BONE', recentTxs:'Giao Dich Gan Day',
+    noTxs:'Chua co giao dich', connectBegin:'Ket noi vi de bat dau',
+    enterAmount:'Nhap so luong', insufficientBalance:'Khong du',
+    approveToken:'Phe Duyet', swapping:'Dang hoan doi...', swapSuccess:'Hoan doi thanh cong!',
+    swapFailed:'Hoan doi that bai', slippage:'Truot Gia', deadline:'Han Chot',
+    txSettings:'Cai Dat Giao Dich', expertMode:'Che Do Chuyen Gia', min:'phut', clear:'Xoa',
+    volume24:'KHOI LUONG 24H', liquidity:'THANH KHOAN', high24:'CAO 24H', low24:'THAP 24H',
+    swapMode:'Hoan Doi', wrapMode:'Boc / Thao Boc', loadingChart:'Dang tai bieu do...',
+    gettingQuote:'Dang lay gia tot nhat...', confirmWallet:'Xac nhan trong vi...',
+    noLiquidity:'Khong co thanh khoan', approving:'Dang phe duyet...',
+    approved:'Da phe duyet!', simulation:'Dang kiem tra...', switchNetwork:'Chuyen sang Shibarium...',
+  },
+  zh: {
+    connectWallet:'连接钱包', swap:'兑换', youPay:'您支付', youReceive:'您收到',
+    balance:'余额', max:'最大', rate:'汇率', impact:'价格影响', minReceived:'最少收到',
+    route:'路线', gas:'预计Gas', refresh:'刷新', selectToken:'选择代币',
+    confirmSwap:'确认兑换', cancel:'取消', gasless:'免Gas兑换',
+    gaslessDesc:'用RIC代替BONE支付Gas', recentTxs:'最近交易', noTxs:'暂无交易记录',
+    connectBegin:'连接钱包以开始', enterAmount:'输入数量',
+    insufficientBalance:'余额不足', approveToken:'授权', swapping:'兑换中...',
+    swapSuccess:'兑换成功', swapFailed:'兑换失败', slippage:'滑点',
+    deadline:'截止时间', txSettings:'交易设置', expertMode:'专家模式', min:'分钟', clear:'清除',
+    volume24:'24H成交量', liquidity:'流动性', high24:'24H最高', low24:'24H最低',
+    swapMode:'兑换', wrapMode:'包装 / 解包', loadingChart:'加载图表...',
+    gettingQuote:'获取最优价格...', confirmWallet:'在钱包中确认...',
+    noLiquidity:'无流动性', approving:'授权中...', approved:'已授权',
+    simulation:'模拟中...', switchNetwork:'切换到Shibarium...', switchNetwork_:'',
+  },
+};
 
-// ── Token logo (Trust Wallet CDN with letter fallback) ───────
-function setAvatar(elId, token, size) {
-  size = size || 22;
-  const el    = document.getElementById(elId);
-  if (!el) return;
-  const color = token.color || "#555880";
-  el.style.background = color + "22";
-  el.style.color       = color;
-  el.innerHTML         = "";
-  const addr = token.isNative || token.isWBONE ? CFG.WBONE : token.address;
-  if (addr && addr !== "NATIVE") {
-    try {
-      const cs  = ethers.getAddress(addr);
-      const img = document.createElement("img");
-      img.src   = LOGO_CDN + "/" + cs + "/logo.png";
-      img.style.cssText = "width:100%;height:100%;object-fit:cover;border-radius:50%";
-      img.onerror = () => { img.remove(); el.textContent = (token.symbol||"?").slice(0,2).toUpperCase(); };
-      el.appendChild(img);
-    } catch(_) { el.textContent = (token.symbol||"?").slice(0,2).toUpperCase(); }
-  } else {
-    el.textContent = (token.symbol||"?").slice(0,2).toUpperCase();
+//  State 
+let currentLang    = localStorage.getItem('rs_lang') || 'en';
+let provider       = null;
+let signer         = null;
+let userAddress    = null;
+let slippageBps    = 100n;  // 1%
+let swapMode       = 'exactIn';
+let isGasless      = false;
+let currentTF      = '1D';
+let lastQuote      = null;
+let quoteTimer     = null;
+let refreshTimer   = null;
+let refreshSecs    = 15;
+let modalSide      = 'in';
+let pendingImport  = null;
+let priceCache     = {};
+let chartInstance  = null;
+let chartSeries    = null;
+
+let tokens = {
+  in:  { ...TOKEN_LIST[0] },  // BONE
+  out: { ...TOKEN_LIST[2] },  // RIC
+};
+
+//  i18n helpers 
+function t(key) {
+  return (I18N[currentLang] || I18N.en)[key] || I18N.en[key] || key;
+}
+
+function setLang(lang) {
+  currentLang = lang;
+  localStorage.setItem('rs_lang', lang);
+  document.getElementById('langBtn').textContent = lang.toUpperCase();
+  document.getElementById('langMenu').classList.remove('open');
+  document.querySelectorAll('.lang-opt').forEach(o => {
+    o.classList.toggle('active', o.dataset.lang === lang);
+  });
+  applyLang();
+}
+
+function toggleLang() {
+  document.getElementById('langMenu').classList.toggle('open');
+}
+
+function applyLang() {
+  const ids = {
+    'lbl-youPay':       'youPay',
+    'lbl-youReceive':   'youReceive',
+    'lbl-bal':          'balance',
+    'lbl-bal2':         'balance',
+    'btn-max':          'max',
+    'lbl-rate':         'rate',
+    'lbl-impact':       'impact',
+    'lbl-minReceived':  'minReceived',
+    'lbl-route':        'route',
+    'lbl-gas':          'gas',
+    'lbl-refresh':      'refresh',
+    'lbl-selectToken':  'selectToken',
+    'lbl-confirmSwap':  'confirmSwap',
+    'lbl-gasless':      'gasless',
+    'lbl-gaslessDesc':  'gaslessDesc',
+    'lbl-txSettings':   'txSettings',
+    'lbl-slippage':     'slippage',
+    'lbl-deadline':     'deadline',
+    'lbl-expertMode':   'expertMode',
+    'lbl-min':          'min',
+    'lbl-recentTxs':    'recentTxs',
+    'btn-clearTxs':     'clear',
+    'lbl-vol24':        'volume24',
+    'lbl-liq':          'liquidity',
+    'lbl-high':         'high24',
+    'lbl-low':          'low24',
+    'lbl-cfImpact':     'impact',
+    'lbl-cfMin':        'minReceived',
+    'lbl-cfRoute':      'route',
+    'lbl-cfSlip':       'slippage',
+    'lbl-cfGas':        'gas',
+    'lbl-youPay2':      'youPay',
+    'lbl-youReceiveMin':'youReceive',
+    'btn-cfCancel':     'cancel',
+    'btn-cfConfirm':    'confirmSwap',
+    'tab-swap':         'swapMode',
+    'tab-wrap':         'wrapMode',
+    'chartLoadingText': 'loadingChart',
+    'nav-dashboard':    'swap',
+    'txsEmpty':         'noTxs',
+    'statusText':       'connectBegin',
+  };
+  for (const [id, key] of Object.entries(ids)) {
+    const el = document.getElementById(id);
+    if (el) el.textContent = t(key);
+  }
+  // Swap button
+  if (!userAddress) {
+    document.getElementById('swapBtnLabel').textContent = t('connectWallet');
+    document.getElementById('connectLabel').textContent = t('connectWallet');
   }
 }
 
-// ── USD Price (DexScreener, cached 60s) ───────────────────
-async function getUSDPrice(address) {
-  if (!address || address === "NATIVE") address = CFG.WBONE;
-  const key = address.toLowerCase();
-  if (_priceCache[key] && Date.now() - _priceCache[key].ts < 60000) return _priceCache[key];
-  try {
-    const res  = await fetch(DEXSCREENER + "/" + address, { signal: AbortSignal.timeout(4000) });
-    const data = await res.json();
-    const pairs = (data?.pairs || [])
-      .filter(p => p.chainId === "shibarium")
-      .sort((a,b) => parseFloat(b.liquidity?.usd||0) - parseFloat(a.liquidity?.usd||0));
-    if (!pairs.length) return null;
-    const p = parseFloat(pairs[0].priceUsd || 0);
-    if (!p) return null;
-    const priceStr = p < 0.000001 ? "$"+p.toExponential(2) : p < 0.01 ? "$"+p.toFixed(6) : p < 1 ? "$"+p.toFixed(4) : "$"+p.toFixed(2);
-    const result   = { priceNum:p, priceStr, ts:Date.now() };
-    _priceCache[key] = result;
-    return result;
-  } catch(_) { return null; }
+//  ABI definitions 
+const ERC20_ABI = [
+  'function balanceOf(address) view returns (uint256)',
+  'function decimals() view returns (uint8)',
+  'function symbol() view returns (string)',
+  'function name() view returns (string)',
+  'function allowance(address,address) view returns (uint256)',
+  'function approve(address,uint256) returns (bool)',
+];
+
+const ROUTER_ABI = [
+  'function getAmountsOut(uint256,address[]) view returns (uint256[])',
+  'function getAmountsIn(uint256,address[]) view returns (uint256[])',
+  'function swapExactETHForTokens(uint256,address[],address,uint256) payable returns (uint256[])',
+  'function swapExactTokensForETH(uint256,uint256,address[],address,uint256) returns (uint256[])',
+  'function swapExactTokensForTokens(uint256,uint256,address[],address,uint256) returns (uint256[])',
+  'function swapETHForExactTokens(uint256,address[],address,uint256) payable returns (uint256[])',
+  'function swapTokensForExactETH(uint256,uint256,address[],address,uint256) returns (uint256[])',
+  'function swapTokensForExactTokens(uint256,uint256,address[],address,uint256) returns (uint256[])',
+  'function swapExactETHForTokensSupportingFeeOnTransferTokens(uint256,address[],address,uint256) payable',
+  'function swapExactTokensForETHSupportingFeeOnTransferTokens(uint256,uint256,address[],address,uint256)',
+  'function swapExactTokensForTokensSupportingFeeOnTransferTokens(uint256,uint256,address[],address,uint256)',
+];
+
+//  Load ethers dynamically 
+let ethers = null;
+
+async function loadEthers() {
+  if (ethers) return ethers;
+  const mod = await import('https://cdn.jsdelivr.net/npm/ethers@6.13.0/dist/ethers.min.js');
+  ethers = mod.ethers || mod;
+  return ethers;
 }
 
-async function showUSDValue(elId, amountStr, token) {
+//  Load lightweight-charts 
+let LWC = null;
+
+async function loadChart() {
+  if (LWC) return LWC;
+  const mod = await import('https://cdn.jsdelivr.net/npm/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.mjs');
+  LWC = mod.LightweightCharts || window.LightweightCharts;
+  if (!LWC && window.LightweightCharts) LWC = window.LightweightCharts;
+  return LWC;
+}
+
+//  Token avatar 
+function setAvatar(elId, token) {
   const el = document.getElementById(elId);
   if (!el) return;
-  if (!amountStr || parseFloat(amountStr) <= 0) { el.textContent = ""; return; }
+  el.style.background = (token.color || '#555880') + '22';
+  el.style.color      = token.color || '#555880';
+  el.innerHTML        = '';
   const addr = token.isNative || token.isWBONE ? CFG.WBONE : token.address;
-  const pr   = await getUSDPrice(addr);
-  if (!pr) { el.textContent = ""; return; }
-  const val = parseFloat(amountStr) * pr.priceNum;
-  if (!val) { el.textContent = ""; return; }
-  el.textContent = "≈ $" + (val < 0.01 ? val.toFixed(6) : val < 10000 ? val.toFixed(2) : val.toLocaleString(undefined,{maximumFractionDigits:0}));
+  if (addr && addr !== 'NATIVE') {
+    try {
+      const cs  = ethers ? ethers.getAddress(addr) : addr;
+      const img = document.createElement('img');
+      img.src   = `${CFG.LOGO_CDN}/${cs}/logo.png`;
+      img.style.cssText = 'width:100%;height:100%;object-fit:cover;border-radius:50%';
+      img.onerror = () => { img.remove(); el.textContent = (token.symbol||'?').slice(0,2).toUpperCase(); };
+      el.appendChild(img);
+      return;
+    } catch(_) {}
+  }
+  el.textContent = (token.symbol||'?').slice(0,2).toUpperCase();
 }
 
-function initURL(){const p=new URLSearchParams(location.search);if(p.get("tokenIn"))loadTkParam("in",p.get("tokenIn"));if(p.get("tokenOut"))loadTkParam("out",p.get("tokenOut"));if(p.get("amountIn"))document.getElementById("amtIn").value=p.get("amountIn")}
-function loadTkParam(s,a){if(a.toUpperCase()==="NATIVE"||a.toLowerCase()==="bone"){tks[s]={...BONE_T};updTkUI(s);return}const f=TK_LIST.find(t=>t.address.toLowerCase()===a.toLowerCase());if(f){tks[s]={...f};updTkUI(s)}}
-function copyLink(){const ai=tks.in.isNative?"NATIVE":tks.in.address,ao=tks.out.address,am=document.getElementById("amtIn").value||"";const u=`${location.origin}${location.pathname}?tokenIn=${ai}&tokenOut=${ao}${am?"&amountIn="+am:""}`;navigator.clipboard.writeText(u).then(()=>setSt("success","✓","Share link copied!"))}
-
-async function connWallet() {
-  if (!window.ethereum) return alert("Please install MetaMask or Rabby Wallet");
-  const btn = document.getElementById("wBtn");
-  btn.style.opacity = "0.6";
+//  Price from DexScreener 
+async function getDexPrice(address) {
+  if (!address || address === 'NATIVE') address = CFG.WBONE;
+  const key = address.toLowerCase();
+  if (priceCache[key] && Date.now() - priceCache[key].ts < 60000) return priceCache[key];
   try {
-    // Step 1: Request accounts explicitly — works on ALL wallet types
-    await window.ethereum.request({ method: "eth_requestAccounts" });
+    const res  = await fetch(`${CFG.DEXSCREEN}/tokens/${address}`, { signal: AbortSignal.timeout(5000) });
+    const data = await res.json();
+    const pairs = (data?.pairs || [])
+      .filter(p => p.chainId === 'shibarium')
+      .sort((a,b) => parseFloat(b.liquidity?.usd||0) - parseFloat(a.liquidity?.usd||0));
+    if (!pairs.length) return null;
+    const pair  = pairs[0];
+    const price = parseFloat(pair.priceUsd || 0);
+    if (!price) return null;
+    const result = {
+      price,
+      priceStr: price < 0.000001 ? '$'+price.toExponential(2) : price < 0.01 ? '$'+price.toFixed(6) : price < 1 ? '$'+price.toFixed(4) : '$'+price.toFixed(2),
+      change24h: parseFloat(pair.priceChange?.h24 || 0),
+      volume24h: parseFloat(pair.volume?.h24 || 0),
+      liquidity: parseFloat(pair.liquidity?.usd || 0),
+      high24h:   parseFloat(pair.priceUsd || 0),
+      low24h:    parseFloat(pair.priceUsd || 0),
+      ts: Date.now(),
+    };
+    priceCache[key] = result;
+    return result;
+  } catch { return null; }
+}
 
-    // Step 2: Build provider + signer after accounts confirmed
-    prov  = new ethers.BrowserProvider(window.ethereum);
-    sign  = await prov.getSigner();
-    uAddr = await sign.getAddress();
+//  USD value display 
+async function showUSD(elId, amount, token) {
+  const el = document.getElementById(elId);
+  if (!el) return;
+  if (!amount || parseFloat(amount) <= 0) { el.textContent = ''; return; }
+  const addr = token.isNative || token.isWBONE ? CFG.WBONE : token.address;
+  const data = await getDexPrice(addr);
+  if (!data) { el.textContent = ''; return; }
+  const val = parseFloat(amount) * data.price;
+  el.textContent = ' $' + (val < 0.01 ? val.toFixed(6) : val < 10000 ? val.toFixed(2) : val.toLocaleString(undefined, { maximumFractionDigits: 0 }));
+}
 
-    // Step 3: Network check — failure bubbles to outer catch (user sees error)
-    const net = await prov.getNetwork();
-    if (net.chainId !== CFG.CHAIN_ID) {
-      setSt("loading", null, "Switching to Shibarium...");
-      await window.ethereum.request({
-        method: "wallet_switchEthereumChain",
-        params: [{ chainId: "0x6d" }]
-      });
-      // Rebuild provider after network switch
-      prov  = new ethers.BrowserProvider(window.ethereum);
-      sign  = await prov.getSigner();
-      uAddr = await sign.getAddress();
+//  Price ticker 
+const TICKER_TOKENS = [
+  { symbol: 'BONE', address: CFG.WBONE },
+  { symbol: 'RIC',  address: CFG.RIC },
+  { symbol: 'SHIB', address: '0x495eea66b0f8b636d441dc6a98d8f5c3d455c4c0' },
+];
+
+async function loadTicker() {
+  const items = [];
+  for (const tk of TICKER_TOKENS) {
+    try {
+      const data = await getDexPrice(tk.address);
+      if (data) {
+        const up = data.change24h >= 0;
+        items.push({ symbol: tk.symbol, price: data.priceStr, change: (up?'+':'')+data.change24h.toFixed(2)+'%', up });
+      }
+    } catch(_) {}
+  }
+  if (!items.length) return;
+
+  const track = document.getElementById('tickerTrack');
+  const makeItems = () => items.map(item => `
+    <div class="ticker-item">
+      <span class="ticker-sym">${item.symbol}</span>
+      <span class="ticker-dot"></span>
+      <span class="ticker-price">${item.price}</span>
+      <span class="ticker-dot"></span>
+      <span class="${item.up ? 'ticker-up' : 'ticker-down'}">${item.change}</span>
+    </div>
+  `).join('');
+
+  // Duplicate for seamless loop
+  track.innerHTML = makeItems() + makeItems();
+}
+
+//  Chart 
+async function initChart() {
+  try {
+    const el = document.getElementById('priceChart');
+    if (!el) return;
+
+    const lwc = await loadChart();
+    if (!lwc) { document.getElementById('chartLoading').textContent = 'Chart unavailable'; return; }
+
+    const lib = lwc.createChart || (lwc.default && lwc.default.createChart);
+    if (!lib) return;
+
+    chartInstance = lib(el, {
+      width:  el.offsetWidth,
+      height: 280,
+      layout: {
+        background: { color: 'transparent' },
+        textColor:  '#6a6d88',
+      },
+      grid: {
+        vertLines:   { color: 'rgba(255,255,255,0.03)' },
+        horzLines:   { color: 'rgba(255,255,255,0.03)' },
+      },
+      crosshair: {
+        vertLine:   { color: 'rgba(255,77,0,0.3)', labelBackgroundColor: '#ff4d00' },
+        horzLine:   { color: 'rgba(255,77,0,0.3)', labelBackgroundColor: '#ff4d00' },
+      },
+      timeScale: {
+        borderColor:        'rgba(255,255,255,0.05)',
+        timeVisible:        true,
+        secondsVisible:     false,
+      },
+      rightPriceScale: { borderColor: 'rgba(255,255,255,0.05)' },
+    });
+
+    chartSeries = chartInstance.addAreaSeries({
+      lineColor:        '#ff4d00',
+      topColor:         'rgba(255,77,0,0.25)',
+      bottomColor:      'rgba(255,77,0,0)',
+      lineWidth:        2,
+      crosshairMarkerVisible: true,
+      crosshairMarkerRadius:  5,
+      crosshairMarkerBorderColor: '#ff4d00',
+      crosshairMarkerBackgroundColor: '#ff4d00',
+    });
+
+    // Resize observer
+    new ResizeObserver(() => {
+      if (chartInstance && el.offsetWidth > 0) {
+        chartInstance.applyOptions({ width: el.offsetWidth });
+      }
+    }).observe(el);
+
+    await loadChartData();
+  } catch(e) {
+    console.warn('Chart init error:', e);
+    document.getElementById('chartLoading').style.display = 'none';
+  }
+}
+
+async function loadChartData() {
+  const loading = document.getElementById('chartLoading');
+  if (loading) loading.style.display = 'flex';
+
+  try {
+    // Get the "out" token's DexScreener pair address
+    const tokenAddr = tokens.out.isNative || tokens.out.isWBONE ? CFG.WBONE : tokens.out.address;
+    const res = await fetch(`${CFG.DEXSCREEN}/tokens/${tokenAddr}`, { signal: AbortSignal.timeout(6000) });
+    const data = await res.json();
+
+    const pairs = (data?.pairs || [])
+      .filter(p => p.chainId === 'shibarium')
+      .sort((a,b) => parseFloat(b.liquidity?.usd||0) - parseFloat(a.liquidity?.usd||0));
+
+    if (!pairs.length || !chartSeries) {
+      if (loading) loading.style.display = 'none';
+      return;
     }
 
-    // Step 4: Update UI
-    btn.classList.add("con");
-    document.getElementById("wLbl").textContent = uAddr.slice(0,6) + "..." + uAddr.slice(-4);
-    window.ethereum.on("accountsChanged", () => location.reload());
-    window.ethereum.on("chainChanged",    () => location.reload());
+    const pair = pairs[0];
+    const price = parseFloat(pair.priceUsd || 0);
 
-    setSt("", "○", "Wallet connected");
-    await refBals();
-    schedQ();
-    loadTxH();
-    startRef();
+    // Update chart header
+    document.getElementById('chartPrice').textContent = price < 0.000001 ? '$'+price.toExponential(4) : price < 0.01 ? '$'+price.toFixed(6) : '$'+price.toFixed(4);
+    const change = parseFloat(pair.priceChange?.h24 || 0);
+    const changeEl = document.getElementById('chartChange');
+    changeEl.textContent = (change >= 0 ? '+' : '') + change.toFixed(2) + '%';
+    changeEl.className = 'chart-change ' + (change >= 0 ? 'up' : 'down');
+
+    // Stats
+    const vol = parseFloat(pair.volume?.h24 || 0);
+    const liq = parseFloat(pair.liquidity?.usd || 0);
+    document.getElementById('stat-vol24').textContent = vol > 1000000 ? '$'+( vol/1000000).toFixed(2)+'M' : vol > 1000 ? '$'+(vol/1000).toFixed(1)+'K' : '$'+vol.toFixed(0);
+    document.getElementById('stat-liq').textContent   = liq > 1000000 ? '$'+(liq/1000000).toFixed(2)+'M' : liq > 1000 ? '$'+(liq/1000).toFixed(1)+'K' : '$'+liq.toFixed(0);
+    document.getElementById('stat-high').textContent  = pair.priceChange?.h24 ? (price * (1 + Math.max(0, change/100))).toFixed(6) : '--';
+    document.getElementById('stat-low').textContent   = pair.priceChange?.h24 ? (price * (1 - Math.max(0, -change/100))).toFixed(6) : '--';
+
+    // Generate synthetic candlestick-style data from current price
+    // In production this would come from a real OHLCV API
+    const points = generateChartPoints(price, change, currentTF);
+    chartSeries.setData(points);
+    chartInstance.timeScale().fitContent();
+
+    if (loading) loading.style.display = 'none';
+  } catch(e) {
+    if (loading) loading.style.display = 'none';
+  }
+}
+
+function generateChartPoints(currentPrice, change24h, tf) {
+  const points = [];
+  const now  = Math.floor(Date.now() / 1000);
+  const configs = {
+    '1H': { count: 60,  interval: 60,       volatility: 0.002 },
+    '4H': { count: 96,  interval: 150,      volatility: 0.004 },
+    '1D': { count: 288, interval: 300,      volatility: 0.008 },
+    '1W': { count: 168, interval: 3600,     volatility: 0.02  },
+  };
+  const { count, interval, volatility } = configs[tf] || configs['1D'];
+
+  // Work backwards from current price using the 24h change as drift
+  let price = currentPrice;
+  const drift = -(change24h / 100) / count;
+
+  for (let i = count; i >= 0; i--) {
+    const t = now - i * interval;
+    const noise = (Math.random() - 0.5) * 2 * volatility;
+    price = price * (1 + drift + noise);
+    if (price <= 0) price = currentPrice * 0.001;
+    points.push({ time: t, value: parseFloat(price.toFixed(10)) });
+  }
+
+  // Make sure last point matches current price
+  if (points.length > 0) points[points.length - 1].value = currentPrice;
+
+  return points;
+}
+
+function setTF(btn) {
+  document.querySelectorAll('.tf-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  currentTF = btn.dataset.tf;
+  loadChartData();
+}
+
+function setPair(btn) {
+  document.querySelectorAll('.pair-tab').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  const inAddr  = btn.dataset.in;
+  const outAddr = btn.dataset.out;
+  const findTk = addr => TOKEN_LIST.find(t => t.address.toUpperCase() === addr.toUpperCase()) || TOKEN_LIST[0];
+  tokens.in  = { ...findTk(inAddr) };
+  tokens.out = { ...findTk(outAddr) };
+  updateTokenUI('in');
+  updateTokenUI('out');
+  refreshBalances();
+  fetchQuote();
+  loadChartData();
+}
+
+//  Wallet connection 
+async function connectWallet() {
+  if (userAddress) {
+    showStatus('', '', userAddress.slice(0,6)+'...'+userAddress.slice(-4));
+    return;
+  }
+  if (!window.ethereum) {
+    alert('Please install MetaMask or another Web3 wallet');
+    return;
+  }
+  const btn = document.getElementById('connectBtn');
+  btn.style.opacity = '0.6';
+  try {
+    await loadEthers();
+    await window.ethereum.request({ method: 'eth_requestAccounts' });
+    provider = new ethers.BrowserProvider(window.ethereum);
+    signer   = await provider.getSigner();
+    userAddress = await signer.getAddress();
+
+    // Check and switch to Shibarium
+    const net = await provider.getNetwork();
+    if (net.chainId !== CFG.CHAIN_ID) {
+      showStatus('loading', null, t('switchNetwork'));
+      try {
+        await window.ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: CFG.CHAIN_HEX }] });
+      } catch(e) {
+        if (e.code === 4902) {
+          await window.ethereum.request({
+            method: 'wallet_addEthereumChain',
+            params: [{ chainId: CFG.CHAIN_HEX, chainName: 'Shibarium', nativeCurrency: { name: 'BONE', symbol: 'BONE', decimals: 18 }, rpcUrls: [CFG.RPC], blockExplorerUrls: [CFG.EXPLORER] }]
+          });
+        } else throw e;
+      }
+      provider = new ethers.BrowserProvider(window.ethereum);
+      signer   = await provider.getSigner();
+      userAddress = await signer.getAddress();
+    }
+
+    // Update UI
+    const connectBtn = document.getElementById('connectBtn');
+    connectBtn.classList.add('connected');
+    document.getElementById('connectLabel').textContent = userAddress.slice(0,6)+'...'+userAddress.slice(-4);
+    document.getElementById('swapBtn').disabled = false;
+    document.getElementById('swapBtnLabel').textContent = t('enterAmount');
+
+    window.ethereum.on('accountsChanged', () => location.reload());
+    window.ethereum.on('chainChanged', () => location.reload());
+
+    showStatus('', '', 'Wallet connected');
+    await refreshBalances();
+    scheduleQuote();
+    loadTxHistory();
+    startRefreshTimer();
 
   } catch(e) {
-    setSt("error", "✕", decErr(e));
+    showStatus('error', '', decodeError(e));
   } finally {
-    btn.style.opacity = "1"; // always restore — even if error thrown
+    btn.style.opacity = '1';
   }
 }
 
-function setMode(m){mode=m;document.querySelectorAll(".m-tab").forEach((t,i)=>t.classList.toggle("active",(i===0&&m==="exactIn")||(i===1&&m==="exactOut")));document.getElementById("amtOut").readOnly=m==="exactIn";document.getElementById("amtIn").readOnly=m==="exactOut";document.getElementById("lblIn").textContent=m==="exactIn"?"You Pay":"You Pay (max)";document.getElementById("lblOut").textContent=m==="exactOut"?"You Receive (exact)":"You Receive";document.getElementById("amtIn").value="";document.getElementById("amtOut").value="";schedQ()}
-function onAmt(s){if(s==="in"&&mode==="exactIn")schedQ();if(s==="out"&&mode==="exactOut")schedQ()}
-function toggleSet(){document.getElementById("setPanel").classList.toggle("open")}
-function setSlip(p){slipBps=BigInt(Math.round(p*100));document.querySelectorAll(".sl-btn").forEach(b=>b.classList.toggle("active",b.textContent===p+"%"));if(lastQ)schedQ()}
-function getDL(){const m=parseInt(document.getElementById("dlInp").value)||5;return BigInt(Math.floor(Date.now()/1000)+m*60)}
-function setMax(){const b=parseFloat(document.getElementById("balIn").textContent);if(isNaN(b)||b<=0)return;const s=(tks.in.isNative||tks.in.isWBONE)&&b>.01?b-.01:b;document.getElementById("amtIn").value=s.toFixed(6);schedQ()}
+//  Balances 
+async function refreshBalances() {
+  if (!userAddress || !provider) return;
+  const getBal = async (tk) => {
+    try {
+      if (tk.isNative || tk.isWBONE) return await provider.getBalance(userAddress);
+      return await new ethers.Contract(tk.address, ERC20_ABI, provider).balanceOf(userAddress);
+    } catch { return 0n; }
+  };
 
-function openTkMo(s){moSide=s;document.getElementById("tkSearch").value="";document.getElementById("impWarn").classList.remove("show");pendImp=null;renderTkList(TK_LIST);document.getElementById("tokenModal").classList.add("open");setTimeout(()=>document.getElementById("tkSearch").focus(),50)}
-function closeTkMo(){document.getElementById("tokenModal").classList.remove("open")}
-function renderTkList(list){
-  const el=document.getElementById("tkList");
-  el.innerHTML=list.map(t=>{
-    const c=t.color||"#555880",imp=t.official?"":`<span class="imp-tag">imported</span>`;
-    const addr=t.isNative||t.isWBONE?CFG.WBONE:t.address;
-    let logoHtml;
-    try{const cs=ethers.getAddress(addr);logoHtml=`<img src="${LOGO_CDN}/${cs}/logo.png" style="width:100%;height:100%;object-fit:cover;border-radius:50%" onerror="this.remove();this.parentElement.textContent='${t.symbol.slice(0,2).toUpperCase()}'">` }
-    catch{logoHtml=t.symbol.slice(0,2).toUpperCase()}
-    return`<div class="tk-row" onclick="selTk('${t.address}','${t.symbol}','${t.name}',${t.decimals},${!!t.official},${!!t.isNative},${!!t.isWBONE},'${c}')"><div class="tk-av" style="background:${c}22;color:${c};font-size:11px;overflow:hidden">${logoHtml}</div><div class="tk-row-inf"><div class="tk-row-sym">${t.symbol}${imp}</div><div class="tk-row-nm">${t.name}</div></div></div>`;
-  }).join("");
-}
-async function filterTk(){const q=document.getElementById("tkSearch").value.trim().toLowerCase();document.getElementById("impWarn").classList.remove("show");pendImp=null;if(!q){renderTkList(TK_LIST);return}const f=TK_LIST.filter(t=>t.symbol.toLowerCase().includes(q)||t.name.toLowerCase().includes(q)||t.address.toLowerCase()===q);if(f.length){renderTkList(f);return}if(ethers.isAddress(q)&&prov){document.getElementById("tkList").innerHTML='<div style="text-align:center;padding:24px;font-family:var(--mo);font-size:11px;color:var(--mu)">Loading...</div>';try{const c=new ethers.Contract(q,E20,prov);let sy,na,de;de=await c.decimals();try{sy=await c.symbol()}catch{sy=q.slice(0,6)+"..."};try{na=await c.name()}catch{na="Unknown"};pendImp={symbol:sy,name:na,address:q,decimals:de,isNative:false,isWBONE:false,color:"#555880",official:false};renderTkList([pendImp]);document.getElementById("impWarn").classList.add("show")}catch{document.getElementById("tkList").innerHTML='<div style="text-align:center;padding:24px;font-family:var(--mo);font-size:11px;color:var(--rd)">Invalid address</div>'}}else{document.getElementById("tkList").innerHTML='<div style="text-align:center;padding:24px;font-family:var(--mo);font-size:11px;color:var(--mu)">No tokens found</div>'}}
-function cancelImp(){pendImp=null;document.getElementById("tkSearch").value="";document.getElementById("impWarn").classList.remove("show");renderTkList(TK_LIST)}
-function confirmImp(){if(!pendImp)return;TK_LIST.push(pendImp);selTk(pendImp.address,pendImp.symbol,pendImp.name,pendImp.decimals,false,false,false,pendImp.color)}
-function selTk(addr,sym,name,dec,official,isNative,isWBONE,color){const oth=moSide==="in"?"out":"in";if(tks[oth].address.toLowerCase()===addr.toLowerCase()){flipTkData();closeTkMo();return}tks[moSide]={symbol:sym,name,address:addr,decimals:parseInt(dec),isNative:isNative===true||isNative==="true",isWBONE:isWBONE===true||isWBONE==="true",color:color||"#555880",official:official===true||official==="true"};updTkUI(moSide);closeTkMo();refBals();schedQ()}
-function updTkUI(s){const t=tks[s],id=s==="in"?"In":"Out";document.getElementById("sym"+id).textContent=t.symbol;setAvatar("av"+id,t,22)}
-function flipTkData(){const tmp=tks.in;tks.in=tks.out;tks.out=tmp;updTkUI("in");updTkUI("out")}
-function flipTk(){flipTkData();const ai=document.getElementById("amtIn").value,ao=document.getElementById("amtOut").value;document.getElementById("amtIn").value=ao||"";document.getElementById("amtOut").value="";refBals();schedQ()}
+  const [balIn, balOut] = await Promise.all([getBal(tokens.in), getBal(tokens.out)]);
 
-async function refBals(){
-  if(!uAddr||!prov)return;
-  document.getElementById("balIn").textContent="...";
-  document.getElementById("balOut").textContent="...";
-  const g=async t=>{try{if(t.isNative||t.isWBONE)return await prov.getBalance(uAddr);return await new ethers.Contract(t.address,E20,prov).balanceOf(uAddr)}catch{return 0n}};
-  const[bi,bo]=await Promise.all([g(tks.in),g(tks.out)]);
-  document.getElementById("balIn").textContent=fmtU(bi,tks.in.decimals);
-  document.getElementById("balOut").textContent=fmtU(bo,tks.out.decimals);
-  // Prefetch prices and show USD balance values
-  const inAddr=tks.in.isNative||tks.in.isWBONE?CFG.WBONE:tks.in.address;
-  const outAddr=tks.out.isNative||tks.out.isWBONE?CFG.WBONE:tks.out.address;
-  const[prIn,prOut]=await Promise.all([getUSDPrice(inAddr),getUSDPrice(outAddr)]);
-  if(prIn){const v=parseFloat(ethers.formatUnits(bi,tks.in.decimals))*prIn.priceNum;if(v>0)document.getElementById("usdIn").textContent="Balance ≈ $"+(v<0.01?v.toFixed(6):v<10000?v.toFixed(2):v.toLocaleString(undefined,{maximumFractionDigits:0}));}
-  if(prOut){const v=parseFloat(ethers.formatUnits(bo,tks.out.decimals))*prOut.priceNum;if(v>0)document.getElementById("usdOut").textContent="Balance ≈ $"+(v<0.01?v.toFixed(6):v<10000?v.toFixed(2):v.toLocaleString(undefined,{maximumFractionDigits:0}));}
+  const fmtBal = (val, dec) => {
+    const n = parseFloat(ethers.formatUnits(val, dec));
+    if (n === 0) return '0';
+    if (n < 0.00001) return '< 0.00001';
+    // Format with commas -- NOTE: we store raw value separately for balance checks
+    return n.toLocaleString(undefined, { maximumFractionDigits: 6 });
+  };
+
+  document.getElementById('balIn').textContent  = fmtBal(balIn,  tokens.in.decimals);
+  document.getElementById('balOut').textContent = fmtBal(balOut, tokens.out.decimals);
+
+  // Store raw values for accurate comparison (fix the comma bug!)
+  window._rawBalIn  = balIn;
+  window._rawBalOut = balOut;
+
+  // USD values
+  const prIn  = tokens.in.isNative  || tokens.in.isWBONE  ? CFG.WBONE : tokens.in.address;
+  const prOut = tokens.out.isNative || tokens.out.isWBONE ? CFG.WBONE : tokens.out.address;
+  const [dIn, dOut] = await Promise.all([getDexPrice(prIn), getDexPrice(prOut)]);
+
+  if (dIn) {
+    const v = parseFloat(ethers.formatUnits(balIn, tokens.in.decimals)) * dIn.price;
+    if (v > 0) document.getElementById('usdIn').textContent = 'Balance  $' + (v < 0.01 ? v.toFixed(6) : v.toFixed(2));
+  }
+  if (dOut) {
+    const v = parseFloat(ethers.formatUnits(balOut, tokens.out.decimals)) * dOut.price;
+    if (v > 0) document.getElementById('usdOut').textContent = 'Balance  $' + (v < 0.01 ? v.toFixed(6) : v.toFixed(2));
+  }
 }
 
-function startRef(){clearInterval(refTimer);refSecs=15;document.getElementById("refRow").style.display="flex";updRefBar();refTimer=setInterval(()=>{refSecs--;updRefBar();if(refSecs<=0){refSecs=15;if(lastQ)fetchQ()}},1000)}
-function updRefBar(){document.getElementById("refBar").style.width=(refSecs/15*100)+"%";document.getElementById("refCnt").textContent=refSecs+"s"}
-function schedQ(){clearTimeout(qTimer);qTimer=setTimeout(fetchQ,400)}
+//  Quote 
+function scheduleQuote() {
+  clearTimeout(quoteTimer);
+  quoteTimer = setTimeout(fetchQuote, 400);
+}
 
-async function fetchQ(){const btn=document.getElementById("swBtn"),isEI=mode==="exactIn",inEl=document.getElementById("amtIn"),outEl=document.getElementById("amtOut"),val=(isEI?inEl:outEl).value.trim();outEl.value="";document.getElementById("infoP").style.display="none";lastQ=null;if(!val||parseFloat(val)<=0){btn.disabled=true;btn.textContent=uAddr?"Enter an amount":"Connect Wallet";return}if(!uAddr){btn.disabled=true;btn.textContent="Connect Wallet";return}btn.disabled=true;btn.textContent="Getting quote...";try{const router=new ethers.Contract(CFG.ROUTER,RABI,prov),ai=tks.in.isNative||tks.in.isWBONE?CFG.WBONE:tks.in.address,ao=tks.out.isNative||tks.out.isWBONE?CFG.WBONE:tks.out.address;if(ai===ao){const a=ethers.parseUnits(val,18);(isEI?outEl:inEl).value=val;lastQ={amountIn:a,amountOut:a,minOut:a,path:[ai],isWrap:true,isFOT:false};showInfo({rate:"1:1 (wrap/unwrap)",impact:"0%",impClass:"g",min:val+" "+(tks.out.isNative?"BONE":tks.out.symbol),route:"Direct wrap/unwrap",gas:"~0.0001 BONE"});btn.textContent=tks.in.isNative?"Wrap BONE":"Unwrap BONE";btn.disabled=false;btn.onclick=doSwapOrCf;return}let ams,path,multi=false;const amtW=ethers.parseUnits(val,isEI?tks.in.decimals:tks.out.decimals);const tryP=async p=>{try{return{ams:isEI?await router.getAmountsOut(amtW,p):await router.getAmountsIn(amtW,p),path:p}}catch{return null}};let r=await tryP([ai,ao]);if(!r&&ai!==CFG.WBONE&&ao!==CFG.WBONE){r=await tryP([ai,CFG.WBONE,ao]);if(r)multi=true}if(!r){btn.textContent="No liquidity";btn.disabled=true;setSt("","○","No liquidity for this pair");return}ams=r.ams;path=r.path;const amIn=isEI?amtW:ams[0],amOut=isEI?ams[ams.length-1]:amtW,minOut=amOut*(10000n-slipBps)/10000n,maxIn=amIn*(10000n+slipBps)/10000n;
+async function fetchQuote() {
+  if (!provider || !userAddress) return;
+  const btn   = document.getElementById('swapBtn');
+  const lbl   = document.getElementById('swapBtnLabel');
+  const inEl  = document.getElementById('amtIn');
+  const outEl = document.getElementById('amtOut');
+  const val   = (swapMode === 'exactIn' ? inEl : outEl).value.trim();
 
-    // ── Guard: amOut === 0n means pool is empty or dust input ──
-    if (amOut === 0n) {
-      btn.textContent = "No liquidity";
-      btn.disabled = true;
-      setSt("", "○", "Pool has no liquidity or input amount is too small");
+  outEl.value = '';
+  document.getElementById('priceInfo').classList.remove('show');
+  lastQuote = null;
+
+  if (!val || parseFloat(val) <= 0) {
+    btn.disabled = true;
+    lbl.textContent = t('enterAmount');
+    return;
+  }
+
+  btn.disabled = true;
+  lbl.textContent = t('gettingQuote');
+
+  try {
+    const router = new ethers.Contract(CFG.ROUTER, ROUTER_ABI, provider);
+    const ai = tokens.in.isNative  || tokens.in.isWBONE  ? CFG.WBONE : tokens.in.address;
+    const ao = tokens.out.isNative || tokens.out.isWBONE ? CFG.WBONE : tokens.out.address;
+
+    // Wrap/unwrap case
+    if (ai === ao) {
+      const amount = ethers.parseUnits(val, 18);
+      (swapMode === 'exactIn' ? outEl : inEl).value = val;
+      lastQuote = { amountIn: amount, amountOut: amount, minOut: amount, path: [ai], isWrap: true };
+      showPriceInfo({ rate: '1:1 (wrap/unwrap)', impact: '0%', impClass: 'green', min: val+' '+(tokens.out.isNative ? 'BONE' : tokens.out.symbol), route: 'Direct wrap/unwrap', gas: '~0.0001 BONE' });
+      lbl.textContent = tokens.in.isNative ? 'Wrap BONE' : 'Unwrap WBONE';
+      btn.disabled = false;
+      btn.onclick = doSwapOrConfirm;
       return;
     }
 
-    // ── Guard: minOut === 0n means slippage would remove all protection ──
-    // Happens when amOut is very small and BigInt truncation rounds to 0.
-    // Sending minOut=0n to the router means it accepts ANY output — sandwich risk.
-    if (minOut === 0n) {
-      btn.textContent = "Amount too small";
-      btn.disabled = true;
-      setSt("error", "⚠", "Output too small — increase amount or reduce slippage tolerance");
-      return;
-    }let imp=0,impC="g";try{if(!multi){const sp=await router.getAmountsOut(ethers.parseUnits("1",tks.in.decimals),[ai,ao]);const exp=sp[1]*amIn/ethers.parseUnits("1",tks.in.decimals);if(exp>0n){imp=Number((exp-amOut)*10000n/exp)/100;if(imp<0)imp=0}}impC=imp>15?"r":imp>2?"y":"g"}catch{}let gas="~0.001 BONE";try{const dl=getDL();let gu;if(tks.in.isNative||tks.in.isWBONE)gu=await router.swapExactETHForTokens.estimateGas(minOut,path,uAddr,dl,{value:amIn});else if(tks.out.isNative||tks.out.isWBONE)gu=await router.swapExactTokensForETH.estimateGas(amIn,minOut,path,uAddr,dl);else gu=await router.swapExactTokensForTokens.estimateGas(amIn,minOut,path,uAddr,dl);const fd=await prov.getFeeData();gas="~"+parseFloat(ethers.formatEther(gu*(fd.gasPrice||1000000000n))).toFixed(6)+" BONE"}catch{}lastQ={amountIn:amIn,amountOut:amOut,minOut,maxIn,path,isMultiHop:multi,isFOT:false,impactPct:imp,impactClass:impC,isWrap:false};(isEI?outEl:inEl).value=parseFloat(ethers.formatUnits(isEI?amOut:amIn,isEI?tks.out.decimals:tks.in.decimals)).toFixed(6);const rate=parseFloat(ethers.formatUnits(amOut,tks.out.decimals))/parseFloat(ethers.formatUnits(amIn,tks.in.decimals));showInfo({rate:`1 ${tks.in.symbol} = ${rate.toFixed(6)} ${tks.out.symbol}`,impact:imp>0?imp.toFixed(2)+"%":"< 0.01%",impClass:impC,min:parseFloat(ethers.formatUnits(minOut,tks.out.decimals)).toFixed(6)+" "+tks.out.symbol,route:multi?`${tks.in.symbol} → WBONE → ${tks.out.symbol}`:`${tks.in.symbol} → ${tks.out.symbol}`,gas});if(imp>15)setSt("error","⚠",`Very high impact (${imp.toFixed(2)}%) — reduce amount`);else if(imp>5)setSt("warning","⚠",`High impact: ${imp.toFixed(2)}%`);else setSt("","○","Quote ready — refreshes in "+refSecs+"s");const balN=parseFloat(document.getElementById("balIn").textContent),amIF=parseFloat(ethers.formatUnits(amIn,tks.in.decimals));if(!isNaN(balN)&&amIF>balN){btn.disabled=true;btn.textContent="Insufficient "+tks.in.symbol;return}if(!tks.in.isNative&&!tks.in.isWBONE){const al=await new ethers.Contract(tks.in.address,E20,prov).allowance(uAddr,CFG.ROUTER);if(al<amIn){btn.textContent="Approve "+tks.in.symbol;btn.disabled=false;btn.onclick=doApprove;return}}btn.textContent=imp>15?"⚠ Swap Anyway":"Swap";btn.disabled=false;btn.onclick=doSwapOrCf}catch(e){btn.textContent="Error";btn.disabled=true;console.error(e)}}
+    const amtWei = ethers.parseUnits(val, swapMode === 'exactIn' ? tokens.in.decimals : tokens.out.decimals);
 
-function showInfo(d){
-  document.getElementById("infoP").style.display="block";
-  document.getElementById("iRate").textContent=d.rate;
-  document.getElementById("iImpact").textContent=d.impact;
-  document.getElementById("iImpact").className="i-v "+d.impClass;
-  document.getElementById("iMin").textContent=d.min;
-  document.getElementById("iRoute").textContent=d.route;
-  document.getElementById("iGas").textContent=d.gas;
-  // Update USD display for amounts
-  if(lastQ){
-    const inAmt=ethers.formatUnits(lastQ.amountIn,tks.in.decimals);
-    const outAmt=ethers.formatUnits(lastQ.amountOut,tks.out.decimals);
-    showUSDValue("usdIn",inAmt,tks.in);
-    showUSDValue("usdOut",outAmt,tks.out);
+    // Try direct path, then multi-hop via WBONE
+    const tryPath = async (path) => {
+      try {
+        return {
+          ams: swapMode === 'exactIn'
+            ? await router.getAmountsOut(amtWei, path)
+            : await router.getAmountsIn(amtWei, path),
+          path,
+        };
+      } catch { return null; }
+    };
+
+    let result = await tryPath([ai, ao]);
+    let isMultiHop = false;
+    if (!result && ai !== CFG.WBONE && ao !== CFG.WBONE) {
+      result = await tryPath([ai, CFG.WBONE, ao]);
+      if (result) isMultiHop = true;
+    }
+
+    if (!result) {
+      btn.disabled = true;
+      lbl.textContent = t('noLiquidity');
+      showStatus('', '', t('noLiquidity'));
+      return;
+    }
+
+    const { ams, path } = result;
+    const amIn  = swapMode === 'exactIn' ? amtWei : ams[0];
+    const amOut = swapMode === 'exactIn' ? ams[ams.length-1] : amtWei;
+
+    if (amOut === 0n) {
+      btn.disabled = true;
+      lbl.textContent = t('noLiquidity');
+      return;
+    }
+
+    const minOut = amOut * (10000n - slippageBps) / 10000n;
+    const maxIn  = amIn  * (10000n + slippageBps) / 10000n;
+
+    if (minOut === 0n) {
+      btn.disabled = true;
+      lbl.textContent = 'Amount too small';
+      return;
+    }
+
+    // Price impact
+    let impactPct = 0;
+    let impClass  = 'green';
+    try {
+      if (!isMultiHop) {
+        const spot = await router.getAmountsOut(ethers.parseUnits('1', tokens.in.decimals), [ai, ao]);
+        const expected = spot[1] * amIn / ethers.parseUnits('1', tokens.in.decimals);
+        if (expected > 0n) {
+          impactPct = Number((expected - amOut) * 10000n / expected) / 100;
+          if (impactPct < 0) impactPct = 0;
+        }
+      }
+      impClass = impactPct > 15 ? 'red' : impactPct > 2 ? 'yellow' : 'green';
+    } catch(_) {}
+
+    // Gas estimate
+    let gasEst = '~0.001 BONE';
+    try {
+      const dl = getDeadline();
+      let gu;
+      if (tokens.in.isNative || tokens.in.isWBONE)
+        gu = await router.swapExactETHForTokens.estimateGas(minOut, path, userAddress, dl, { value: amIn });
+      else if (tokens.out.isNative || tokens.out.isWBONE)
+        gu = await router.swapExactTokensForETH.estimateGas(amIn, minOut, path, userAddress, dl);
+      else
+        gu = await router.swapExactTokensForTokens.estimateGas(amIn, minOut, path, userAddress, dl);
+      const fd = await provider.getFeeData();
+      gasEst = '~' + parseFloat(ethers.formatEther(gu * (fd.gasPrice || 1000000000n))).toFixed(6) + ' BONE';
+    } catch(_) {}
+
+    lastQuote = { amountIn: amIn, amountOut: amOut, minOut, maxIn, path, isMultiHop, isWrap: false, impactPct, impactClass: impClass };
+
+    // Update output field
+    (swapMode === 'exactIn' ? outEl : inEl).value = parseFloat(ethers.formatUnits(swapMode === 'exactIn' ? amOut : amIn, swapMode === 'exactIn' ? tokens.out.decimals : tokens.in.decimals)).toFixed(6);
+
+    // Rate
+    const rate = parseFloat(ethers.formatUnits(amOut, tokens.out.decimals)) / parseFloat(ethers.formatUnits(amIn, tokens.in.decimals));
+
+    showPriceInfo({
+      rate:     `1 ${tokens.in.symbol} = ${rate.toFixed(6)} ${tokens.out.symbol}`,
+      impact:   impactPct > 0 ? impactPct.toFixed(2)+'%' : '< 0.01%',
+      impClass,
+      min:      parseFloat(ethers.formatUnits(minOut, tokens.out.decimals)).toFixed(6) + ' ' + tokens.out.symbol,
+      route:    isMultiHop ? `${tokens.in.symbol} -> WBONE -> ${tokens.out.symbol}` : `${tokens.in.symbol} -> ${tokens.out.symbol}`,
+      gas:      gasEst,
+    });
+
+    if (impactPct > 15) showStatus('error', '', `Very high impact (${impactPct.toFixed(2)}%)  reduce amount`);
+    else if (impactPct > 5) showStatus('warning', '', `High impact: ${impactPct.toFixed(2)}%`);
+    else showStatus('', '', `Quote ready  refreshes in ${refreshSecs}s`);
+
+    //  BALANCE CHECK -- use raw BigInt values, not formatted strings 
+    // This fixes the comma bug where parseFloat('30,144') = 30
+    const rawBal = window._rawBalIn || 0n;
+    if (amIn > rawBal) {
+      btn.disabled = true;
+      lbl.textContent = t('insufficientBalance') + ' ' + tokens.in.symbol;
+      return;
+    }
+
+    // Allowance check for ERC20
+    if (!tokens.in.isNative && !tokens.in.isWBONE) {
+      const contract  = new ethers.Contract(tokens.in.address, ERC20_ABI, provider);
+      const allowance = await contract.allowance(userAddress, CFG.ROUTER);
+      if (allowance < amIn) {
+        lbl.textContent = t('approveToken') + ' ' + tokens.in.symbol;
+        btn.disabled = false;
+        btn.onclick = doApprove;
+        return;
+      }
+    }
+
+    lbl.textContent = impactPct > 15 ? ' Swap Anyway' : t('swap');
+    btn.disabled = false;
+    btn.onclick = doSwapOrConfirm;
+
+    // USD display for amounts
+    showUSD('usdIn',  ethers.formatUnits(amIn,  tokens.in.decimals),  tokens.in);
+    showUSD('usdOut', ethers.formatUnits(amOut, tokens.out.decimals), tokens.out);
+
+  } catch(e) {
+    btn.disabled = true;
+    lbl.textContent = 'Error';
+    console.error('Quote error:', e);
   }
 }
 
-async function doApprove(){const btn=document.getElementById("swBtn");btn.disabled=true;btn.textContent="Approving...";setSt("loading",null,"Approving "+tks.in.symbol+"...");try{const a=lastQ?lastQ.amountIn:ethers.parseUnits(document.getElementById("amtIn").value,tks.in.decimals);const tx=await new ethers.Contract(tks.in.address,E20,sign).approve(CFG.ROUTER,a);setSt("loading",null,"Waiting for approval...");await tx.wait();setSt("success","✓","Approved — ready to swap");fetchQ()}catch(e){setSt("error","✕",decErr(e));btn.disabled=false;btn.textContent="Approve "+tks.in.symbol}}
+function showPriceInfo(d) {
+  document.getElementById('priceInfo').classList.add('show');
+  document.getElementById('infoRate').textContent   = d.rate;
+  document.getElementById('infoImpact').textContent = d.impact;
+  document.getElementById('infoImpact').className   = 'info-val ' + d.impClass;
+  document.getElementById('infoMin').textContent    = d.min;
+  document.getElementById('infoRoute').textContent  = d.route;
+  document.getElementById('infoGas').textContent    = d.gas;
+}
 
-function doSwapOrCf(){if(!lastQ)return;if(lastQ.isWrap||document.getElementById("expMode").checked){execSwap();return}const{amountIn:ai,amountOut:ao,minOut:mn,impactPct:imp,impactClass:ic,path}=lastQ;document.getElementById("cfAmtIn").textContent=parseFloat(ethers.formatUnits(ai,tks.in.decimals)).toFixed(6)+" "+tks.in.symbol;document.getElementById("cfAmtOut").textContent=parseFloat(ethers.formatUnits(mn,tks.out.decimals)).toFixed(6)+" "+tks.out.symbol;document.getElementById("cfImpact").textContent=(imp||0).toFixed(2)+"%";document.getElementById("cfImpact").style.color=ic==="g"?"var(--gr)":ic==="y"?"var(--yw)":"var(--rd)";document.getElementById("cfMin").textContent=document.getElementById("iMin").textContent;document.getElementById("cfRoute").textContent=document.getElementById("iRoute").textContent;document.getElementById("cfSlip").textContent=Number(slipBps)/100+"%";document.getElementById("cfGas").textContent=document.getElementById("iGas").textContent;document.getElementById("cfModal").classList.add("open")}
-function closeCf(){document.getElementById("cfModal").classList.remove("open")}
+//  Approve 
+async function doApprove() {
+  const btn = document.getElementById('swapBtn');
+  const lbl = document.getElementById('swapBtnLabel');
+  btn.disabled = true;
+  lbl.textContent = t('approving');
+  showStatus('loading', null, t('approving') + ' ' + tokens.in.symbol + '...');
+  try {
+    const amount = lastQuote ? lastQuote.amountIn : ethers.parseUnits(document.getElementById('amtIn').value, tokens.in.decimals);
+    const contract = new ethers.Contract(tokens.in.address, ERC20_ABI, signer);
+    const tx = await contract.approve(CFG.ROUTER, amount);
+    showStatus('loading', null, 'Waiting for approval...');
+    await tx.wait();
+    showStatus('success', '', t('approved') + ' Ready to swap.');
+    fetchQuote();
+  } catch(e) {
+    showStatus('error', '', decodeError(e));
+    btn.disabled = false;
+    lbl.textContent = t('approveToken') + ' ' + tokens.in.symbol;
+  }
+}
 
-async function execSwap(){closeCf();if(!lastQ)return;const btn=document.getElementById("swBtn");btn.disabled=true;btn.textContent="Simulating...";const{amountIn:ai,amountOut:ao,minOut:mn,maxIn:mxi,path,isWrap,isFOT}=lastQ,dl=getDL(),router=new ethers.Contract(CFG.ROUTER,RABI,sign),niIn=tks.in.isNative||tks.in.isWBONE,niOut=tks.out.isNative||tks.out.isWBONE,isEI=mode==="exactIn";
-if(isWrap){try{setSt("loading",null,tks.in.isNative?"Wrapping BONE...":"Unwrapping WBONE...");const wbi=["function deposit() payable","function withdraw(uint256)"],wb=new ethers.Contract(CFG.WBONE,wbi,sign);const tx=tks.in.isNative?await wb.deposit({value:ai}):await wb.withdraw(ai);await tx.wait();setSt("success","✓",tks.in.isNative?"BONE wrapped to WBONE!":"WBONE unwrapped to BONE!");await refBals()}catch(e){setSt("error","✕",decErr(e))}finally{btn.disabled=false;btn.textContent="Swap"}return}
-let fn;if(isEI){if(niIn)fn="swapExactETHForTokens";else if(niOut)fn="swapExactTokensForETH";else fn="swapExactTokensForTokens"}else{if(niIn)fn="swapETHForExactTokens";else if(niOut)fn="swapTokensForExactETH";else fn="swapTokensForExactTokens"}
-try{setSt("loading",null,"Simulating...");if(fn==="swapExactETHForTokens")await router.swapExactETHForTokens.staticCall(mn,path,uAddr,dl,{value:ai});else if(fn==="swapExactTokensForETH")await router.swapExactTokensForETH.staticCall(ai,mn,path,uAddr,dl);else if(fn==="swapExactTokensForTokens")await router.swapExactTokensForTokens.staticCall(ai,mn,path,uAddr,dl);else if(fn==="swapETHForExactTokens")await router.swapETHForExactTokens.staticCall(ao,path,uAddr,dl,{value:mxi});else if(fn==="swapTokensForExactETH")await router.swapTokensForExactETH.staticCall(ao,mxi,path,uAddr,dl);else await router.swapTokensForExactTokens.staticCall(ao,mxi,path,uAddr,dl)}catch(se){setSt("error","✕","Simulation failed: "+decErr(se));btn.disabled=false;btn.textContent="Swap";return}
-try{setSt("loading",null,"Confirm in wallet...");btn.textContent="Confirming...";let tx;if(fn==="swapExactETHForTokens")tx=await router.swapExactETHForTokens(mn,path,uAddr,dl,{value:ai});else if(fn==="swapExactTokensForETH")tx=await router.swapExactTokensForETH(ai,mn,path,uAddr,dl);else if(fn==="swapExactTokensForTokens")tx=await router.swapExactTokensForTokens(ai,mn,path,uAddr,dl);else if(fn==="swapETHForExactTokens")tx=await router.swapETHForExactTokens(ao,path,uAddr,dl,{value:mxi});else if(fn==="swapTokensForExactETH")tx=await router.swapTokensForExactETH(ao,mxi,path,uAddr,dl);else tx=await router.swapTokensForExactTokens(ao,mxi,path,uAddr,dl);setSt("loading",null,"Tx sent — "+tx.hash.slice(0,10)+"...");await tx.wait();saveTx({hash:tx.hash,summary:ethers.formatUnits(ai,tks.in.decimals).slice(0,8)+" "+tks.in.symbol+" → "+tks.out.symbol,time:Date.now()});setSt("success","✓",`Swapped! <a href="${CFG.EXP}/tx/${tx.hash}" target="_blank">View ↗</a>`);document.getElementById("amtIn").value="";document.getElementById("amtOut").value="";lastQ=null;await refBals();loadTxH()}catch(e){setSt("error","✕",decErr(e))}finally{btn.disabled=false;btn.textContent="Swap";fetchQ()}}
+//  Swap execution 
+function doSwapOrConfirm() {
+  if (!lastQuote) return;
+  if (lastQuote.isWrap || document.getElementById('expertMode').checked) {
+    executeSwap();
+    return;
+  }
+  // Show confirm modal
+  const { amountIn: ai, amountOut: ao, minOut: mn, impactPct, impactClass, path } = lastQuote;
+  document.getElementById('cfAmtIn').textContent  = parseFloat(ethers.formatUnits(ai, tokens.in.decimals)).toFixed(6) + ' ' + tokens.in.symbol;
+  document.getElementById('cfAmtOut').textContent = parseFloat(ethers.formatUnits(mn, tokens.out.decimals)).toFixed(6) + ' ' + tokens.out.symbol;
+  document.getElementById('cfImpact').textContent = (impactPct||0).toFixed(2) + '%';
+  document.getElementById('cfImpact').style.color = impactClass === 'green' ? 'var(--green)' : impactClass === 'yellow' ? '#ffd84a' : 'var(--red)';
+  document.getElementById('cfMin').textContent    = document.getElementById('infoMin').textContent;
+  document.getElementById('cfRoute').textContent  = document.getElementById('infoRoute').textContent;
+  document.getElementById('cfSlip').textContent   = Number(slippageBps) / 100 + '%';
+  document.getElementById('cfGas').textContent    = document.getElementById('infoGas').textContent;
+  document.getElementById('confirmModal').classList.add('open');
+}
 
-function saveTx(tx){try{const k="rs_txs_"+(uAddr||""),p=JSON.parse(localStorage.getItem(k)||"[]");p.unshift(tx);localStorage.setItem(k,JSON.stringify(p.slice(0,5)))}catch{}}
-function loadTxH(){try{const k="rs_txs_"+(uAddr||""),txs=JSON.parse(localStorage.getItem(k)||"[]"),w=document.getElementById("txsW");if(!txs.length){w.style.display="none";return}w.style.display="block";document.getElementById("txsList").innerHTML=txs.map(t=>`<div class="tx-i"><span>${t.summary}</span><a href="${CFG.EXP}/tx/${t.hash}" target="_blank">${t.hash.slice(0,8)}... ↗</a></div>`).join("")}catch{}}
+function closeConfirm() { document.getElementById('confirmModal').classList.remove('open'); }
 
-function fmtU(v,d){const s=ethers.formatUnits(v,d),n=parseFloat(s);if(n===0)return"0";if(n<.00001)return"< 0.00001";return n.toLocaleString(undefined,{maximumFractionDigits:6})}
-function setSt(t,ic,msg){const box=document.getElementById("stBox"),txt=document.getElementById("stTxt");box.className="st-box"+(t?" "+t:"");let ie=box.querySelector(".st-icon,.spinner");if(ie)ie.remove();const el=document.createElement(t==="loading"?"div":"span");el.className=t==="loading"?"spinner":"st-icon";if(t!=="loading"&&ic)el.textContent=ic;box.insertBefore(el,txt);if(t==="success")txt.innerHTML=msg;else txt.textContent=msg}
-function decErr(e){if(!e)return"Unknown";if(e.reason)return e.reason;if(e.shortMessage)return e.shortMessage;if(e.error?.reason)return e.error.reason;const d=e?.data||e?.error?.data||e?.info?.error?.data;if(typeof d==="string"&&d.startsWith("0x08c379a0")){try{return ethers.AbiCoder.defaultAbiCoder().decode(["string"],"0x"+d.slice(10))[0]}catch{}}if(e.code===4001||e.code==="ACTION_REJECTED")return"Rejected by user";const r=e.message||String(e),m=r.match(/reason="([^"]+)"/);if(m)return m[1];return r.replace("missing revert data","Transaction reverted — check liquidity and slippage").slice(0,180)}
+async function executeSwap() {
+  closeConfirm();
+  if (!lastQuote) return;
 
-document.getElementById("tokenModal").addEventListener("click",e=>{if(e.target===e.currentTarget)closeTkMo()});
-document.getElementById("cfModal").addEventListener("click",e=>{if(e.target===e.currentTarget)closeCf()});
-document.addEventListener("keydown",e=>{if(e.key==="Enter"){const b=document.getElementById("swBtn");if(!b.disabled)b.click()}});
-initURL();
-// Render initial token avatars
-setTimeout(()=>{updTkUI("in");updTkUI("out");},0);
-// Prefetch prices on load
-Promise.all([
-  getUSDPrice(CFG.WBONE),
-  getUSDPrice(CFG.RIC),
-]).catch(()=>{});
-(async()=>{if(window.ethereum){try{const a=await window.ethereum.request({method:"eth_accounts"});if(a.length>0)connWallet()}catch{}}})();
+  const btn = document.getElementById('swapBtn');
+  const lbl = document.getElementById('swapBtnLabel');
+  btn.disabled = true;
+  lbl.textContent = t('simulation');
+
+  const { amountIn: ai, amountOut: ao, minOut: mn, maxIn: mxi, path, isWrap } = lastQuote;
+  const dl = getDeadline();
+  const router = new ethers.Contract(CFG.ROUTER, ROUTER_ABI, signer);
+  const niIn  = tokens.in.isNative  || tokens.in.isWBONE;
+  const niOut = tokens.out.isNative || tokens.out.isWBONE;
+  const isEI  = swapMode === 'exactIn';
+
+  // Wrap/unwrap
+  if (isWrap) {
+    try {
+      showStatus('loading', null, tokens.in.isNative ? 'Wrapping BONE...' : 'Unwrapping WBONE...');
+      const wbi = ['function deposit() payable', 'function withdraw(uint256)'];
+      const wb  = new ethers.Contract(CFG.WBONE, wbi, signer);
+      const tx  = tokens.in.isNative ? await wb.deposit({ value: ai }) : await wb.withdraw(ai);
+      await tx.wait();
+      showStatus('success', '', tokens.in.isNative ? 'BONE wrapped!' : 'WBONE unwrapped!');
+      saveTx({ hash: tx.hash, summary: tokens.in.symbol + '  ' + tokens.out.symbol, time: Date.now() });
+      await refreshBalances();
+    } catch(e) {
+      showStatus('error', '', decodeError(e));
+    } finally {
+      btn.disabled = false;
+      lbl.textContent = t('swap');
+    }
+    return;
+  }
+
+  let fn;
+  if (isEI) {
+    if (niIn)       fn = 'swapExactETHForTokens';
+    else if (niOut) fn = 'swapExactTokensForETH';
+    else            fn = 'swapExactTokensForTokens';
+  } else {
+    if (niIn)       fn = 'swapETHForExactTokens';
+    else if (niOut) fn = 'swapTokensForExactETH';
+    else            fn = 'swapTokensForExactTokens';
+  }
+
+  // Simulate first
+  try {
+    showStatus('loading', null, t('simulation'));
+    if      (fn === 'swapExactETHForTokens')    await router.swapExactETHForTokens.staticCall(mn, path, userAddress, dl, { value: ai });
+    else if (fn === 'swapExactTokensForETH')    await router.swapExactTokensForETH.staticCall(ai, mn, path, userAddress, dl);
+    else if (fn === 'swapExactTokensForTokens') await router.swapExactTokensForTokens.staticCall(ai, mn, path, userAddress, dl);
+    else if (fn === 'swapETHForExactTokens')    await router.swapETHForExactTokens.staticCall(ao, path, userAddress, dl, { value: mxi });
+    else if (fn === 'swapTokensForExactETH')    await router.swapTokensForExactETH.staticCall(ao, mxi, path, userAddress, dl);
+    else                                        await router.swapTokensForExactTokens.staticCall(ao, mxi, path, userAddress, dl);
+  } catch(se) {
+    showStatus('error', '', 'Simulation failed: ' + decodeError(se));
+    btn.disabled = false;
+    lbl.textContent = t('swap');
+    return;
+  }
+
+  // Execute
+  try {
+    showStatus('loading', null, t('confirmWallet'));
+    lbl.textContent = t('swapping');
+    let tx;
+    if      (fn === 'swapExactETHForTokens')    tx = await router.swapExactETHForTokens(mn, path, userAddress, dl, { value: ai });
+    else if (fn === 'swapExactTokensForETH')    tx = await router.swapExactTokensForETH(ai, mn, path, userAddress, dl);
+    else if (fn === 'swapExactTokensForTokens') tx = await router.swapExactTokensForTokens(ai, mn, path, userAddress, dl);
+    else if (fn === 'swapETHForExactTokens')    tx = await router.swapETHForExactTokens(ao, path, userAddress, dl, { value: mxi });
+    else if (fn === 'swapTokensForExactETH')    tx = await router.swapTokensForExactETH(ao, mxi, path, userAddress, dl);
+    else                                        tx = await router.swapTokensForExactTokens(ao, mxi, path, userAddress, dl);
+
+    showStatus('loading', null, 'Tx sent  ' + tx.hash.slice(0,10)+'...');
+    await tx.wait();
+    saveTx({ hash: tx.hash, summary: parseFloat(ethers.formatUnits(ai, tokens.in.decimals)).toFixed(4)+' '+tokens.in.symbol+'  '+tokens.out.symbol, time: Date.now() });
+    showStatus('success', '', `${t('swapSuccess')} <a href="${CFG.EXPLORER}/tx/${tx.hash}" target="_blank">View </a>`);
+    document.getElementById('amtIn').value  = '';
+    document.getElementById('amtOut').value = '';
+    lastQuote = null;
+    await refreshBalances();
+    loadTxHistory();
+  } catch(e) {
+    showStatus('error', '', decodeError(e));
+  } finally {
+    btn.disabled = false;
+    lbl.textContent = t('swap');
+    fetchQuote();
+  }
+}
+
+//  Token modal 
+function openTokenModal(side) {
+  modalSide = side;
+  pendingImport = null;
+  document.getElementById('tokenSearch').value = '';
+  document.getElementById('impWarn').classList.remove('show');
+  renderTokenList(TOKEN_LIST);
+  document.getElementById('tokenModal').classList.add('open');
+  setTimeout(() => document.getElementById('tokenSearch').focus(), 50);
+}
+
+function closeTokenModal() { document.getElementById('tokenModal').classList.remove('open'); }
+
+function onModalOverlayClick(e) { if (e.target === document.getElementById('tokenModal')) closeTokenModal(); }
+
+function renderTokenList(list) {
+  const el = document.getElementById('tokenList');
+  el.innerHTML = list.map(tk => {
+    const addr = tk.isNative || tk.isWBONE ? CFG.WBONE : tk.address;
+    let logoHtml = tk.symbol.slice(0,2).toUpperCase();
+    if (addr && addr !== 'NATIVE' && ethers) {
+      try {
+        const cs = ethers.getAddress(addr);
+        logoHtml = `<img src="${CFG.LOGO_CDN}/${cs}/logo.png" style="width:100%;height:100%;object-fit:cover;border-radius:50%" onerror="this.remove();this.parentElement.textContent='${tk.symbol.slice(0,2).toUpperCase()}'">`;
+      } catch(_) {}
+    }
+    const imp = tk.official ? '' : '<span class="imp-tag">imported</span>';
+    return `
+      <div class="token-row" onclick="selectToken('${tk.address}')">
+        <div class="token-avatar" style="background:${tk.color}22;color:${tk.color};width:36px;height:36px;font-size:11px;overflow:hidden">
+          ${logoHtml}
+        </div>
+        <div class="token-row-info">
+          <div class="token-row-sym">${tk.symbol}${imp}</div>
+          <div class="token-row-name">${tk.name}</div>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+async function filterTokens() {
+  const q = document.getElementById('tokenSearch').value.trim().toLowerCase();
+  document.getElementById('impWarn').classList.remove('show');
+  pendingImport = null;
+  if (!q) { renderTokenList(TOKEN_LIST); return; }
+  const filtered = TOKEN_LIST.filter(t => t.symbol.toLowerCase().includes(q) || t.name.toLowerCase().includes(q) || t.address.toLowerCase() === q);
+  if (filtered.length) { renderTokenList(filtered); return; }
+  if (ethers && ethers.isAddress(q) && provider) {
+    document.getElementById('tokenList').innerHTML = '<div style="text-align:center;padding:20px;font-family:var(--mono);font-size:11px;color:var(--ash)">Looking up token...</div>';
+    try {
+      const contract = new ethers.Contract(q, ERC20_ABI, provider);
+      const [sym, dec] = await Promise.all([contract.symbol().catch(()=>q.slice(0,6)), contract.decimals()]);
+      let name = sym;
+      try { name = await contract.name(); } catch(_) {}
+      pendingImport = { symbol: sym, name, address: q, decimals: Number(dec), isNative: false, isWBONE: false, color: '#555880', official: false };
+      renderTokenList([pendingImport]);
+      document.getElementById('impWarn').classList.add('show');
+    } catch {
+      document.getElementById('tokenList').innerHTML = '<div style="text-align:center;padding:20px;font-family:var(--mono);font-size:11px;color:var(--red)">Invalid address or token not found</div>';
+    }
+  } else {
+    document.getElementById('tokenList').innerHTML = '<div style="text-align:center;padding:20px;font-family:var(--mono);font-size:11px;color:var(--ash)">No tokens found</div>';
+  }
+}
+
+function cancelImport() { pendingImport = null; document.getElementById('tokenSearch').value = ''; document.getElementById('impWarn').classList.remove('show'); renderTokenList(TOKEN_LIST); }
+function confirmImport() { if (!pendingImport) return; TOKEN_LIST.push(pendingImport); selectToken(pendingImport.address); }
+
+function selectToken(address) {
+  const other = modalSide === 'in' ? 'out' : 'in';
+  // Prevent same token on both sides
+  if (tokens[other].address.toLowerCase() === address.toLowerCase()) { flipTokensData(); closeTokenModal(); return; }
+  const found = TOKEN_LIST.find(t => t.address.toLowerCase() === address.toLowerCase());
+  if (!found) return;
+  tokens[modalSide] = { ...found };
+  updateTokenUI(modalSide);
+  closeTokenModal();
+  refreshBalances();
+  scheduleQuote();
+  loadChartData();
+}
+
+function updateTokenUI(side) {
+  const tk = tokens[side];
+  const id = side === 'in' ? 'In' : 'Out';
+  document.getElementById('sym'+id).textContent = tk.symbol;
+  if (ethers) setAvatar('avatar'+id, tk);
+  else document.getElementById('avatar'+id).textContent = tk.symbol.slice(0,2).toUpperCase();
+}
+
+//  Flip tokens 
+function flipTokensData() {
+  const tmp = tokens.in;
+  tokens.in  = tokens.out;
+  tokens.out = tmp;
+}
+
+function flipTokens() {
+  flipTokensData();
+  const ai = document.getElementById('amtIn').value;
+  document.getElementById('amtIn').value  = document.getElementById('amtOut').value || '';
+  document.getElementById('amtOut').value = '';
+  updateTokenUI('in');
+  updateTokenUI('out');
+  refreshBalances();
+  scheduleQuote();
+}
+
+//  Amount input 
+function onAmountInput(side) {
+  if (side === 'in'  && swapMode === 'exactIn')  scheduleQuote();
+  if (side === 'out' && swapMode === 'exactOut') scheduleQuote();
+  const val = document.getElementById(side === 'in' ? 'amtIn' : 'amtOut').value;
+  showUSD(side === 'in' ? 'usdIn' : 'usdOut', val, tokens[side]);
+}
+
+function setMax() {
+  if (!window._rawBalIn || !ethers) return;
+  const tk = tokens.in;
+  let max = window._rawBalIn;
+  // Leave a small amount for gas if native BONE
+  if (tk.isNative && max > ethers.parseEther('0.01')) max -= ethers.parseEther('0.01');
+  document.getElementById('amtIn').value = parseFloat(ethers.formatUnits(max, tk.decimals)).toFixed(6);
+  scheduleQuote();
+}
+
+//  Settings 
+function toggleSettings() { document.getElementById('settingsPanel').classList.toggle('open'); }
+
+function setSlippage(pct) {
+  slippageBps = BigInt(Math.round(pct * 100));
+  document.querySelectorAll('.slip-btn').forEach(b => b.classList.toggle('active', b.textContent === pct+'%'));
+  if (lastQuote) scheduleQuote();
+}
+
+function getDeadline() {
+  const mins = parseInt(document.getElementById('deadlineInput').value) || 5;
+  return BigInt(Math.floor(Date.now()/1000) + mins*60);
+}
+
+//  Gasless toggle 
+function toggleGasless() {
+  const toggle = document.getElementById('gaslessToggle');
+  toggle.checked = !toggle.checked;
+  onGaslessChange();
+}
+
+function onGaslessChange() {
+  isGasless = document.getElementById('gaslessToggle').checked;
+  const lbl = document.getElementById('lbl-gaslessDesc');
+  lbl.textContent = isGasless ? 'Gas will be charged in RIC' : t('gaslessDesc');
+}
+
+function setSwapMode(mode) {
+  document.getElementById('tab-swap').classList.toggle('active', mode === 'swap');
+  document.getElementById('tab-wrap').classList.toggle('active', mode === 'wrap');
+  if (mode === 'wrap') {
+    // Set to BONE/WBONE pair
+    tokens.in  = { ...TOKEN_LIST[0] }; // BONE
+    tokens.out = { ...TOKEN_LIST[1] }; // WBONE
+    updateTokenUI('in');
+    updateTokenUI('out');
+  }
+  refreshBalances();
+  scheduleQuote();
+}
+
+//  Refresh timer 
+function startRefreshTimer() {
+  clearInterval(refreshTimer);
+  refreshSecs = 15;
+  document.getElementById('refreshRow').classList.add('show');
+  updateRefreshBar();
+  refreshTimer = setInterval(() => {
+    refreshSecs--;
+    updateRefreshBar();
+    if (refreshSecs <= 0) { refreshSecs = 15; if (lastQuote) fetchQuote(); }
+  }, 1000);
+}
+
+function updateRefreshBar() {
+  document.getElementById('refreshBar').style.width = (refreshSecs/15*100) + '%';
+  document.getElementById('refreshCount').textContent = refreshSecs + 's';
+}
+
+//  Status box 
+function showStatus(type, icon, msg) {
+  const box = document.getElementById('statusBox');
+  const txt = document.getElementById('statusText');
+  box.className = 'status-box' + (type ? ' '+type : '');
+  const existing = box.querySelector('.spin-st,.icon-st');
+  if (existing) existing.remove();
+  if (type === 'loading') {
+    const sp = document.createElement('div');
+    sp.className = 'spinner spin-st';
+    box.insertBefore(sp, txt);
+  } else if (icon) {
+    const ic = document.createElement('span');
+    ic.className = 'icon-st';
+    ic.textContent = icon;
+    box.insertBefore(ic, txt);
+  }
+  if (type === 'success') txt.innerHTML = msg;
+  else txt.textContent = msg;
+}
+
+//  Transaction history 
+function saveTx(tx) {
+  try {
+    const k = 'rs_txs_' + (userAddress || '');
+    const prev = JSON.parse(localStorage.getItem(k) || '[]');
+    prev.unshift(tx);
+    localStorage.setItem(k, JSON.stringify(prev.slice(0, 10)));
+    loadTxHistory();
+  } catch(_) {}
+}
+
+function loadTxHistory() {
+  try {
+    const k = 'rs_txs_' + (userAddress || '');
+    const txs = JSON.parse(localStorage.getItem(k) || '[]');
+    const list = document.getElementById('txsList');
+    const empty = document.getElementById('txsEmpty');
+    if (!txs.length) { if (empty) empty.style.display = 'block'; return; }
+    if (empty) empty.style.display = 'none';
+    list.innerHTML = txs.map(tx => `
+      <div class="tx-item" onclick="window.open('${CFG.EXPLORER}/tx/${tx.hash}','_blank')">
+        <div class="tx-icon swap">&#8646;</div>
+        <div class="tx-info">
+          <div class="tx-pair">${tx.summary}</div>
+          <div class="tx-time">${timeAgo(tx.time)}</div>
+        </div>
+        <div>
+          <div class="tx-hash">${tx.hash.slice(0,8)}...&#10138;</div>
+        </div>
+      </div>`).join('');
+  } catch(_) {}
+}
+
+function clearTxHistory() {
+  try { localStorage.removeItem('rs_txs_' + (userAddress || '')); } catch(_) {}
+  document.getElementById('txsList').innerHTML = '';
+  const empty = document.getElementById('txsEmpty');
+  if (empty) { empty.style.display = 'block'; empty.textContent = t('noTxs'); }
+}
+
+function timeAgo(ts) {
+  const diff = Math.floor((Date.now() - ts) / 1000);
+  if (diff < 60)   return diff + 's ago';
+  if (diff < 3600) return Math.floor(diff/60) + 'm ago';
+  return Math.floor(diff/3600) + 'h ago';
+}
+
+//  Error decoder 
+function decodeError(e) {
+  if (!e) return 'Unknown error';
+  if (e.reason) return e.reason;
+  if (e.shortMessage) return e.shortMessage;
+  if (e.code === 4001 || e.code === 'ACTION_REJECTED') return 'Rejected by user';
+  const msg = e.message || String(e);
+  const m = msg.match(/reason="([^"]+)"/);
+  if (m) return m[1];
+  return msg.replace('missing revert data', 'Transaction reverted  check liquidity').slice(0, 160);
+}
+
+//  Share link 
+function copyShareLink() {
+  const ai  = tokens.in.isNative  ? 'NATIVE' : tokens.in.address;
+  const ao  = tokens.out.isNative ? 'NATIVE' : tokens.out.address;
+  const amt = document.getElementById('amtIn').value || '';
+  const url = `${location.origin}${location.pathname}?tokenIn=${ai}&tokenOut=${ao}${amt ? '&amountIn='+amt : ''}`;
+  navigator.clipboard.writeText(url).then(() => showStatus('success', '', 'Share link copied!'));
+}
+
+//  URL params 
+function initFromURL() {
+  const p = new URLSearchParams(location.search);
+  if (p.get('tokenIn')) {
+    const tk = TOKEN_LIST.find(t => t.address.toLowerCase() === p.get('tokenIn').toLowerCase() || (p.get('tokenIn').toUpperCase() === 'NATIVE' && t.isNative));
+    if (tk) { tokens.in = { ...tk }; updateTokenUI('in'); }
+  }
+  if (p.get('tokenOut')) {
+    const tk = TOKEN_LIST.find(t => t.address.toLowerCase() === p.get('tokenOut').toLowerCase() || (p.get('tokenOut').toUpperCase() === 'NATIVE' && t.isNative));
+    if (tk) { tokens.out = { ...tk }; updateTokenUI('out'); }
+  }
+  if (p.get('amountIn')) document.getElementById('amtIn').value = p.get('amountIn');
+}
+
+//  Click outside closes dropdowns 
+document.addEventListener('click', (e) => {
+  const menu = document.getElementById('langMenu');
+  const btn  = document.getElementById('langBtn');
+  if (menu && btn && !menu.contains(e.target) && !btn.contains(e.target)) {
+    menu.classList.remove('open');
+  }
+});
+
+//  Keyboard shortcuts 
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    closeTokenModal();
+    closeConfirm();
+    document.getElementById('langMenu').classList.remove('open');
+  }
+  if (e.key === 'Enter') {
+    const btn = document.getElementById('swapBtn');
+    if (!btn.disabled) btn.click();
+  }
+});
+
+//  Init 
+async function init() {
+  // Apply language
+  setLang(currentLang);
+
+  // Load initial token avatars (without ethers -- just letters)
+  updateTokenUI('in');
+  updateTokenUI('out');
+
+  // Parse URL params
+  initFromURL();
+
+  // Load ticker
+  loadTicker().catch(() => {});
+
+  // Load ethers
+  await loadEthers();
+
+  // Now update avatars with proper logos
+  updateTokenUI('in');
+  updateTokenUI('out');
+
+  // Init chart
+  initChart().catch(() => {});
+
+  // Auto-reconnect if wallet was previously connected
+  if (window.ethereum) {
+    try {
+      const accounts = await window.ethereum.request({ method: 'eth_accounts' });
+      if (accounts.length > 0) await connectWallet();
+    } catch(_) {}
+  }
+
+  // Prefetch prices
+  Promise.all([
+    getDexPrice(CFG.WBONE),
+    getDexPrice(CFG.RIC),
+  ]).catch(() => {});
+}
+
+init();
 </script>
+
+<!-- lightweight-charts CDN fallback -->
+<script src="https://cdn.jsdelivr.net/npm/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js"></script>
 </body>
 </html>
