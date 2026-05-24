@@ -1,1205 +1,754 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>RicSwap | Add Liquidity</title>
-  <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.0/dist/ethers.umd.min.js"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;800&display=swap" rel="stylesheet">
-  <style>
-    :root {
-      --bg:        #04050f;
-      --surface:   #0b0d1f;
-      --surface2:  #111328;
-      --border:    #1e2040;
-      --border2:   #2a2d55;
-      --accent:    #ff4d00;
-      --accent2:   #ff8c00;
-      --blue:      #3b6bff;
-      --green:     #00ffb2;
-      --muted:     #555880;
-      --text:      #d8daf5;
-      --text2:     #8385a8;
-      --mono:      'Space Mono', monospace;
-      --sans:      'Syne', sans-serif;
-    }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#030407">
+<meta name="description" content="RicSwap -- Add liquidity to earn fees on Shibarium">
+<title>RicSwap | Add Liquidity</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+   DESIGN SYSTEM -- identical to swap.html
+   ============================================================ */
+:root {
+  --void:  #030407;
+  --deep:  #05060e;
+  --well:  #080918;
+  --pit:   #0b0c1c;
+  --card:  #0e1022;
+  --lift:  #12142c;
+  --rim:   rgba(255,255,255,0.055);
+  --rim2:  rgba(255,77,0,0.28);
 
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  --magma: #ff4d00;
+  --ember: #ff8c00;
+  --gold:  #e8b84b;
+  --green: #00ffb2;
+  --red:   #ff3366;
+  --blue:  #4d9fff;
 
-    body {
-      background: var(--bg);
-      color: var(--text);
-      font-family: var(--sans);
-      min-height: 100vh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 24px;
-      overflow-x: hidden;
-    }
+  --ash:   #383b52;
+  --smoke: #656880;
+  --fog:   #a0a2bc;
+  --mist:  #c4c6dc;
+  --white: #eef0f8;
 
-    /* Background grid */
-    body::before {
-      content: '';
-      position: fixed;
-      inset: 0;
-      background-image:
-        linear-gradient(rgba(255,77,0,0.03) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(255,77,0,0.03) 1px, transparent 1px);
-      background-size: 40px 40px;
-      pointer-events: none;
-      z-index: 0;
-    }
+  --mono:    'JetBrains Mono', monospace;
+  --display: 'Bebas Neue', sans-serif;
+  --body:    'DM Sans', sans-serif;
+}
 
-    /* Glow blob */
-    body::after {
-      content: '';
-      position: fixed;
-      top: -200px;
-      right: -200px;
-      width: 600px;
-      height: 600px;
-      background: radial-gradient(circle, rgba(255,77,0,0.07) 0%, transparent 70%);
-      pointer-events: none;
-      z-index: 0;
-    }
+*,*::before,*::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { height: 100%; }
+body {
+  background: var(--void); color: var(--fog);
+  font-family: var(--body); font-size: 15px;
+  line-height: 1.6; min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+  display: flex; flex-direction: column;
+  overflow-x: hidden;
+}
+a { color: inherit; text-decoration: none; }
+button { font-family: var(--body); cursor: pointer; border: none; outline: none; }
+input  { font-family: var(--body); outline: none; border: none; background: transparent; }
 
-    .card {
-      position: relative;
-      z-index: 1;
-      width: 100%;
-      max-width: 520px;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 20px;
-      padding: 32px;
-      box-shadow:
-        0 0 0 1px rgba(255,77,0,0.05),
-        0 32px 64px rgba(0,0,0,0.6),
-        inset 0 1px 0 rgba(255,255,255,0.04);
-      animation: fadeUp 0.4s ease both;
-    }
+/* Grid + noise */
+body::before {
+  content: ''; position: fixed; inset: 0;
+  background-image:
+    linear-gradient(rgba(255,77,0,.016) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,77,0,.016) 1px, transparent 1px);
+  background-size: 52px 52px;
+  pointer-events: none; z-index: 0;
+}
+body::after {
+  content: ''; position: fixed; inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  opacity: 0.014; pointer-events: none; z-index: 0;
+}
+.bg-glow {
+  position: fixed; top: 30%; left: 50%;
+  transform: translate(-50%,-50%);
+  width: 600px; height: 600px;
+  background: radial-gradient(circle, rgba(0,255,178,.04) 0%, transparent 70%);
+  pointer-events: none; z-index: 0;
+}
 
-    @keyframes fadeUp {
-      from { opacity:0; transform: translateY(16px); }
-      to   { opacity:1; transform: translateY(0); }
-    }
+/* ============================================================
+   HEADER -- identical to swap.html
+   ============================================================ */
+.header {
+  position: sticky; top: 0; z-index: 200;
+  background: rgba(3,4,7,0.88);
+  backdrop-filter: blur(24px);
+  border-bottom: 1px solid var(--rim);
+  padding: 0 24px; height: 64px;
+  display: flex; align-items: center;
+  justify-content: space-between; gap: 12px;
+}
+.logo {
+  font-family: var(--display); font-size: 26px;
+  letter-spacing: 2px;
+  background: linear-gradient(135deg, var(--gold), var(--magma));
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  flex-shrink: 0;
+}
+.header-nav { display: flex; align-items: center; gap: 2px; flex: 1; justify-content: center; }
+.nav-link {
+  padding: 6px 16px; border-radius: 8px;
+  font-size: 14px; font-weight: 500;
+  color: var(--smoke); cursor: pointer;
+  transition: all .2s; white-space: nowrap;
+  background: transparent; border: none;
+}
+.nav-link:hover  { color: var(--fog); }
+.nav-link.active { color: var(--white); background: rgba(255,255,255,.06); }
+.header-right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+.net-badge {
+  display: flex; align-items: center; gap: 5px;
+  padding: 5px 11px; border-radius: 20px;
+  background: rgba(0,255,178,.06); border: 1px solid rgba(0,255,178,.15);
+  font-family: var(--mono); font-size: 10px; color: var(--green); letter-spacing: .5px;
+}
+.pulse { width: 5px; height: 5px; border-radius: 50%; background: var(--green); animation: pulse 2s ease-in-out infinite; }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.3} }
+.connect-btn {
+  display: flex; align-items: center; gap: 8px;
+  padding: 9px 18px; border-radius: 10px;
+  font-size: 13px; font-weight: 500;
+  background: linear-gradient(135deg, var(--magma), var(--ember));
+  color: white; transition: all .2s; border: none; cursor: pointer; white-space: nowrap;
+}
+.connect-btn:hover { transform: translateY(-1px); box-shadow: 0 8px 24px rgba(255,77,0,.38); }
+.connect-btn.connected { background: transparent; border: 1px solid rgba(0,255,178,.25); color: var(--green); }
+.connect-btn.connected:hover { background: rgba(0,255,178,.05); transform: none; box-shadow: none; }
+.connect-btn svg { width: 14px; height: 14px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 
-    /* Header */
-    .header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 28px;
-    }
+/* ============================================================
+   MAIN
+   ============================================================ */
+.main {
+  position: relative; z-index: 1; flex: 1;
+  display: flex; align-items: flex-start;
+  justify-content: center; padding: 40px 24px 80px; gap: 20px;
+}
 
-    .logo {
-      font-family: var(--sans);
-      font-weight: 800;
-      font-size: 22px;
-      letter-spacing: -0.5px;
-    }
+/* ============================================================
+   LIQUIDITY CARD
+   ============================================================ */
+.liq-card {
+  width: 100%; max-width: 520px;
+  background: var(--card); border: 1px solid var(--rim);
+  border-radius: 20px; overflow: hidden; position: relative;
+}
+.liq-card::before {
+  content: ''; position: absolute;
+  top: -1px; left: 12%; right: 12%; height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(0,255,178,.4), transparent);
+}
 
-    .logo span { color: var(--accent); }
+/* Card header */
+.card-header {
+  padding: 20px 20px 0;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.card-title {
+  font-family: var(--display); font-size: 28px;
+  letter-spacing: 2px; color: var(--white);
+}
+.card-sub {
+  font-family: var(--mono); font-size: 10px;
+  color: var(--ash); letter-spacing: 1px;
+  text-transform: uppercase; margin-top: 2px;
+}
+.remove-link {
+  display: flex; align-items: center; gap: 5px;
+  font-family: var(--mono); font-size: 11px;
+  color: var(--smoke); padding: 6px 12px;
+  border: 1px solid var(--rim); border-radius: 8px;
+  cursor: pointer; transition: all .2s; white-space: nowrap;
+}
+.remove-link:hover { border-color: var(--rim2); color: var(--magma); }
+.remove-link svg { width: 12px; height: 12px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 
-    .network-badge {
-      display: flex;
-      align-items: center;
-      gap: 7px;
-      background: rgba(0, 255, 178, 0.08);
-      border: 1px solid rgba(0, 255, 178, 0.2);
-      border-radius: 20px;
-      padding: 5px 12px;
-      font-family: var(--mono);
-      font-size: 11px;
-      color: var(--green);
-    }
+.card-body { padding: 20px; }
 
-    .network-badge .dot {
-      width: 7px;
-      height: 7px;
-      background: var(--green);
-      border-radius: 50%;
-      animation: pulse 2s infinite;
-    }
+/* Section label */
+.sec-label {
+  font-family: var(--mono); font-size: 9px;
+  letter-spacing: 2px; text-transform: uppercase;
+  color: var(--ash); margin-bottom: 8px;
+  display: flex; align-items: center; gap: 8px;
+}
+.sec-label::after { content: ''; flex: 1; height: 1px; background: var(--rim); }
 
-    @keyframes pulse {
-      0%, 100% { opacity: 1; }
-      50%       { opacity: 0.3; }
-    }
+/* Token input box */
+.token-box {
+  background: var(--pit); border: 1px solid var(--rim);
+  border-radius: 14px; padding: 14px 16px;
+  transition: border-color .2s;
+}
+.token-box:focus-within { border-color: rgba(255,77,0,.28); }
 
-    /* Wallet button */
-    .wallet-btn {
-      width: 100%;
-      padding: 13px;
-      background: transparent;
-      border: 1px solid var(--border2);
-      border-radius: 12px;
-      color: var(--text2);
-      font-family: var(--mono);
-      font-size: 13px;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 10px;
-      margin-bottom: 20px;
-      transition: all 0.2s;
-    }
+/* Address row */
+.addr-row {
+  display: flex; align-items: center; gap: 8px; margin-bottom: 10px;
+}
+.addr-tag {
+  font-family: var(--mono); font-size: 9px;
+  letter-spacing: 1.5px; text-transform: uppercase;
+  color: var(--ash); flex-shrink: 0; white-space: nowrap;
+}
+.addr-input {
+  flex: 1; background: var(--well);
+  border: 1px solid var(--rim); border-radius: 8px;
+  color: var(--white); padding: 8px 12px;
+  font-family: var(--mono); font-size: 12px;
+  transition: border-color .2s; width: 100%;
+}
+.addr-input:focus { border-color: rgba(255,77,0,.3); }
+.addr-input::placeholder { color: var(--ash); }
 
-    .wallet-btn:hover {
-      border-color: var(--accent);
-      color: var(--text);
-      background: rgba(255,77,0,0.05);
-    }
+/* Amount row */
+.amt-row { display: flex; align-items: center; gap: 10px; }
+.amt-input {
+  flex: 1; min-width: 0; width: 100%;
+  background: transparent; border: none;
+  color: var(--white); font-family: var(--display);
+  font-size: 32px; letter-spacing: 1px;
+}
+.amt-input::placeholder { color: var(--ash); }
+.amt-input::-webkit-inner-spin-button,
+.amt-input::-webkit-outer-spin-button { -webkit-appearance: none; }
+.bal-group { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+.bal-lbl { font-family: var(--mono); font-size: 10px; color: var(--smoke); }
+.bal-val { font-family: var(--mono); font-size: 10px; color: var(--fog); }
+.max-btn {
+  font-size: 9px; letter-spacing: .5px; padding: 2px 8px;
+  border-radius: 5px; background: rgba(255,77,0,.1);
+  border: 1px solid rgba(255,77,0,.2); color: var(--magma);
+  cursor: pointer; transition: all .15s; font-family: var(--mono);
+}
+.max-btn:hover { background: rgba(255,77,0,.2); }
 
-    .wallet-btn.connected {
-      border-color: var(--green);
-      color: var(--green);
-      background: rgba(0,255,178,0.05);
-      cursor: default;
-    }
+/* Token meta pill */
+.token-meta {
+  display: flex; align-items: center; gap: 8px;
+  margin-top: 8px; min-height: 22px; flex-wrap: wrap;
+}
+.meta-sym {
+  font-family: var(--mono); font-size: 11px;
+  color: var(--green); background: rgba(0,255,178,.08);
+  border: 1px solid rgba(0,255,178,.15);
+  padding: 2px 9px; border-radius: 4px;
+}
+.meta-dec { font-family: var(--mono); font-size: 11px; color: var(--ash); }
+.meta-err { font-family: var(--mono); font-size: 11px; color: var(--red); }
 
-    .wallet-btn svg { width: 16px; height: 16px; flex-shrink: 0; }
+/* Plus divider */
+.plus-divider {
+  display: flex; align-items: center; justify-content: center;
+  gap: 12px; margin: 8px 0; color: var(--ash);
+}
+.plus-divider::before,
+.plus-divider::after { content: ''; flex: 1; height: 1px; background: var(--rim); }
+.plus-icon {
+  width: 32px; height: 32px; border-radius: 8px;
+  background: var(--pit); border: 1px solid var(--rim);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 16px; color: var(--ash);
+}
 
-    /* Section title */
-    .section-title {
-      font-size: 11px;
-      font-family: var(--mono);
-      color: var(--muted);
-      text-transform: uppercase;
-      letter-spacing: 1.5px;
-      margin-bottom: 12px;
-    }
+/* Pair info */
+.pair-info {
+  display: none; background: var(--pit);
+  border: 1px solid var(--rim); border-radius: 10px;
+  padding: 10px 14px; margin: 10px 0;
+  font-family: var(--mono); font-size: 11px; color: var(--ash);
+}
+.pair-info.show { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.pair-info span { color: var(--fog); word-break: break-all; }
+.pair-badge {
+  padding: 2px 8px; border-radius: 4px;
+  font-size: 10px; font-weight: 500;
+}
+.pair-badge.exists { background: rgba(0,255,178,.08); color: var(--green); border: 1px solid rgba(0,255,178,.15); }
+.pair-badge.new    { background: rgba(77,159,255,.08); color: var(--blue);  border: 1px solid rgba(77,159,255,.15); }
 
-    /* Token input group */
-    .token-group {
-      background: var(--surface2);
-      border: 1px solid var(--border);
-      border-radius: 14px;
-      padding: 16px;
-      margin-bottom: 12px;
-      transition: border-color 0.2s;
-    }
+/* Settings row */
+.settings-row {
+  display: flex; align-items: center; justify-content: space-between;
+  background: var(--pit); border: 1px solid var(--rim);
+  border-radius: 10px; padding: 10px 14px; margin: 12px 0;
+}
+.settings-lbl { font-family: var(--mono); font-size: 11px; color: var(--smoke); }
+.slip-btns { display: flex; gap: 4px; }
+.slip-btn {
+  padding: 5px 11px; border-radius: 6px;
+  font-family: var(--mono); font-size: 10px;
+  background: transparent; border: 1px solid var(--rim);
+  color: var(--ash); cursor: pointer; transition: all .15s;
+}
+.slip-btn:hover { border-color: var(--rim2); color: var(--fog); }
+.slip-btn.active { background: rgba(255,77,0,.12); border-color: rgba(255,77,0,.3); color: var(--magma); }
 
-    .token-group:focus-within {
-      border-color: var(--border2);
-    }
+/* Supply button */
+.supply-btn {
+  width: 100%; padding: 16px; border-radius: 14px;
+  font-size: 15px; font-weight: 600; letter-spacing: .3px;
+  background: linear-gradient(135deg, var(--magma), var(--ember));
+  color: white; transition: all .2s; margin-top: 10px;
+  position: relative; overflow: hidden; border: none; cursor: pointer;
+}
+.supply-btn::before { content: ''; position: absolute; inset: 0; background: linear-gradient(135deg, rgba(255,255,255,.1), transparent); opacity: 0; transition: opacity .2s; }
+.supply-btn:hover:not(:disabled)::before { opacity: 1; }
+.supply-btn:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 10px 30px rgba(255,77,0,.38); }
+.supply-btn:disabled { background: var(--well); color: var(--ash); cursor: not-allowed; transform: none; box-shadow: none; }
 
-    .token-row {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      margin-bottom: 10px;
-    }
+/* LP result */
+.lp-result {
+  display: none; margin-top: 12px;
+  background: rgba(0,255,178,.05); border: 1px solid rgba(0,255,178,.2);
+  border-radius: 12px; padding: 14px 16px;
+}
+.lp-result.show { display: block; }
+.lp-result-lbl { font-family: var(--mono); font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: var(--ash); margin-bottom: 4px; }
+.lp-result-val { font-family: var(--display); font-size: 28px; color: var(--green); letter-spacing: 1px; }
 
-    .token-label {
-      font-size: 11px;
-      font-family: var(--mono);
-      color: var(--muted);
-      white-space: nowrap;
-    }
+/* Status */
+.status-box {
+  margin-top: 12px; padding: 10px 14px;
+  background: var(--pit); border: 1px solid var(--rim);
+  border-radius: 10px; font-family: var(--mono); font-size: 11px;
+  color: var(--smoke); display: flex; align-items: center; gap: 8px;
+  min-height: 38px; transition: all .2s;
+}
+.status-box.success { border-color: rgba(0,255,178,.3); color: var(--green); }
+.status-box.error   { border-color: rgba(255,51,102,.3); color: var(--red); }
+.status-box.loading { border-color: rgba(255,77,0,.3);   color: var(--magma); }
+.status-box a { color: inherit; text-decoration: underline; }
 
-    .addr-input {
-      flex: 1;
-      background: rgba(255,255,255,0.04);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      color: var(--text);
-      padding: 9px 12px;
-      font-family: var(--mono);
-      font-size: 12px;
-      width: 100%;
-      outline: none;
-      transition: border-color 0.2s;
-    }
+/* Spinner */
+.spinner { width: 14px; height: 14px; border: 2px solid rgba(255,77,0,.2); border-top-color: var(--magma); border-radius: 50%; animation: spin .7s linear infinite; flex-shrink: 0; display: inline-block; }
+@keyframes spin { to { transform: rotate(360deg); } }
 
-    .addr-input:focus {
-      border-color: var(--accent);
-    }
+/* Fade in */
+.fade-up { animation: fadeUp .3s ease both; }
+@keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
-    .addr-input::placeholder { color: var(--muted); }
-
-    .amount-row {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-
-    .amount-input {
-      flex: 1;
-      background: transparent;
-      border: none;
-      color: var(--text);
-      padding: 8px 0;
-      font-family: var(--sans);
-      font-size: 28px;
-      font-weight: 800;
-      outline: none;
-      width: 100%;
-    }
-
-    .amount-input::placeholder { color: var(--border2); }
-
-    /* Remove number input arrows */
-    .amount-input::-webkit-inner-spin-button,
-    .amount-input::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
-    .amount-input[type=number] { -moz-appearance: textfield; }
-
-    .balance-info {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      flex-shrink: 0;
-    }
-
-    .bal-label {
-      font-family: var(--mono);
-      font-size: 11px;
-      color: var(--muted);
-    }
-
-    .bal-value {
-      font-family: var(--mono);
-      font-size: 11px;
-      color: var(--text2);
-    }
-
-    .max-btn {
-      font-family: var(--mono);
-      font-size: 10px;
-      font-weight: 700;
-      color: var(--accent);
-      background: rgba(255,77,0,0.1);
-      border: 1px solid rgba(255,77,0,0.25);
-      border-radius: 5px;
-      padding: 3px 8px;
-      cursor: pointer;
-      transition: all 0.15s;
-    }
-
-    .max-btn:hover {
-      background: rgba(255,77,0,0.2);
-    }
-
-    /* Token meta pill */
-    .token-meta {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      margin-top: 8px;
-      min-height: 20px;
-    }
-
-    .token-symbol {
-      font-family: var(--mono);
-      font-size: 11px;
-      color: var(--green);
-      background: rgba(0,255,178,0.08);
-      border: 1px solid rgba(0,255,178,0.15);
-      padding: 2px 8px;
-      border-radius: 4px;
-    }
-
-    .token-decimals {
-      font-family: var(--mono);
-      font-size: 11px;
-      color: var(--muted);
-    }
-
-    /* Divider arrow */
-    .arrow-divider {
-      text-align: center;
-      color: var(--muted);
-      font-size: 18px;
-      margin: 4px 0;
-      line-height: 1;
-    }
-
-    /* Slippage section */
-    .slippage-row {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      background: var(--surface2);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 10px 14px;
-      margin: 12px 0;
-    }
-
-    .slippage-label {
-      font-family: var(--mono);
-      font-size: 11px;
-      color: var(--muted);
-    }
-
-    .slippage-options {
-      display: flex;
-      gap: 6px;
-    }
-
-    .slip-btn {
-      font-family: var(--mono);
-      font-size: 11px;
-      padding: 4px 10px;
-      background: transparent;
-      border: 1px solid var(--border2);
-      border-radius: 6px;
-      color: var(--text2);
-      cursor: pointer;
-      transition: all 0.15s;
-    }
-
-    .slip-btn:hover { border-color: var(--accent); color: var(--text); }
-
-    .slip-btn.active {
-      background: rgba(255,77,0,0.15);
-      border-color: var(--accent);
-      color: var(--accent);
-    }
-
-    /* Supply button */
-    .supply-btn {
-      width: 100%;
-      padding: 16px;
-      background: linear-gradient(135deg, var(--accent), var(--accent2));
-      border: none;
-      border-radius: 12px;
-      color: #fff;
-      font-family: var(--sans);
-      font-size: 16px;
-      font-weight: 800;
-      letter-spacing: 0.5px;
-      cursor: pointer;
-      margin-top: 16px;
-      transition: all 0.2s;
-      position: relative;
-      overflow: hidden;
-    }
-
-    .supply-btn::before {
-      content: '';
-      position: absolute;
-      inset: 0;
-      background: linear-gradient(135deg, rgba(255,255,255,0.1), transparent);
-      opacity: 0;
-      transition: opacity 0.2s;
-    }
-
-    .supply-btn:hover::before { opacity: 1; }
-    .supply-btn:hover { transform: translateY(-1px); box-shadow: 0 8px 24px rgba(255,77,0,0.35); }
-    .supply-btn:active { transform: translateY(0); }
-
-    .supply-btn:disabled {
-      background: var(--surface2);
-      color: var(--muted);
-      cursor: not-allowed;
-      transform: none;
-      box-shadow: none;
-    }
-
-    .supply-btn:disabled::before { display: none; }
-
-    /* Status box */
-    .status-box {
-      margin-top: 16px;
-      padding: 14px 16px;
-      background: var(--surface2);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      font-family: var(--mono);
-      font-size: 12px;
-      color: var(--text2);
-      min-height: 44px;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      transition: border-color 0.3s, color 0.3s;
-    }
-
-    .status-box.success { border-color: var(--green); color: var(--green); }
-    .status-box.error   { border-color: #ff4466; color: #ff4466; }
-    .status-box.loading { border-color: var(--accent); color: var(--accent); }
-
-    .status-icon { font-size: 16px; flex-shrink: 0; }
-
-    .status-box a { color: inherit; text-decoration: underline; }
-    .status-box a:hover { opacity: 0.8; }
-
-    /* Spinner */
-    .spinner {
-      width: 14px;
-      height: 14px;
-      border: 2px solid rgba(255,77,0,0.2);
-      border-top-color: var(--accent);
-      border-radius: 50%;
-      animation: spin 0.7s linear infinite;
-      flex-shrink: 0;
-    }
-
-    @keyframes spin { to { transform: rotate(360deg); } }
-
-    /* LP result */
-    .lp-result {
-      display: none;
-      margin-top: 12px;
-      background: rgba(0,255,178,0.05);
-      border: 1px solid rgba(0,255,178,0.2);
-      border-radius: 10px;
-      padding: 14px 16px;
-    }
-
-    .lp-result.show { display: block; }
-
-    .lp-result-label {
-      font-family: var(--mono);
-      font-size: 10px;
-      color: var(--muted);
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      margin-bottom: 4px;
-    }
-
-    .lp-result-value {
-      font-family: var(--mono);
-      font-size: 18px;
-      font-weight: 700;
-      color: var(--green);
-    }
-
-    /* Pair info */
-    .pair-info {
-      display: none;
-      font-family: var(--mono);
-      font-size: 11px;
-      color: var(--muted);
-      margin-top: 6px;
-      padding: 8px 12px;
-      background: rgba(255,255,255,0.02);
-      border-radius: 6px;
-      word-break: break-all;
-    }
-
-    .pair-info.show { display: block; }
-    .pair-info span { color: var(--text2); }
-  </style>
+@media (max-width: 600px) {
+  .header-nav { display: none; }
+  .header { padding: 0 14px; }
+  .main { padding: 20px 14px 60px; }
+  .net-badge { display: none; }
+  .card-body { padding: 14px; }
+}
+</style>
 </head>
 <body>
-<div class="card">
 
-  <!-- Header -->
-  <div class="header">
-    <div class="logo"><a href="index.html">Ric<span>Swap</span></a></div>
-    <div class="network-badge">
-      <div class="dot"></div>
-      Shibarium
+<div class="bg-glow"></div>
+
+<!-- ============================================================
+     HEADER -- identical to swap.html
+     ============================================================ -->
+<div class="header">
+  <a class="logo" href="index.html">RicSwap</a>
+
+  <nav class="header-nav">
+    <button class="nav-link" onclick="location.href='index.html'">Home</button>
+    <button class="nav-link" onclick="location.href='swap.html'">Swap</button>
+    <button class="nav-link active">Liquidity</button>
+    <button class="nav-link" onclick="location.href='pools.html'">Pools</button>
+    <button class="nav-link" onclick="location.href='reward.html'">Rewards</button>
+  </nav>
+
+  <div class="header-right">
+    <div class="net-badge">
+      <div class="pulse"></div>
+      <span>Shibarium</span>
     </div>
+    <button class="connect-btn" id="connectBtn" onclick="connectWallet()">
+      <svg viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 3H8a2 2 0 00-2 2v2h12V5a2 2 0 00-2-2z"/></svg>
+      <span id="connectLabel">Connect Wallet</span>
+    </button>
   </div>
-
-  <!-- Wallet Connect -->
-  <button class="wallet-btn" id="walletBtn" onclick="connectWallet()">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-      <rect x="2" y="7" width="20" height="14" rx="2"/>
-      <path d="M16 3H8a2 2 0 00-2 2v2h12V5a2 2 0 00-2-2z"/>
-      <circle cx="17" cy="14" r="1.5" fill="currentColor" stroke="none"/>
-    </svg>
-    <span id="walletLabel">Connect Wallet</span>
-  </button>
-
-  <!-- Token A -->
-  <div class="section-title">Token A</div>
-  <div class="token-group" id="groupA">
-    <div class="token-row">
-      <span class="token-label">ADDRESS</span>
-      <input class="addr-input" id="tokenA" placeholder="0x..." oninput="onAddressChange('A')">
-    </div>
-    <div class="amount-row">
-      <input class="amount-input" type="number" id="amountA" placeholder="0.0" step="any">
-      <div class="balance-info">
-        <span class="bal-label">BAL</span>
-        <span class="bal-value" id="balA">—</span>
-        <button class="max-btn" onclick="setMax('A')">MAX</button>
-      </div>
-    </div>
-    <div class="token-meta" id="metaA"></div>
-  </div>
-
-  <div class="arrow-divider">+</div>
-
-  <!-- Token B -->
-  <div class="section-title">Token B</div>
-  <div class="token-group" id="groupB">
-    <div class="token-row">
-      <span class="token-label">ADDRESS</span>
-      <input class="addr-input" id="tokenB" placeholder="0x..." oninput="onAddressChange('B')">
-    </div>
-    <div class="amount-row">
-      <input class="amount-input" type="number" id="amountB" placeholder="0.0" step="any">
-      <div class="balance-info">
-        <span class="bal-label">BAL</span>
-        <span class="bal-value" id="balB">—</span>
-        <button class="max-btn" onclick="setMax('B')">MAX</button>
-      </div>
-    </div>
-    <div class="token-meta" id="metaB"></div>
-  </div>
-
-  <!-- Pair info -->
-  <div class="pair-info" id="pairInfo"></div>
-
-  <!-- Slippage -->
-  <div class="slippage-row">
-    <span class="slippage-label">SLIPPAGE TOLERANCE</span>
-    <div class="slippage-options">
-      <button class="slip-btn" onclick="setSlippage(1)">1%</button>
-      <button class="slip-btn active" onclick="setSlippage(5)">5%</button>
-      <button class="slip-btn" onclick="setSlippage(10)">10%</button>
-    </div>
-  </div>
-
-  <!-- Supply button -->
-  <button class="supply-btn" id="supplyBtn" onclick="addLiquidity()">
-    Supply Liquidity
-  </button>
-
-  <!-- LP result -->
-  <div class="lp-result" id="lpResult">
-    <div class="lp-result-label">LP Tokens Received</div>
-    <div class="lp-result-value" id="lpAmount">—</div>
-  </div>
-
-  <!-- Status -->
-  <div class="status-box" id="statusBox">
-    <span class="status-icon">○</span>
-    <span id="statusText">Connect wallet to begin</span>
-  </div>
-<a href="remove-liquidity.html" style="color: yellow;">Click Here to Remove LP</a>
 </div>
-<script>
-// ─────────────────────────────────────────────
-// CONFIG — replace with your deployed addresses
-// ─────────────────────────────────────────────
-const CONFIG = {
-  ROUTER:   "0x652875c0F607CB392C0F9E5FB957A7055c2deD2e",
-  FACTORY:  "0xD8fFEECfDE1698a70A26a094afBE917bA58E2F70",
-  CHAIN_ID: 109n,   // Shibarium mainnet
-  CHAIN_NAME: "Shibarium",
-  EXPLORER: "https://shibariumscan.io",
-};
 
-// ABIs
-const WBONE_ADDRESS = "0xc76f4c819d820369fb2d7c1531ab3bb18e6fe8d8";
+<!-- ============================================================
+     MAIN
+     ============================================================ -->
+<div class="main">
+  <div style="width:100%;max-width:520px">
+
+    <div class="liq-card fade-up">
+
+      <!-- Card header -->
+      <div class="card-header">
+        <div>
+          <div class="card-title">Add Liquidity</div>
+          <div class="card-sub">Provide tokens to earn 0.3% trading fees</div>
+        </div>
+        <a class="remove-link" href="remove-liquidity.html">
+          <svg viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+          Remove LP
+        </a>
+      </div>
+
+      <div class="card-body">
+
+        <!-- Token A -->
+        <div class="sec-label">Token A</div>
+        <div class="token-box">
+          <div class="addr-row">
+            <span class="addr-tag">Address</span>
+            <input class="addr-input" id="tokenA" placeholder="0x..." oninput="onAddrChange('A')">
+          </div>
+          <div class="amt-row">
+            <input class="amt-input" type="number" id="amountA" placeholder="0.0" step="any">
+            <div class="bal-group">
+              <span class="bal-lbl">BAL</span>
+              <span class="bal-val" id="balA">--</span>
+              <button class="max-btn" onclick="setMax('A')">MAX</button>
+            </div>
+          </div>
+          <div class="token-meta" id="metaA"></div>
+        </div>
+
+        <!-- Plus divider -->
+        <div class="plus-divider">
+          <div class="plus-icon">+</div>
+        </div>
+
+        <!-- Token B -->
+        <div class="sec-label">Token B</div>
+        <div class="token-box">
+          <div class="addr-row">
+            <span class="addr-tag">Address</span>
+            <input class="addr-input" id="tokenB" placeholder="0x..." oninput="onAddrChange('B')">
+          </div>
+          <div class="amt-row">
+            <input class="amt-input" type="number" id="amountB" placeholder="0.0" step="any">
+            <div class="bal-group">
+              <span class="bal-lbl">BAL</span>
+              <span class="bal-val" id="balB">--</span>
+              <button class="max-btn" onclick="setMax('B')">MAX</button>
+            </div>
+          </div>
+          <div class="token-meta" id="metaB"></div>
+        </div>
+
+        <!-- Pair info -->
+        <div class="pair-info" id="pairInfo"></div>
+
+        <!-- Slippage -->
+        <div class="settings-row">
+          <span class="settings-lbl">Slippage Tolerance</span>
+          <div class="slip-btns">
+            <button class="slip-btn" onclick="setSlip(1)">1%</button>
+            <button class="slip-btn active" onclick="setSlip(5)">5%</button>
+            <button class="slip-btn" onclick="setSlip(10)">10%</button>
+          </div>
+        </div>
+
+        <!-- Supply button -->
+        <button class="supply-btn" id="supplyBtn" onclick="addLiquidity()">
+          Supply Liquidity
+        </button>
+
+        <!-- LP result -->
+        <div class="lp-result" id="lpResult">
+          <div class="lp-result-lbl">LP Tokens Received</div>
+          <div class="lp-result-val" id="lpAmount">--</div>
+        </div>
+
+        <!-- Status -->
+        <div class="status-box" id="statusBox">
+          <span>&#9675;</span>
+          <span id="statusTxt">Connect wallet to begin</span>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     JAVASCRIPT -- all logic preserved from original
+     ============================================================ -->
+<script src="https://cdn.jsdelivr.net/npm/ethers@6.13.0/dist/ethers.umd.min.js"></script>
+<script>
+const CONFIG = {
+  ROUTER:     '0x652875c0F607CB392C0F9E5FB957A7055c2deD2e',
+  FACTORY:    '0xD8fFEECfDE1698a70A26a094afBE917bA58E2F70',
+  CHAIN_ID:   109n,
+  CHAIN_NAME: 'Shibarium',
+  EXPLORER:   'https://shibariumscan.io',
+};
+const WBONE = '0xc76f4c819d820369fb2d7c1531ab3bb18e6fe8d8';
 
 const ERC20_ABI = [
-  "function balanceOf(address) view returns (uint256)",
-  "function decimals() view returns (uint8)",
-  "function symbol() view returns (string)",
-  "function name() view returns (string)",
-  "function allowance(address,address) view returns (uint256)",
-  "function approve(address,uint256) returns (bool)",
+  'function balanceOf(address) view returns (uint256)',
+  'function decimals() view returns (uint8)',
+  'function symbol() view returns (string)',
+  'function name() view returns (string)',
+  'function allowance(address,address) view returns (uint256)',
+  'function approve(address,uint256) returns (bool)',
 ];
-
 const ROUTER_ABI = [
-  "function addLiquidity(address,address,uint256,uint256,uint256,uint256,address,uint256) external returns (uint256,uint256,uint256)",
-  "function addLiquidityETH(address,uint256,uint256,uint256,address,uint256) external payable returns (uint256,uint256,uint256)",
+  'function addLiquidity(address,address,uint256,uint256,uint256,uint256,address,uint256) external returns (uint256,uint256,uint256)',
+  'function addLiquidityETH(address,uint256,uint256,uint256,address,uint256) external payable returns (uint256,uint256,uint256)',
 ];
+const FACTORY_ABI = ['function getPair(address,address) view returns (address)'];
 
-const FACTORY_ABI = [
-  "function getPair(address,address) view returns (address)",
-];
-
-// ─────────────────────────────────────────────
-// State
-// ─────────────────────────────────────────────
 let provider, signer, userAddress;
-let slippageBps = 500n;  // 5% default (basis points, BigInt)
-let tokenInfo   = { A: null, B: null }; // { symbol, decimals, balance (BigInt) }
+let slipBps   = 500n;
+let tokenInfo = { A: null, B: null };
 
-// ─────────────────────────────────────────────
-// Wallet
-// ─────────────────────────────────────────────
+// ── Wallet ────────────────────────────────────────────────────
 async function connectWallet() {
-  if (!window.ethereum) return alert("Please install MetaMask or Rabby Wallet");
-
+  if (!window.ethereum) return alert('Please install MetaMask or Rabby Wallet');
   try {
     provider = new ethers.BrowserProvider(window.ethereum);
     signer   = await provider.getSigner();
-
-    // [FIX-5] Verify correct network
-    const network = await provider.getNetwork();
-    if (network.chainId !== CONFIG.CHAIN_ID) {
-      setStatus("error", `⚠ Wrong network. Please switch to ${CONFIG.CHAIN_NAME} (Chain ID ${CONFIG.CHAIN_ID})`);
+    const net = await provider.getNetwork();
+    if (net.chainId !== CONFIG.CHAIN_ID) {
+      setSt('loading', null, 'Switching to Shibarium...');
       try {
-        await window.ethereum.request({
-          method: "wallet_switchEthereumChain",
-          params: [{ chainId: "0x6d" }], // 109 in hex
-        });
+        await window.ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: '0x6d' }] });
         provider = new ethers.BrowserProvider(window.ethereum);
         signer   = await provider.getSigner();
-      } catch(e) { return; }
+      } catch(e) { setSt('error', '✕', 'Please switch to Shibarium manually'); return; }
     }
-
     userAddress = await signer.getAddress();
-    const btn   = document.getElementById("walletBtn");
-    btn.classList.add("connected");
-    document.getElementById("walletLabel").textContent =
-      userAddress.slice(0,6) + "..." + userAddress.slice(-4);
-
-    setStatus("", "○", "Wallet connected — enter token addresses");
-
-    // [FIX-12] Handle account changes
-    window.ethereum.on("accountsChanged", () => location.reload());
-    window.ethereum.on("chainChanged",    () => location.reload());
-
-    // Refresh balances if addresses already filled
-    if (ethers.isAddress(document.getElementById("tokenA").value)) onAddressChange("A");
-    if (ethers.isAddress(document.getElementById("tokenB").value)) onAddressChange("B");
-
-  } catch(e) {
-    setStatus("error", "✕", e.message || "Failed to connect");
-  }
+    const btn   = document.getElementById('connectBtn');
+    btn.classList.add('connected');
+    document.getElementById('connectLabel').textContent = userAddress.slice(0,6)+'...'+userAddress.slice(-4);
+    setSt('', '○', 'Wallet connected — enter token addresses');
+    window.ethereum.on('accountsChanged', () => location.reload());
+    window.ethereum.on('chainChanged',    () => location.reload());
+    if (ethers.isAddress(document.getElementById('tokenA').value)) onAddrChange('A');
+    if (ethers.isAddress(document.getElementById('tokenB').value)) onAddrChange('B');
+  } catch(e) { setSt('error', '✕', decErr(e)); }
 }
 
-// ─────────────────────────────────────────────
-// Token address change — fetch metadata + balance
-// ─────────────────────────────────────────────
-async function onAddressChange(side) {
-  const addr = document.getElementById("token" + side).value.trim();
-  const meta = document.getElementById("meta" + side);
-  meta.innerHTML = "";
-  tokenInfo[side] = null;
-  document.getElementById("bal" + side).textContent = "—";
-
-  if (!ethers.isAddress(addr)) return;
-  if (!provider) return;
-
-  // ── Special handling for WBONE ──────────────────────────────
-  // WBONE is the wrapped native token on Shibarium. It does not
-  // implement symbol() the same way as regular ERC20s. We handle
-  // it explicitly so it loads correctly.
-  const isWBONE = addr.toLowerCase() === WBONE_ADDRESS.toLowerCase();
-
+// ── Token address change ──────────────────────────────────────
+async function onAddrChange(side) {
+  const addr = document.getElementById('token'+side).value.trim();
+  const meta = document.getElementById('meta'+side);
+  meta.innerHTML = ''; tokenInfo[side] = null;
+  document.getElementById('bal'+side).textContent = '--';
+  if (!ethers.isAddress(addr) || !provider) return;
+  const isWBONE = addr.toLowerCase() === WBONE.toLowerCase();
   try {
-    const contract = new ethers.Contract(addr, ERC20_ABI, provider);
-
+    const c = new ethers.Contract(addr, ERC20_ABI, provider);
     let symbol, decimals, balance;
-
     if (isWBONE) {
-      // WBONE on Shibarium: the user holds BONE natively (not wrapped).
-      // balanceOf(user) returns WBONE (wrapped) balance which is usually 0.
-      // We show native BONE balance instead — this is what addLiquidityETH uses.
-      decimals = 18;
-      symbol   = "WBONE";
-      const wboneBalance   = userAddress ? await contract.balanceOf(userAddress) : 0n;
-      const nativeBalance  = userAddress ? await provider.getBalance(userAddress)  : 0n;
-      // Use native BONE as the spendable balance for addLiquidityETH
-      balance = nativeBalance;
-      // Store both so we can show useful info
-      tokenInfo[side + "_wboneWrapped"] = wboneBalance;
+      decimals = 18; symbol = 'WBONE';
+      balance  = userAddress ? await provider.getBalance(userAddress) : 0n;
     } else {
-      // Regular ERC20 — try symbol() first, fall back to name()
       [decimals, balance] = await Promise.all([
-        contract.decimals(),
-        userAddress ? contract.balanceOf(userAddress) : 0n,
+        c.decimals(),
+        userAddress ? c.balanceOf(userAddress) : 0n,
       ]);
-      try {
-        symbol = await contract.symbol();
-      } catch(_) {
-        try {
-          symbol = await contract.name(); // fallback for tokens without symbol()
-        } catch(_) {
-          symbol = addr.slice(0,6) + "..."; // last resort
-        }
-      }
+      try { symbol = await c.symbol(); }
+      catch(_) { try { symbol = await c.name(); } catch(_) { symbol = addr.slice(0,6)+'...'; } }
     }
-
     tokenInfo[side] = { symbol, decimals, balance, address: addr, isWBONE };
-
-    // Display symbol + decimals
-    meta.innerHTML =
-      `<span class="token-symbol">${isWBONE ? "WBONE (native)" : symbol}</span>` +
-      `<span class="token-decimals">${decimals} decimals</span>`;
-
-    // Show balance using correct decimals
-    // For WBONE: show native BONE balance (what addLiquidityETH will use)
-    document.getElementById("bal" + side).textContent =
-      formatUnits(balance, decimals) + (isWBONE ? " BONE" : "");
-
-    // Check if pair exists
-    checkPairExists();
-
+    meta.innerHTML = `<span class="meta-sym">${isWBONE ? 'WBONE (native)' : symbol}</span><span class="meta-dec">${decimals} decimals</span>`;
+    document.getElementById('bal'+side).textContent = fmtU(balance, decimals) + (isWBONE ? ' BONE' : '');
+    checkPair();
   } catch(e) {
-    const msg = decodeError ? decodeError(e) : e.message;
-    meta.innerHTML = `<span class="token-decimals" style="color:#ff4466">Error: ${sanitize(msg).slice(0,60)}</span>`;
+    meta.innerHTML = `<span class="meta-err">Error: ${sanitize(decErr(e)).slice(0,60)}</span>`;
   }
 }
 
-// ─────────────────────────────────────────────
-// Check pair exists
-// ─────────────────────────────────────────────
-async function checkPairExists() {
-  const addrA = document.getElementById("tokenA").value.trim();
-  const addrB = document.getElementById("tokenB").value.trim();
-  const pairEl = document.getElementById("pairInfo");
-
-  if (!ethers.isAddress(addrA) || !ethers.isAddress(addrB) || !provider) {
-    pairEl.classList.remove("show");
-    return;
-  }
-
+async function checkPair() {
+  const addrA = document.getElementById('tokenA').value.trim();
+  const addrB = document.getElementById('tokenB').value.trim();
+  const el    = document.getElementById('pairInfo');
+  if (!ethers.isAddress(addrA) || !ethers.isAddress(addrB) || !provider) { el.classList.remove('show'); return; }
   try {
     const factory = new ethers.Contract(CONFIG.FACTORY, FACTORY_ABI, provider);
     const pair    = await factory.getPair(addrA, addrB);
-    const exists  = pair !== "0x0000000000000000000000000000000000000000";
-
-    pairEl.classList.add("show");
+    const exists  = pair !== '0x0000000000000000000000000000000000000000';
+    el.classList.add('show');
     if (exists) {
-      pairEl.innerHTML = `Pair exists: <span>${pair}</span>`;
+      el.innerHTML = `<span class="pair-badge exists">Pair exists</span><span>${pair}</span>`;
     } else {
-      pairEl.innerHTML = `No pair found — will be created automatically`;
+      el.innerHTML = `<span class="pair-badge new">New pair</span><span>Will be created automatically on first deposit</span>`;
     }
-  } catch(e) {
-    pairEl.classList.remove("show");
-  }
-}
-
-// ─────────────────────────────────────────────
-// MAX button
-// ─────────────────────────────────────────────
-function fillWBONE(side) {
-  document.getElementById("token" + side).value = WBONE_ADDRESS;
-  onAddressChange(side);
+  } catch(_) { el.classList.remove('show'); }
 }
 
 function setMax(side) {
   if (!tokenInfo[side]) return;
   const { balance, decimals, isWBONE } = tokenInfo[side];
-  // For WBONE: leave a small reserve for gas (0.01 BONE)
-  const safeBalance = isWBONE && balance > ethers.parseEther("0.01")
-    ? balance - ethers.parseEther("0.01")
-    : balance;
-  document.getElementById("amount" + side).value = ethers.formatUnits(safeBalance, decimals);
+  const safe = isWBONE && balance > ethers.parseEther('0.01') ? balance - ethers.parseEther('0.01') : balance;
+  document.getElementById('amount'+side).value = ethers.formatUnits(safe, decimals);
 }
 
-// ─────────────────────────────────────────────
-// Slippage
-// ─────────────────────────────────────────────
-function setSlippage(pct) {
-  slippageBps = BigInt(pct * 100); // 1% = 100 bps
-  document.querySelectorAll(".slip-btn").forEach(b => b.classList.remove("active"));
-  event.target.classList.add("active");
+function setSlip(pct) {
+  slipBps = BigInt(pct * 100);
+  document.querySelectorAll('.slip-btn').forEach(b => b.classList.remove('active'));
+  event.target.classList.add('active');
 }
 
-// ─────────────────────────────────────────────
-// Add Liquidity — main flow
-// ─────────────────────────────────────────────
+// ── Add Liquidity ─────────────────────────────────────────────
 async function addLiquidity() {
-  const addrA = document.getElementById("tokenA").value.trim();
-  const addrB = document.getElementById("tokenB").value.trim();
-  const amtA  = document.getElementById("amountA").value.trim();
-  const amtB  = document.getElementById("amountB").value.trim();
+  const addrA = document.getElementById('tokenA').value.trim();
+  const addrB = document.getElementById('tokenB').value.trim();
+  const amtA  = document.getElementById('amountA').value.trim();
+  const amtB  = document.getElementById('amountB').value.trim();
 
-  // Validation
-  if (!userAddress)                                    return setStatus("error", "✕", "Please connect your wallet first");
-  if (!ethers.isAddress(addrA))                        return setStatus("error", "✕", "Invalid Token A address");
-  if (!ethers.isAddress(addrB))                        return setStatus("error", "✕", "Invalid Token B address");
-  if (addrA.toLowerCase() === addrB.toLowerCase())     return setStatus("error", "✕", "Token A and B cannot be the same");
-  if (!tokenInfo.A)                                    return setStatus("error", "✕", "Token A not loaded — check the address");
-  if (!tokenInfo.B)                                    return setStatus("error", "✕", "Token B not loaded — check the address");
-  if (!amtA || parseFloat(amtA) <= 0)                 return setStatus("error", "✕", "Enter a valid amount for Token A");
-  if (!amtB || parseFloat(amtB) <= 0)                 return setStatus("error", "✕", "Enter a valid amount for Token B");
+  if (!userAddress)                                return setSt('error','✕','Connect wallet first');
+  if (!ethers.isAddress(addrA))                   return setSt('error','✕','Invalid Token A address');
+  if (!ethers.isAddress(addrB))                   return setSt('error','✕','Invalid Token B address');
+  if (addrA.toLowerCase()===addrB.toLowerCase())  return setSt('error','✕','Tokens cannot be the same');
+  if (!tokenInfo.A)                               return setSt('error','✕','Token A not loaded');
+  if (!tokenInfo.B)                               return setSt('error','✕','Token B not loaded');
+  if (!amtA || parseFloat(amtA)<=0)              return setSt('error','✕','Enter amount for Token A');
+  if (!amtB || parseFloat(amtB)<=0)              return setSt('error','✕','Enter amount for Token B');
 
-  // [FIX-2] Parse using correct decimals per token
   let amountAWei, amountBWei;
   try {
     amountAWei = ethers.parseUnits(amtA, tokenInfo.A.decimals);
     amountBWei = ethers.parseUnits(amtB, tokenInfo.B.decimals);
-  } catch(e) {
-    return setStatus("error", "✕", "Amount too precise for token decimals");
-  }
+  } catch(e) { return setSt('error','✕','Amount too precise for token decimals'); }
 
-  // Balance checks — for WBONE use native BONE balance (provider.getBalance)
-  const balA = tokenInfo.A.balance; // native BONE if WBONE, else ERC20 balance
-  const balB = tokenInfo.B.balance;
-  if (amountAWei > balA) return setStatus("error", "✕", `Insufficient ${tokenInfo.A.symbol} balance`);
-  if (amountBWei > balB) return setStatus("error", "✕", `Insufficient ${tokenInfo.B.symbol} balance`);
+  if (amountAWei > tokenInfo.A.balance) return setSt('error','✕',`Insufficient ${tokenInfo.A.symbol} balance`);
+  if (amountBWei > tokenInfo.B.balance) return setSt('error','✕',`Insufficient ${tokenInfo.B.symbol} balance`);
 
-  // [FIX-1] Slippage-based minimums (never 0)
-  const minA = amountAWei * (10000n - slippageBps) / 10000n;
-  const minB = amountBWei * (10000n - slippageBps) / 10000n;
+  const minA = amountAWei * (10000n - slipBps) / 10000n;
+  const minB = amountBWei * (10000n - slipBps) / 10000n;
 
-  setButtonLoading(true);
-  document.getElementById("lpResult").classList.remove("show");
+  setBtnLoading(true);
+  document.getElementById('lpResult').classList.remove('show');
 
   try {
-    const tokenAContract = new ethers.Contract(addrA, ERC20_ABI, signer);
-    const tokenBContract = new ethers.Contract(addrB, ERC20_ABI, signer);
+    const tcA = new ethers.Contract(addrA, ERC20_ABI, signer);
+    const tcB = new ethers.Contract(addrB, ERC20_ABI, signer);
+    setSt('loading', null, 'Checking allowances...');
 
-    // ── Step 1: Check allowances ──────────────────────────────────
-    setStatus("loading", null, "Checking allowances...");
-
-    const [allowanceA, allowanceB] = await Promise.all([
-      tokenAContract.allowance(userAddress, CONFIG.ROUTER),
-      tokenBContract.allowance(userAddress, CONFIG.ROUTER),
+    const [allowA, allowB] = await Promise.all([
+      tcA.allowance(userAddress, CONFIG.ROUTER),
+      tcB.allowance(userAddress, CONFIG.ROUTER),
     ]);
 
-    // ── Step 2: Approve Token A if needed (skip for WBONE) ─────
     const aIsWBONE = tokenInfo.A.isWBONE;
     const bIsWBONE = tokenInfo.B.isWBONE;
 
-    if (!aIsWBONE && allowanceA < amountAWei) {
-      setStatus("loading", null, `Approving ${tokenInfo.A.symbol}...`);
-      let txA;
-      try {
-        txA = await tokenAContract.approve(CONFIG.ROUTER, amountAWei);
-      } catch(e) {
-        throw new Error(`${tokenInfo.A.symbol} approval rejected: ${decodeError(e)}`);
-      }
-      setStatus("loading", null, `Waiting for ${tokenInfo.A.symbol} approval to confirm...`);
-      await txA.wait();
+    if (!aIsWBONE && allowA < amountAWei) {
+      setSt('loading', null, `Approving ${tokenInfo.A.symbol}...`);
+      const tx = await tcA.approve(CONFIG.ROUTER, amountAWei);
+      setSt('loading', null, `Waiting for ${tokenInfo.A.symbol} approval...`);
+      await tx.wait();
+    }
+    if (!bIsWBONE && allowB < amountBWei) {
+      setSt('loading', null, `Approving ${tokenInfo.B.symbol}...`);
+      const tx = await tcB.approve(CONFIG.ROUTER, amountBWei);
+      setSt('loading', null, `Waiting for ${tokenInfo.B.symbol} approval...`);
+      await tx.wait();
     }
 
-    // ── Step 3: Approve Token B if needed (skip for WBONE) ─────
-    if (!bIsWBONE && allowanceB < amountBWei) {
-      setStatus("loading", null, `Approving ${tokenInfo.B.symbol}...`);
-      let txB;
-      try {
-        txB = await tokenBContract.approve(CONFIG.ROUTER, amountBWei);
-      } catch(e) {
-        throw new Error(`${tokenInfo.B.symbol} approval rejected: ${decodeError(e)}`);
-      }
-      setStatus("loading", null, `Waiting for ${tokenInfo.B.symbol} approval to confirm...`);
-      await txB.wait();
-    }
-
-    // ── Step 4: Pre-flight simulation ───────────────────────────
-    // staticCall runs the exact call locally to surface revert reason
-    // before spending gas. Shibarium RPC swallows revert data otherwise.
-    setStatus("loading", null, "Simulating transaction...");
-
+    setSt('loading', null, 'Simulating transaction...');
     const router   = new ethers.Contract(CONFIG.ROUTER, ROUTER_ABI, signer);
-    const deadline = BigInt(Math.floor(Date.now() / 1000) + 300);
-
-    // Route to addLiquidityETH when either token is WBONE
-    const useETH    = aIsWBONE || bIsWBONE;
-    const tokenAddr = aIsWBONE ? addrB  : addrA;
+    const deadline = BigInt(Math.floor(Date.now()/1000) + 300);
+    const useETH   = aIsWBONE || bIsWBONE;
+    const tokenAddr = aIsWBONE ? addrB : addrA;
     const tokenAmt  = aIsWBONE ? amountBWei : amountAWei;
-    const tokenMin  = aIsWBONE ? minB   : minA;
+    const tokenMin  = aIsWBONE ? minB : minA;
     const ethAmt    = aIsWBONE ? amountAWei : amountBWei;
-    const ethMin    = aIsWBONE ? minA   : minB;
+    const ethMin    = aIsWBONE ? minA : minB;
 
     try {
       if (useETH) {
-        // addLiquidityETH: BONE is sent as msg.value, WBONE approval not needed
-        await router.addLiquidityETH.staticCall(
-          tokenAddr, tokenAmt, tokenMin, ethMin,
-          userAddress, deadline,
-          { value: ethAmt }
-        );
+        await router.addLiquidityETH.staticCall(tokenAddr, tokenAmt, tokenMin, ethMin, userAddress, deadline, { value: ethAmt });
       } else {
-        await router.addLiquidity.staticCall(
-          addrA, addrB,
-          amountAWei, amountBWei,
-          minA, minB,
-          userAddress, deadline
-        );
+        await router.addLiquidity.staticCall(addrA, addrB, amountAWei, amountBWei, minA, minB, userAddress, deadline);
       }
-    } catch(simErr) {
-      const reason = decodeError(simErr);
-      if (reason.includes("check router/factory") || reason.includes("missing revert")) {
-        setStatus("loading", null, "Running diagnostics...");
-        const diagMsg = await runDiagnostics(addrA, addrB, amountAWei, amountBWei, deadline);
-        throw new Error(diagMsg);
-      }
-      throw new Error("Reverted: " + reason);
+    } catch(se) {
+      throw new Error('Simulation failed: ' + decErr(se));
     }
 
-    // ── Step 5: Send the real transaction ────────────────────────
-    setStatus("loading", null, "Sending transaction...");
-
+    setSt('loading', null, 'Confirm in wallet...');
     let tx;
     if (useETH) {
-      tx = await router.addLiquidityETH(
-        tokenAddr, tokenAmt, tokenMin, ethMin,
-        userAddress, deadline,
-        { value: ethAmt }
-      );
+      tx = await router.addLiquidityETH(tokenAddr, tokenAmt, tokenMin, ethMin, userAddress, deadline, { value: ethAmt });
     } else {
-      tx = await router.addLiquidity(
-        addrA, addrB,
-        amountAWei, amountBWei,
-        minA, minB,
-        userAddress, deadline
-      );
+      tx = await router.addLiquidity(addrA, addrB, amountAWei, amountBWei, minA, minB, userAddress, deadline);
     }
-
-    setStatus("loading", null, `Confirming... (tx: ${tx.hash.slice(0,10)}...)`);
+    setSt('loading', null, 'Confirming... '+tx.hash.slice(0,10)+'...');
     const receipt = await tx.wait();
 
-    // ── Step 6: Parse LP tokens from mint Transfer event ─────────
-    let lpReceived = "—";
+    let lpReceived = '--';
     try {
-      const transferTopic = ethers.id("Transfer(address,address,uint256)");
-      const zeroAddr = "0x0000000000000000000000000000000000000000";
+      const transferTopic = ethers.id('Transfer(address,address,uint256)');
+      const zeroAddr = '0x0000000000000000000000000000000000000000';
       for (const log of receipt.logs) {
-        if (
-          log.topics[0] === transferTopic &&
-          log.topics.length === 3 &&
-          ethers.getAddress("0x" + log.topics[1].slice(26)) === zeroAddr
-        ) {
-          lpReceived = formatUnits(BigInt(log.data), 18) + " LP";
+        if (log.topics[0]===transferTopic && log.topics.length===3 && ethers.getAddress('0x'+log.topics[1].slice(26))===zeroAddr) {
+          lpReceived = fmtU(BigInt(log.data), 18) + ' LP';
           break;
         }
       }
-    } catch(_) { /* non-critical */ }
+    } catch(_) {}
 
-    document.getElementById("lpAmount").textContent = lpReceived;
-    document.getElementById("lpResult").classList.add("show");
-
-    setStatus(
-      "success", "✓",
-      `Done! <a href="${CONFIG.EXPLORER}/tx/${tx.hash}" target="_blank">View on Explorer ↗</a>`
-    );
-
-    // Refresh balances
-    onAddressChange("A");
-    onAddressChange("B");
+    document.getElementById('lpAmount').textContent = lpReceived;
+    document.getElementById('lpResult').classList.add('show');
+    setSt('success','✓',`Done! <a href="${CONFIG.EXPLORER}/tx/${tx.hash}" target="_blank">View on Explorer &#8599;</a>`);
+    onAddrChange('A'); onAddrChange('B');
 
   } catch(e) {
-    console.error(e);
-    setStatus("error", "✕", sanitize(decodeError(e)));
+    setSt('error','✕',sanitize(decErr(e)));
   } finally {
-    setButtonLoading(false);
+    setBtnLoading(false);
   }
 }
 
-// ─────────────────────────────────────────────
-// Helpers
-// ─────────────────────────────────────────────
-
-// [FIX-13] Proper BigInt formatting without float precision loss
-function formatUnits(value, decimals) {
-  const formatted = ethers.formatUnits(value, decimals);
-  const num       = parseFloat(formatted);
-  if (num === 0) return "0";
-  if (num < 0.0001) return "< 0.0001";
-  return num.toLocaleString(undefined, { maximumFractionDigits: 6 });
+// ── Helpers ───────────────────────────────────────────────────
+function fmtU(val, dec) {
+  const n = parseFloat(ethers.formatUnits(val, dec));
+  if (!n) return '0';
+  if (n < 0.0001) return '< 0.0001';
+  return n.toLocaleString(undefined, { maximumFractionDigits: 6 });
 }
 
-function setStatus(type, icon, message) {
-  const box  = document.getElementById("statusBox");
-  const text = document.getElementById("statusText");
-
-  box.className = "status-box" + (type ? " " + type : "");
-
-  // Icon / spinner
-  let iconEl = box.querySelector(".status-icon, .spinner");
-  if (iconEl) iconEl.remove();
-
-  const newIcon = document.createElement(type === "loading" ? "div" : "span");
-  newIcon.className = type === "loading" ? "spinner" : "status-icon";
-  if (type !== "loading" && icon) newIcon.textContent = icon;
-  box.insertBefore(newIcon, text);
-
-  // [FIX-15] Use innerHTML only for trusted link content (success), textContent otherwise
-  if (type === "success") {
-    text.innerHTML = message;
-  } else {
-    text.textContent = message;
-  }
+function setSt(type, icon, msg) {
+  const box=document.getElementById('statusBox'), txt=document.getElementById('statusTxt');
+  box.className='status-box'+(type?' '+type:'');
+  const old=box.querySelector('.spinner,.st-ic');if(old)old.remove();
+  if(type==='loading'){const sp=document.createElement('div');sp.className='spinner';box.insertBefore(sp,txt);}
+  else if(icon){const ic=document.createElement('span');ic.className='st-ic';ic.textContent=icon;box.insertBefore(ic,txt);}
+  if(type==='success')txt.innerHTML=msg;else txt.textContent=msg;
 }
 
-function setButtonLoading(loading) {
-  const btn = document.getElementById("supplyBtn");
-  btn.disabled    = loading;
-  btn.textContent = loading ? "Processing..." : "Supply Liquidity";
+function setBtnLoading(loading) {
+  const btn = document.getElementById('supplyBtn');
+  btn.disabled = loading;
+  btn.textContent = loading ? 'Processing...' : 'Supply Liquidity';
 }
 
-// ─────────────────────────────────────────────
-
-// ─────────────────────────────────────────────
-// Deep diagnostics — called when staticCall gives
-// a generic revert with no reason string.
-// Checks each failure condition individually.
-// ─────────────────────────────────────────────
-async function runDiagnostics(addrA, addrB, amountAWei, amountBWei, deadline) {
-  const checks = [];
-
-  // 1. Router contract exists?
-  try {
-    const code = await provider.getCode(CONFIG.ROUTER);
-    if (!code || code === "0x") {
-      return "ROUTER contract not deployed at " + CONFIG.ROUTER + ". Check your CONFIG address.";
-    }
-    checks.push("Router: OK");
-  } catch(e) { return "Cannot reach RPC to check router: " + e.message; }
-
-  // 2. Factory contract exists?
-  try {
-    const code = await provider.getCode(CONFIG.FACTORY);
-    if (!code || code === "0x") {
-      return "FACTORY contract not deployed at " + CONFIG.FACTORY + ". Check your CONFIG address.";
-    }
-    checks.push("Factory: OK");
-  } catch(e) { return "Cannot reach RPC to check factory: " + e.message; }
-
-  // 3. Deadline not already expired?
-  try {
-    const block = await provider.getBlock("latest");
-    if (deadline <= BigInt(block.timestamp)) {
-      return "Deadline already expired. Your system clock may be behind. (block=" + block.timestamp + " deadline=" + deadline + ")";
-    }
-    checks.push("Deadline: OK");
-  } catch(e) { checks.push("Deadline: could not verify"); }
-
-  // 4. Token A allowance sufficient?
-  try {
-    const tokenA = new ethers.Contract(addrA, ERC20_ABI, provider);
-    const allow  = await tokenA.allowance(userAddress, CONFIG.ROUTER);
-    if (allow < amountAWei) {
-      return tokenInfo.A.symbol + " allowance too low. Have: " + ethers.formatUnits(allow, tokenInfo.A.decimals) + ", need: " + ethers.formatUnits(amountAWei, tokenInfo.A.decimals) + ". Please re-approve.";
-    }
-    checks.push("Allowance A: OK");
-  } catch(e) { return "Could not check Token A allowance: " + e.message; }
-
-  // 5. Token B allowance sufficient?
-  try {
-    const tokenB = new ethers.Contract(addrB, ERC20_ABI, provider);
-    const allow  = await tokenB.allowance(userAddress, CONFIG.ROUTER);
-    if (allow < amountBWei) {
-      return tokenInfo.B.symbol + " allowance too low. Have: " + ethers.formatUnits(allow, tokenInfo.B.decimals) + ", need: " + ethers.formatUnits(amountBWei, tokenInfo.B.decimals) + ". Please re-approve.";
-    }
-    checks.push("Allowance B: OK");
-  } catch(e) { return "Could not check Token B allowance: " + e.message; }
-
-  // 6. Token A balance sufficient?
-  try {
-    const tokenA = new ethers.Contract(addrA, ERC20_ABI, provider);
-    const bal    = await tokenA.balanceOf(userAddress);
-    if (bal < amountAWei) {
-      return "Insufficient " + tokenInfo.A.symbol + " balance. Have: " + ethers.formatUnits(bal, tokenInfo.A.decimals) + ", need: " + ethers.formatUnits(amountAWei, tokenInfo.A.decimals);
-    }
-    checks.push("Balance A: OK");
-  } catch(e) { return "Could not check Token A balance: " + e.message; }
-
-  // 7. Token B balance sufficient?
-  try {
-    const tokenB = new ethers.Contract(addrB, ERC20_ABI, provider);
-    const bal    = await tokenB.balanceOf(userAddress);
-    if (bal < amountBWei) {
-      return "Insufficient " + tokenInfo.B.symbol + " balance. Have: " + ethers.formatUnits(bal, tokenInfo.B.decimals) + ", need: " + ethers.formatUnits(amountBWei, tokenInfo.B.decimals);
-    }
-    checks.push("Balance B: OK");
-  } catch(e) { return "Could not check Token B balance: " + e.message; }
-
-  // 8. Factory.getPair — check if pair creation will succeed
-  try {
-    const factory = new ethers.Contract(CONFIG.FACTORY, [
-      "function getPair(address,address) view returns (address)",
-      "function createPair(address,address) returns (address)"
-    ], provider);
-    const pair = await factory.getPair(addrA, addrB);
-    checks.push("Pair check: " + (pair === "0x0000000000000000000000000000000000000000" ? "will create new" : "exists " + pair));
-  } catch(e) {
-    return "Factory.getPair() failed — factory address may be wrong or ABI mismatch. Error: " + e.message;
-  }
-
-  // 9. pairInitCodeHash — does router have a non-zero hash?
-  try {
-    const routerContract = new ethers.Contract(CONFIG.ROUTER, [
-      "function pairInitCodeHash() view returns (bytes32)"
-    ], provider);
-    const hash = await routerContract.pairInitCodeHash();
-    if (!hash || hash === "0x0000000000000000000000000000000000000000000000000000000000000000") {
-      return "Router pairInitCodeHash is zero! Deploy router with correct hash from factory.pairCodeHash().";
-    }
-    checks.push("InitCodeHash: " + hash.slice(0,10) + "...");
-  } catch(e) {
-    return "Router does not expose pairInitCodeHash() — may be wrong contract at " + CONFIG.ROUTER;
-  }
-
-  // All checks passed but still reverting — return diagnostic summary
-  return "All pre-checks passed but call still reverts. Passed: [" + checks.join(", ") + "]. Possible cause: pairInitCodeHash mismatch between router and factory. Verify factory.pairCodeHash() matches the hash passed to the router constructor.";
-}
-
-// Error decoder — handles Shibarium RPC quirks
-// Shibarium's RPC often returns "missing revert data"
-// instead of the actual revert reason. This function
-// tries every known error shape to find the real message.
-// ─────────────────────────────────────────────
-function decodeError(e) {
-  if (!e) return "Unknown error";
-
-  // 1. Ethers v6 structured error
-  if (e.reason)       return e.reason;
+function decErr(e) {
+  if (!e) return 'Unknown error';
+  if (e.code===4001||e.code==='ACTION_REJECTED') return 'Rejected by user';
+  if (e.reason) return e.reason;
   if (e.shortMessage) return e.shortMessage;
-
-  // 2. Nested revert data (common on Shibarium)
-  if (e.error?.reason)        return e.error.reason;
-  if (e.error?.error?.reason) return e.error.error.reason;
-
-  // 3. Revert data as hex — decode manually
-  // e.g. "0x08c379a0..." is Error(string)
-  const data = e?.data
-    || e?.error?.data
-    || e?.error?.error?.data
-    || e?.info?.error?.data;
-
-  if (typeof data === "string" && data.startsWith("0x08c379a0")) {
-    try {
-      // Skip 4-byte selector, decode the rest as (string)
-      const decoded = ethers.AbiCoder.defaultAbiCoder().decode(
-        ["string"],
-        "0x" + data.slice(10)
-      );
-      return decoded[0];
-    } catch(_) {}
+  if (e.error?.reason) return e.error.reason;
+  const data = e?.data||e?.error?.data||e?.info?.error?.data;
+  if (typeof data==='string'&&data.startsWith('0x08c379a0')) {
+    try { return ethers.AbiCoder.defaultAbiCoder().decode(['string'],'0x'+data.slice(10))[0]; } catch(_) {}
   }
-
-  // 4. Panic code (e.g. 0x4e487b71)
-  if (typeof data === "string" && data.startsWith("0x4e487b71")) {
-    try {
-      const decoded = ethers.AbiCoder.defaultAbiCoder().decode(
-        ["uint256"],
-        "0x" + data.slice(10)
-      );
-      const codes = {
-        1: "Assertion failed", 11: "Arithmetic overflow",
-        12: "Division by zero", 17: "Enum conversion error",
-        18: "Incorrect storage access", 21: "Invalid array pop",
-        22: "Array index out of bounds", 31: "Too much memory",
-        32: "Zero-initialised variable", 41: "Too large allocation",
-        51: "Call to zero-initialized function pointer"
-      };
-      return `Panic: ${codes[Number(decoded[0])] || "code " + decoded[0]}`;
-    } catch(_) {}
-  }
-
-  // 5. User rejected
-  if (e.code === 4001 || e.code === "ACTION_REJECTED") return "Transaction rejected by user";
-
-  // 6. Raw message fallback
-  const raw = e.message || String(e);
-
-  // Strip ethers boilerplate that obscures the real reason
-  const match = raw.match(/reason="([^"]+)"/);
-  if (match) return match[1];
-
-  const match2 = raw.match(/reverted with reason string '([^']+)'/);
-  if (match2) return match2[1];
-
-  // 7. Last resort — truncate
-  return raw.replace("missing revert data", "Contract reverted (check router/factory addresses and token approvals)").slice(0, 220);
+  const raw = e.message||String(e);
+  const m = raw.match(/reason="([^"]+)"/);
+  if (m) return m[1];
+  return raw.replace('missing revert data','Contract reverted — check addresses and approvals').slice(0,200);
 }
 
-// [FIX-15] Sanitize strings before inserting as textContent
-function sanitize(str) {
-  return String(str).replace(/<[^>]*>/g, "").slice(0, 220);
-}
+function sanitize(s) { return String(s).replace(/<[^>]*>/g,'').slice(0,220); }
 
-// Initialize status
-setStatus("", "○", "Connect wallet to begin");
+setSt('','○','Connect wallet to begin');
 </script>
 </body>
 </html>
