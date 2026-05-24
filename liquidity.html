@@ -407,7 +407,7 @@ body::after {
             <input class="addr-input" id="tokenA" placeholder="0x..." oninput="onAddrChange('A')">
           </div>
           <div class="amt-row">
-            <input class="amt-input" type="number" id="amountA" placeholder="0.0" step="any">
+            <input class="amt-input" type="number" id="amountA" placeholder="0.0" step="any" oninput="autoFillB()">
             <div class="bal-group">
               <span class="bal-lbl">BAL</span>
               <span class="bal-val" id="balA">--</span>
@@ -430,7 +430,7 @@ body::after {
             <input class="addr-input" id="tokenB" placeholder="0x..." oninput="onAddrChange('B')">
           </div>
           <div class="amt-row">
-            <input class="amt-input" type="number" id="amountB" placeholder="0.0" step="any">
+            <input class="amt-input" type="number" id="amountB" placeholder="Auto-calculated" step="any">
             <div class="bal-group">
               <span class="bal-lbl">BAL</span>
               <span class="bal-val" id="balB">--</span>
@@ -442,6 +442,35 @@ body::after {
 
         <!-- Pair info -->
         <div class="pair-info" id="pairInfo"></div>
+
+        <!-- Pool info (shown when pair exists) -->
+        <div id="poolInfo" style="display:none;background:var(--pit);border:1px solid var(--rim);border-radius:12px;padding:14px 16px;margin:10px 0;">
+          <div style="font-family:var(--mono);font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--ash);margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;">
+            <span>Pool Information</span>
+            <span style="color:var(--magma);font-size:9px;letter-spacing:1px">RATIO FIXED BY POOL</span>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+            <div style="background:var(--well);border-radius:8px;padding:10px;">
+              <div style="font-family:var(--mono);font-size:9px;color:var(--ash);margin-bottom:4px;letter-spacing:1px">POOL RESERVE A</div>
+              <div style="font-family:var(--mono);font-size:13px;color:var(--white)" id="poolResA">--</div>
+            </div>
+            <div style="background:var(--well);border-radius:8px;padding:10px;">
+              <div style="font-family:var(--mono);font-size:9px;color:var(--ash);margin-bottom:4px;letter-spacing:1px">POOL RESERVE B</div>
+              <div style="font-family:var(--mono);font-size:13px;color:var(--white)" id="poolResB">--</div>
+            </div>
+            <div style="background:var(--well);border-radius:8px;padding:10px;">
+              <div style="font-family:var(--mono);font-size:9px;color:var(--ash);margin-bottom:4px;letter-spacing:1px">EXCHANGE RATE</div>
+              <div style="font-family:var(--mono);font-size:11px;color:var(--fog)" id="poolRate">--</div>
+            </div>
+            <div style="background:var(--well);border-radius:8px;padding:10px;">
+              <div style="font-family:var(--mono);font-size:9px;color:var(--ash);margin-bottom:4px;letter-spacing:1px">YOUR POOL SHARE</div>
+              <div style="font-family:var(--mono);font-size:13px;color:var(--green)" id="poolShare">--</div>
+            </div>
+          </div>
+          <div style="margin-top:10px;padding:8px 10px;background:rgba(255,77,0,.05);border:1px solid rgba(255,77,0,.12);border-radius:8px;font-family:var(--mono);font-size:10px;color:var(--smoke);">
+            <span style="color:var(--magma)">&#9889;</span> Type Token A amount  Token B auto-fills to match pool ratio
+          </div>
+        </div>
 
         <!-- Slippage -->
         <div class="settings-row">
@@ -458,10 +487,20 @@ body::after {
           Supply Liquidity
         </button>
 
-        <!-- LP result -->
+        <!-- LP result + burn option -->
         <div class="lp-result" id="lpResult">
-          <div class="lp-result-lbl">LP Tokens Received</div>
-          <div class="lp-result-val" id="lpAmount">--</div>
+          <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap;">
+            <div>
+              <div class="lp-result-lbl">LP Tokens Received</div>
+              <div class="lp-result-val" id="lpAmount">--</div>
+            </div>
+            <button id="burnBtn" onclick="openBurnModal()" style="display:none;align-items:center;gap:6px;padding:9px 16px;background:rgba(255,51,102,.08);border:1px solid rgba(255,51,102,.25);border-radius:10px;color:var(--red);font-family:var(--mono);font-size:11px;cursor:pointer;transition:all .2s;white-space:nowrap;flex-shrink:0;" onmouseover="this.style.background='rgba(255,51,102,.15)'" onmouseout="this.style.background='rgba(255,51,102,.08)'">
+              &#128293; Burn LP
+            </button>
+          </div>
+          <div style="margin-top:10px;padding:8px 10px;background:rgba(0,255,178,.05);border:1px solid rgba(0,255,178,.12);border-radius:8px;font-family:var(--mono);font-size:10px;color:var(--smoke);">
+            <span style="color:var(--green);">&#128274;</span> Optionally burn your LP tokens to permanently lock this liquidity and prevent rug pulls.
+          </div>
         </div>
 
         <!-- Status -->
@@ -478,8 +517,16 @@ body::after {
 <!-- ============================================================
      JAVASCRIPT -- all logic preserved from original
      ============================================================ -->
-<script src="https://cdn.jsdelivr.net/npm/ethers@6.13.0/dist/ethers.umd.min.js"></script>
 <script>
+//  Dynamic ethers load (same pattern as swap.html) 
+let ethers = null;
+async function getEthers() {
+  if (ethers) return ethers;
+  const m = await import('https://cdn.jsdelivr.net/npm/ethers@6.13.0/dist/ethers.min.js');
+  ethers = m.ethers || m;
+  return ethers;
+}
+
 const CONFIG = {
   ROUTER:     '0x652875c0F607CB392C0F9E5FB957A7055c2deD2e',
   FACTORY:    '0xD8fFEECfDE1698a70A26a094afBE917bA58E2F70',
@@ -502,15 +549,26 @@ const ROUTER_ABI = [
   'function addLiquidityETH(address,uint256,uint256,uint256,address,uint256) external payable returns (uint256,uint256,uint256)',
 ];
 const FACTORY_ABI = ['function getPair(address,address) view returns (address)'];
+const PAIR_ABI = [
+  'function getReserves() view returns (uint112 reserve0, uint112 reserve1, uint32 blockTimestampLast)',
+  'function token0() view returns (address)',
+  'function token1() view returns (address)',
+  'function totalSupply() view returns (uint256)',
+  'function balanceOf(address) view returns (uint256)',
+];
 
 let provider, signer, userAddress;
 let slipBps   = 500n;
 let tokenInfo = { A: null, B: null };
+let pairData  = null; // { pairAddr, reserve0, reserve1, token0, pairExists }
+let burnState = { lpTokenAddr: null, lpBalance: null }; // for LP burn flow
+const DEAD_ADDR = '0x000000000000000000000000000000000000dEaD';
 
-// ── Wallet ────────────────────────────────────────────────────
+//  Wallet 
 async function connectWallet() {
   if (!window.ethereum) return alert('Please install MetaMask or Rabby Wallet');
   try {
+    await getEthers(); // ensure ethers is loaded before any use
     provider = new ethers.BrowserProvider(window.ethereum);
     signer   = await provider.getSigner();
     const net = await provider.getNetwork();
@@ -520,21 +578,21 @@ async function connectWallet() {
         await window.ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: '0x6d' }] });
         provider = new ethers.BrowserProvider(window.ethereum);
         signer   = await provider.getSigner();
-      } catch(e) { setSt('error', '✕', 'Please switch to Shibarium manually'); return; }
+      } catch(e) { setSt('error', '', 'Please switch to Shibarium manually'); return; }
     }
     userAddress = await signer.getAddress();
     const btn   = document.getElementById('connectBtn');
     btn.classList.add('connected');
     document.getElementById('connectLabel').textContent = userAddress.slice(0,6)+'...'+userAddress.slice(-4);
-    setSt('', '○', 'Wallet connected — enter token addresses');
+    setSt('', '', 'Wallet connected  enter token addresses');
     window.ethereum.on('accountsChanged', () => location.reload());
     window.ethereum.on('chainChanged',    () => location.reload());
     if (ethers.isAddress(document.getElementById('tokenA').value)) onAddrChange('A');
     if (ethers.isAddress(document.getElementById('tokenB').value)) onAddrChange('B');
-  } catch(e) { setSt('error', '✕', decErr(e)); }
+  } catch(e) { setSt('error', '', decErr(e)); }
 }
 
-// ── Token address change ──────────────────────────────────────
+//  Token address change 
 async function onAddrChange(side) {
   const addr = document.getElementById('token'+side).value.trim();
   const meta = document.getElementById('meta'+side);
@@ -569,18 +627,123 @@ async function checkPair() {
   const addrA = document.getElementById('tokenA').value.trim();
   const addrB = document.getElementById('tokenB').value.trim();
   const el    = document.getElementById('pairInfo');
-  if (!ethers.isAddress(addrA) || !ethers.isAddress(addrB) || !provider) { el.classList.remove('show'); return; }
+  const poolEl = document.getElementById('poolInfo');
+  pairData = null;
+
+  if (!ethers.isAddress(addrA) || !ethers.isAddress(addrB) || !provider) {
+    el.classList.remove('show');
+    if (poolEl) poolEl.style.display = 'none';
+    return;
+  }
+
   try {
     const factory = new ethers.Contract(CONFIG.FACTORY, FACTORY_ABI, provider);
     const pair    = await factory.getPair(addrA, addrB);
     const exists  = pair !== '0x0000000000000000000000000000000000000000';
     el.classList.add('show');
-    if (exists) {
-      el.innerHTML = `<span class="pair-badge exists">Pair exists</span><span>${pair}</span>`;
-    } else {
-      el.innerHTML = `<span class="pair-badge new">New pair</span><span>Will be created automatically on first deposit</span>`;
+
+    if (!exists) {
+      el.innerHTML = `<span class="pair-badge new">New pair</span><span>You are setting the initial price - enter any ratio</span>`;
+      // Unlock Token B for new pairs -- user sets initial price freely
+      const amtBElNew = document.getElementById('amountB');
+      if (amtBElNew) {
+        amtBElNew.readOnly = false;
+        amtBElNew.style.opacity = '1';
+        amtBElNew.style.cursor  = 'text';
+        amtBElNew.placeholder   = '0.0';
+      }
+      if (poolEl) poolEl.style.display = 'none';
+      pairData = { pairExists: false };
+      return;
     }
-  } catch(_) { el.classList.remove('show'); }
+
+    el.innerHTML = `<span class="pair-badge exists">Pair exists</span><span>${pair}</span>`;
+    // Lock Token B input -- ratio is fixed by pool
+    const amtBEl = document.getElementById('amountB');
+    if (amtBEl) {
+      amtBEl.readOnly = true;
+      amtBEl.style.opacity = '.7';
+      amtBEl.style.cursor  = 'not-allowed';
+      amtBEl.placeholder   = 'Auto-calculated from pool ratio';
+    }
+
+    // Load reserves to auto-calculate ratio
+    const pairContract = new ethers.Contract(pair, PAIR_ABI, provider);
+    const [res, token0, totalSupply] = await Promise.all([
+      pairContract.getReserves(),
+      pairContract.token0(),
+      pairContract.totalSupply(),
+    ]);
+
+    // Determine which reserve corresponds to which token
+    const t0IsA = token0.toLowerCase() === addrA.toLowerCase();
+    const resA  = t0IsA ? res.reserve0 : res.reserve1;
+    const resB  = t0IsA ? res.reserve1 : res.reserve0;
+
+    pairData = {
+      pairExists: true,
+      pairAddr:   pair,
+      resA, resB,
+      totalSupply,
+      decA: tokenInfo.A?.decimals || 18,
+      decB: tokenInfo.B?.decimals || 18,
+    };
+
+    // Calculate user pool share if connected
+    let shareStr = '--';
+    if (userAddress && totalSupply > 0n) {
+      const userLP = await pairContract.balanceOf(userAddress);
+      if (userLP > 0n) {
+        const sharePct = Number(userLP * 10000n / totalSupply) / 100;
+        shareStr = sharePct < 0.01 ? '< 0.01%' : sharePct.toFixed(2) + '%';
+      } else {
+        shareStr = '0%';
+      }
+    }
+
+    // Exchange rate: 1 A = ? B
+    const rateAB = parseFloat(ethers.formatUnits(resB, pairData.decB)) /
+                   parseFloat(ethers.formatUnits(resA, pairData.decA));
+
+    const symA = tokenInfo.A?.symbol || 'A';
+    const symB = tokenInfo.B?.symbol || 'B';
+
+    // Update pool info panel
+    document.getElementById('poolResA').textContent = fmtU(resA, pairData.decA) + ' ' + symA;
+    document.getElementById('poolResB').textContent = fmtU(resB, pairData.decB) + ' ' + symB;
+    document.getElementById('poolRate').textContent = `1 ${symA} = ${rateAB.toFixed(6)} ${symB}`;
+    document.getElementById('poolShare').textContent = shareStr;
+    if (poolEl) poolEl.style.display = 'block';
+
+    // If Token A amount already entered, auto-fill Token B
+    autoFillB();
+
+  } catch(e) {
+    el.classList.remove('show');
+    if (poolEl) poolEl.style.display = 'none';
+    console.warn('checkPair error:', e);
+  }
+}
+
+// Auto-fill Token B based on pool ratio when Token A amount changes
+function autoFillB() {
+  // Guard: pair must exist AND both token metadata must be loaded
+  if (!pairData?.pairExists) return;
+  if (!tokenInfo.A || !tokenInfo.B) return;
+  if (!pairData.resA || !pairData.resB) return;
+  const amtA = parseFloat(document.getElementById('amountA').value);
+  if (!amtA || isNaN(amtA) || amtA <= 0) {
+    document.getElementById('amountB').value = '';
+    return;
+  }
+  // ratio: amtB = amtA * resB / resA (using floats for display)
+  const resAFloat = parseFloat(ethers.formatUnits(pairData.resA, pairData.decA));
+  const resBFloat = parseFloat(ethers.formatUnits(pairData.resB, pairData.decB));
+  if (resAFloat <= 0) return;
+  const amtB = amtA * resBFloat / resAFloat;
+  // Format to token decimals precision
+  const maxDec = Math.min(pairData.decB, 8);
+  document.getElementById('amountB').value = amtB.toFixed(maxDec).replace(/\.?0+$/, '') || '0';
 }
 
 function setMax(side) {
@@ -596,30 +759,35 @@ function setSlip(pct) {
   event.target.classList.add('active');
 }
 
-// ── Add Liquidity ─────────────────────────────────────────────
+//  Add Liquidity 
 async function addLiquidity() {
   const addrA = document.getElementById('tokenA').value.trim();
   const addrB = document.getElementById('tokenB').value.trim();
   const amtA  = document.getElementById('amountA').value.trim();
   const amtB  = document.getElementById('amountB').value.trim();
 
-  if (!userAddress)                                return setSt('error','✕','Connect wallet first');
-  if (!ethers.isAddress(addrA))                   return setSt('error','✕','Invalid Token A address');
-  if (!ethers.isAddress(addrB))                   return setSt('error','✕','Invalid Token B address');
-  if (addrA.toLowerCase()===addrB.toLowerCase())  return setSt('error','✕','Tokens cannot be the same');
-  if (!tokenInfo.A)                               return setSt('error','✕','Token A not loaded');
-  if (!tokenInfo.B)                               return setSt('error','✕','Token B not loaded');
-  if (!amtA || parseFloat(amtA)<=0)              return setSt('error','✕','Enter amount for Token A');
-  if (!amtB || parseFloat(amtB)<=0)              return setSt('error','✕','Enter amount for Token B');
+  if (!userAddress)                                return setSt('error','','Connect wallet first');
+  if (!ethers.isAddress(addrA))                   return setSt('error','','Invalid Token A address');
+  if (!ethers.isAddress(addrB))                   return setSt('error','','Invalid Token B address');
+  if (addrA.toLowerCase()===addrB.toLowerCase())  return setSt('error','','Tokens cannot be the same');
+  if (!tokenInfo.A)                               return setSt('error','','Token A not loaded');
+  if (!tokenInfo.B)                               return setSt('error','','Token B not loaded');
+  if (!amtA || parseFloat(amtA)<=0)              return setSt('error','','Enter amount for Token A');
+  if (!amtB || parseFloat(amtB)<=0)              return setSt('error','','Enter amount for Token B');
 
   let amountAWei, amountBWei;
   try {
     amountAWei = ethers.parseUnits(amtA, tokenInfo.A.decimals);
-    amountBWei = ethers.parseUnits(amtB, tokenInfo.B.decimals);
-  } catch(e) { return setSt('error','✕','Amount too precise for token decimals'); }
+    // When pair exists: use exact BigInt ratio from reserves (avoids float precision loss)
+    if (pairData && pairData.pairExists && pairData.resA && pairData.resB && pairData.resA > 0n) {
+      amountBWei = amountAWei * pairData.resB / pairData.resA;
+    } else {
+      amountBWei = ethers.parseUnits(amtB, tokenInfo.B.decimals);
+    }
+  } catch(e) { return setSt('error','','Amount too precise for token decimals'); }
 
-  if (amountAWei > tokenInfo.A.balance) return setSt('error','✕',`Insufficient ${tokenInfo.A.symbol} balance`);
-  if (amountBWei > tokenInfo.B.balance) return setSt('error','✕',`Insufficient ${tokenInfo.B.symbol} balance`);
+  if (amountAWei > tokenInfo.A.balance) return setSt('error','',`Insufficient ${tokenInfo.A.symbol} balance`);
+  if (amountBWei > tokenInfo.B.balance) return setSt('error','',`Insufficient ${tokenInfo.B.symbol} balance`);
 
   const minA = amountAWei * (10000n - slipBps) / 10000n;
   const minB = amountBWei * (10000n - slipBps) / 10000n;
@@ -684,12 +852,16 @@ async function addLiquidity() {
     const receipt = await tx.wait();
 
     let lpReceived = '--';
+    let lpTokenAddr = null;
+    let lpBalanceBN = 0n;
     try {
       const transferTopic = ethers.id('Transfer(address,address,uint256)');
       const zeroAddr = '0x0000000000000000000000000000000000000000';
       for (const log of receipt.logs) {
         if (log.topics[0]===transferTopic && log.topics.length===3 && ethers.getAddress('0x'+log.topics[1].slice(26))===zeroAddr) {
-          lpReceived = fmtU(BigInt(log.data), 18) + ' LP';
+          lpBalanceBN = BigInt(log.data);
+          lpTokenAddr = log.address;
+          lpReceived  = fmtU(lpBalanceBN, 18) + ' LP';
           break;
         }
       }
@@ -697,17 +869,26 @@ async function addLiquidity() {
 
     document.getElementById('lpAmount').textContent = lpReceived;
     document.getElementById('lpResult').classList.add('show');
-    setSt('success','✓',`Done! <a href="${CONFIG.EXPLORER}/tx/${tx.hash}" target="_blank">View on Explorer &#8599;</a>`);
+
+    // Show burn button if we have LP token info
+    if (lpTokenAddr && lpBalanceBN > 0n) {
+      burnState.lpTokenAddr = lpTokenAddr;
+      burnState.lpBalance   = lpBalanceBN;
+      const burnBtn = document.getElementById('burnBtn');
+      if (burnBtn) burnBtn.style.display = 'flex';
+    }
+
+    setSt('success','',`Done! <a href="${CONFIG.EXPLORER}/tx/${tx.hash}" target="_blank">View on Explorer &#8599;</a>`);
     onAddrChange('A'); onAddrChange('B');
 
   } catch(e) {
-    setSt('error','✕',sanitize(decErr(e)));
+    setSt('error','',sanitize(decErr(e)));
   } finally {
     setBtnLoading(false);
   }
 }
 
-// ── Helpers ───────────────────────────────────────────────────
+//  Helpers 
 function fmtU(val, dec) {
   const n = parseFloat(ethers.formatUnits(val, dec));
   if (!n) return '0';
@@ -743,12 +924,147 @@ function decErr(e) {
   const raw = e.message||String(e);
   const m = raw.match(/reason="([^"]+)"/);
   if (m) return m[1];
-  return raw.replace('missing revert data','Contract reverted — check addresses and approvals').slice(0,200);
+  return raw.replace('missing revert data','Contract reverted  check addresses and approvals').slice(0,200);
 }
 
 function sanitize(s) { return String(s).replace(/<[^>]*>/g,'').slice(0,220); }
 
-setSt('','○','Connect wallet to begin');
+//  LP Burn flow 
+function openBurnModal() {
+  if (!burnState.lpTokenAddr || !burnState.lpBalance) return;
+  const symA = tokenInfo.A?.symbol || 'A';
+  const symB = tokenInfo.B?.symbol || 'B';
+  document.getElementById('burnAmount').textContent  = fmtU(burnState.lpBalance, 18) + ' LP';
+  document.getElementById('burnPairLabel').textContent = symA + ' / ' + symB + ' pool';
+  const overlay = document.getElementById('burnOverlay');
+  overlay.style.display = 'flex';
+}
+
+function closeBurnModal() {
+  document.getElementById('burnOverlay').style.display = 'none';
+}
+
+async function executeBurn() {
+  if (!burnState.lpTokenAddr || !burnState.lpBalance) return;
+  const btn = document.getElementById('burnConfirmBtn');
+  btn.disabled = true;
+  btn.textContent = 'Burning...';
+
+  try {
+    const lpContract = new ethers.Contract(
+      burnState.lpTokenAddr,
+      ['function transfer(address,uint256) returns (bool)'],
+      signer
+    );
+
+    // Send LP tokens to dead address
+    const tx = await lpContract.transfer(DEAD_ADDR, burnState.lpBalance);
+    btn.textContent = 'Confirming...';
+    const receipt = await tx.wait();
+
+    // Success
+    closeBurnModal();
+
+    // Update UI -- hide burn button, show proof
+    const burnBtn = document.getElementById('burnBtn');
+    if (burnBtn) burnBtn.style.display = 'none';
+
+    // Show burn proof below LP result
+    const proofDiv = document.createElement('div');
+    proofDiv.style.cssText = 'margin-top:10px;padding:10px 14px;background:rgba(255,51,102,.05);border:1px solid rgba(255,51,102,.2);border-radius:10px;font-family:var(--mono);font-size:11px;';
+    proofDiv.innerHTML = `
+      <div style="display:flex;align-items:center;gap:8px;color:var(--red);">
+        <span>&#128293;</span>
+        <span style="font-weight:600;">LP Tokens Burned Forever</span>
+      </div>
+      <div style="color:var(--ash);margin-top:4px;">
+        ${fmtU(burnState.lpBalance, 18)} LP sent to dead address.
+        <a href="${CONFIG.EXPLORER}/tx/${tx.hash}" target="_blank" style="color:var(--fog);text-decoration:underline;margin-left:4px;">View proof &#8599;</a>
+      </div>
+    `;
+    document.getElementById('lpResult').appendChild(proofDiv);
+
+    // Update status
+    setSt('success', '&#128293;',
+      `LP burned! Liquidity locked forever. <a href="${CONFIG.EXPLORER}/tx/${tx.hash}" target="_blank">View burn proof &#8599;</a>`
+    );
+
+    // Clear burn state
+    burnState = { lpTokenAddr: null, lpBalance: null };
+
+  } catch(e) {
+    closeBurnModal();
+    setSt('error', '', 'Burn failed: ' + decErr(e));
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '&#128293; Burn Forever';
+  }
+}
+
+// Close burn modal on outside click
+document.getElementById('burnOverlay').addEventListener('click', function(e) {
+  if (e.target === this) closeBurnModal();
+});
+
+setSt('','','Connect wallet to begin');
 </script>
+<!-- ============================================================
+     BURN LP MODAL
+     ============================================================ -->
+<div id="burnOverlay" style="display:none;position:fixed;inset:0;background:rgba(3,4,7,.92);backdrop-filter:blur(16px);z-index:600;display:none;align-items:center;justify-content:center;padding:20px;">
+  <div style="background:var(--card);border:1px solid rgba(255,51,102,.3);border-radius:20px;width:100%;max-width:420px;padding:28px;position:relative;">
+
+    <!-- Red top line -->
+    <div style="position:absolute;top:-1px;left:10%;right:10%;height:1px;background:linear-gradient(90deg,transparent,rgba(255,51,102,.6),transparent);"></div>
+
+    <!-- Fire icon -->
+    <div style="text-align:center;margin-bottom:16px;">
+      <div style="width:56px;height:56px;border-radius:50%;background:rgba(255,51,102,.1);border:1px solid rgba(255,51,102,.25);display:flex;align-items:center;justify-content:center;margin:0 auto;font-size:24px;">
+        &#128293;
+      </div>
+    </div>
+
+    <div style="font-family:var(--display);font-size:26px;letter-spacing:2px;color:var(--red);text-align:center;margin-bottom:6px;">
+      BURN LP TOKENS
+    </div>
+    <div style="font-family:var(--mono);font-size:11px;color:var(--ash);text-align:center;margin-bottom:20px;letter-spacing:1px;">
+      THIS ACTION CANNOT BE UNDONE
+    </div>
+
+    <!-- Amount to burn -->
+    <div style="background:var(--pit);border:1px solid rgba(255,51,102,.2);border-radius:12px;padding:16px;margin-bottom:16px;text-align:center;">
+      <div style="font-family:var(--mono);font-size:9px;color:var(--ash);letter-spacing:2px;text-transform:uppercase;margin-bottom:6px;">LP Tokens to Burn</div>
+      <div style="font-family:var(--display);font-size:28px;color:var(--red);letter-spacing:1px;" id="burnAmount">--</div>
+      <div style="font-family:var(--mono);font-size:10px;color:var(--ash);margin-top:4px;" id="burnPairLabel">--</div>
+    </div>
+
+    <!-- Warning lines -->
+    <div style="background:rgba(255,51,102,.05);border:1px solid rgba(255,51,102,.15);border-radius:10px;padding:14px;margin-bottom:20px;">
+      <div style="font-family:var(--mono);font-size:11px;color:var(--fog);line-height:1.7;">
+        <div style="display:flex;gap:8px;margin-bottom:6px;"><span style="color:var(--red);">&#9888;</span> LP tokens will be sent to the dead address permanently.</div>
+        <div style="display:flex;gap:8px;margin-bottom:6px;"><span style="color:var(--red);">&#9888;</span> The liquidity will be locked in this pool forever.</div>
+        <div style="display:flex;gap:8px;margin-bottom:6px;"><span style="color:var(--red);">&#9888;</span> Nobody  including you  can ever remove it.</div>
+        <div style="display:flex;gap:8px;"><span style="color:var(--green);">&#10003;</span> Anyone can verify this burn on Shibarium explorer.</div>
+      </div>
+    </div>
+
+    <!-- Dead address display -->
+    <div style="background:var(--pit);border-radius:8px;padding:10px 14px;margin-bottom:20px;font-family:var(--mono);font-size:10px;color:var(--ash);word-break:break-all;">
+      Destination: <span style="color:var(--fog);">0x000000000000000000000000000000000000dEaD</span>
+    </div>
+
+    <!-- Buttons -->
+    <div style="display:flex;gap:10px;">
+      <button onclick="closeBurnModal()" style="flex:1;padding:13px;background:transparent;border:1px solid var(--rim);border-radius:12px;color:var(--ash);font-size:14px;font-weight:600;cursor:pointer;font-family:var(--body);transition:all .2s;" onmouseover="this.style.borderColor='var(--fog)';this.style.color='var(--fog)'" onmouseout="this.style.borderColor='var(--rim)';this.style.color='var(--ash)'">
+        Cancel
+      </button>
+      <button onclick="executeBurn()" id="burnConfirmBtn" style="flex:2;padding:13px;background:linear-gradient(135deg,#ff1a1a,#ff4466);border:none;border-radius:12px;color:white;font-size:14px;font-weight:700;cursor:pointer;font-family:var(--body);transition:all .2s;" onmouseover="this.style.transform='translateY(-1px)';this.style.boxShadow='0 6px 20px rgba(255,51,102,.4)'" onmouseout="this.style.transform='none';this.style.boxShadow='none'">
+        &#128293; Burn Forever
+      </button>
+    </div>
+
+  </div>
+</div>
+
 </body>
 </html>
