@@ -124,6 +124,8 @@ body::after {
 }
 
 .nav-link {
+  display: inline-flex;
+  align-items: center;
   padding: 6px 16px;
   border-radius: 8px;
   font-size: 14px;
@@ -134,6 +136,7 @@ body::after {
   white-space: nowrap;
   background: transparent;
   border: none;
+  text-decoration: none;
 }
 .nav-link:hover  { color: var(--fog); }
 .nav-link.active { color: var(--white); background: rgba(255,255,255,.06); }
@@ -598,13 +601,12 @@ body::after {
   <a class="logo" href="index.html">RicSwap</a>
 
   <nav class="header-nav">
-    <button class="nav-link" id="nav-home"><a href="index.html">Home</a></button>
-    <button class="nav-link active" id="nav-swap">Swap</button>
-    <button class="nav-link" id="nav-liquidity"><a href="liquidity.html">Liquidity</a></button>
-    <button class="nav-link" id="nav-pools"><a href="pools.html">Pools</a></button>
-    <button class="nav-link" id="nav-rewards"><a href="reward.html">Rewards</a></button>
-    <button class="nav-link" id="nav-rewards"><a href="launch.html">Create Token</a></button>
-
+    <a class="nav-link" id="nav-home" href="index.html">Home</a>
+    <a class="nav-link active" id="nav-swap" href="swap.html">Swap</a>
+    <a class="nav-link" id="nav-liquidity" href="liquidity.html">Liquidity</a>
+    <a class="nav-link" id="nav-pools" href="pools.html">Pools</a>
+    <a class="nav-link" id="nav-rewards" href="reward.html">Rewards</a>
+    <a class="nav-link" id="nav-create" href="launch.html">Create Token</a>
   </nav>
 
   <div class="header-right">
@@ -641,12 +643,13 @@ body::after {
   <div style="width:100%;max-width:480px">
 
     <!-- Swap card -->
-    <div class="swap-card fade-up">
+    <div class="swap-card fade-up" id="swapCard">
 
       <!-- Tabs -->
       <div class="swap-tabs">
         <button class="swap-tab active" id="tab-swap" onclick="setTab('swap')">Swap</button>
-        <button class="swap-tab" id="tab-wrap" onclick="setTab('wrap')">Wrap / Unwrap</button>
+        <button class="swap-tab" id="tab-send" onclick="setTab('send')">Send RIC</button>
+        <button class="swap-tab" id="tab-wrap" onclick="setTab('wrap')">Wrap</button>
       </div>
 
       <div class="card-body">
@@ -679,25 +682,19 @@ body::after {
           </div>
         </div>
 
-        <!-- Gasless strip -->
-        <div class="gasless-strip" onclick="toggleGasless()">
+        <!-- Send RIC hint strip -->
+        <div class="gasless-strip" onclick="setTab('send')">
           <div class="gasless-left">
             <div class="gasless-icon">
               <svg viewBox="0 0 24 24"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
             </div>
             <div>
-              <div class="gasless-text" id="lbl-gasless">Gasless Swap</div>
-              <div class="gasless-sub" id="lbl-gaslessDesc">Pay gas in RIC instead of BONE</div>
+              <div class="gasless-text">Send RIC with zero BONE</div>
+              <div class="gasless-sub">Tap to open gasless RIC transfer</div>
             </div>
           </div>
-          <label class="toggle-sw" onclick="event.stopPropagation()">
-            <input type="checkbox" id="gaslessToggle" onchange="onGaslessChange()">
-            <div class="tg-track"></div>
-            <div class="tg-thumb"></div>
-          </label>
         </div>
-
-        <!-- Token In -->
+<!-- Token In -->
         <div class="token-box">
           <div class="box-top">
             <span class="box-label" id="lbl-pay">You Pay</span>
@@ -794,6 +791,64 @@ body::after {
         <!-- Share -->
         <div style="text-align:center;margin-top:8px">
           <button style="background:none;border:none;font-family:var(--mono);font-size:10px;color:var(--ash);cursor:pointer" onclick="copyLink()" id="btn-share">Copy share link &#8599;</button>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Send RIC card (gasless) -->
+    <div class="swap-card fade-up" id="sendCard" style="display:none">
+      <div class="card-body">
+
+        <div class="gasless-strip" style="cursor:default">
+          <div class="gasless-left">
+            <div class="gasless-icon">
+              <svg viewBox="0 0 24 24"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+            </div>
+            <div>
+              <div class="gasless-text">Gasless RIC Transfer</div>
+              <div class="gasless-sub">Send RIC, pay gas in RIC, never need BONE</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="token-box">
+          <div class="box-top">
+            <span class="box-label">Amount</span>
+            <div class="bal-group">
+              <span>BAL</span>
+              <span class="bal-val" id="sendBal" onclick="sendSetMax()">--</span>
+              <button class="max-btn" onclick="sendSetMax()">MAX</button>
+            </div>
+          </div>
+          <div class="box-main">
+            <div style="flex:1;min-width:0">
+              <input class="amt-input" type="number" id="sendAmt" placeholder="0.0" step="any" oninput="sendOnAmt()">
+              <div class="usd-hint" id="sendUsd"></div>
+            </div>
+            <div class="token-pill" style="cursor:default;min-width:90px">
+              <div class="tk-av" style="background:rgba(255,77,0,.15);color:var(--magma)">R</div>
+              <span class="tk-sym">RIC</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="token-box" style="margin-top:10px">
+          <div class="box-top">
+            <span class="box-label">Recipient Address</span>
+          </div>
+          <div class="box-main">
+            <input class="amt-input" id="sendTo" placeholder="0x..." style="font-size:14px;font-family:var(--mono)" oninput="sendValidate()" autocomplete="off" spellcheck="false">
+          </div>
+        </div>
+
+        <button class="swap-btn" id="sendBtn" disabled onclick="execSend()">
+          <span id="sendLbl">Connect Wallet</span>
+        </button>
+
+        <div class="status-box" id="sendStatus">
+          <span>&#9675;</span>
+          <span id="sendStatusTxt">Enter amount and recipient</span>
         </div>
 
       </div>
@@ -942,7 +997,7 @@ const I18N = {
         impact_label:'Tac Dong', cfMin:'Nhan toi thieu', cfRoute:'Tuyen duong',
         cfSlip:'Truot gia', cfGas:'Phi gas', pay2:'Ban tra', recMin:'Ban nhan (min)',
   },
-  ch: { connectWallet:'连接钱包', swap:'兑换', pay:'您支付', receive:'您收到',
+  zh: { connectWallet:'连接钱包', swap:'兑换', pay:'您支付', receive:'您收到',
         bal:'余额', max:'最大', rate:'汇率', impact:'价格影响',
         minRec:'最少收到', route:'路线', gas:'预计Gas', refresh:'刷新',
         selectToken:'选择代币', confirmSwap:'确认兑换', cancel:'取消',
@@ -966,7 +1021,6 @@ let signer     = null;
 let userAddr   = null;
 let slipBps    = 100n;
 let mode       = 'exactIn';
-let gasless    = false;
 let lastQ      = null;
 let qTimer     = null;
 let refTimer   = null;
@@ -974,6 +1028,8 @@ let refSecs    = 15;
 let modalSide  = 'in';
 let pendImp    = null;
 let priceCache = {};
+let rawBalIn   = 0n;
+let isConnecting = false;
 
 let tks = {
   in:  { ...TK_LIST[0] },
@@ -1002,8 +1058,6 @@ function applyLang() {
     'lbl-deadline':  t('deadline'),
     'lbl-min':       t('min'),
     'lbl-expert':    t('expert'),
-    'lbl-gasless':   t('gasless'),
-    'lbl-gaslessDesc': t('gaslessDesc'),
     'lbl-pay':       t('pay'),
     'lbl-receive':   t('receive'),
     'lbl-bal':       t('bal'),
@@ -1135,10 +1189,11 @@ function updTkUI(side) {
 
 //  Wallet 
 async function connectWallet() {
-  if (userAddr) return;
+  if (userAddr || isConnecting) return;
   if (!window.ethereum) { alert('Please install MetaMask or another Web3 wallet'); return; }
   const btn = document.getElementById('connectBtn');
   btn.style.opacity = '.6';
+  isConnecting = true;
   try {
     await getEthers();
     await window.ethereum.request({ method:'eth_requestAccounts' });
@@ -1170,19 +1225,25 @@ async function connectWallet() {
     document.getElementById('swapBtn').disabled = false;
     document.getElementById('swapLbl').textContent = t('enterAmount');
 
-    window.ethereum.on('accountsChanged', ()=>location.reload());
-    window.ethereum.on('chainChanged', ()=>location.reload());
+    if (!window._rs_listeners_attached) {
+      window.ethereum.on('accountsChanged', ()=>location.reload());
+      window.ethereum.on('chainChanged', ()=>location.reload());
+      window._rs_listeners_attached = true;
+    }
 
     setSt('', '', 'Wallet connected');
     await refBals();
     schedQ();
     loadTxs();
     startRef();
+    sendRefreshBal();
 
   } catch(e) {
     setSt('error', '', decErr(e));
+    console.error('[connectWallet]', e);
   } finally {
     btn.style.opacity = '1';
+    isConnecting = false;
   }
 }
 
@@ -1204,7 +1265,7 @@ async function refBals() {
   document.getElementById('balIn').textContent  = fmt(bi,tks.in.decimals);
   document.getElementById('balOut').textContent = fmt(bo,tks.out.decimals);
   // Store raw BigInt for accurate comparison (fixes the comma bug!)
-  window._rawBal = bi;
+  rawBalIn = bi;
 
   const ai = tks.in.isNative||tks.in.isWBONE ? CFG.WBONE : tks.in.address;
   const ao = tks.out.isNative||tks.out.isWBONE? CFG.WBONE : tks.out.address;
@@ -1297,7 +1358,7 @@ async function fetchQ() {
     else setSt('','',`Quote ready  refreshes in ${refSecs}s`);
 
     //  Balance check using raw BigInt (fixes the comma bug!) 
-    const rawBal = window._rawBal||0n;
+    const rawBal = rawBalIn||0n;
     if (amIn>rawBal) { btn.disabled=true; lbl.textContent=t('insufficient')+' '+tks.in.symbol; return; }
 
     // Allowance check
@@ -1493,8 +1554,8 @@ function onAmt(side){
 }
 
 function setMax(){
-  if(!window._rawBal||!ethers)return;
-  let max=window._rawBal;
+  if(!rawBalIn||!ethers)return;
+  let max=rawBalIn;
   if(tks.in.isNative&&max>ethers.parseEther('0.01'))max-=ethers.parseEther('0.01');
   document.getElementById('amtIn').value=parseFloat(ethers.formatUnits(max,tks.in.decimals)).toFixed(6);
   schedQ();
@@ -1505,16 +1566,158 @@ function toggleSettings(){document.getElementById('settingsPanel').classList.tog
 function setSlip(p){slipBps=BigInt(Math.round(p*100));document.querySelectorAll('.slip-btn').forEach(b=>b.classList.toggle('active',b.textContent===p+'%'));if(lastQ)schedQ();}
 function getDL(){const m=parseInt(document.getElementById('dlInput').value)||5;return BigInt(Math.floor(Date.now()/1000)+m*60);}
 
-//  Gasless 
-function toggleGasless(){document.getElementById('gaslessToggle').checked=!document.getElementById('gaslessToggle').checked;onGaslessChange();}
-function onGaslessChange(){gasless=document.getElementById('gaslessToggle').checked;}
-
 //  Tabs 
 function setTab(tab){
   document.getElementById('tab-swap').classList.toggle('active',tab==='swap');
+  document.getElementById('tab-send').classList.toggle('active',tab==='send');
   document.getElementById('tab-wrap').classList.toggle('active',tab==='wrap');
+
+  const swapCard=document.getElementById('swapCard');
+  const sendCard=document.getElementById('sendCard');
+  if(tab==='send'){
+    swapCard.style.display='none';
+    sendCard.style.display='block';
+    clearInterval(refTimer);
+    sendRefreshBal();
+    return;
+  } else {
+    swapCard.style.display='block';
+    sendCard.style.display='none';
+    if(userAddr) startRef();
+  }
+
   if(tab==='wrap'){tks.in={...TK_LIST[0]};tks.out={...TK_LIST[1]};updTkUI('in');updTkUI('out');}
   refBals();schedQ();
+}
+
+//  ====== GASLESS SEND (RIC only) ======
+let _sendRicBal = 0n;
+
+async function sendRefreshBal(){
+  if(!userAddr||!provider){
+    document.getElementById('sendLbl').textContent=t('connectWallet');
+    document.getElementById('sendBtn').disabled=true;
+    return;
+  }
+  try{
+    const ric=new ethers.Contract(CFG.RIC,ERC20,provider);
+    _sendRicBal=await ric.balanceOf(userAddr);
+    const n=parseFloat(ethers.formatEther(_sendRicBal));
+    document.getElementById('sendBal').textContent=n.toLocaleString(undefined,{maximumFractionDigits:6});
+    sendValidate();
+  }catch(e){console.error(e);}
+}
+
+function sendSetMax(){
+  if(!_sendRicBal)return;
+  document.getElementById('sendAmt').value=parseFloat(ethers.formatEther(_sendRicBal)).toFixed(6);
+  sendOnAmt();
+}
+
+function sendOnAmt(){
+  showUSD('sendUsd',document.getElementById('sendAmt').value,{isNative:false,address:CFG.RIC});
+  sendValidate();
+}
+
+function sendValidate(){
+  const amt=document.getElementById('sendAmt').value.trim();
+  const to=document.getElementById('sendTo').value.trim();
+  const btn=document.getElementById('sendBtn'),lbl=document.getElementById('sendLbl');
+  if(!userAddr){lbl.textContent=t('connectWallet');btn.disabled=true;return;}
+  if(!amt||parseFloat(amt)<=0){lbl.textContent='Enter an amount';btn.disabled=true;return;}
+  let amtWei;
+  try{amtWei=ethers.parseEther(amt);}catch{lbl.textContent='Invalid amount';btn.disabled=true;return;}
+  if(amtWei>_sendRicBal){lbl.textContent='Insufficient RIC';btn.disabled=true;return;}
+  if(!to||!ethers.isAddress(to)){lbl.textContent='Enter valid address';btn.disabled=true;return;}
+  if(to.toLowerCase()===userAddr.toLowerCase()){lbl.textContent='Cannot send to yourself';btn.disabled=true;return;}
+  lbl.textContent='Send RIC (Gasless)';btn.disabled=false;
+}
+
+function setSendSt(type,msg,spin){
+  const box=document.getElementById('sendStatus'),txt=document.getElementById('sendStatusTxt');
+  box.className='status-box'+(type?' '+type:'');
+  const old=box.querySelector('.sp-ic');if(old)old.remove();
+  if(spin){const sp=document.createElement('div');sp.className='spinner sp-ic';box.insertBefore(sp,txt);}
+  if(type==='success')txt.innerHTML=msg;else txt.textContent=msg;
+}
+
+async function execSend(){
+  const btn=document.getElementById('sendBtn');
+  const amt=document.getElementById('sendAmt').value.trim();
+  const to=ethers.getAddress(document.getElementById('sendTo').value.trim());
+  const amtWei=ethers.parseEther(amt);
+  btn.disabled=true;
+  const MAX=ethers.MaxUint256;
+  try{
+    setSendSt('loading','Checking approvals...',true);
+    const ric=new ethers.Contract(CFG.RIC,ERC20,signer);
+    const [alFwd,alRg]=await Promise.all([
+      ric.allowance(userAddr,CFG.FORWARDER),
+      ric.allowance(userAddr,CFG.RICGAS),
+    ]);
+    if(alFwd<amtWei){
+      setSendSt('loading','Approve RIC for gasless sends...',true);
+      const tx=await ric.approve(CFG.FORWARDER,MAX);
+      setSendSt('loading','Confirming approval...',true);
+      await tx.wait();
+    }
+    if(alRg===0n){
+      setSendSt('loading','Approve gas fee contract...',true);
+      const tx=await ric.approve(CFG.RICGAS,MAX);
+      setSendSt('loading','Confirming...',true);
+      await tx.wait();
+    }
+    setSendSt('loading','Preparing gasless transfer...',true);
+    const nonceRes=await fetch(CFG.RELAYER+'/nonce/'+userAddr);
+    const {nonce}=await nonceRes.json();
+    const iface=new ethers.Interface(['function transferFrom(address,address,uint256)']);
+    const data=iface.encodeFunctionData('transferFrom',[userAddr,to,amtWei]);
+    const request={
+      from:userAddr,to:CFG.RIC,value:'0',gas:'150000',
+      nonce:String(nonce),deadline:String(Math.floor(Date.now()/1000)+3600),data:data,
+    };
+    setSendSt('loading','Sign in your wallet...',true);
+    const typedData={
+      domain:{name:'RicWallet',version:'1',chainId:109,verifyingContract:CFG.FORWARDER},
+      types:{ForwardRequest:[
+        {name:'from',type:'address'},{name:'to',type:'address'},
+        {name:'value',type:'uint256'},{name:'gas',type:'uint256'},
+        {name:'nonce',type:'uint256'},{name:'deadline',type:'uint256'},
+        {name:'data',type:'bytes'},
+      ]},
+      primaryType:'ForwardRequest',message:request,
+    };
+    let signature;
+    try {
+      signature = await signer.signTypedData(
+        typedData.domain,
+        typedData.types,
+        typedData.message
+      );
+    } catch(sigErr) {
+      const msg = (sigErr && (sigErr.message||'')).toLowerCase();
+      if (msg.includes('chain') || msg.includes('network') || msg.includes('domain')) {
+        throw new Error('Please switch to the Shibarium network to send RIC gaslessly.');
+      }
+      throw sigErr;
+    }
+    setSendSt('loading','Sending RIC gaslessly...',true);
+    const relayRes=await fetch(CFG.RELAYER+'/relay',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({request,signature}),
+    });
+    const result=await relayRes.json();
+    if(!relayRes.ok)throw new Error(result.error||'Relay failed');
+    setSendSt('success',`Sent ${amt} RIC! <a href="${CFG.EXPLORER}/tx/${result.hash}" target="_blank">View</a>`);
+    saveTx({hash:result.hash,summary:amt+' RIC -> '+to.slice(0,8)+'...',time:Date.now()});
+    document.getElementById('sendAmt').value='';
+    document.getElementById('sendTo').value='';
+    await sendRefreshBal();
+    loadTxs();
+  }catch(e){
+    setSendSt('error',decErr(e));
+    btn.disabled=false;
+  }
 }
 
 //  Refresh timer 
