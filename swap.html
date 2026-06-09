@@ -694,6 +694,24 @@ body::after {
             </div>
           </div>
         </div>
+<!-- Gasless swap toggle (hidden until audit via JS) -->
+        <div class="gasless-strip" id="gaslessSwapStrip" style="display:none">
+          <div class="gasless-left">
+            <div class="gasless-icon">
+              <svg viewBox="0 0 24 24"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+            </div>
+            <div>
+              <div class="gasless-text">Gasless Swap</div>
+              <div class="gasless-sub">Pay gas in RIC, no BONE (token-to-token)</div>
+            </div>
+          </div>
+          <label class="toggle-sw" onclick="event.stopPropagation()">
+            <input type="checkbox" id="gaslessSwapToggle" onchange="onGaslessSwapToggle()">
+            <div class="tg-track"></div>
+            <div class="tg-thumb"></div>
+          </label>
+        </div>
+
 <!-- Token In -->
         <div class="token-box">
           <div class="box-top">
@@ -930,6 +948,8 @@ const CFG = {
   WBONE:     '0xc76f4c819d820369fb2d7c1531ab3bb18e6fe8d8',
   RIC:       '0x12C94d3A30daa09f81Ea6c037004E6e99A4A3dfc',
   FORWARDER: '0xFC07CB6a642d66A7a10eee53871C8F47F9787346',
+  SWAP_FORWARDER: '0x31EC28596eCeBae42084807350FB57cB45c0fd5D',
+  GASLESS_ROUTER: '0x6435EE39FD35E47Cb106dd918faDF058cB2f0cdf',
   RICGAS:    '0x6B908238AA7FcF2B0815E9CBfBDDBF97AE668285',
   RELAYER:   'https://api.ricswap.com',
   CHAIN_ID:  109n,
@@ -939,6 +959,9 @@ const CFG = {
   LOGO:      'https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/shibarium/assets',
   DEXSCREEN: 'https://api.dexscreener.com/latest/dex',
 };
+
+// Gasless swap is OFF until contracts are audited. Do not flip without an audit.
+const GASLESS_SWAP_ENABLED = true;
 
 //  Tokens 
 const TK_LIST = [
@@ -1404,6 +1427,7 @@ async function doApprove() {
 //  Swap 
 function doSwapOrCf() {
   if (!lastQ) return;
+  if (gaslessEligible()){ execGaslessSwap(); return; }
   if (lastQ.isWrap||document.getElementById('expertMode').checked) { execSwap(); return; }
   const{amountIn:ai,amountOut:ao,minOut:mn,impactPct:imp,impactClass:ic}=lastQ;
   document.getElementById('cfIn').textContent  =parseFloat(ethers.formatUnits(ai,tks.in.decimals)).toFixed(6)+' '+tks.in.symbol;
@@ -1474,6 +1498,128 @@ async function execSwap() {
     await refBals(); loadTxs();
   } catch(e){setSt('error','',decErr(e));}
   finally{btn.disabled=false;lbl.textContent=t('swap');fetchQ();}
+}
+
+
+//  ====== GASLESS SWAP (token-to-token, pay gas in RIC) ======
+let gaslessSwapOn = false;
+
+function initGaslessSwapUI(){
+  if (typeof GASLESS_SWAP_ENABLED !== 'undefined' && GASLESS_SWAP_ENABLED){
+    const s=document.getElementById('gaslessSwapStrip');
+    if(s) s.style.display='flex';
+  }
+}
+
+function onGaslessSwapToggle(){
+  gaslessSwapOn = document.getElementById('gaslessSwapToggle').checked;
+  schedQ();
+}
+
+// v1: token-to-token only. Native BONE in/out NOT supported gaslessly.
+function gaslessEligible(){
+  if (typeof GASLESS_SWAP_ENABLED === 'undefined' || !GASLESS_SWAP_ENABLED) return false;
+  if (!gaslessSwapOn) return false;
+  if (tks.in.isNative || tks.out.isNative) return false;
+  if (tks.in.isWBONE && tks.out.isWBONE) return false;
+  return true;
+}
+
+async function execGaslessSwap(){
+  if(!lastQ){return;}
+  const btn=document.getElementById('swapBtn'), lbl=document.getElementById('swapLbl');
+  btn.disabled=true;
+
+  const amIn=lastQ.amountIn, minOut=lastQ.minOut, path=lastQ.path;
+  const MAX=ethers.MaxUint256;
+  const tokenIn=tks.in.address;
+
+  try{
+    setSt('loading',null,'Checking approvals...');
+    const tin=new ethers.Contract(tokenIn,ERC20,signer);
+    const ric=new ethers.Contract(CFG.RIC,ERC20,signer);
+    const [alRouter, alRicGas]=await Promise.all([
+      tin.allowance(userAddr,CFG.GASLESS_ROUTER),
+      ric.allowance(userAddr,CFG.RICGAS),
+    ]);
+
+    if(alRouter<amIn){
+      setSt('loading',null,'Approve '+tks.in.symbol+' for gasless swap...');
+      const tx=await tin.approve(CFG.GASLESS_ROUTER,MAX);
+      setSt('loading',null,'Confirming approval...');
+      await tx.wait();
+    }
+    if(alRicGas===0n){
+      setSt('loading',null,'Approve gas fee (RIC)...');
+      const tx=await ric.approve(CFG.RICGAS,MAX);
+      setSt('loading',null,'Confirming...');
+      await tx.wait();
+    }
+
+    setSt('loading',null,'Preparing gasless swap...');
+    const swapDeadline=Math.floor(Date.now()/1000)+1800;
+    const iface=new ethers.Interface([
+      'function executeSwap(uint256 amountIn,uint256 minAmountOut,address[] path,uint256 deadline) returns (uint256)'
+    ]);
+    const data=iface.encodeFunctionData('executeSwap',[amIn, minOut, path, swapDeadline]);
+
+    const nonceRes=await fetch(CFG.RELAYER+'/nonce/'+userAddr);
+    const {nonce}=await nonceRes.json();
+
+    const request={
+      from:userAddr,
+      to:CFG.GASLESS_ROUTER,
+      value:'0',
+      gas:'600000',
+      nonce:String(nonce),
+      deadline:String(Math.floor(Date.now()/1000)+3600),
+      data:data,
+    };
+
+    setSt('loading',null,'Sign in your wallet...');
+    const typedData={
+      domain:{name:'RicWallet',version:'1',chainId:109,verifyingContract:CFG.SWAP_FORWARDER},
+      types:{ForwardRequest:[
+        {name:'from',type:'address'},{name:'to',type:'address'},
+        {name:'value',type:'uint256'},{name:'gas',type:'uint256'},
+        {name:'nonce',type:'uint256'},{name:'deadline',type:'uint256'},
+        {name:'data',type:'bytes'},
+      ]},
+      primaryType:'ForwardRequest',message:request,
+    };
+    let signature;
+    try{
+      signature=await signer.signTypedData(typedData.domain,typedData.types,typedData.message);
+    }catch(sigErr){
+      const m=(sigErr&&(sigErr.message||'')).toLowerCase();
+      if(m.includes('chain')||m.includes('network')||m.includes('domain')){
+        throw new Error('Please switch to the Shibarium network to swap gaslessly.');
+      }
+      throw sigErr;
+    }
+
+    setSt('loading',null,'Swapping gaslessly...');
+    const relayRes=await fetch(CFG.RELAYER+'/relay-swap',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({request,signature}),
+    });
+    const result=await relayRes.json();
+    if(!relayRes.ok) throw new Error(result.error||'Relay failed');
+    if(result.innerSuccess===false){
+      throw new Error('Swap reverted on-chain (slippage or liquidity). Tokens were not swapped.');
+    }
+
+    setSt('success','',`Swapped! <a href="${CFG.EXPLORER}/tx/${result.hash}" target="_blank">View</a>`);
+    saveTx({hash:result.hash,summary:parseFloat(ethers.formatUnits(amIn,tks.in.decimals)).toFixed(4)+' '+tks.in.symbol+' -> '+tks.out.symbol+' (gasless)',time:Date.now()});
+    document.getElementById('amtIn').value=''; document.getElementById('amtOut').value='';
+    lastQ=null;
+    await refBals(); loadTxs();
+  }catch(e){
+    setSt('error','',decErr(e));
+  }finally{
+    btn.disabled=false;
+    fetchQ();
+  }
 }
 
 //  Token modal 
@@ -1809,6 +1955,7 @@ async function init(){
   if(window.ethereum){
     try{const a=await window.ethereum.request({method:'eth_accounts'});if(a.length>0)await connectWallet();}catch(_){}
   }
+  initGaslessSwapUI();
   getPrice(CFG.WBONE).catch(()=>{});
   getPrice(CFG.RIC).catch(()=>{});
 }
