@@ -9,367 +9,118 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
-/* ============================================================
-   DESIGN SYSTEM -- identical to swap.html
-   ============================================================ */
-:root {
-  --void:  #030407;
-  --deep:  #05060e;
-  --well:  #080918;
-  --pit:   #0b0c1c;
-  --card:  #0e1022;
-  --lift:  #12142c;
-  --rim:   rgba(255,255,255,0.055);
-  --rim2:  rgba(255,77,0,0.28);
-
-  --magma: #ff4d00;
-  --ember: #ff8c00;
-  --gold:  #e8b84b;
-  --green: #00ffb2;
-  --red:   #ff3366;
-  --blue:  #4d9fff;
-
-  --ash:   #383b52;
-  --smoke: #656880;
-  --fog:   #a0a2bc;
-  --mist:  #c4c6dc;
-  --white: #eef0f8;
-
-  --mono:    'JetBrains Mono', monospace;
-  --display: 'Bebas Neue', sans-serif;
-  --body:    'DM Sans', sans-serif;
+:root{
+  --void:#030407;--deep:#05060e;--well:#080918;--pit:#0b0c1c;--card:#0e1022;--lift:#12142c;
+  --rim:rgba(255,255,255,0.055);--rim2:rgba(255,77,0,0.28);
+  --magma:#ff4d00;--ember:#ff8c00;--gold:#e8b84b;--green:#00ffb2;--red:#ff3366;--blue:#4d9fff;
+  --ash:#383b52;--smoke:#656880;--fog:#a0a2bc;--mist:#c4c6dc;--white:#eef0f8;
+  --mono:'JetBrains Mono',monospace;--display:'Bebas Neue',sans-serif;--body:'DM Sans',sans-serif;
 }
-
-*,*::before,*::after { box-sizing: border-box; margin: 0; padding: 0; }
-html { height: 100%; }
-body {
-  background: var(--void); color: var(--fog);
-  font-family: var(--body); font-size: 15px;
-  line-height: 1.6; min-height: 100vh;
-  -webkit-font-smoothing: antialiased;
-  display: flex; flex-direction: column;
-  overflow-x: hidden;
-}
-a { color: inherit; text-decoration: none; }
-button { font-family: var(--body); cursor: pointer; border: none; outline: none; }
-input  { font-family: var(--body); outline: none; border: none; background: transparent; }
-
-/* Grid + noise */
-body::before {
-  content: ''; position: fixed; inset: 0;
-  background-image:
-    linear-gradient(rgba(255,77,0,.016) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255,77,0,.016) 1px, transparent 1px);
-  background-size: 52px 52px;
-  pointer-events: none; z-index: 0;
-}
-body::after {
-  content: ''; position: fixed; inset: 0;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-  opacity: 0.014; pointer-events: none; z-index: 0;
-}
-.bg-glow {
-  position: fixed; top: 30%; left: 50%;
-  transform: translate(-50%,-50%);
-  width: 600px; height: 600px;
-  background: radial-gradient(circle, rgba(0,255,178,.04) 0%, transparent 70%);
-  pointer-events: none; z-index: 0;
-}
-
-/* ============================================================
-   HEADER -- identical to swap.html
-   ============================================================ */
-.header {
-  position: sticky; top: 0; z-index: 200;
-  background: rgba(3,4,7,0.88);
-  backdrop-filter: blur(24px);
-  border-bottom: 1px solid var(--rim);
-  padding: 0 24px; height: 64px;
-  display: flex; align-items: center;
-  justify-content: space-between; gap: 12px;
-}
-.logo {
-  font-family: var(--display); font-size: 26px;
-  letter-spacing: 2px;
-  background: linear-gradient(135deg, var(--gold), var(--magma));
-  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-  flex-shrink: 0;
-}
-.header-nav { display: flex; align-items: center; gap: 2px; flex: 1; justify-content: center; }
-.nav-link {
-  padding: 6px 16px; border-radius: 8px;
-  font-size: 14px; font-weight: 500;
-  color: var(--smoke); cursor: pointer;
-  transition: all .2s; white-space: nowrap;
-  background: transparent; border: none;
-}
-.nav-link:hover  { color: var(--fog); }
-.nav-link.active { color: var(--white); background: rgba(255,255,255,.06); }
-.header-right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
-.net-badge {
-  display: flex; align-items: center; gap: 5px;
-  padding: 5px 11px; border-radius: 20px;
-  background: rgba(0,255,178,.06); border: 1px solid rgba(0,255,178,.15);
-  font-family: var(--mono); font-size: 10px; color: var(--green); letter-spacing: .5px;
-}
-.pulse { width: 5px; height: 5px; border-radius: 50%; background: var(--green); animation: pulse 2s ease-in-out infinite; }
-@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.3} }
-.connect-btn {
-  display: flex; align-items: center; gap: 8px;
-  padding: 9px 18px; border-radius: 10px;
-  font-size: 13px; font-weight: 500;
-  background: linear-gradient(135deg, var(--magma), var(--ember));
-  color: white; transition: all .2s; border: none; cursor: pointer; white-space: nowrap;
-}
-.connect-btn:hover { transform: translateY(-1px); box-shadow: 0 8px 24px rgba(255,77,0,.38); }
-.connect-btn.connected { background: transparent; border: 1px solid rgba(0,255,178,.25); color: var(--green); }
-.connect-btn.connected:hover { background: rgba(0,255,178,.05); transform: none; box-shadow: none; }
-.connect-btn svg { width: 14px; height: 14px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
-
-/* ============================================================
-   MAIN
-   ============================================================ */
-.main {
-  position: relative; z-index: 1; flex: 1;
-  display: flex; align-items: flex-start;
-  justify-content: center; padding: 40px 24px 80px; gap: 20px;
-}
-
-/* ============================================================
-   LIQUIDITY CARD
-   ============================================================ */
-.liq-card {
-  width: 100%; max-width: 520px;
-  background: var(--card); border: 1px solid var(--rim);
-  border-radius: 20px; overflow: hidden; position: relative;
-}
-.liq-card::before {
-  content: ''; position: absolute;
-  top: -1px; left: 12%; right: 12%; height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(0,255,178,.4), transparent);
-}
-
-/* Card header */
-.card-header {
-  padding: 20px 20px 0;
-  display: flex; align-items: center; justify-content: space-between;
-}
-.card-title {
-  font-family: var(--display); font-size: 28px;
-  letter-spacing: 2px; color: var(--white);
-}
-.card-sub {
-  font-family: var(--mono); font-size: 10px;
-  color: var(--ash); letter-spacing: 1px;
-  text-transform: uppercase; margin-top: 2px;
-}
-.remove-link {
-  display: flex; align-items: center; gap: 5px;
-  font-family: var(--mono); font-size: 11px;
-  color: var(--smoke); padding: 6px 12px;
-  border: 1px solid var(--rim); border-radius: 8px;
-  cursor: pointer; transition: all .2s; white-space: nowrap;
-}
-.remove-link:hover { border-color: var(--rim2); color: var(--magma); }
-.remove-link svg { width: 12px; height: 12px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
-
-.card-body { padding: 20px; }
-
-/* Section label */
-.sec-label {
-  font-family: var(--mono); font-size: 9px;
-  letter-spacing: 2px; text-transform: uppercase;
-  color: var(--ash); margin-bottom: 8px;
-  display: flex; align-items: center; gap: 8px;
-}
-.sec-label::after { content: ''; flex: 1; height: 1px; background: var(--rim); }
-
-/* Token input box */
-.token-box {
-  background: var(--pit); border: 1px solid var(--rim);
-  border-radius: 14px; padding: 14px 16px;
-  transition: border-color .2s;
-}
-.token-box:focus-within { border-color: rgba(255,77,0,.28); }
-
-/* Address row */
-.addr-row {
-  display: flex; align-items: center; gap: 8px; margin-bottom: 10px;
-}
-.addr-tag {
-  font-family: var(--mono); font-size: 9px;
-  letter-spacing: 1.5px; text-transform: uppercase;
-  color: var(--ash); flex-shrink: 0; white-space: nowrap;
-}
-.addr-input {
-  flex: 1; background: var(--well);
-  border: 1px solid var(--rim); border-radius: 8px;
-  color: var(--white); padding: 8px 12px;
-  font-family: var(--mono); font-size: 12px;
-  transition: border-color .2s; width: 100%;
-}
-.addr-input:focus { border-color: rgba(255,77,0,.3); }
-.addr-input::placeholder { color: var(--ash); }
-
-/* Amount row */
-.amt-row { display: flex; align-items: center; gap: 10px; }
-.amt-input {
-  flex: 1; min-width: 0; width: 100%;
-  background: transparent; border: none;
-  color: var(--white); font-family: var(--display);
-  font-size: 32px; letter-spacing: 1px;
-}
-.amt-input::placeholder { color: var(--ash); }
-.amt-input::-webkit-inner-spin-button,
-.amt-input::-webkit-outer-spin-button { -webkit-appearance: none; }
-.bal-group { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
-.bal-lbl { font-family: var(--mono); font-size: 10px; color: var(--smoke); }
-.bal-val { font-family: var(--mono); font-size: 10px; color: var(--fog); }
-.max-btn {
-  font-size: 9px; letter-spacing: .5px; padding: 2px 8px;
-  border-radius: 5px; background: rgba(255,77,0,.1);
-  border: 1px solid rgba(255,77,0,.2); color: var(--magma);
-  cursor: pointer; transition: all .15s; font-family: var(--mono);
-}
-.max-btn:hover { background: rgba(255,77,0,.2); }
-
-/* Token meta pill */
-.token-meta {
-  display: flex; align-items: center; gap: 8px;
-  margin-top: 8px; min-height: 22px; flex-wrap: wrap;
-}
-.meta-sym {
-  font-family: var(--mono); font-size: 11px;
-  color: var(--green); background: rgba(0,255,178,.08);
-  border: 1px solid rgba(0,255,178,.15);
-  padding: 2px 9px; border-radius: 4px;
-}
-.meta-dec { font-family: var(--mono); font-size: 11px; color: var(--ash); }
-.meta-err { font-family: var(--mono); font-size: 11px; color: var(--red); }
-
-/* Plus divider */
-.plus-divider {
-  display: flex; align-items: center; justify-content: center;
-  gap: 12px; margin: 8px 0; color: var(--ash);
-}
-.plus-divider::before,
-.plus-divider::after { content: ''; flex: 1; height: 1px; background: var(--rim); }
-.plus-icon {
-  width: 32px; height: 32px; border-radius: 8px;
-  background: var(--pit); border: 1px solid var(--rim);
-  display: flex; align-items: center; justify-content: center;
-  font-size: 16px; color: var(--ash);
-}
-
-/* Pair info */
-.pair-info {
-  display: none; background: var(--pit);
-  border: 1px solid var(--rim); border-radius: 10px;
-  padding: 10px 14px; margin: 10px 0;
-  font-family: var(--mono); font-size: 11px; color: var(--ash);
-}
-.pair-info.show { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-.pair-info span { color: var(--fog); word-break: break-all; }
-.pair-badge {
-  padding: 2px 8px; border-radius: 4px;
-  font-size: 10px; font-weight: 500;
-}
-.pair-badge.exists { background: rgba(0,255,178,.08); color: var(--green); border: 1px solid rgba(0,255,178,.15); }
-.pair-badge.new    { background: rgba(77,159,255,.08); color: var(--blue);  border: 1px solid rgba(77,159,255,.15); }
-
-/* Settings row */
-.settings-row {
-  display: flex; align-items: center; justify-content: space-between;
-  background: var(--pit); border: 1px solid var(--rim);
-  border-radius: 10px; padding: 10px 14px; margin: 12px 0;
-}
-.settings-lbl { font-family: var(--mono); font-size: 11px; color: var(--smoke); }
-.slip-btns { display: flex; gap: 4px; }
-.slip-btn {
-  padding: 5px 11px; border-radius: 6px;
-  font-family: var(--mono); font-size: 10px;
-  background: transparent; border: 1px solid var(--rim);
-  color: var(--ash); cursor: pointer; transition: all .15s;
-}
-.slip-btn:hover { border-color: var(--rim2); color: var(--fog); }
-.slip-btn.active { background: rgba(255,77,0,.12); border-color: rgba(255,77,0,.3); color: var(--magma); }
-
-/* Supply button */
-.supply-btn {
-  width: 100%; padding: 16px; border-radius: 14px;
-  font-size: 15px; font-weight: 600; letter-spacing: .3px;
-  background: linear-gradient(135deg, var(--magma), var(--ember));
-  color: white; transition: all .2s; margin-top: 10px;
-  position: relative; overflow: hidden; border: none; cursor: pointer;
-}
-.supply-btn::before { content: ''; position: absolute; inset: 0; background: linear-gradient(135deg, rgba(255,255,255,.1), transparent); opacity: 0; transition: opacity .2s; }
-.supply-btn:hover:not(:disabled)::before { opacity: 1; }
-.supply-btn:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 10px 30px rgba(255,77,0,.38); }
-.supply-btn:disabled { background: var(--well); color: var(--ash); cursor: not-allowed; transform: none; box-shadow: none; }
-
-/* LP result */
-.lp-result {
-  display: none; margin-top: 12px;
-  background: rgba(0,255,178,.05); border: 1px solid rgba(0,255,178,.2);
-  border-radius: 12px; padding: 14px 16px;
-}
-.lp-result.show { display: block; }
-.lp-result-lbl { font-family: var(--mono); font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: var(--ash); margin-bottom: 4px; }
-.lp-result-val { font-family: var(--display); font-size: 28px; color: var(--green); letter-spacing: 1px; }
-
-/* Status */
-.status-box {
-  margin-top: 12px; padding: 10px 14px;
-  background: var(--pit); border: 1px solid var(--rim);
-  border-radius: 10px; font-family: var(--mono); font-size: 11px;
-  color: var(--smoke); display: flex; align-items: center; gap: 8px;
-  min-height: 38px; transition: all .2s;
-}
-.status-box.success { border-color: rgba(0,255,178,.3); color: var(--green); }
-.status-box.error   { border-color: rgba(255,51,102,.3); color: var(--red); }
-.status-box.loading { border-color: rgba(255,77,0,.3);   color: var(--magma); }
-.status-box a { color: inherit; text-decoration: underline; }
-
-/* Spinner */
-.spinner { width: 14px; height: 14px; border: 2px solid rgba(255,77,0,.2); border-top-color: var(--magma); border-radius: 50%; animation: spin .7s linear infinite; flex-shrink: 0; display: inline-block; }
-@keyframes spin { to { transform: rotate(360deg); } }
-
-/* Fade in */
-.fade-up { animation: fadeUp .3s ease both; }
-@keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-
-@media (max-width: 600px) {
-  .header-nav { display: none; }
-  .header { padding: 0 14px; }
-  .main { padding: 20px 14px 60px; }
-  .net-badge { display: none; }
-  .card-body { padding: 14px; }
-}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{height:100%}
+body{background:var(--void);color:var(--fog);font-family:var(--body);font-size:15px;line-height:1.6;min-height:100vh;-webkit-font-smoothing:antialiased;display:flex;flex-direction:column;overflow-x:hidden}
+a{color:inherit;text-decoration:none}
+button{font-family:var(--body);cursor:pointer;border:none;outline:none}
+input{font-family:var(--body);outline:none;border:none;background:transparent}
+body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(255,77,0,.016) 1px,transparent 1px),linear-gradient(90deg,rgba(255,77,0,.016) 1px,transparent 1px);background-size:52px 52px;pointer-events:none;z-index:0}
+.bg-glow{position:fixed;top:30%;left:50%;transform:translate(-50%,-50%);width:600px;height:600px;background:radial-gradient(circle,rgba(0,255,178,.04) 0%,transparent 70%);pointer-events:none;z-index:0}
+.header{position:sticky;top:0;z-index:200;background:rgba(3,4,7,0.88);backdrop-filter:blur(24px);border-bottom:1px solid var(--rim);padding:0 24px;height:64px;display:flex;align-items:center;justify-content:space-between;gap:12px}
+.logo{font-family:var(--display);font-size:26px;letter-spacing:2px;background:linear-gradient(135deg,var(--gold),var(--magma));-webkit-background-clip:text;-webkit-text-fill-color:transparent;flex-shrink:0}
+.header-nav{display:flex;align-items:center;gap:2px;flex:1;justify-content:center}
+.nav-link{display:inline-flex;align-items:center;padding:6px 16px;border-radius:8px;font-size:14px;font-weight:500;color:var(--smoke);cursor:pointer;transition:all .2s;white-space:nowrap;background:transparent;border:none;text-decoration:none}
+.nav-link:hover{color:var(--fog)}
+.nav-link.active{color:var(--white);background:rgba(255,255,255,.06)}
+.header-right{display:flex;align-items:center;gap:8px;flex-shrink:0}
+.net-badge{display:flex;align-items:center;gap:5px;padding:5px 11px;border-radius:20px;background:rgba(0,255,178,.06);border:1px solid rgba(0,255,178,.15);font-family:var(--mono);font-size:10px;color:var(--green);letter-spacing:.5px}
+.pulse{width:5px;height:5px;border-radius:50%;background:var(--green);animation:pulse 2s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+.connect-btn{display:flex;align-items:center;gap:8px;padding:9px 18px;border-radius:10px;font-size:13px;font-weight:500;background:linear-gradient(135deg,var(--magma),var(--ember));color:white;transition:all .2s;border:none;cursor:pointer;white-space:nowrap}
+.connect-btn:hover{transform:translateY(-1px);box-shadow:0 8px 24px rgba(255,77,0,.38)}
+.connect-btn.connected{background:transparent;border:1px solid rgba(0,255,178,.25);color:var(--green)}
+.connect-btn.connected:hover{background:rgba(0,255,178,.05);transform:none;box-shadow:none}
+.connect-btn svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.main{position:relative;z-index:1;flex:1;display:flex;align-items:flex-start;justify-content:center;padding:40px 24px 80px;gap:20px}
+.liq-card{width:100%;max-width:520px;background:var(--card);border:1px solid var(--rim);border-radius:20px;overflow:hidden;position:relative}
+.liq-card::before{content:'';position:absolute;top:-1px;left:12%;right:12%;height:1px;background:linear-gradient(90deg,transparent,rgba(0,255,178,.4),transparent)}
+.card-header{padding:20px 20px 0;display:flex;align-items:center;justify-content:space-between}
+.card-title{font-family:var(--display);font-size:28px;letter-spacing:2px;color:var(--white)}
+.card-sub{font-family:var(--mono);font-size:10px;color:var(--ash);letter-spacing:1px;text-transform:uppercase;margin-top:2px}
+.remove-link{display:flex;align-items:center;gap:5px;font-family:var(--mono);font-size:11px;color:var(--smoke);padding:6px 12px;border:1px solid var(--rim);border-radius:8px;cursor:pointer;transition:all .2s;white-space:nowrap}
+.remove-link:hover{border-color:var(--rim2);color:var(--magma)}
+.remove-link svg{width:12px;height:12px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.card-body{padding:20px}
+.sec-label{font-family:var(--mono);font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--ash);margin-bottom:8px;display:flex;align-items:center;gap:8px}
+.sec-label::after{content:'';flex:1;height:1px;background:var(--rim)}
+.token-box{background:var(--pit);border:1px solid var(--rim);border-radius:14px;padding:14px 16px;transition:border-color .2s}
+.token-box:focus-within{border-color:rgba(255,77,0,.28)}
+.addr-row{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+.addr-tag{font-family:var(--mono);font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--ash);flex-shrink:0;white-space:nowrap}
+.addr-input{flex:1;background:var(--well);border:1px solid var(--rim);border-radius:8px;color:var(--white);padding:8px 12px;font-family:var(--mono);font-size:12px;transition:border-color .2s;width:100%}
+.addr-input:focus{border-color:rgba(255,77,0,.3)}
+.addr-input::placeholder{color:var(--ash)}
+.amt-row{display:flex;align-items:center;gap:10px}
+.amt-input{flex:1;min-width:0;width:100%;background:transparent;border:none;color:var(--white);font-family:var(--display);font-size:32px;letter-spacing:1px}
+.amt-input::placeholder{color:var(--ash)}
+.amt-input::-webkit-inner-spin-button,.amt-input::-webkit-outer-spin-button{-webkit-appearance:none}
+.bal-group{display:flex;align-items:center;gap:6px;flex-shrink:0}
+.bal-lbl{font-family:var(--mono);font-size:10px;color:var(--smoke)}
+.bal-val{font-family:var(--mono);font-size:10px;color:var(--fog)}
+.max-btn{font-size:9px;letter-spacing:.5px;padding:2px 8px;border-radius:5px;background:rgba(255,77,0,.1);border:1px solid rgba(255,77,0,.2);color:var(--magma);cursor:pointer;transition:all .15s;font-family:var(--mono)}
+.max-btn:hover{background:rgba(255,77,0,.2)}
+.token-meta{display:flex;align-items:center;gap:8px;margin-top:8px;min-height:22px;flex-wrap:wrap}
+.meta-sym{font-family:var(--mono);font-size:11px;color:var(--green);background:rgba(0,255,178,.08);border:1px solid rgba(0,255,178,.15);padding:2px 9px;border-radius:4px}
+.meta-dec{font-family:var(--mono);font-size:11px;color:var(--ash)}
+.meta-err{font-family:var(--mono);font-size:11px;color:var(--red)}
+.plus-divider{display:flex;align-items:center;justify-content:center;gap:12px;margin:8px 0;color:var(--ash)}
+.plus-divider::before,.plus-divider::after{content:'';flex:1;height:1px;background:var(--rim)}
+.plus-icon{width:32px;height:32px;border-radius:8px;background:var(--pit);border:1px solid var(--rim);display:flex;align-items:center;justify-content:center;font-size:16px;color:var(--ash)}
+.pair-info{display:none;background:var(--pit);border:1px solid var(--rim);border-radius:10px;padding:10px 14px;margin:10px 0;font-family:var(--mono);font-size:11px;color:var(--ash)}
+.pair-info.show{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.pair-info span{color:var(--fog);word-break:break-all}
+.pair-badge{padding:2px 8px;border-radius:4px;font-size:10px;font-weight:500}
+.pair-badge.exists{background:rgba(0,255,178,.08);color:var(--green);border:1px solid rgba(0,255,178,.15)}
+.pair-badge.new{background:rgba(77,159,255,.08);color:var(--blue);border:1px solid rgba(77,159,255,.15)}
+.settings-row{display:flex;align-items:center;justify-content:space-between;background:var(--pit);border:1px solid var(--rim);border-radius:10px;padding:10px 14px;margin:12px 0}
+.settings-lbl{font-family:var(--mono);font-size:11px;color:var(--smoke)}
+.slip-btns{display:flex;gap:4px}
+.slip-btn{padding:5px 11px;border-radius:6px;font-family:var(--mono);font-size:10px;background:transparent;border:1px solid var(--rim);color:var(--ash);cursor:pointer;transition:all .15s}
+.slip-btn:hover{border-color:var(--rim2);color:var(--fog)}
+.slip-btn.active{background:rgba(255,77,0,.12);border-color:rgba(255,77,0,.3);color:var(--magma)}
+.supply-btn{width:100%;padding:16px;border-radius:14px;font-size:15px;font-weight:600;letter-spacing:.3px;background:linear-gradient(135deg,var(--magma),var(--ember));color:white;transition:all .2s;margin-top:10px;position:relative;overflow:hidden;border:none;cursor:pointer}
+.supply-btn::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(255,255,255,.1),transparent);opacity:0;transition:opacity .2s}
+.supply-btn:hover:not(:disabled)::before{opacity:1}
+.supply-btn:hover:not(:disabled){transform:translateY(-1px);box-shadow:0 10px 30px rgba(255,77,0,.38)}
+.supply-btn:disabled{background:var(--well);color:var(--ash);cursor:not-allowed;transform:none;box-shadow:none}
+.lp-result{display:none;margin-top:12px;background:rgba(0,255,178,.05);border:1px solid rgba(0,255,178,.2);border-radius:12px;padding:14px 16px}
+.lp-result.show{display:block}
+.lp-result-lbl{font-family:var(--mono);font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--ash);margin-bottom:4px}
+.lp-result-val{font-family:var(--display);font-size:28px;color:var(--green);letter-spacing:1px}
+.status-box{margin-top:12px;padding:10px 14px;background:var(--pit);border:1px solid var(--rim);border-radius:10px;font-family:var(--mono);font-size:11px;color:var(--smoke);display:flex;align-items:center;gap:8px;min-height:38px;transition:all .2s}
+.status-box.success{border-color:rgba(0,255,178,.3);color:var(--green)}
+.status-box.error{border-color:rgba(255,51,102,.3);color:var(--red)}
+.status-box.loading{border-color:rgba(255,77,0,.3);color:var(--magma)}
+.status-box a{color:inherit;text-decoration:underline}
+.spinner{width:14px;height:14px;border:2px solid rgba(255,77,0,.2);border-top-color:var(--magma);border-radius:50%;animation:spin .7s linear infinite;flex-shrink:0;display:inline-block}
+@keyframes spin{to{transform:rotate(360deg)}}
+.fade-up{animation:fadeUp .3s ease both}
+@keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+@media (max-width:600px){.header-nav{display:none}.header{padding:0 14px}.main{padding:20px 14px 60px}.net-badge{display:none}.card-body{padding:14px}}
 </style>
 </head>
 <body>
-
 <div class="bg-glow"></div>
 
-<!-- ============================================================
-     HEADER -- identical to swap.html
-     ============================================================ -->
 <div class="header">
   <a class="logo" href="index.html">RicSwap</a>
-
   <nav class="header-nav">
-    <button class="nav-link" onclick="location.href='index.html'">Home</button>
-    <button class="nav-link" onclick="location.href='swap.html'">Swap</button>
-    <button class="nav-link active">Liquidity</button>
-    <button class="nav-link" onclick="location.href='pools.html'">Pools</button>
-    <button class="nav-link" onclick="location.href='reward.html'">Rewards</button>
+    <a class="nav-link" href="index.html">Home</a>
+    <a class="nav-link" href="swap.html">Swap</a>
+    <a class="nav-link active" href="liquidity.html">Liquidity</a>
+    <a class="nav-link" href="pools.html">Pools</a>
+    <a class="nav-link" href="reward.html">Rewards</a>
   </nav>
-
   <div class="header-right">
-    <div class="net-badge">
-      <div class="pulse"></div>
-      <span>Shibarium</span>
-    </div>
+    <div class="net-badge"><div class="pulse"></div><span>Shibarium</span></div>
     <button class="connect-btn" id="connectBtn" onclick="connectWallet()">
       <svg viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 3H8a2 2 0 00-2 2v2h12V5a2 2 0 00-2-2z"/></svg>
       <span id="connectLabel">Connect Wallet</span>
@@ -377,15 +128,9 @@ body::after {
   </div>
 </div>
 
-<!-- ============================================================
-     MAIN
-     ============================================================ -->
 <div class="main">
   <div style="width:100%;max-width:520px">
-
     <div class="liq-card fade-up">
-
-      <!-- Card header -->
       <div class="card-header">
         <div>
           <div class="card-title">Add Liquidity</div>
@@ -398,8 +143,6 @@ body::after {
       </div>
 
       <div class="card-body">
-
-        <!-- Token A -->
         <div class="sec-label">Token A</div>
         <div class="token-box">
           <div class="addr-row">
@@ -407,7 +150,7 @@ body::after {
             <input class="addr-input" id="tokenA" placeholder="0x..." oninput="onAddrChange('A')">
           </div>
           <div class="amt-row">
-            <input class="amt-input" type="number" id="amountA" placeholder="0.0" step="any" oninput="autoFillB()">
+            <input class="amt-input" type="number" id="amountA" placeholder="0.0" step="any" oninput="onAmountA()" onfocus="refreshPair()">
             <div class="bal-group">
               <span class="bal-lbl">BAL</span>
               <span class="bal-val" id="balA">--</span>
@@ -417,12 +160,8 @@ body::after {
           <div class="token-meta" id="metaA"></div>
         </div>
 
-        <!-- Plus divider -->
-        <div class="plus-divider">
-          <div class="plus-icon">+</div>
-        </div>
+        <div class="plus-divider"><div class="plus-icon">+</div></div>
 
-        <!-- Token B -->
         <div class="sec-label">Token B</div>
         <div class="token-box">
           <div class="addr-row">
@@ -430,7 +169,7 @@ body::after {
             <input class="addr-input" id="tokenB" placeholder="0x..." oninput="onAddrChange('B')">
           </div>
           <div class="amt-row">
-            <input class="amt-input" type="number" id="amountB" placeholder="Auto-calculated" step="any">
+            <input class="amt-input" type="number" id="amountB" placeholder="Auto-calculated" step="any" oninput="onAmountB()">
             <div class="bal-group">
               <span class="bal-lbl">BAL</span>
               <span class="bal-val" id="balB">--</span>
@@ -440,14 +179,12 @@ body::after {
           <div class="token-meta" id="metaB"></div>
         </div>
 
-        <!-- Pair info -->
         <div class="pair-info" id="pairInfo"></div>
 
-        <!-- Pool info (shown when pair exists) -->
         <div id="poolInfo" style="display:none;background:var(--pit);border:1px solid var(--rim);border-radius:12px;padding:14px 16px;margin:10px 0;">
           <div style="font-family:var(--mono);font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--ash);margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;">
             <span>Pool Information</span>
-            <span style="color:var(--magma);font-size:9px;letter-spacing:1px">RATIO FIXED BY POOL</span>
+            <span style="color:var(--magma);font-size:9px;letter-spacing:1px" id="poolRatioTag">RATIO FIXED BY POOL</span>
           </div>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
             <div style="background:var(--well);border-radius:8px;padding:10px;">
@@ -468,75 +205,61 @@ body::after {
             </div>
           </div>
           <div style="margin-top:10px;padding:8px 10px;background:rgba(255,77,0,.05);border:1px solid rgba(255,77,0,.12);border-radius:8px;font-family:var(--mono);font-size:10px;color:var(--smoke);">
-            <span style="color:var(--magma)">&#9889;</span> Type Token A amount  Token B auto-fills to match pool ratio
+            <span style="color:var(--magma)">&#9889;</span> <span id="poolHint">Type either amount &mdash; the other auto-fills to match the pool ratio</span>
           </div>
         </div>
 
-        <!-- Slippage -->
         <div class="settings-row">
           <span class="settings-lbl">Slippage Tolerance</span>
           <div class="slip-btns">
-            <button class="slip-btn" onclick="setSlip(1)">1%</button>
-            <button class="slip-btn active" onclick="setSlip(5)">5%</button>
-            <button class="slip-btn" onclick="setSlip(10)">10%</button>
+            <button class="slip-btn" onclick="setSlip(1,this)">1%</button>
+            <button class="slip-btn active" onclick="setSlip(5,this)">5%</button>
+            <button class="slip-btn" onclick="setSlip(10,this)">10%</button>
           </div>
         </div>
 
-        <!-- Supply button -->
-        <button class="supply-btn" id="supplyBtn" onclick="addLiquidity()">
-          Supply Liquidity
-        </button>
+        <button class="supply-btn" id="supplyBtn" onclick="addLiquidity()">Supply Liquidity</button>
 
-        <!-- LP result + burn option -->
         <div class="lp-result" id="lpResult">
           <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap;">
             <div>
               <div class="lp-result-lbl">LP Tokens Received</div>
               <div class="lp-result-val" id="lpAmount">--</div>
             </div>
-            <button id="burnBtn" onclick="openBurnModal()" style="display:none;align-items:center;gap:6px;padding:9px 16px;background:rgba(255,51,102,.08);border:1px solid rgba(255,51,102,.25);border-radius:10px;color:var(--red);font-family:var(--mono);font-size:11px;cursor:pointer;transition:all .2s;white-space:nowrap;flex-shrink:0;" onmouseover="this.style.background='rgba(255,51,102,.15)'" onmouseout="this.style.background='rgba(255,51,102,.08)'">
-              &#128293; Burn LP
-            </button>
+            <button id="burnBtn" onclick="openBurnModal()" style="display:none;align-items:center;gap:6px;padding:9px 16px;background:rgba(255,51,102,.08);border:1px solid rgba(255,51,102,.25);border-radius:10px;color:var(--red);font-family:var(--mono);font-size:11px;cursor:pointer;transition:all .2s;white-space:nowrap;flex-shrink:0;" onmouseover="this.style.background='rgba(255,51,102,.15)'" onmouseout="this.style.background='rgba(255,51,102,.08)'">&#128293; Burn LP</button>
           </div>
           <div style="margin-top:10px;padding:8px 10px;background:rgba(0,255,178,.05);border:1px solid rgba(0,255,178,.12);border-radius:8px;font-family:var(--mono);font-size:10px;color:var(--smoke);">
             <span style="color:var(--green);">&#128274;</span> Optionally burn your LP tokens to permanently lock this liquidity and prevent rug pulls.
           </div>
         </div>
 
-        <!-- Status -->
         <div class="status-box" id="statusBox">
           <span>&#9675;</span>
           <span id="statusTxt">Connect wallet to begin</span>
         </div>
-
       </div>
     </div>
   </div>
 </div>
 
-<!-- ============================================================
-     JAVASCRIPT -- all logic preserved from original
-     ============================================================ -->
 <script>
-//  Dynamic ethers load (same pattern as swap.html) 
-let ethers = null;
-async function getEthers() {
-  if (ethers) return ethers;
-  const m = await import('https://cdn.jsdelivr.net/npm/ethers@6.13.0/dist/ethers.min.js');
-  ethers = m.ethers || m;
-  return ethers;
+let ethers=null;
+async function getEthers(){
+  if(ethers)return ethers;
+  const m=await import('https://cdn.jsdelivr.net/npm/ethers@6.13.0/dist/ethers.min.js');
+  ethers=m.ethers||m;return ethers;
 }
 
-const CONFIG = {
-  ROUTER:     '0x652875c0F607CB392C0F9E5FB957A7055c2deD2e',
-  FACTORY:    '0xD8fFEECfDE1698a70A26a094afBE917bA58E2F70',
-  CHAIN_ID:   109n,
-  CHAIN_NAME: 'Shibarium',
-  EXPLORER:   'https://shibariumscan.io',
+const CONFIG={
+  ROUTER:'0x652875c0F607CB392C0F9E5FB957A7055c2deD2e',
+  FACTORY:'0xD8fFEECfDE1698a70A26a094afBE917bA58E2F70',
+  CHAIN_ID:109n,CHAIN_NAME:'Shibarium',EXPLORER:'https://shibariumscan.io',RPC:'https://rpc.shibarium.shib.io',
 };
-const WBONE = '0xc76f4c819d820369fb2d7c1531ab3bb18e6fe8d8';
+const WBONE='0xc76f4c819d820369fb2d7c1531ab3bb18e6fe8d8';
+const ZERO='0x0000000000000000000000000000000000000000';
+const DEAD_ADDR='0x000000000000000000000000000000000000dEaD';
 
-const ERC20_ABI = [
+const ERC20_ABI=[
   'function balanceOf(address) view returns (uint256)',
   'function decimals() view returns (uint8)',
   'function symbol() view returns (string)',
@@ -544,12 +267,12 @@ const ERC20_ABI = [
   'function allowance(address,address) view returns (uint256)',
   'function approve(address,uint256) returns (bool)',
 ];
-const ROUTER_ABI = [
+const ROUTER_ABI=[
   'function addLiquidity(address,address,uint256,uint256,uint256,uint256,address,uint256) external returns (uint256,uint256,uint256)',
   'function addLiquidityETH(address,uint256,uint256,uint256,address,uint256) external payable returns (uint256,uint256,uint256)',
 ];
-const FACTORY_ABI = ['function getPair(address,address) view returns (address)'];
-const PAIR_ABI = [
+const FACTORY_ABI=['function getPair(address,address) view returns (address)'];
+const PAIR_ABI=[
   'function getReserves() view returns (uint112 reserve0, uint112 reserve1, uint32 blockTimestampLast)',
   'function token0() view returns (address)',
   'function token1() view returns (address)',
@@ -557,514 +280,526 @@ const PAIR_ABI = [
   'function balanceOf(address) view returns (uint256)',
 ];
 
-let provider, signer, userAddress;
-let slipBps   = 500n;
-let tokenInfo = { A: null, B: null };
-let pairData  = null; // { pairAddr, reserve0, reserve1, token0, pairExists }
-let burnState = { lpTokenAddr: null, lpBalance: null }; // for LP burn flow
-const DEAD_ADDR = '0x000000000000000000000000000000000000dEaD';
+// -- Read-only provider so price feed works even BEFORE wallet connect --
+let roProvider=null;
+function getRO(){
+  if(!roProvider) roProvider=new ethers.JsonRpcProvider(CONFIG.RPC,Number(CONFIG.CHAIN_ID));
+  return roProvider;
+}
 
-//  Wallet 
-async function connectWallet() {
-  if (!window.ethereum) return alert('Please install MetaMask or Rabby Wallet');
-  try {
-    await getEthers(); // ensure ethers is loaded before any use
-    provider = new ethers.BrowserProvider(window.ethereum);
-    signer   = await provider.getSigner();
-    const net = await provider.getNetwork();
-    if (net.chainId !== CONFIG.CHAIN_ID) {
-      setSt('loading', null, 'Switching to Shibarium...');
-      try {
-        await window.ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: '0x6d' }] });
-        provider = new ethers.BrowserProvider(window.ethereum);
-        signer   = await provider.getSigner();
-      } catch(e) { setSt('error', '', 'Please switch to Shibarium manually'); return; }
+let provider,signer,userAddress;
+let slipBps=500n;
+let tokenInfo={A:null,B:null};
+let pairData=null;            // {pairExists, pairAddr, resA, resB, totalSupply, decA, decB}
+let lastEdited='A';           // which amount field the user last typed in
+let manualRatioTouch=false;   // user edited a field that diverges from pool ratio
+let burnState={lpTokenAddr:null,lpBalance:null};
+
+// ============================================================
+//  WALLET
+// ============================================================
+async function connectWallet(){
+  if(!window.ethereum) return alert('Please install MetaMask or Rabby Wallet');
+  try{
+    await getEthers();
+    provider=new ethers.BrowserProvider(window.ethereum);
+    signer=await provider.getSigner();
+    const net=await provider.getNetwork();
+    if(net.chainId!==CONFIG.CHAIN_ID){
+      setSt('loading',null,'Switching to Shibarium...');
+      try{
+        await window.ethereum.request({method:'wallet_switchEthereumChain',params:[{chainId:'0x6d'}]});
+        provider=new ethers.BrowserProvider(window.ethereum);
+        signer=await provider.getSigner();
+      }catch(e){ setSt('error','','Please switch to Shibarium manually'); return; }
     }
-    userAddress = await signer.getAddress();
-    const btn   = document.getElementById('connectBtn');
+    userAddress=await signer.getAddress();
+    const btn=document.getElementById('connectBtn');
     btn.classList.add('connected');
-    document.getElementById('connectLabel').textContent = userAddress.slice(0,6)+'...'+userAddress.slice(-4);
-    setSt('', '', 'Wallet connected  enter token addresses');
-    window.ethereum.on('accountsChanged', () => location.reload());
-    window.ethereum.on('chainChanged',    () => location.reload());
-    if (ethers.isAddress(document.getElementById('tokenA').value)) onAddrChange('A');
-    if (ethers.isAddress(document.getElementById('tokenB').value)) onAddrChange('B');
-  } catch(e) { setSt('error', '', decErr(e)); }
+    document.getElementById('connectLabel').textContent=userAddress.slice(0,6)+'...'+userAddress.slice(-4);
+    setSt('','','Wallet connected &mdash; enter token addresses');
+    window.ethereum.on('accountsChanged',()=>location.reload());
+    window.ethereum.on('chainChanged',()=>location.reload());
+    // Reload both tokens (now with balances), THEN refresh the pair once.
+    await loadToken('A');
+    await loadToken('B');
+    await refreshPair();
+  }catch(e){ setSt('error','',decErr(e)); }
 }
 
-//  Token address change 
-async function onAddrChange(side) {
-  const addr = document.getElementById('token'+side).value.trim();
-  const meta = document.getElementById('meta'+side);
-  meta.innerHTML = ''; tokenInfo[side] = null;
-  document.getElementById('bal'+side).textContent = '--';
-  if (!ethers.isAddress(addr) || !provider) return;
-  const isWBONE = addr.toLowerCase() === WBONE.toLowerCase();
-  try {
-    const c = new ethers.Contract(addr, ERC20_ABI, provider);
-    let symbol, decimals, balance;
-    if (isWBONE) {
-      decimals = 18; symbol = 'WBONE';
-      balance  = userAddress ? await provider.getBalance(userAddress) : 0n;
-    } else {
-      [decimals, balance] = await Promise.all([
-        c.decimals(),
-        userAddress ? c.balanceOf(userAddress) : 0n,
-      ]);
-      try { symbol = await c.symbol(); }
-      catch(_) { try { symbol = await c.name(); } catch(_) { symbol = addr.slice(0,6)+'...'; } }
+// ============================================================
+//  TOKEN LOADING  (meta only -- no pair logic here)
+// ============================================================
+async function onAddrChange(side){
+  await loadToken(side);
+  await refreshPair();
+}
+
+async function loadToken(side){
+  const addr=document.getElementById('token'+side).value.trim();
+  const meta=document.getElementById('meta'+side);
+  meta.innerHTML=''; tokenInfo[side]=null;
+  document.getElementById('bal'+side).textContent='--';
+  if(!ethers || !ethers.isAddress(addr)) return;
+
+  const prov = provider || getRO();
+  const isWBONE = addr.toLowerCase()===WBONE.toLowerCase();
+  try{
+    const c=new ethers.Contract(addr,ERC20_ABI,prov);
+    let symbol,decimals,balance=0n;
+    if(isWBONE){
+      decimals=18; symbol='WBONE';
+      balance=userAddress?await prov.getBalance(userAddress):0n;
+    }else{
+      decimals=await c.decimals();
+      if(userAddress){ try{ balance=await c.balanceOf(userAddress); }catch(_){ balance=0n; } }
+      try{ symbol=await c.symbol(); }catch(_){ try{ symbol=await c.name(); }catch(_){ symbol=addr.slice(0,6)+'...'; } }
     }
-    tokenInfo[side] = { symbol, decimals, balance, address: addr, isWBONE };
-    meta.innerHTML = `<span class="meta-sym">${isWBONE ? 'WBONE (native)' : symbol}</span><span class="meta-dec">${decimals} decimals</span>`;
-    document.getElementById('bal'+side).textContent = fmtU(balance, decimals) + (isWBONE ? ' BONE' : '');
-    checkPair();
-  } catch(e) {
-    meta.innerHTML = `<span class="meta-err">Error: ${sanitize(decErr(e)).slice(0,60)}</span>`;
+    tokenInfo[side]={symbol,decimals:Number(decimals),balance,address:addr,isWBONE};
+    meta.innerHTML=`<span class="meta-sym">${isWBONE?'WBONE (native)':symbol}</span><span class="meta-dec">${decimals} decimals</span>`;
+    document.getElementById('bal'+side).textContent=fmtU(balance,Number(decimals))+(isWBONE?' BONE':'');
+  }catch(e){
+    meta.innerHTML=`<span class="meta-err">Error: ${sanitize(decErr(e)).slice(0,60)}</span>`;
   }
 }
 
-async function checkPair() {
-  const addrA = document.getElementById('tokenA').value.trim();
-  const addrB = document.getElementById('tokenB').value.trim();
-  const el    = document.getElementById('pairInfo');
-  const poolEl = document.getElementById('poolInfo');
-  pairData = null;
+// ============================================================
+//  PAIR REFRESH  (single source of truth for the price feed)
+//  Runs whenever tokens change, amounts change, or on focus.
+//  Uses the read-only provider so it works even before connect.
+// ============================================================
+async function refreshPair(){
+  const addrA=document.getElementById('tokenA').value.trim();
+  const addrB=document.getElementById('tokenB').value.trim();
+  const el=document.getElementById('pairInfo');
+  const poolEl=document.getElementById('poolInfo');
+  pairData=null;
+  manualRatioTouch=false;
 
-  if (!ethers.isAddress(addrA) || !ethers.isAddress(addrB) || !provider) {
-    el.classList.remove('show');
-    if (poolEl) poolEl.style.display = 'none';
-    return;
+  if(!ethers || !ethers.isAddress(addrA) || !ethers.isAddress(addrB)){
+    el.classList.remove('show'); if(poolEl) poolEl.style.display='none'; return;
+  }
+  if(addrA.toLowerCase()===addrB.toLowerCase()){
+    el.classList.add('show');
+    el.innerHTML=`<span class="pair-badge new">Invalid</span><span>Token A and Token B must be different</span>`;
+    if(poolEl) poolEl.style.display='none'; return;
   }
 
-  try {
-    const factory = new ethers.Contract(CONFIG.FACTORY, FACTORY_ABI, provider);
-    const pair    = await factory.getPair(addrA, addrB);
-    const exists  = pair !== '0x0000000000000000000000000000000000000000';
+  const prov=provider||getRO();
+  try{
+    const factory=new ethers.Contract(CONFIG.FACTORY,FACTORY_ABI,prov);
+    const pair=await factory.getPair(addrA,addrB);
+    const exists=pair && pair!==ZERO;
     el.classList.add('show');
 
-    if (!exists) {
-      el.innerHTML = `<span class="pair-badge new">New pair</span><span>You are setting the initial price - enter any ratio</span>`;
-      // Unlock Token B for new pairs -- user sets initial price freely
-      const amtBElNew = document.getElementById('amountB');
-      if (amtBElNew) {
-        amtBElNew.readOnly = false;
-        amtBElNew.style.opacity = '1';
-        amtBElNew.style.cursor  = 'text';
-        amtBElNew.placeholder   = '0.0';
-      }
-      if (poolEl) poolEl.style.display = 'none';
-      pairData = { pairExists: false };
+    if(!exists){
+      el.innerHTML=`<span class="pair-badge new">New pair</span><span>You are setting the initial price &mdash; enter any ratio</span>`;
+      unlockB(true);
+      if(poolEl) poolEl.style.display='none';
+      pairData={pairExists:false};
       return;
     }
 
-    el.innerHTML = `<span class="pair-badge exists">Pair exists</span><span>${pair}</span>`;
-    // Lock Token B input -- ratio is fixed by pool
-    const amtBEl = document.getElementById('amountB');
-    if (amtBEl) {
-      amtBEl.readOnly = true;
-      amtBEl.style.opacity = '.7';
-      amtBEl.style.cursor  = 'not-allowed';
-      amtBEl.placeholder   = 'Auto-calculated from pool ratio';
+    // Pair exists -- load reserves
+    const pc=new ethers.Contract(pair,PAIR_ABI,prov);
+    const [res,token0,totalSupply]=await Promise.all([pc.getReserves(),pc.token0(),pc.totalSupply()]);
+
+    // Empty pool edge case -- treat like new pair (let user set price)
+    if(res.reserve0===0n||res.reserve1===0n){
+      el.innerHTML=`<span class="pair-badge new">Empty pool</span><span>Pool exists but has no liquidity &mdash; set the initial ratio</span>`;
+      unlockB(true);
+      if(poolEl) poolEl.style.display='none';
+      pairData={pairExists:false};
+      return;
     }
 
-    // Load reserves to auto-calculate ratio
-    const pairContract = new ethers.Contract(pair, PAIR_ABI, provider);
-    const [res, token0, totalSupply] = await Promise.all([
-      pairContract.getReserves(),
-      pairContract.token0(),
-      pairContract.totalSupply(),
-    ]);
+    el.innerHTML=`<span class="pair-badge exists">Pair exists</span><span>${pair}</span>`;
+    unlockB(false);
 
-    // Determine which reserve corresponds to which token
-    const t0IsA = token0.toLowerCase() === addrA.toLowerCase();
-    const resA  = t0IsA ? res.reserve0 : res.reserve1;
-    const resB  = t0IsA ? res.reserve1 : res.reserve0;
+    const t0IsA=token0.toLowerCase()===addrA.toLowerCase();
+    const resA=t0IsA?res.reserve0:res.reserve1;
+    const resB=t0IsA?res.reserve1:res.reserve0;
 
-    pairData = {
-      pairExists: true,
-      pairAddr:   pair,
-      resA, resB,
-      totalSupply,
-      decA: tokenInfo.A?.decimals || 18,
-      decB: tokenInfo.B?.decimals || 18,
+    pairData={
+      pairExists:true, pairAddr:pair, resA, resB, totalSupply,
+      decA:tokenInfo.A?.decimals??18, decB:tokenInfo.B?.decimals??18,
     };
 
-    // Calculate user pool share if connected
-    let shareStr = '--';
-    if (userAddress && totalSupply > 0n) {
-      const userLP = await pairContract.balanceOf(userAddress);
-      if (userLP > 0n) {
-        const sharePct = Number(userLP * 10000n / totalSupply) / 100;
-        shareStr = sharePct < 0.01 ? '< 0.01%' : sharePct.toFixed(2) + '%';
-      } else {
-        shareStr = '0%';
-      }
+    // Pool share
+    let shareStr='--';
+    if(userAddress && totalSupply>0n){
+      const userLP=await pc.balanceOf(userAddress);
+      if(userLP>0n){
+        const pct=Number(userLP*10000n/totalSupply)/100;
+        shareStr=pct<0.01?'< 0.01%':pct.toFixed(2)+'%';
+      }else shareStr='0%';
     }
 
-    // Exchange rate: 1 A = ? B
-    const rateAB = parseFloat(ethers.formatUnits(resB, pairData.decB)) /
-                   parseFloat(ethers.formatUnits(resA, pairData.decA));
+    const symA=tokenInfo.A?.symbol||'A', symB=tokenInfo.B?.symbol||'B';
+    const rateAB=parseFloat(ethers.formatUnits(resB,pairData.decB))/parseFloat(ethers.formatUnits(resA,pairData.decA));
 
-    const symA = tokenInfo.A?.symbol || 'A';
-    const symB = tokenInfo.B?.symbol || 'B';
+    document.getElementById('poolResA').textContent=fmtU(resA,pairData.decA)+' '+symA;
+    document.getElementById('poolResB').textContent=fmtU(resB,pairData.decB)+' '+symB;
+    document.getElementById('poolRate').textContent=`1 ${symA} = ${rateAB.toFixed(6)} ${symB}`;
+    document.getElementById('poolShare').textContent=shareStr;
+    if(poolEl) poolEl.style.display='block';
 
-    // Update pool info panel
-    document.getElementById('poolResA').textContent = fmtU(resA, pairData.decA) + ' ' + symA;
-    document.getElementById('poolResB').textContent = fmtU(resB, pairData.decB) + ' ' + symB;
-    document.getElementById('poolRate').textContent = `1 ${symA} = ${rateAB.toFixed(6)} ${symB}`;
-    document.getElementById('poolShare').textContent = shareStr;
-    if (poolEl) poolEl.style.display = 'block';
+    // Re-apply auto-fill based on whichever field the user last edited
+    if(lastEdited==='A') autoFillFromA(); else autoFillFromB();
 
-    // If Token A amount already entered, auto-fill Token B
-    autoFillB();
-
-  } catch(e) {
-    el.classList.remove('show');
-    if (poolEl) poolEl.style.display = 'none';
-    console.warn('checkPair error:', e);
+  }catch(e){
+    el.classList.remove('show'); if(poolEl) poolEl.style.display='none';
+    console.warn('refreshPair error:',e);
   }
 }
 
-// Auto-fill Token B based on pool ratio when Token A amount changes
-function autoFillB() {
-  // Guard: pair must exist AND both token metadata must be loaded
-  if (!pairData?.pairExists) return;
-  if (!tokenInfo.A || !tokenInfo.B) return;
-  if (!pairData.resA || !pairData.resB) return;
-  const amtA = parseFloat(document.getElementById('amountA').value);
-  if (!amtA || isNaN(amtA) || amtA <= 0) {
-    document.getElementById('amountB').value = '';
-    return;
-  }
-  // ratio: amtB = amtA * resB / resA (using floats for display)
-  const resAFloat = parseFloat(ethers.formatUnits(pairData.resA, pairData.decA));
-  const resBFloat = parseFloat(ethers.formatUnits(pairData.resB, pairData.decB));
-  if (resAFloat <= 0) return;
-  const amtB = amtA * resBFloat / resAFloat;
-  // Format to token decimals precision
-  const maxDec = Math.min(pairData.decB, 8);
-  document.getElementById('amountB').value = amtB.toFixed(maxDec).replace(/\.?0+$/, '') || '0';
+function unlockB(unlock){
+  const b=document.getElementById('amountB');
+  const a=document.getElementById('amountA');
+  if(!b||!a) return;
+  // For an existing pair, BOTH fields are editable (either side auto-fills the other).
+  // For a new pair, both are freely editable too. So we never hard-lock now --
+  // we just hint. Keeping inputs editable is friendlier and avoids the old lock bug.
+  b.readOnly=false; b.style.opacity='1'; b.style.cursor='text';
+  b.placeholder = unlock ? '0.0' : 'Auto-calculated (editable)';
+  const tag=document.getElementById('poolRatioTag');
+  const hint=document.getElementById('poolHint');
+  if(tag) tag.textContent = unlock ? 'YOU SET THE PRICE' : 'RATIO FIXED BY POOL';
+  if(hint) hint.innerHTML = unlock
+    ? 'New pair &mdash; enter both amounts to set the initial price'
+    : 'Type either amount &mdash; the other auto-fills using the exact pool ratio';
 }
 
-function setMax(side) {
-  if (!tokenInfo[side]) return;
-  const { balance, decimals, isWBONE } = tokenInfo[side];
-  const safe = isWBONE && balance > ethers.parseEther('0.01') ? balance - ethers.parseEther('0.01') : balance;
-  document.getElementById('amount'+side).value = ethers.formatUnits(safe, decimals);
+// ============================================================
+//  AMOUNT INPUT HANDLERS + AUTO-FILL (exact BigInt ratio)
+// ============================================================
+function onAmountA(){
+  if(pairData?.pairExists && lastEdited!=='A') manualRatioTouch=true;
+  lastEdited='A';
+  if(pairData?.pairExists) autoFillFromA();
+}
+function onAmountB(){
+  if(pairData?.pairExists && lastEdited!=='B') manualRatioTouch=true;
+  lastEdited='B';
+  if(pairData?.pairExists) autoFillFromB();
 }
 
-function setSlip(pct) {
-  slipBps = BigInt(pct * 100);
-  document.querySelectorAll('.slip-btn').forEach(b => b.classList.remove('active'));
-  event.target.classList.add('active');
+function autoFillFromA(){
+  if(!pairData?.pairExists||!pairData.resA||!pairData.resB) return;
+  if(!tokenInfo.A||!tokenInfo.B) return;
+  const v=document.getElementById('amountA').value.trim();
+  if(!v){ document.getElementById('amountB').value=''; return; }
+  try{
+    // EXACT same BigInt math as the addLiquidity transaction -- no float drift
+    const amtAWei=ethers.parseUnits(v,tokenInfo.A.decimals);
+    const amtBWei=amtAWei*pairData.resB/pairData.resA;
+    const formatted=ethers.formatUnits(amtBWei,tokenInfo.B.decimals);
+    document.getElementById('amountB').value=trimNum(parseFloat(formatted),Math.min(tokenInfo.B.decimals,8));
+  }catch(_){ document.getElementById('amountB').value=''; }
 }
 
-//  Add Liquidity 
-async function addLiquidity() {
-  const addrA = document.getElementById('tokenA').value.trim();
-  const addrB = document.getElementById('tokenB').value.trim();
-  const amtA  = document.getElementById('amountA').value.trim();
-  const amtB  = document.getElementById('amountB').value.trim();
+function autoFillFromB(){
+  if(!pairData?.pairExists||!pairData.resA||!pairData.resB) return;
+  if(!tokenInfo.A||!tokenInfo.B) return;
+  const v=document.getElementById('amountB').value.trim();
+  if(!v){ document.getElementById('amountA').value=''; return; }
+  try{
+    // EXACT same BigInt math as the addLiquidity transaction -- no float drift
+    const amtBWei=ethers.parseUnits(v,tokenInfo.B.decimals);
+    const amtAWei=amtBWei*pairData.resA/pairData.resB;
+    const formatted=ethers.formatUnits(amtAWei,tokenInfo.A.decimals);
+    document.getElementById('amountA').value=trimNum(parseFloat(formatted),Math.min(tokenInfo.A.decimals,8));
+  }catch(_){ document.getElementById('amountA').value=''; }
+}
 
-  if (!userAddress)                                return setSt('error','','Connect wallet first');
-  if (!ethers.isAddress(addrA))                   return setSt('error','','Invalid Token A address');
-  if (!ethers.isAddress(addrB))                   return setSt('error','','Invalid Token B address');
-  if (addrA.toLowerCase()===addrB.toLowerCase())  return setSt('error','','Tokens cannot be the same');
-  if (!tokenInfo.A)                               return setSt('error','','Token A not loaded');
-  if (!tokenInfo.B)                               return setSt('error','','Token B not loaded');
-  if (!amtA || parseFloat(amtA)<=0)              return setSt('error','','Enter amount for Token A');
-  if (!amtB || parseFloat(amtB)<=0)              return setSt('error','','Enter amount for Token B');
+function trimNum(n,dec){
+  if(!n||isNaN(n)||n<=0) return '0';
+  let s=n.toFixed(dec);
+  if(s.indexOf('.')>=0) s=s.replace(/\.?0+$/,'');
+  return s||'0';
+}
 
-  let amountAWei, amountBWei;
-  try {
-    amountAWei = ethers.parseUnits(amtA, tokenInfo.A.decimals);
-    // When pair exists: use exact BigInt ratio from reserves (avoids float precision loss)
-    if (pairData && pairData.pairExists && pairData.resA && pairData.resB && pairData.resA > 0n) {
-      amountBWei = amountAWei * pairData.resB / pairData.resA;
-    } else {
-      amountBWei = ethers.parseUnits(amtB, tokenInfo.B.decimals);
+function setMax(side){
+  if(!tokenInfo[side]) return;
+  const{balance,decimals,isWBONE}=tokenInfo[side];
+  const safe=isWBONE&&balance>ethers.parseEther('0.01')?balance-ethers.parseEther('0.01'):balance;
+  document.getElementById('amount'+side).value=ethers.formatUnits(safe,decimals);
+  if(side==='A') onAmountA(); else onAmountB();
+}
+
+function setSlip(pct,btn){
+  slipBps=BigInt(pct*100);
+  document.querySelectorAll('.slip-btn').forEach(b=>b.classList.remove('active'));
+  if(btn) btn.classList.add('active');
+}
+
+// ============================================================
+//  ADD LIQUIDITY
+// ============================================================
+async function addLiquidity(){
+  const addrA=document.getElementById('tokenA').value.trim();
+  const addrB=document.getElementById('tokenB').value.trim();
+  const amtA=document.getElementById('amountA').value.trim();
+  const amtB=document.getElementById('amountB').value.trim();
+
+  if(!userAddress) return setSt('error','','Connect wallet first');
+  if(!ethers.isAddress(addrA)) return setSt('error','','Invalid Token A address');
+  if(!ethers.isAddress(addrB)) return setSt('error','','Invalid Token B address');
+  if(addrA.toLowerCase()===addrB.toLowerCase()) return setSt('error','','Tokens cannot be the same');
+  if(!tokenInfo.A) return setSt('error','','Token A not loaded');
+  if(!tokenInfo.B) return setSt('error','','Token B not loaded');
+  if(!amtA||parseFloat(amtA)<=0) return setSt('error','','Enter amount for Token A');
+  if(!amtB||parseFloat(amtB)<=0) return setSt('error','','Enter amount for Token B');
+
+  // Refresh reserves right before building the tx so the ratio is current.
+  await refreshPair();
+
+  // SECURITY: if the pair exists, validate the contract responds to getReserves()
+  // before we ask the user to approve/sign anything.
+  if(pairData?.pairExists && pairData.pairAddr){
+    try{
+      const testPair=new ethers.Contract(pairData.pairAddr,PAIR_ABI,provider||getRO());
+      await testPair.getReserves();
+    }catch(_){
+      return setSt('error','','Pair contract validation failed. Please refresh and try again.');
     }
-  } catch(e) { return setSt('error','','Amount too precise for token decimals'); }
+  }
 
-  if (amountAWei > tokenInfo.A.balance) return setSt('error','',`Insufficient ${tokenInfo.A.symbol} balance`);
-  if (amountBWei > tokenInfo.B.balance) return setSt('error','',`Insufficient ${tokenInfo.B.symbol} balance`);
+  let amountAWei,amountBWei;
+  try{
+    amountAWei=ethers.parseUnits(amtA,tokenInfo.A.decimals);
+    if(pairData&&pairData.pairExists&&pairData.resA&&pairData.resB&&pairData.resA>0n){
+      // exact ratio from reserves -- avoids float drift
+      amountBWei=amountAWei*pairData.resB/pairData.resA;
+    }else{
+      amountBWei=ethers.parseUnits(amtB,tokenInfo.B.decimals);
+    }
+  }catch(e){ return setSt('error','','Amount too precise for token decimals'); }
 
-  const minA = amountAWei * (10000n - slipBps) / 10000n;
-  const minB = amountBWei * (10000n - slipBps) / 10000n;
+  if(amountAWei>tokenInfo.A.balance) return setSt('error','',`Insufficient ${tokenInfo.A.symbol} balance`);
+  if(amountBWei>tokenInfo.B.balance) return setSt('error','',`Insufficient ${tokenInfo.B.symbol} balance`);
+
+  const minA=amountAWei*(10000n-slipBps)/10000n;
+  const minB=amountBWei*(10000n-slipBps)/10000n;
+
+  // SECURITY (UX): for an existing pair the contract amounts are recomputed from
+  // on-chain reserves, so a manual edit cannot change the submitted ratio. We still
+  // confirm if the user diverged from the auto-filled value, to avoid surprise.
+  if(pairData?.pairExists && manualRatioTouch){
+    const proceed=confirm(
+      'You edited one of the amounts manually.\n\n'+
+      'For an existing pool the final amounts follow the current pool ratio, '+
+      'so your supplied amounts may differ slightly from what you typed.\n\n'+
+      'Continue?'
+    );
+    if(!proceed){ return; }
+  }
 
   setBtnLoading(true);
   document.getElementById('lpResult').classList.remove('show');
 
-  try {
-    const tcA = new ethers.Contract(addrA, ERC20_ABI, signer);
-    const tcB = new ethers.Contract(addrB, ERC20_ABI, signer);
-    setSt('loading', null, 'Checking allowances...');
-
-    const [allowA, allowB] = await Promise.all([
-      tcA.allowance(userAddress, CONFIG.ROUTER),
-      tcB.allowance(userAddress, CONFIG.ROUTER),
+  try{
+    const tcA=new ethers.Contract(addrA,ERC20_ABI,signer);
+    const tcB=new ethers.Contract(addrB,ERC20_ABI,signer);
+    setSt('loading',null,'Checking allowances...');
+    const[allowA,allowB]=await Promise.all([
+      tcA.allowance(userAddress,CONFIG.ROUTER),
+      tcB.allowance(userAddress,CONFIG.ROUTER),
     ]);
+    const aIsWBONE=tokenInfo.A.isWBONE, bIsWBONE=tokenInfo.B.isWBONE;
 
-    const aIsWBONE = tokenInfo.A.isWBONE;
-    const bIsWBONE = tokenInfo.B.isWBONE;
-
-    if (!aIsWBONE && allowA < amountAWei) {
-      setSt('loading', null, `Approving ${tokenInfo.A.symbol}...`);
-      const tx = await tcA.approve(CONFIG.ROUTER, amountAWei);
-      setSt('loading', null, `Waiting for ${tokenInfo.A.symbol} approval...`);
+    if(!aIsWBONE&&allowA<amountAWei){
+      setSt('loading',null,`Approving ${tokenInfo.A.symbol}...`);
+      const tx=await tcA.approve(CONFIG.ROUTER,amountAWei);
+      setSt('loading',null,`Waiting for ${tokenInfo.A.symbol} approval...`);
       await tx.wait();
     }
-    if (!bIsWBONE && allowB < amountBWei) {
-      setSt('loading', null, `Approving ${tokenInfo.B.symbol}...`);
-      const tx = await tcB.approve(CONFIG.ROUTER, amountBWei);
-      setSt('loading', null, `Waiting for ${tokenInfo.B.symbol} approval...`);
+    if(!bIsWBONE&&allowB<amountBWei){
+      setSt('loading',null,`Approving ${tokenInfo.B.symbol}...`);
+      const tx=await tcB.approve(CONFIG.ROUTER,amountBWei);
+      setSt('loading',null,`Waiting for ${tokenInfo.B.symbol} approval...`);
       await tx.wait();
     }
 
-    setSt('loading', null, 'Simulating transaction...');
-    const router   = new ethers.Contract(CONFIG.ROUTER, ROUTER_ABI, signer);
-    const deadline = BigInt(Math.floor(Date.now()/1000) + 300);
-    const useETH   = aIsWBONE || bIsWBONE;
-    const tokenAddr = aIsWBONE ? addrB : addrA;
-    const tokenAmt  = aIsWBONE ? amountBWei : amountAWei;
-    const tokenMin  = aIsWBONE ? minB : minA;
-    const ethAmt    = aIsWBONE ? amountAWei : amountBWei;
-    const ethMin    = aIsWBONE ? minA : minB;
+    setSt('loading',null,'Simulating transaction...');
+    const router=new ethers.Contract(CONFIG.ROUTER,ROUTER_ABI,signer);
+    const deadline=BigInt(Math.floor(Date.now()/1000)+300);
+    const useETH=aIsWBONE||bIsWBONE;
+    const tokenAddr=aIsWBONE?addrB:addrA;
+    const tokenAmt=aIsWBONE?amountBWei:amountAWei;
+    const tokenMin=aIsWBONE?minB:minA;
+    const ethAmt=aIsWBONE?amountAWei:amountBWei;
+    const ethMin=aIsWBONE?minA:minB;
 
-    try {
-      if (useETH) {
-        await router.addLiquidityETH.staticCall(tokenAddr, tokenAmt, tokenMin, ethMin, userAddress, deadline, { value: ethAmt });
-      } else {
-        await router.addLiquidity.staticCall(addrA, addrB, amountAWei, amountBWei, minA, minB, userAddress, deadline);
+    try{
+      if(useETH){
+        await router.addLiquidityETH.staticCall(tokenAddr,tokenAmt,tokenMin,ethMin,userAddress,deadline,{value:ethAmt});
+      }else{
+        await router.addLiquidity.staticCall(addrA,addrB,amountAWei,amountBWei,minA,minB,userAddress,deadline);
       }
-    } catch(se) {
-      throw new Error('Simulation failed: ' + decErr(se));
-    }
+    }catch(se){ throw new Error('Simulation failed: '+decErr(se)); }
 
-    setSt('loading', null, 'Confirm in wallet...');
+    setSt('loading',null,'Confirm in wallet...');
     let tx;
-    if (useETH) {
-      tx = await router.addLiquidityETH(tokenAddr, tokenAmt, tokenMin, ethMin, userAddress, deadline, { value: ethAmt });
-    } else {
-      tx = await router.addLiquidity(addrA, addrB, amountAWei, amountBWei, minA, minB, userAddress, deadline);
+    if(useETH){
+      tx=await router.addLiquidityETH(tokenAddr,tokenAmt,tokenMin,ethMin,userAddress,deadline,{value:ethAmt});
+    }else{
+      tx=await router.addLiquidity(addrA,addrB,amountAWei,amountBWei,minA,minB,userAddress,deadline);
     }
-    setSt('loading', null, 'Confirming... '+tx.hash.slice(0,10)+'...');
-    const receipt = await tx.wait();
+    setSt('loading',null,'Confirming... '+tx.hash.slice(0,10)+'...');
+    const receipt=await tx.wait();
 
-    let lpReceived = '--';
-    let lpTokenAddr = null;
-    let lpBalanceBN = 0n;
-    try {
-      const transferTopic = ethers.id('Transfer(address,address,uint256)');
-      const zeroAddr = '0x0000000000000000000000000000000000000000';
-      for (const log of receipt.logs) {
-        if (log.topics[0]===transferTopic && log.topics.length===3 && ethers.getAddress('0x'+log.topics[1].slice(26))===zeroAddr) {
-          lpBalanceBN = BigInt(log.data);
-          lpTokenAddr = log.address;
-          lpReceived  = fmtU(lpBalanceBN, 18) + ' LP';
+    let lpReceived='--',lpTokenAddr=null,lpBalanceBN=0n;
+    try{
+      const transferTopic=ethers.id('Transfer(address,address,uint256)');
+      for(const log of receipt.logs){
+        if(log.topics[0]===transferTopic&&log.topics.length===3&&ethers.getAddress('0x'+log.topics[1].slice(26))===ZERO){
+          lpBalanceBN=BigInt(log.data);
+          lpTokenAddr=log.address;
+          lpReceived=fmtU(lpBalanceBN,18)+' LP';
           break;
         }
       }
-    } catch(_) {}
+    }catch(_){}
 
-    document.getElementById('lpAmount').textContent = lpReceived;
+    document.getElementById('lpAmount').textContent=lpReceived;
     document.getElementById('lpResult').classList.add('show');
 
-    // Show burn button if we have LP token info
-    if (lpTokenAddr && lpBalanceBN > 0n) {
-      burnState.lpTokenAddr = lpTokenAddr;
-      burnState.lpBalance   = lpBalanceBN;
-      const burnBtn = document.getElementById('burnBtn');
-      if (burnBtn) burnBtn.style.display = 'flex';
+    if(lpTokenAddr&&lpBalanceBN>0n){
+      burnState.lpTokenAddr=lpTokenAddr; burnState.lpBalance=lpBalanceBN;
+      const burnBtn=document.getElementById('burnBtn'); if(burnBtn) burnBtn.style.display='flex';
     }
 
     setSt('success','',`Done! <a href="${CONFIG.EXPLORER}/tx/${tx.hash}" target="_blank">View on Explorer &#8599;</a>`);
-    onAddrChange('A'); onAddrChange('B');
+    // Reload balances + pool so the feed reflects the new liquidity immediately
+    manualRatioTouch=false;
+    await loadToken('A'); await loadToken('B'); await refreshPair();
 
-  } catch(e) {
+  }catch(e){
     setSt('error','',sanitize(decErr(e)));
-  } finally {
+  }finally{
     setBtnLoading(false);
   }
 }
 
-//  Helpers 
-function fmtU(val, dec) {
-  const n = parseFloat(ethers.formatUnits(val, dec));
-  if (!n) return '0';
-  if (n < 0.0001) return '< 0.0001';
-  return n.toLocaleString(undefined, { maximumFractionDigits: 6 });
+// ============================================================
+//  HELPERS
+// ============================================================
+function fmtU(val,dec){
+  const n=parseFloat(ethers.formatUnits(val,dec));
+  if(!n) return '0';
+  if(n<0.0001) return '< 0.0001';
+  return n.toLocaleString(undefined,{maximumFractionDigits:6});
 }
-
-function setSt(type, icon, msg) {
-  const box=document.getElementById('statusBox'), txt=document.getElementById('statusTxt');
+function setSt(type,icon,msg){
+  const box=document.getElementById('statusBox'),txt=document.getElementById('statusTxt');
   box.className='status-box'+(type?' '+type:'');
-  const old=box.querySelector('.spinner,.st-ic');if(old)old.remove();
+  const old=box.querySelector('.spinner,.st-ic'); if(old) old.remove();
   if(type==='loading'){const sp=document.createElement('div');sp.className='spinner';box.insertBefore(sp,txt);}
   else if(icon){const ic=document.createElement('span');ic.className='st-ic';ic.textContent=icon;box.insertBefore(ic,txt);}
-  if(type==='success')txt.innerHTML=msg;else txt.textContent=msg;
+  if(type==='success') txt.innerHTML=msg; else txt.textContent=msg;
 }
-
-function setBtnLoading(loading) {
-  const btn = document.getElementById('supplyBtn');
-  btn.disabled = loading;
-  btn.textContent = loading ? 'Processing...' : 'Supply Liquidity';
+function setBtnLoading(loading){
+  const btn=document.getElementById('supplyBtn');
+  btn.disabled=loading; btn.textContent=loading?'Processing...':'Supply Liquidity';
 }
-
-function decErr(e) {
-  if (!e) return 'Unknown error';
-  if (e.code===4001||e.code==='ACTION_REJECTED') return 'Rejected by user';
-  if (e.reason) return e.reason;
-  if (e.shortMessage) return e.shortMessage;
-  if (e.error?.reason) return e.error.reason;
-  const data = e?.data||e?.error?.data||e?.info?.error?.data;
-  if (typeof data==='string'&&data.startsWith('0x08c379a0')) {
-    try { return ethers.AbiCoder.defaultAbiCoder().decode(['string'],'0x'+data.slice(10))[0]; } catch(_) {}
+function decErr(e){
+  if(!e) return 'Unknown error';
+  if(e.code===4001||e.code==='ACTION_REJECTED') return 'Rejected by user';
+  if(e.reason) return e.reason;
+  if(e.shortMessage) return e.shortMessage;
+  if(e.error?.reason) return e.error.reason;
+  const data=e?.data||e?.error?.data||e?.info?.error?.data;
+  if(typeof data==='string'&&data.startsWith('0x08c379a0')){
+    try{ return ethers.AbiCoder.defaultAbiCoder().decode(['string'],'0x'+data.slice(10))[0]; }catch(_){}
   }
-  const raw = e.message||String(e);
-  const m = raw.match(/reason="([^"]+)"/);
-  if (m) return m[1];
-  return raw.replace('missing revert data','Contract reverted  check addresses and approvals').slice(0,200);
+  const raw=e.message||String(e);
+  const m=raw.match(/reason="([^"]+)"/);
+  if(m) return m[1];
+  return raw.replace('missing revert data','Contract reverted &mdash; check addresses and approvals').slice(0,200);
 }
+function sanitize(s){ return String(s).replace(/<[^>]*>/g,'').slice(0,220); }
 
-function sanitize(s) { return String(s).replace(/<[^>]*>/g,'').slice(0,220); }
-
-//  LP Burn flow 
-function openBurnModal() {
-  if (!burnState.lpTokenAddr || !burnState.lpBalance) return;
-  const symA = tokenInfo.A?.symbol || 'A';
-  const symB = tokenInfo.B?.symbol || 'B';
-  document.getElementById('burnAmount').textContent  = fmtU(burnState.lpBalance, 18) + ' LP';
-  document.getElementById('burnPairLabel').textContent = symA + ' / ' + symB + ' pool';
-  const overlay = document.getElementById('burnOverlay');
-  overlay.style.display = 'flex';
+// ============================================================
+//  LP BURN FLOW
+// ============================================================
+function openBurnModal(){
+  if(!burnState.lpTokenAddr||!burnState.lpBalance) return;
+  const symA=tokenInfo.A?.symbol||'A', symB=tokenInfo.B?.symbol||'B';
+  document.getElementById('burnAmount').textContent=fmtU(burnState.lpBalance,18)+' LP';
+  document.getElementById('burnPairLabel').textContent=symA+' / '+symB+' pool';
+  document.getElementById('burnOverlay').style.display='flex';
 }
-
-function closeBurnModal() {
-  document.getElementById('burnOverlay').style.display = 'none';
-}
-
-async function executeBurn() {
-  if (!burnState.lpTokenAddr || !burnState.lpBalance) return;
-  const btn = document.getElementById('burnConfirmBtn');
-  btn.disabled = true;
-  btn.textContent = 'Burning...';
-
-  try {
-    const lpContract = new ethers.Contract(
-      burnState.lpTokenAddr,
-      ['function transfer(address,uint256) returns (bool)'],
-      signer
-    );
-
-    // Send LP tokens to dead address
-    const tx = await lpContract.transfer(DEAD_ADDR, burnState.lpBalance);
-    btn.textContent = 'Confirming...';
-    const receipt = await tx.wait();
-
-    // Success
+function closeBurnModal(){ document.getElementById('burnOverlay').style.display='none'; }
+async function executeBurn(){
+  if(!burnState.lpTokenAddr||!burnState.lpBalance) return;
+  const btn=document.getElementById('burnConfirmBtn');
+  btn.disabled=true; btn.textContent='Burning...';
+  try{
+    const lp=new ethers.Contract(burnState.lpTokenAddr,['function transfer(address,uint256) returns (bool)'],signer);
+    const tx=await lp.transfer(DEAD_ADDR,burnState.lpBalance);
+    btn.textContent='Confirming...';
+    await tx.wait();
     closeBurnModal();
-
-    // Update UI -- hide burn button, show proof
-    const burnBtn = document.getElementById('burnBtn');
-    if (burnBtn) burnBtn.style.display = 'none';
-
-    // Show burn proof below LP result
-    const proofDiv = document.createElement('div');
-    proofDiv.style.cssText = 'margin-top:10px;padding:10px 14px;background:rgba(255,51,102,.05);border:1px solid rgba(255,51,102,.2);border-radius:10px;font-family:var(--mono);font-size:11px;';
-    proofDiv.innerHTML = `
-      <div style="display:flex;align-items:center;gap:8px;color:var(--red);">
-        <span>&#128293;</span>
-        <span style="font-weight:600;">LP Tokens Burned Forever</span>
-      </div>
-      <div style="color:var(--ash);margin-top:4px;">
-        ${fmtU(burnState.lpBalance, 18)} LP sent to dead address.
-        <a href="${CONFIG.EXPLORER}/tx/${tx.hash}" target="_blank" style="color:var(--fog);text-decoration:underline;margin-left:4px;">View proof &#8599;</a>
-      </div>
-    `;
-    document.getElementById('lpResult').appendChild(proofDiv);
-
-    // Update status
-    setSt('success', '&#128293;',
-      `LP burned! Liquidity locked forever. <a href="${CONFIG.EXPLORER}/tx/${tx.hash}" target="_blank">View burn proof &#8599;</a>`
-    );
-
-    // Clear burn state
-    burnState = { lpTokenAddr: null, lpBalance: null };
-
-  } catch(e) {
+    const burnBtn=document.getElementById('burnBtn'); if(burnBtn) burnBtn.style.display='none';
+    const proof=document.createElement('div');
+    proof.style.cssText='margin-top:10px;padding:10px 14px;background:rgba(255,51,102,.05);border:1px solid rgba(255,51,102,.2);border-radius:10px;font-family:var(--mono);font-size:11px;';
+    proof.innerHTML=`<div style="display:flex;align-items:center;gap:8px;color:var(--red);"><span>&#128293;</span><span style="font-weight:600;">LP Tokens Burned Forever</span></div><div style="color:var(--ash);margin-top:4px;">${fmtU(burnState.lpBalance,18)} LP sent to dead address. <a href="${CONFIG.EXPLORER}/tx/${tx.hash}" target="_blank" style="color:var(--fog);text-decoration:underline;margin-left:4px;">View proof &#8599;</a></div>`;
+    document.getElementById('lpResult').appendChild(proof);
+    setSt('success','',`LP burned! Liquidity locked forever. <a href="${CONFIG.EXPLORER}/tx/${tx.hash}" target="_blank">View burn proof &#8599;</a>`);
+    burnState={lpTokenAddr:null,lpBalance:null};
+  }catch(e){
     closeBurnModal();
-    setSt('error', '', 'Burn failed: ' + decErr(e));
-  } finally {
-    btn.disabled = false;
-    btn.textContent = '&#128293; Burn Forever';
+    setSt('error','','Burn failed: '+decErr(e));
+  }finally{
+    btn.disabled=false; btn.textContent='\u{1F525} Burn Forever';
   }
 }
 
-// Close burn modal on outside click
-document.getElementById('burnOverlay').addEventListener('click', function(e) {
-  if (e.target === this) closeBurnModal();
-});
-
-setSt('','','Connect wallet to begin');
+// ============================================================
+//  INIT
+// ============================================================
+(async function init(){
+  await getEthers();
+  setSt('','','Connect wallet to begin');
+  document.getElementById('burnOverlay').addEventListener('click',function(e){ if(e.target===this) closeBurnModal(); });
+  // If addresses are prefilled (e.g. from a shared link), show the feed even before connect.
+  if(ethers.isAddress(document.getElementById('tokenA').value) && ethers.isAddress(document.getElementById('tokenB').value)){
+    await loadToken('A'); await loadToken('B'); await refreshPair();
+  }
+})();
 </script>
-<!-- ============================================================
-     BURN LP MODAL
-     ============================================================ -->
-<div id="burnOverlay" style="display:none;position:fixed;inset:0;background:rgba(3,4,7,.92);backdrop-filter:blur(16px);z-index:600;display:none;align-items:center;justify-content:center;padding:20px;">
+
+<!-- BURN LP MODAL -->
+<div id="burnOverlay" style="display:none;position:fixed;inset:0;background:rgba(3,4,7,.92);backdrop-filter:blur(16px);z-index:600;align-items:center;justify-content:center;padding:20px;">
   <div style="background:var(--card);border:1px solid rgba(255,51,102,.3);border-radius:20px;width:100%;max-width:420px;padding:28px;position:relative;">
-
-    <!-- Red top line -->
     <div style="position:absolute;top:-1px;left:10%;right:10%;height:1px;background:linear-gradient(90deg,transparent,rgba(255,51,102,.6),transparent);"></div>
-
-    <!-- Fire icon -->
     <div style="text-align:center;margin-bottom:16px;">
-      <div style="width:56px;height:56px;border-radius:50%;background:rgba(255,51,102,.1);border:1px solid rgba(255,51,102,.25);display:flex;align-items:center;justify-content:center;margin:0 auto;font-size:24px;">
-        &#128293;
-      </div>
+      <div style="width:56px;height:56px;border-radius:50%;background:rgba(255,51,102,.1);border:1px solid rgba(255,51,102,.25);display:flex;align-items:center;justify-content:center;margin:0 auto;font-size:24px;">&#128293;</div>
     </div>
-
-    <div style="font-family:var(--display);font-size:26px;letter-spacing:2px;color:var(--red);text-align:center;margin-bottom:6px;">
-      BURN LP TOKENS
-    </div>
-    <div style="font-family:var(--mono);font-size:11px;color:var(--ash);text-align:center;margin-bottom:20px;letter-spacing:1px;">
-      THIS ACTION CANNOT BE UNDONE
-    </div>
-
-    <!-- Amount to burn -->
+    <div style="font-family:var(--display);font-size:26px;letter-spacing:2px;color:var(--red);text-align:center;margin-bottom:6px;">BURN LP TOKENS</div>
+    <div style="font-family:var(--mono);font-size:11px;color:var(--ash);text-align:center;margin-bottom:20px;letter-spacing:1px;">THIS ACTION CANNOT BE UNDONE</div>
     <div style="background:var(--pit);border:1px solid rgba(255,51,102,.2);border-radius:12px;padding:16px;margin-bottom:16px;text-align:center;">
       <div style="font-family:var(--mono);font-size:9px;color:var(--ash);letter-spacing:2px;text-transform:uppercase;margin-bottom:6px;">LP Tokens to Burn</div>
       <div style="font-family:var(--display);font-size:28px;color:var(--red);letter-spacing:1px;" id="burnAmount">--</div>
       <div style="font-family:var(--mono);font-size:10px;color:var(--ash);margin-top:4px;" id="burnPairLabel">--</div>
     </div>
-
-    <!-- Warning lines -->
     <div style="background:rgba(255,51,102,.05);border:1px solid rgba(255,51,102,.15);border-radius:10px;padding:14px;margin-bottom:20px;">
       <div style="font-family:var(--mono);font-size:11px;color:var(--fog);line-height:1.7;">
         <div style="display:flex;gap:8px;margin-bottom:6px;"><span style="color:var(--red);">&#9888;</span> LP tokens will be sent to the dead address permanently.</div>
         <div style="display:flex;gap:8px;margin-bottom:6px;"><span style="color:var(--red);">&#9888;</span> The liquidity will be locked in this pool forever.</div>
-        <div style="display:flex;gap:8px;margin-bottom:6px;"><span style="color:var(--red);">&#9888;</span> Nobody  including you  can ever remove it.</div>
+        <div style="display:flex;gap:8px;margin-bottom:6px;"><span style="color:var(--red);">&#9888;</span> Nobody &mdash; including you &mdash; can ever remove it.</div>
         <div style="display:flex;gap:8px;"><span style="color:var(--green);">&#10003;</span> Anyone can verify this burn on Shibarium explorer.</div>
       </div>
     </div>
-
-    <!-- Dead address display -->
     <div style="background:var(--pit);border-radius:8px;padding:10px 14px;margin-bottom:20px;font-family:var(--mono);font-size:10px;color:var(--ash);word-break:break-all;">
       Destination: <span style="color:var(--fog);">0x000000000000000000000000000000000000dEaD</span>
     </div>
-
-    <!-- Buttons -->
     <div style="display:flex;gap:10px;">
-      <button onclick="closeBurnModal()" style="flex:1;padding:13px;background:transparent;border:1px solid var(--rim);border-radius:12px;color:var(--ash);font-size:14px;font-weight:600;cursor:pointer;font-family:var(--body);transition:all .2s;" onmouseover="this.style.borderColor='var(--fog)';this.style.color='var(--fog)'" onmouseout="this.style.borderColor='var(--rim)';this.style.color='var(--ash)'">
-        Cancel
-      </button>
-      <button onclick="executeBurn()" id="burnConfirmBtn" style="flex:2;padding:13px;background:linear-gradient(135deg,#ff1a1a,#ff4466);border:none;border-radius:12px;color:white;font-size:14px;font-weight:700;cursor:pointer;font-family:var(--body);transition:all .2s;" onmouseover="this.style.transform='translateY(-1px)';this.style.boxShadow='0 6px 20px rgba(255,51,102,.4)'" onmouseout="this.style.transform='none';this.style.boxShadow='none'">
-        &#128293; Burn Forever
-      </button>
+      <button onclick="closeBurnModal()" style="flex:1;padding:13px;background:transparent;border:1px solid var(--rim);border-radius:12px;color:var(--ash);font-size:14px;font-weight:600;cursor:pointer;font-family:var(--body);transition:all .2s;" onmouseover="this.style.borderColor='var(--fog)';this.style.color='var(--fog)'" onmouseout="this.style.borderColor='var(--rim)';this.style.color='var(--ash)'">Cancel</button>
+      <button onclick="executeBurn()" id="burnConfirmBtn" style="flex:2;padding:13px;background:linear-gradient(135deg,#ff1a1a,#ff4466);border:none;border-radius:12px;color:white;font-size:14px;font-weight:700;cursor:pointer;font-family:var(--body);transition:all .2s;" onmouseover="this.style.transform='translateY(-1px)';this.style.boxShadow='0 6px 20px rgba(255,51,102,.4)'" onmouseout="this.style.transform='none';this.style.boxShadow='none'">&#128293; Burn Forever</button>
     </div>
-
   </div>
 </div>
-
 </body>
 </html>
