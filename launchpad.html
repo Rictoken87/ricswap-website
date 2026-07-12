@@ -1,0 +1,927 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>RicSwap Launchpad — Fair Token Launch on Shibarium</title>
+  <meta name="description" content="Launch a CleanToken with locked BONE liquidity on RicSwap. Atomic deploy + LP + lock. Founder never holds LP." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.5/dist/ethers.umd.min.js"></script>
+  <style>
+    :root {
+      --bg: #0b0d12;
+      --bg2: #12161f;
+      --bg3: #1a2030;
+      --border: rgba(255,255,255,0.08);
+      --border-strong: rgba(255,255,255,0.14);
+      --text: #f2f4f8;
+      --muted: #8b93a7;
+      --accent: #f5a623;
+      --accent2: #ff6b35;
+      --green: #3dd68c;
+      --red: #ff5c6c;
+      --blue: #5b8cff;
+      --radius: 16px;
+      --shadow: 0 20px 60px rgba(0,0,0,0.45);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: "DM Sans", system-ui, sans-serif;
+      background:
+        radial-gradient(1200px 600px at 10% -10%, rgba(245,166,35,0.12), transparent 50%),
+        radial-gradient(900px 500px at 100% 0%, rgba(255,107,53,0.08), transparent 45%),
+        var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      line-height: 1.5;
+    }
+
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    .wrap {
+      max-width: 1080px;
+      margin: 0 auto;
+      padding: 24px 20px 80px;
+    }
+
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 8px 0 28px;
+      flex-wrap: wrap;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .logo {
+      width: 42px;
+      height: 42px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      display: grid;
+      place-items: center;
+      font-weight: 700;
+      font-size: 18px;
+      color: #111;
+      box-shadow: 0 8px 24px rgba(245,166,35,0.25);
+    }
+
+    .brand h1 {
+      font-size: 1.15rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+
+    .brand p {
+      font-size: 0.8rem;
+      color: var(--muted);
+    }
+
+    .wallet-btn {
+      border: 1px solid var(--border-strong);
+      background: var(--bg3);
+      color: var(--text);
+      border-radius: 999px;
+      padding: 10px 18px;
+      font: inherit;
+      font-weight: 600;
+      font-size: 0.9rem;
+      cursor: pointer;
+      transition: 0.15s ease;
+    }
+
+    .wallet-btn:hover { border-color: var(--accent); color: var(--accent); }
+    .wallet-btn.connected {
+      background: rgba(61,214,140,0.1);
+      border-color: rgba(61,214,140,0.35);
+      color: var(--green);
+    }
+
+    .hero {
+      margin-bottom: 28px;
+    }
+
+    .hero h2 {
+      font-size: clamp(1.6rem, 3vw, 2.2rem);
+      letter-spacing: -0.03em;
+      margin-bottom: 10px;
+    }
+
+    .hero p {
+      color: var(--muted);
+      max-width: 640px;
+      font-size: 1.02rem;
+    }
+
+    .pills {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 16px;
+    }
+
+    .pill {
+      font-size: 0.78rem;
+      font-weight: 600;
+      padding: 6px 12px;
+      border-radius: 999px;
+      background: rgba(245,166,35,0.1);
+      color: var(--accent);
+      border: 1px solid rgba(245,166,35,0.22);
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1.35fr 0.9fr;
+      gap: 20px;
+    }
+
+    @media (max-width: 900px) {
+      .grid { grid-template-columns: 1fr; }
+    }
+
+    .card {
+      background: linear-gradient(180deg, rgba(255,255,255,0.03), transparent 40%), var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 22px;
+    }
+
+    .card h3 {
+      font-size: 1rem;
+      margin-bottom: 16px;
+      letter-spacing: -0.01em;
+    }
+
+    .field {
+      margin-bottom: 14px;
+    }
+
+    .field label {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 8px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+
+    .field label span.hint {
+      font-weight: 500;
+      font-size: 0.75rem;
+      opacity: 0.85;
+    }
+
+    .field input,
+    .field select,
+    .field textarea {
+      width: 100%;
+      background: var(--bg);
+      border: 1px solid var(--border-strong);
+      color: var(--text);
+      border-radius: 12px;
+      padding: 12px 14px;
+      font: inherit;
+      font-size: 0.95rem;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+
+    .field input:focus,
+    .field select:focus,
+    .field textarea:focus {
+      border-color: var(--accent);
+    }
+
+    .field textarea {
+      min-height: 72px;
+      resize: vertical;
+    }
+
+    .row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    @media (max-width: 560px) {
+      .row { grid-template-columns: 1fr; }
+    }
+
+    .lock-presets {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 8px;
+    }
+
+    .chip {
+      border: 1px solid var(--border-strong);
+      background: transparent;
+      color: var(--muted);
+      border-radius: 999px;
+      padding: 6px 12px;
+      font: inherit;
+      font-size: 0.78rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .chip:hover, .chip.active {
+      color: var(--text);
+      border-color: var(--accent);
+      background: rgba(245,166,35,0.1);
+    }
+
+    .range-wrap {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .range-wrap input[type="range"] {
+      flex: 1;
+      padding: 0;
+      accent-color: var(--accent);
+    }
+
+    .range-val {
+      min-width: 52px;
+      text-align: right;
+      font-family: "JetBrains Mono", monospace;
+      font-size: 0.9rem;
+      color: var(--accent);
+      font-weight: 600;
+    }
+
+    .submit {
+      width: 100%;
+      margin-top: 8px;
+      border: none;
+      border-radius: 14px;
+      padding: 15px 18px;
+      font: inherit;
+      font-weight: 700;
+      font-size: 1rem;
+      cursor: pointer;
+      color: #111;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      box-shadow: 0 10px 30px rgba(245,166,35,0.25);
+      transition: transform 0.12s, opacity 0.12s;
+    }
+
+    .submit:hover:not(:disabled) { transform: translateY(-1px); }
+    .submit:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .side .stat {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.9rem;
+    }
+
+    .side .stat:last-child { border-bottom: none; }
+
+    .side .stat span:first-child { color: var(--muted); }
+    .side .stat strong {
+      font-family: "JetBrains Mono", monospace;
+      font-weight: 500;
+      text-align: right;
+      word-break: break-all;
+    }
+
+    .bar {
+      height: 10px;
+      border-radius: 999px;
+      background: var(--bg);
+      overflow: hidden;
+      display: flex;
+      margin: 14px 0 8px;
+    }
+
+    .bar .lp { background: linear-gradient(90deg, var(--accent), #ffc857); }
+    .bar .team { background: var(--blue); }
+
+    .legend {
+      display: flex;
+      gap: 16px;
+      font-size: 0.78rem;
+      color: var(--muted);
+      margin-bottom: 16px;
+    }
+
+    .legend i {
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      margin-right: 6px;
+    }
+
+    .legend .lp i { background: var(--accent); }
+    .legend .team i { background: var(--blue); }
+
+    .guarantees {
+      list-style: none;
+      font-size: 0.86rem;
+      color: var(--muted);
+    }
+
+    .guarantees li {
+      padding: 8px 0;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+    }
+
+    .guarantees li:last-child { border-bottom: none; }
+    .guarantees li::before {
+      content: "✓";
+      color: var(--green);
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+
+    .status {
+      margin-top: 14px;
+      padding: 12px 14px;
+      border-radius: 12px;
+      font-size: 0.88rem;
+      display: none;
+      word-break: break-word;
+    }
+
+    .status.show { display: block; }
+    .status.info {
+      background: rgba(91,140,255,0.1);
+      border: 1px solid rgba(91,140,255,0.3);
+      color: #b8c9ff;
+    }
+    .status.ok {
+      background: rgba(61,214,140,0.1);
+      border: 1px solid rgba(61,214,140,0.3);
+      color: #b6f5d2;
+    }
+    .status.err {
+      background: rgba(255,92,108,0.1);
+      border: 1px solid rgba(255,92,108,0.3);
+      color: #ffc0c6;
+    }
+
+    .result {
+      display: none;
+      margin-top: 16px;
+      padding-top: 16px;
+      border-top: 1px solid var(--border);
+    }
+
+    .result.show { display: block; }
+
+    .result h4 {
+      margin-bottom: 10px;
+      color: var(--green);
+    }
+
+    .result .stat strong a { color: var(--accent); }
+
+    footer {
+      margin-top: 36px;
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.8rem;
+    }
+
+    footer code {
+      font-family: "JetBrains Mono", monospace;
+      font-size: 0.72rem;
+      color: #aab2c5;
+    }
+
+    .net-warn {
+      display: none;
+      margin-bottom: 16px;
+      padding: 12px 14px;
+      border-radius: 12px;
+      background: rgba(255,92,108,0.1);
+      border: 1px solid rgba(255,92,108,0.35);
+      color: #ffc0c6;
+      font-size: 0.88rem;
+    }
+
+    .net-warn.show { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+
+    .net-warn button {
+      border: 1px solid rgba(255,92,108,0.5);
+      background: transparent;
+      color: #ffc0c6;
+      border-radius: 999px;
+      padding: 8px 14px;
+      font: inherit;
+      font-weight: 600;
+      font-size: 0.82rem;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div class="brand">
+        <div class="logo">R</div>
+        <div>
+          <h1>RicSwap Launchpad</h1>
+          <p>Fair launches on Shibarium · CleanToken + locked LP</p>
+        </div>
+      </div>
+      <button type="button" class="wallet-btn" id="connectBtn">Connect wallet</button>
+    </header>
+
+    <section class="hero">
+      <h2>Launch in one transaction</h2>
+      <p>
+        Deploy an ownerless CleanToken, create a BONE liquidity pool, and lock 100% of the LP —
+        atomically. You never receive LP tokens. No mint, no blacklist, no fees, no pause.
+      </p>
+      <div class="pills">
+        <span class="pill">Min 30-day LP lock</span>
+        <span class="pill">Max 25% team</span>
+        <span class="pill">Min 50% to LP</span>
+        <span class="pill">Min 0.1 BONE liquidity</span>
+      </div>
+    </section>
+
+    <div class="net-warn" id="netWarn">
+      <span>Wrong network. Switch to Shibarium (chain ID 109) to launch.</span>
+      <button type="button" id="switchNetBtn">Switch to Shibarium</button>
+    </div>
+
+    <div class="grid">
+      <form class="card" id="launchForm">
+        <h3>Token details</h3>
+
+        <div class="row">
+          <div class="field">
+            <label>Token name <span class="hint">required</span></label>
+            <input id="name" name="name" placeholder="e.g. Fair Dog" maxlength="64" required />
+          </div>
+          <div class="field">
+            <label>Symbol <span class="hint">required</span></label>
+            <input id="symbol" name="symbol" placeholder="e.g. FDOG" maxlength="16" required />
+          </div>
+        </div>
+
+        <div class="field">
+          <label>Total supply <span class="hint">whole tokens (18 decimals applied on-chain)</span></label>
+          <input id="totalSupply" name="totalSupply" type="text" inputmode="numeric" placeholder="1000000" value="1000000" required />
+        </div>
+
+        <div class="field">
+          <label>
+            Team allocation
+            <span class="hint">max 25% — rest goes to LP</span>
+          </label>
+          <div class="range-wrap">
+            <input id="teamBps" type="range" min="0" max="2500" step="50" value="1000" />
+            <span class="range-val" id="teamBpsLabel">10%</span>
+          </div>
+        </div>
+
+        <div class="field">
+          <label>BONE for liquidity <span class="hint">min 0.1 BONE · sent with the tx</span></label>
+          <input id="boneAmount" type="text" inputmode="decimal" placeholder="0.1" value="0.1" required />
+        </div>
+
+        <div class="field">
+          <label>LP lock duration <span class="hint">minimum 30 days</span></label>
+          <select id="lockDuration">
+            <option value="2592000" selected>30 days (minimum)</option>
+            <option value="7776000">90 days</option>
+            <option value="15552000">180 days</option>
+            <option value="31536000">365 days</option>
+            <option value="max">Permanent (strongest signal)</option>
+          </select>
+          <div class="lock-presets">
+            <button type="button" class="chip active" data-lock="2592000">30d</button>
+            <button type="button" class="chip" data-lock="7776000">90d</button>
+            <button type="button" class="chip" data-lock="15552000">180d</button>
+            <button type="button" class="chip" data-lock="31536000">1y</button>
+            <button type="button" class="chip" data-lock="max">Forever</button>
+          </div>
+        </div>
+
+        <div class="field">
+          <label>Project URI <span class="hint">optional logo / info URL or IPFS</span></label>
+          <input id="projectURI" type="text" placeholder="https://… or ipfs://…" />
+        </div>
+
+        <button type="submit" class="submit" id="launchBtn" disabled>Connect wallet to launch</button>
+        <div class="status" id="status"></div>
+
+        <div class="result" id="result">
+          <h4>Launch successful</h4>
+          <div class="stat"><span>Token</span><strong id="resToken">—</strong></div>
+          <div class="stat"><span>Pair</span><strong id="resPair">—</strong></div>
+          <div class="stat"><span>Lock ID</span><strong id="resLockId">—</strong></div>
+          <div class="stat"><span>Unlock</span><strong id="resUnlock">—</strong></div>
+          <div class="stat"><span>Tx</span><strong id="resTx">—</strong></div>
+        </div>
+      </form>
+
+      <aside class="side">
+        <div class="card" style="margin-bottom: 16px;">
+          <h3>Allocation preview</h3>
+          <div class="bar">
+            <div class="lp" id="barLp" style="width: 90%"></div>
+            <div class="team" id="barTeam" style="width: 10%"></div>
+          </div>
+          <div class="legend">
+            <span class="lp"><i></i>Liquidity <strong id="prevLp">90%</strong></span>
+            <span class="team"><i></i>Team <strong id="prevTeam">10%</strong></span>
+          </div>
+          <div class="stat"><span>Supply to LP</span><strong id="prevLpTokens">900,000</strong></div>
+          <div class="stat"><span>Team tokens</span><strong id="prevTeamTokens">100,000</strong></div>
+          <div class="stat"><span>BONE liquidity</span><strong id="prevBone">0.1</strong></div>
+          <div class="stat"><span>LP unlock</span><strong id="prevUnlock">~30 days</strong></div>
+        </div>
+
+        <div class="card">
+          <h3>On-chain guarantees</h3>
+          <ul class="guarantees">
+            <li>Token is always a CleanToken (no owner, no mint, no tax)</li>
+            <li>LP is created and locked in the same transaction</li>
+            <li>Founder never receives LP tokens</li>
+            <li>Lock cannot be shortened; only extended later</li>
+            <li>No factory admin that can unlock early</li>
+          </ul>
+          <p style="margin-top: 14px; font-size: 0.78rem; color: var(--muted);">
+            After unlock, the lock beneficiary can withdraw LP. Team tokens can be sold.
+            This does not guarantee project success.
+          </p>
+        </div>
+      </aside>
+    </div>
+
+    <footer>
+      <p>RicSwap · Shibarium · Factory <code id="footerFactory"></code></p>
+      <p style="margin-top: 6px;">
+        <a href="https://www.shibariumscan.io" target="_blank" rel="noopener">Explorer</a>
+        ·
+        <a href="./" id="homeLink">Home</a>
+      </p>
+    </footer>
+  </div>
+
+  <script>
+    // ============================================================
+    //  RicSwap Launchpad — Shibarium mainnet config
+    // ============================================================
+    const CONFIG = {
+      chainId: 109,
+      chainIdHex: "0x6d",
+      chainName: "Shibarium",
+      rpcUrls: [
+        "https://www.shibrpc.com",
+        "https://rpc.shibarium.shib.io",
+        "https://shibarium-rpc.publicnode.com"
+      ],
+      blockExplorer: "https://www.shibariumscan.io",
+      nativeCurrency: { name: "BONE", symbol: "BONE", decimals: 18 },
+
+      factory: "0x8D15571EfcfBD18c1Da0ddee28a28E820a22ae14",
+      locker:  "0x388Ea1825bfAe6556Ad24f1FCEE9D9f53875FA6F",
+      router:  "0x652875c0F607CB392C0F9E5FB957A7055c2deD2e",
+      dexFactory: "0xD8fFEECfDE1698a70A26a094afBE917bA58E2F70",
+      wbone:   "0xC76F4c819D820369Fb2d7C1531aB3Bb18e6fE8d8",
+
+      minLockSeconds: 30 * 24 * 60 * 60,
+      maxTeamBps: 2500,
+      minNativeBone: "0.1",
+      permanentLock: "115792089237316195423570985008687907853269984665640564039457584007913129639935"
+    };
+
+    const FACTORY_ABI = [
+      "function launch(string name_, string symbol_, uint256 totalSupply_, uint256 teamBps, uint256 lockDuration, string projectURI_) payable returns (address token, uint256 lockId)",
+      "function MIN_LOCK_DURATION() view returns (uint256)",
+      "function MAX_TEAM_BPS() view returns (uint256)",
+      "function MIN_NATIVE_LIQUIDITY() view returns (uint256)",
+      "function totalLaunches() view returns (uint256)",
+      "function getLaunch(address token) view returns (tuple(address token, address founder, address pair, uint256 lockId, uint256 unlockTime, uint256 totalSupply, uint256 liquidityTokens, uint256 teamTokens, uint256 launchedAt))",
+      "event TokenLaunched(address indexed token, address indexed founder, address indexed pair, string name, string symbol, uint256 totalSupply, uint256 liquidityTokens, uint256 teamTokens, uint256 nativeLiquidity, uint256 lockId, uint256 unlockTime)"
+    ];
+
+    let provider = null;
+    let signer = null;
+    let account = null;
+
+    const $ = (id) => document.getElementById(id);
+
+    function explorerAddress(addr) {
+      return `${CONFIG.blockExplorer}/address/${addr}`;
+    }
+    function explorerTx(hash) {
+      return `${CONFIG.blockExplorer}/tx/${hash}`;
+    }
+
+    function shortAddr(a) {
+      if (!a) return "—";
+      return a.slice(0, 6) + "…" + a.slice(-4);
+    }
+
+    function formatNum(n) {
+      try {
+        return Number(n).toLocaleString("en-US");
+      } catch {
+        return String(n);
+      }
+    }
+
+    function setStatus(type, msg) {
+      const el = $("status");
+      el.className = "status show " + type;
+      el.innerHTML = msg;
+    }
+
+    function clearStatus() {
+      const el = $("status");
+      el.className = "status";
+      el.textContent = "";
+    }
+
+    function updatePreview() {
+      const teamBps = Number($("teamBps").value) || 0;
+      const teamPct = teamBps / 100;
+      const lpPct = 100 - teamPct;
+      $("teamBpsLabel").textContent = teamPct.toFixed(teamBps % 100 === 0 ? 0 : 1) + "%";
+      $("prevTeam").textContent = teamPct.toFixed(1) + "%";
+      $("prevLp").textContent = lpPct.toFixed(1) + "%";
+      $("barTeam").style.width = teamPct + "%";
+      $("barLp").style.width = lpPct + "%";
+
+      const supplyStr = ($("totalSupply").value || "0").replace(/,/g, "");
+      let supply = 0n;
+      try { supply = BigInt(supplyStr || "0"); } catch { supply = 0n; }
+      const teamTokens = (supply * BigInt(teamBps)) / 10000n;
+      const lpTokens = supply - teamTokens;
+      $("prevTeamTokens").textContent = formatNum(teamTokens.toString());
+      $("prevLpTokens").textContent = formatNum(lpTokens.toString());
+
+      const bone = $("boneAmount").value || "0";
+      $("prevBone").textContent = bone + " BONE";
+
+      const lock = $("lockDuration").value;
+      if (lock === "max") {
+        $("prevUnlock").textContent = "Permanent";
+      } else {
+        const days = Math.round(Number(lock) / 86400);
+        $("prevUnlock").textContent = "~" + days + " days";
+      }
+    }
+
+    function setLock(value) {
+      $("lockDuration").value = value;
+      document.querySelectorAll(".chip").forEach((c) => {
+        c.classList.toggle("active", c.dataset.lock === value);
+      });
+      updatePreview();
+    }
+
+    async function ensureShibarium() {
+      if (!window.ethereum) throw new Error("No wallet found. Install MetaMask or another Web3 wallet.");
+      const chainId = await window.ethereum.request({ method: "eth_chainId" });
+      if (chainId === CONFIG.chainIdHex || parseInt(chainId, 16) === CONFIG.chainId) {
+        $("netWarn").classList.remove("show");
+        return true;
+      }
+      $("netWarn").classList.add("show");
+      try {
+        await window.ethereum.request({
+          method: "wallet_switchEthereumChain",
+          params: [{ chainId: CONFIG.chainIdHex }]
+        });
+        $("netWarn").classList.remove("show");
+        return true;
+      } catch (err) {
+        if (err.code === 4902) {
+          await window.ethereum.request({
+            method: "wallet_addEthereumChain",
+            params: [{
+              chainId: CONFIG.chainIdHex,
+              chainName: CONFIG.chainName,
+              nativeCurrency: CONFIG.nativeCurrency,
+              rpcUrls: CONFIG.rpcUrls,
+              blockExplorerUrls: [CONFIG.blockExplorer]
+            }]
+          });
+          $("netWarn").classList.remove("show");
+          return true;
+        }
+        throw err;
+      }
+    }
+
+    async function connectWallet() {
+      if (!window.ethereum) {
+        setStatus("err", "No Web3 wallet detected. Install MetaMask, then refresh.");
+        return;
+      }
+      try {
+        await ensureShibarium();
+        provider = new ethers.BrowserProvider(window.ethereum);
+        await provider.send("eth_requestAccounts", []);
+        signer = await provider.getSigner();
+        account = await signer.getAddress();
+        $("connectBtn").textContent = shortAddr(account);
+        $("connectBtn").classList.add("connected");
+        $("launchBtn").disabled = false;
+        $("launchBtn").textContent = "Launch token";
+        clearStatus();
+      } catch (e) {
+        setStatus("err", e.shortMessage || e.message || String(e));
+      }
+    }
+
+    function validateForm() {
+      const name = $("name").value.trim();
+      const symbol = $("symbol").value.trim();
+      const supplyStr = $("totalSupply").value.replace(/,/g, "").trim();
+      const teamBps = Number($("teamBps").value);
+      const boneStr = $("boneAmount").value.trim();
+
+      if (!name) throw new Error("Token name is required.");
+      if (!symbol) throw new Error("Symbol is required.");
+      if (!/^\d+$/.test(supplyStr) || BigInt(supplyStr) <= 0n) {
+        throw new Error("Total supply must be a positive whole number.");
+      }
+      if (teamBps < 0 || teamBps > CONFIG.maxTeamBps) {
+        throw new Error("Team allocation must be between 0% and 25%.");
+      }
+      let bone;
+      try {
+        bone = ethers.parseEther(boneStr);
+      } catch {
+        throw new Error("Invalid BONE amount.");
+      }
+      if (bone < ethers.parseEther(CONFIG.minNativeBone)) {
+        throw new Error("Minimum liquidity is 0.1 BONE.");
+      }
+      return {
+        name,
+        symbol,
+        totalSupply: BigInt(supplyStr),
+        teamBps,
+        bone,
+        projectURI: $("projectURI").value.trim(),
+        lockDuration: $("lockDuration").value === "max"
+          ? BigInt(CONFIG.permanentLock)
+          : BigInt($("lockDuration").value)
+      };
+    }
+
+    function decodeLaunchError(err) {
+      const msg = err.shortMessage || err.reason || err.message || String(err);
+      const data = err.data || err.info?.error?.data;
+      // Friendly map for custom errors when available
+      if (/LockTooShort/i.test(msg) || /LockTooShort/i.test(String(data))) {
+        return "Lock duration is below the 30-day minimum.";
+      }
+      if (/TeamAllocationTooHigh/i.test(msg)) return "Team allocation exceeds 25%.";
+      if (/InsufficientNativeLiquidity/i.test(msg)) return "Send at least 0.1 BONE with the launch.";
+      if (/InvalidMetadata/i.test(msg)) return "Name and symbol cannot be empty.";
+      if (/user rejected|ACTION_REJECTED|denied/i.test(msg)) return "Transaction rejected in wallet.";
+      if (/insufficient funds/i.test(msg)) return "Not enough BONE for liquidity + gas.";
+      return msg;
+    }
+
+    async function onLaunch(e) {
+      e.preventDefault();
+      $("result").classList.remove("show");
+
+      try {
+        if (!signer || !account) {
+          await connectWallet();
+          if (!signer) return;
+        }
+        await ensureShibarium();
+        provider = new ethers.BrowserProvider(window.ethereum);
+        signer = await provider.getSigner();
+        account = await signer.getAddress();
+
+        const form = validateForm();
+        const factory = new ethers.Contract(CONFIG.factory, FACTORY_ABI, signer);
+
+        setStatus("info", "Confirm the transaction in your wallet…");
+        $("launchBtn").disabled = true;
+        $("launchBtn").textContent = "Waiting for wallet…";
+
+        const tx = await factory.launch(
+          form.name,
+          form.symbol,
+          form.totalSupply,
+          form.teamBps,
+          form.lockDuration,
+          form.projectURI,
+          { value: form.bone }
+        );
+
+        setStatus("info", `Transaction submitted… <a href="${explorerTx(tx.hash)}" target="_blank" rel="noopener">${shortAddr(tx.hash)}</a><br/>Waiting for confirmation…`);
+        $("launchBtn").textContent = "Confirming…";
+
+        const receipt = await tx.wait();
+        if (receipt.status !== 1) throw new Error("Transaction failed on-chain.");
+
+        // Parse TokenLaunched event
+        let token = null, pair = null, lockId = null, unlockTime = null;
+        for (const log of receipt.logs) {
+          try {
+            const parsed = factory.interface.parseLog(log);
+            if (parsed && parsed.name === "TokenLaunched") {
+              token = parsed.args.token;
+              pair = parsed.args.pair;
+              lockId = parsed.args.lockId.toString();
+              unlockTime = Number(parsed.args.unlockTime);
+              break;
+            }
+          } catch (_) { /* not our log */ }
+        }
+
+        // Fallback: use return data if present (ethers may not decode return on wait)
+        if (!token) {
+          setStatus("ok", `Launch confirmed. Tx: <a href="${explorerTx(receipt.hash)}" target="_blank" rel="noopener">${shortAddr(receipt.hash)}</a> — check the explorer for TokenLaunched logs.`);
+        } else {
+          const unlockLabel = unlockTime >= 1e15
+            ? "Permanent"
+            : new Date(unlockTime * 1000).toLocaleString();
+
+          $("resToken").innerHTML = `<a href="${explorerAddress(token)}" target="_blank" rel="noopener">${token}</a>`;
+          $("resPair").innerHTML = `<a href="${explorerAddress(pair)}" target="_blank" rel="noopener">${pair}</a>`;
+          $("resLockId").textContent = lockId;
+          $("resUnlock").textContent = unlockLabel;
+          $("resTx").innerHTML = `<a href="${explorerTx(receipt.hash)}" target="_blank" rel="noopener">${receipt.hash}</a>`;
+          $("result").classList.add("show");
+          setStatus("ok", `Success! Token deployed, LP created & locked. You never received LP tokens.`);
+        }
+      } catch (err) {
+        console.error(err);
+        setStatus("err", decodeLaunchError(err));
+      } finally {
+        $("launchBtn").disabled = !account;
+        $("launchBtn").textContent = account ? "Launch token" : "Connect wallet to launch";
+      }
+    }
+
+    // ---- wire UI ----
+    $("footerFactory").textContent = CONFIG.factory;
+    $("connectBtn").addEventListener("click", connectWallet);
+    $("switchNetBtn").addEventListener("click", async () => {
+      try { await ensureShibarium(); } catch (e) { setStatus("err", e.message || String(e)); }
+    });
+    $("launchForm").addEventListener("submit", onLaunch);
+    $("teamBps").addEventListener("input", updatePreview);
+    $("totalSupply").addEventListener("input", updatePreview);
+    $("boneAmount").addEventListener("input", updatePreview);
+    $("lockDuration").addEventListener("change", () => setLock($("lockDuration").value));
+    document.querySelectorAll(".chip").forEach((chip) => {
+      chip.addEventListener("click", () => setLock(chip.dataset.lock));
+    });
+
+    if (window.ethereum) {
+      window.ethereum.on?.("accountsChanged", (accs) => {
+        if (!accs || accs.length === 0) {
+          account = null;
+          signer = null;
+          $("connectBtn").textContent = "Connect wallet";
+          $("connectBtn").classList.remove("connected");
+          $("launchBtn").disabled = true;
+          $("launchBtn").textContent = "Connect wallet to launch";
+        } else {
+          connectWallet();
+        }
+      });
+      window.ethereum.on?.("chainChanged", () => window.location.reload());
+    }
+
+    updatePreview();
+  </script>
+</body>
+</html>
