@@ -696,9 +696,8 @@
       blockExplorer: "https://www.shibariumscan.io",
       nativeCurrency: { name: "BONE", symbol: "BONE", decimals: 18 },
 
-      // *** PASTE LaunchpadFactoryV2 address after you deploy it ***
-      // v1 free factory: 0x8D15571EfcfBD18c1Da0ddee28a28E820a22ae14 (no RIC fee)
-      factory: "PASTE_LAUNCHPAD_FACTORY_V2_ADDRESS_HERE",
+      // Live free factory (v1). After you deploy V2, replace with V2 address.
+      factory: "0x8D15571EfcfBD18c1Da0ddee28a28E820a22ae14",
       locker:  "0x388Ea1825bfAe6556Ad24f1FCEE9D9f53875FA6F",
       router:  "0x652875c0F607CB392C0F9E5FB957A7055c2deD2e",
       dexFactory: "0xD8fFEECfDE1698a70A26a094afBE917bA58E2F70",
@@ -716,12 +715,7 @@
       "function launch(string name_, string symbol_, uint256 totalSupply_, uint256 teamBps, uint256 lockDuration, string projectURI_) payable returns (address token, uint256 lockId)",
       "function LAUNCH_FEE() view returns (uint256)",
       "function RIC() view returns (address)",
-      "function TREASURY() view returns (address)",
-      "function BURN_BPS() view returns (uint256)",
-      "function feeInfo() view returns (address ric, uint256 fee, uint256 burnBps, address treasury, address dead)",
       "function totalLaunches() view returns (uint256)",
-      "function totalRicBurned() view returns (uint256)",
-      "function getLaunch(address token) view returns (tuple(address token, address founder, address pair, uint256 lockId, uint256 unlockTime, uint256 totalSupply, uint256 liquidityTokens, uint256 teamTokens, uint256 launchedAt, uint256 ricFeePaid))",
       "event TokenLaunched(address indexed token, address indexed founder, address indexed pair, string name, string symbol, uint256 totalSupply, uint256 liquidityTokens, uint256 teamTokens, uint256 nativeLiquidity, uint256 lockId, uint256 unlockTime)",
       "event LaunchFeeCollected(address indexed founder, uint256 totalFee, uint256 burned, uint256 toTreasury)"
     ];
@@ -734,12 +728,14 @@
       "function symbol() view returns (string)"
     ];
 
+    let ethereum = null;
     let provider = null;
     let signer = null;
     let account = null;
-    let launchFeeWei = null; // loaded from chain or 100 * 10^decimals
+    let launchFeeWei = 0n;
     let ricDecimals = 18;
-    let hasAllowance = false;
+    let hasAllowance = true;
+    let feeRequired = false; // true only if factory has LAUNCH_FEE (V2)
 
     const $ = (id) => document.getElementById(id);
 
@@ -813,24 +809,67 @@
       updatePreview();
     }
 
-    async function ensureShibarium() {
-      if (!window.ethereum) throw new Error("No wallet found. Install MetaMask or another Web3 wallet.");
-      const chainId = await window.ethereum.request({ method: "eth_chainId" });
-      if (chainId === CONFIG.chainIdHex || parseInt(chainId, 16) === CONFIG.chainId) {
+    /** Pick MetaMask (or first injected) even when multiple wallets are installed. */
+    function getEthereumProvider() {
+      const eth = window.ethereum;
+      if (!eth) return null;
+      if (Array.isArray(eth.providers) && eth.providers.length) {
+        return eth.providers.find((p) => p.isMetaMask) || eth.providers[0];
+      }
+      return eth;
+    }
+
+    function factoryConfigured() {
+      return typeof CONFIG.factory === "string"
+        && /^0x[a-fA-F0-9]{40}$/.test(CONFIG.factory);
+    }
+
+    function setFeeUiFree() {
+      feeRequired = false;
+      hasAllowance = true;
+      launchFeeWei = 0n;
+      $("feeBox").style.opacity = "0.85";
+      document.querySelector(".fee-title").textContent = "Launch fee · free (v1 factory)";
+      $("ricBalance").textContent = "not required";
+      $("ricAllowance").textContent = "not required";
+      $("approveBtn").disabled = true;
+      $("approveBtn").textContent = "No RIC approve needed";
+      $("approveBtn").classList.add("ready");
+      if (account) {
+        $("launchBtn").disabled = false;
+        $("launchBtn").textContent = "Launch token";
+      }
+    }
+
+    function setFeeUiPaid() {
+      feeRequired = true;
+      $("feeBox").style.opacity = "1";
+      document.querySelector(".fee-title").textContent = "Launch fee · 100 RIC";
+    }
+
+    async function ensureShibarium(eth) {
+      const providerEth = eth || ethereum || getEthereumProvider();
+      if (!providerEth) throw new Error("No wallet found. Install MetaMask.");
+
+      const chainId = await providerEth.request({ method: "eth_chainId" });
+      const idNum = parseInt(chainId, 16);
+      if (chainId.toLowerCase() === CONFIG.chainIdHex || idNum === CONFIG.chainId) {
         $("netWarn").classList.remove("show");
         return true;
       }
+
       $("netWarn").classList.add("show");
       try {
-        await window.ethereum.request({
+        await providerEth.request({
           method: "wallet_switchEthereumChain",
           params: [{ chainId: CONFIG.chainIdHex }]
         });
         $("netWarn").classList.remove("show");
         return true;
       } catch (err) {
-        if (err.code === 4902) {
-          await window.ethereum.request({
+        // 4902 = chain not added
+        if (err.code === 4902 || /Unrecognized chain|not been added/i.test(err.message || "")) {
+          await providerEth.request({
             method: "wallet_addEthereumChain",
             params: [{
               chainId: CONFIG.chainIdHex,
@@ -843,25 +882,45 @@
           $("netWarn").classList.remove("show");
           return true;
         }
+        // User rejected switch — still allow connect; launch will re-check
+        if (err.code === 4001) {
+          setStatus("err", "Please switch MetaMask to Shibarium (chain ID 109) to launch.");
+          return false;
+        }
         throw err;
       }
     }
 
-    function factoryConfigured() {
-      return CONFIG.factory && CONFIG.factory.startsWith("0x") && CONFIG.factory.length === 42;
-    }
-
     async function loadFeeAndBalances() {
-      if (!provider || !account || !factoryConfigured()) return;
+      if (!provider || !account || !factoryConfigured()) {
+        if (account && factoryConfigured() === false) setFeeUiFree();
+        return;
+      }
       try {
-        const ric = new ethers.Contract(CONFIG.ric, ERC20_ABI, provider);
         const factory = new ethers.Contract(CONFIG.factory, FACTORY_ABI, provider);
-        ricDecimals = Number(await ric.decimals());
+
+        // Detect V2 (has LAUNCH_FEE) vs V1 (free)
         try {
           launchFeeWei = await factory.LAUNCH_FEE();
+          feeRequired = launchFeeWei > 0n;
         } catch {
-          launchFeeWei = ethers.parseUnits(String(CONFIG.launchFeeWhole), ricDecimals);
+          feeRequired = false;
+          launchFeeWei = 0n;
         }
+
+        if (!feeRequired) {
+          setFeeUiFree();
+          return;
+        }
+
+        setFeeUiPaid();
+        const ric = new ethers.Contract(CONFIG.ric, ERC20_ABI, provider);
+        try {
+          ricDecimals = Number(await ric.decimals());
+        } catch {
+          ricDecimals = 18;
+        }
+
         const [bal, allowance] = await Promise.all([
           ric.balanceOf(account),
           ric.allowance(account, CONFIG.factory)
@@ -882,53 +941,91 @@
           $("launchBtn").textContent = "Approve RIC first";
         }
         if (bal < launchFeeWei) {
-          setStatus("err", "You need at least 100 RIC in this wallet to launch. Buy RIC on RicSwap, then refresh.");
+          setStatus("err", "You need at least 100 RIC in this wallet to launch on the fee factory.");
         }
       } catch (e) {
-        console.error(e);
-        $("ricBalance").textContent = "—";
-        $("ricAllowance").textContent = "—";
+        console.error("loadFeeAndBalances", e);
+        // Still allow free launch path if reads fail
+        setFeeUiFree();
       }
     }
 
     async function connectWallet() {
-      if (!window.ethereum) {
-        setStatus("err", "No Web3 wallet detected. Install MetaMask, then refresh.");
-        return;
-      }
-      if (!factoryConfigured()) {
-        setStatus("err", "Factory V2 address not set yet. Deploy LaunchpadFactoryV2, then put its address in CONFIG.factory inside launchpad.html.");
-        return;
-      }
       try {
-        await ensureShibarium();
-        provider = new ethers.BrowserProvider(window.ethereum);
-        await provider.send("eth_requestAccounts", []);
+        if (typeof ethers === "undefined") {
+          setStatus("err", "ethers.js failed to load. Check your internet connection and refresh.");
+          return;
+        }
+
+        ethereum = getEthereumProvider();
+        if (!ethereum) {
+          setStatus(
+            "err",
+            "No Web3 wallet found. Install <a href=\"https://metamask.io\" target=\"_blank\" rel=\"noopener\">MetaMask</a>, unlock it, then refresh. " +
+            (location.protocol === "file:"
+              ? "<br/><strong>Tip:</strong> Opening this file via file:// sometimes blocks wallets. Serve it over http://localhost or upload to ricswap.com (https)."
+              : "")
+          );
+          return;
+        }
+
+        // 1) Request accounts first (shows MetaMask popup)
+        setStatus("info", "Check your wallet popup to connect…");
+        const accounts = await ethereum.request({ method: "eth_requestAccounts" });
+        if (!accounts || !accounts.length) {
+          setStatus("err", "No account returned. Unlock your wallet and try again.");
+          return;
+        }
+
+        // 2) Then switch / add Shibarium (non-fatal if user cancels)
+        try {
+          await ensureShibarium(ethereum);
+        } catch (netErr) {
+          console.warn(netErr);
+          $("netWarn").classList.add("show");
+        }
+
+        provider = new ethers.BrowserProvider(ethereum, "any");
         signer = await provider.getSigner();
         account = await signer.getAddress();
+
         $("connectBtn").textContent = shortAddr(account);
         $("connectBtn").classList.add("connected");
+        $("launchBtn").disabled = false;
+        $("launchBtn").textContent = "Launch token";
         clearStatus();
+        setStatus("ok", "Wallet connected: " + shortAddr(account));
+
         await loadFeeAndBalances();
       } catch (e) {
-        setStatus("err", e.shortMessage || e.message || String(e));
+        console.error(e);
+        const msg = e.shortMessage || e.message || String(e);
+        if (/user rejected|denied|ACTION_REJECTED|4001/i.test(msg)) {
+          setStatus("err", "Connection rejected in wallet. Click Connect again and approve.");
+        } else {
+          setStatus("err", msg);
+        }
       }
     }
 
     async function approveRic() {
       try {
+        if (!feeRequired) {
+          setStatus("info", "Current factory does not charge RIC. You can launch directly.");
+          return;
+        }
         if (!signer) await connectWallet();
         if (!signer) return;
-        await ensureShibarium();
-        provider = new ethers.BrowserProvider(window.ethereum);
+        ethereum = getEthereumProvider();
+        await ensureShibarium(ethereum);
+        provider = new ethers.BrowserProvider(ethereum, "any");
         signer = await provider.getSigner();
         const ric = new ethers.Contract(CONFIG.ric, ERC20_ABI, signer);
-        if (!launchFeeWei) {
+        if (!launchFeeWei || launchFeeWei === 0n) {
           launchFeeWei = ethers.parseUnits(String(CONFIG.launchFeeWhole), ricDecimals);
         }
         setStatus("info", "Approve 100 RIC spending in your wallet…");
         $("approveBtn").disabled = true;
-        // Reset to 0 first if needed for some tokens; RIC is standard OZ-style usually OK
         const tx = await ric.approve(CONFIG.factory, launchFeeWei);
         setStatus("info", `Approval submitted… <a href="${explorerTx(tx.hash)}" target="_blank" rel="noopener">${shortAddr(tx.hash)}</a>`);
         await tx.wait();
@@ -998,32 +1095,44 @@
 
       try {
         if (!factoryConfigured()) {
-          throw new Error("Set CONFIG.factory to your LaunchpadFactoryV2 address first.");
+          throw new Error("Factory address is missing in CONFIG.factory.");
         }
         if (!signer || !account) {
           await connectWallet();
           if (!signer) return;
         }
-        await ensureShibarium();
-        provider = new ethers.BrowserProvider(window.ethereum);
+
+        ethereum = getEthereumProvider();
+        const onShib = await ensureShibarium(ethereum);
+        if (!onShib) throw new Error("Switch to Shibarium (109) to launch.");
+
+        provider = new ethers.BrowserProvider(ethereum, "any");
         signer = await provider.getSigner();
         account = await signer.getAddress();
         await loadFeeAndBalances();
 
-        if (!hasAllowance) {
+        if (feeRequired && !hasAllowance) {
           throw new Error("Approve 100 RIC first, then launch.");
         }
 
         const form = validateForm();
-        const ric = new ethers.Contract(CONFIG.ric, ERC20_ABI, provider);
-        const bal = await ric.balanceOf(account);
-        if (bal < launchFeeWei) {
-          throw new Error("Insufficient RIC. You need 100 RIC to launch.");
+
+        if (feeRequired && launchFeeWei > 0n) {
+          const ric = new ethers.Contract(CONFIG.ric, ERC20_ABI, provider);
+          const bal = await ric.balanceOf(account);
+          if (bal < launchFeeWei) {
+            throw new Error("Insufficient RIC. You need 100 RIC to launch.");
+          }
         }
 
         const factory = new ethers.Contract(CONFIG.factory, FACTORY_ABI, signer);
 
-        setStatus("info", "Confirm launch in your wallet (100 RIC fee + BONE for LP)…");
+        setStatus(
+          "info",
+          feeRequired
+            ? "Confirm launch in your wallet (100 RIC fee + BONE for LP)…"
+            : "Confirm launch in your wallet (BONE for LP)…"
+        );
         $("launchBtn").disabled = true;
         $("launchBtn").textContent = "Waiting for wallet…";
 
@@ -1073,18 +1182,20 @@
           $("resUnlock").textContent = unlockLabel;
           $("resTx").innerHTML = `<a href="${explorerTx(receipt.hash)}" target="_blank" rel="noopener">${receipt.hash}</a>`;
           $("result").classList.add("show");
-          const burnMsg = burned != null
-            ? ` 50 RIC burned (${ethers.formatUnits(burned, ricDecimals)}).`
-            : " 50% of RIC fee burned.";
-          setStatus("ok", `Success! Token + locked LP live.` + burnMsg + ` You never received LP tokens.`);
+          let extra = " You never received LP tokens.";
+          if (burned != null) {
+            extra = ` ${ethers.formatUnits(burned, ricDecimals)} RIC burned.` + extra;
+          }
+          setStatus("ok", "Success! Token + locked LP live." + extra);
         }
         await loadFeeAndBalances();
       } catch (err) {
         console.error(err);
         setStatus("err", decodeLaunchError(err));
       } finally {
-        await loadFeeAndBalances();
-        if (!account) {
+        if (account) {
+          await loadFeeAndBalances();
+        } else {
           $("launchBtn").disabled = true;
           $("launchBtn").textContent = "Connect wallet to launch";
         }
@@ -1092,17 +1203,25 @@
     }
 
     // ---- wire UI ----
-    $("footerFactory").textContent = factoryConfigured() ? CONFIG.factory : "(set V2 factory address)";
-    $("connectBtn").addEventListener("click", connectWallet);
-    $("approveBtn").addEventListener("click", approveRic);
+    $("footerFactory").textContent = CONFIG.factory;
+    $("connectBtn").addEventListener("click", (ev) => {
+      ev.preventDefault();
+      connectWallet();
+    });
+    $("approveBtn").addEventListener("click", (ev) => {
+      ev.preventDefault();
+      approveRic();
+    });
     $("switchNetBtn").addEventListener("click", async () => {
-      try { await ensureShibarium(); await loadFeeAndBalances(); } catch (e) { setStatus("err", e.message || String(e)); }
+      try {
+        ethereum = getEthereumProvider();
+        await ensureShibarium(ethereum);
+        if (account) await loadFeeAndBalances();
+      } catch (e) {
+        setStatus("err", e.message || String(e));
+      }
     });
     $("launchForm").addEventListener("submit", onLaunch);
-
-    if (!factoryConfigured()) {
-      setStatus("info", "Deploy <strong>LaunchpadFactoryV2</strong>, then set <code>CONFIG.factory</code> in this file to the new address. See RIC_FEE_DESIGN.md.");
-    }
     $("teamBps").addEventListener("input", updatePreview);
     $("totalSupply").addEventListener("input", updatePreview);
     $("boneAmount").addEventListener("input", updatePreview);
@@ -1111,23 +1230,42 @@
       chip.addEventListener("click", () => setLock(chip.dataset.lock));
     });
 
-    if (window.ethereum) {
-      window.ethereum.on?.("accountsChanged", (accs) => {
+    function bindWalletEvents(eth) {
+      if (!eth || !eth.on) return;
+      eth.on("accountsChanged", (accs) => {
         if (!accs || accs.length === 0) {
           account = null;
           signer = null;
+          provider = null;
           $("connectBtn").textContent = "Connect wallet";
           $("connectBtn").classList.remove("connected");
           $("launchBtn").disabled = true;
           $("launchBtn").textContent = "Connect wallet to launch";
+          setStatus("info", "Wallet disconnected.");
         } else {
           connectWallet();
         }
       });
-      window.ethereum.on?.("chainChanged", () => window.location.reload());
+      eth.on("chainChanged", () => {
+        // Soft refresh provider state without full reload when possible
+        connectWallet();
+      });
     }
 
+    // Init
     updatePreview();
+    if (typeof ethers === "undefined") {
+      setStatus("err", "ethers.js did not load. Allow CDN scripts or check network, then refresh.");
+    } else {
+      ethereum = getEthereumProvider();
+      bindWalletEvents(ethereum);
+      if (location.protocol === "file:") {
+        setStatus(
+          "info",
+          "Opened as a local file. If Connect does nothing, run a local server or open via <strong>https://ricswap.com/launchpad.html</strong>."
+        );
+      }
+    }
   </script>
 </body>
 </html>
