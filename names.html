@@ -262,6 +262,52 @@
     .tier-table th { color: var(--muted); font-weight: 600; }
     .tier-table td:last-child, .tier-table th:last-child { text-align: right; }
     .mono { font-family: "JetBrains Mono", monospace; }
+    .dev-section {
+      margin-top: 28px;
+      padding: 22px;
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      background: linear-gradient(180deg, rgba(255,255,255,0.03), transparent 40%), var(--bg2);
+      box-shadow: var(--shadow);
+    }
+    .dev-section h3 {
+      font-size: 1rem; margin-bottom: 8px; letter-spacing: -0.01em;
+    }
+    .dev-section > p {
+      color: var(--muted); font-size: 0.9rem; margin-bottom: 14px; max-width: 720px;
+    }
+    .dev-grid {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px;
+    }
+    @media (max-width: 700px) { .dev-grid { grid-template-columns: 1fr; } }
+    .dev-row {
+      display: flex; flex-direction: column; gap: 4px;
+      padding: 10px 12px; border-radius: 12px; background: var(--bg);
+      border: 1px solid var(--border);
+    }
+    .dev-row span { font-size: 0.75rem; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
+    .dev-row code {
+      font-family: "JetBrains Mono", monospace; font-size: 0.72rem; color: #c8cde0;
+      word-break: break-all; line-height: 1.4;
+    }
+    .dev-section pre {
+      margin: 0; padding: 14px; border-radius: 12px; background: #080a10;
+      border: 1px solid var(--border); overflow-x: auto;
+      font-family: "JetBrains Mono", monospace; font-size: 0.72rem;
+      color: #b8c0d4; line-height: 1.45; white-space: pre;
+    }
+    .dev-actions {
+      display: flex; flex-wrap: wrap; gap: 10px; margin: 12px 0 10px; align-items: center;
+    }
+    .dev-actions button {
+      border: 1px solid rgba(245,166,35,0.45); background: transparent; color: var(--accent);
+      border-radius: 999px; padding: 8px 14px; font: inherit; font-weight: 700;
+      font-size: 0.82rem; cursor: pointer;
+    }
+    .dev-actions button:hover { background: rgba(245,166,35,0.12); }
+    .dev-actions a {
+      font-size: 0.85rem; font-weight: 600;
+    }
   </style>
 </head>
 <body>
@@ -319,7 +365,7 @@
             <label>Name <span class="hint">a–z, 0–9, hyphen · 3–32 chars</span></label>
             <div class="input-suffix">
               <input id="mintLabel" type="text" autocomplete="off" spellcheck="false"
-                     placeholder="Elon" maxlength="32" />
+                     placeholder="tommy" maxlength="32" />
               <span class="sfx">.ric</span>
             </div>
           </div>
@@ -455,7 +501,7 @@
             <label>Your name</label>
             <div class="input-suffix">
               <input id="primaryLabel" type="text" autocomplete="off" spellcheck="false"
-                     placeholder="Elon" maxlength="32" />
+                     placeholder="tommy" maxlength="32" />
               <span class="sfx">.ric</span>
             </div>
           </div>
@@ -480,13 +526,80 @@
       </div>
     </div>
 
+    <!-- ═══════════ FOR DEVELOPERS ═══════════ -->
+    <section class="dev-section" id="developers">
+      <h3>For developers — resolve <span class="mono">*.ric</span></h3>
+      <p>
+        Wallets and dApps can resolve names on Shibarium with no API key.
+        Call the resolver; always show the full <span class="mono">0x…</span> before sending.
+        Full write-up: <a href="sns/INTEGRATION.md">sns/INTEGRATION.md</a>
+      </p>
+      <div class="dev-grid">
+        <div class="dev-row">
+          <span>Chain</span>
+          <code>Shibarium · 109 (0x6d)</code>
+        </div>
+        <div class="dev-row">
+          <span>TLD node namehash("ric")</span>
+          <code>0xd08a790ab3e21305fa5c768150b5940f292548d6f0cff5c158788a20e3df6218</code>
+        </div>
+        <div class="dev-row">
+          <span>Registry</span>
+          <code id="devReg">0x9689B3d52c8EC938D17B211c47B18F8C546aBC2b</code>
+        </div>
+        <div class="dev-row">
+          <span>Resolver (use this for addr)</span>
+          <code id="devRes">0xE21b46f1161793644468ffF7b1c6aebc87a2F231</code>
+        </div>
+        <div class="dev-row">
+          <span>Registrar V2 (mint)</span>
+          <code id="devRar">0x6A19491B4136cC335EF44af9D36fB30e31909534</code>
+        </div>
+        <div class="dev-row">
+          <span>RPC</span>
+          <code>https://www.shibrpc.com</code>
+        </div>
+      </div>
+      <div class="dev-actions">
+        <button type="button" onclick="window.ricCopyResolve && window.ricCopyResolve(); return false;">Copy resolve snippet</button>
+        <button type="button" onclick="window.ricCopyAddrs && window.ricCopyAddrs(); return false;">Copy addresses</button>
+        <a href="sns/INTEGRATION.md">Open INTEGRATION.md →</a>
+      </div>
+      <pre id="devSnippet" tabindex="0">// ethers v6 — resolve "alice.ric" → 0x…
+const TLD = "0xd08a790ab3e21305fa5c768150b5940f292548d6f0cff5c158788a20e3df6218";
+const RESOLVER = "0xE21b46f1161793644468ffF7b1c6aebc87a2F231";
+
+async function resolveRic(name, provider) {
+  const label = name.trim().toLowerCase().replace(/\.ric$/, "");
+  const node = ethers.keccak256(ethers.concat([
+    TLD,
+    ethers.keccak256(ethers.toUtf8Bytes(label))
+  ]));
+  const resolver = new ethers.Contract(
+    RESOLVER,
+    ["function addr(bytes32) view returns (address)"],
+    provider
+  );
+  const addr = await resolver.addr(node);
+  return addr === ethers.ZeroAddress ? null : addr;
+}
+
+// const provider = new ethers.JsonRpcProvider("https://www.shibrpc.com", 109);
+// const to = await resolveRic("alice.ric", provider);</pre>
+      <p id="devCopyStatus" style="margin-top:10px;font-size:0.82rem;color:var(--muted);min-height:1.2em"></p>
+    </section>
+
     <footer>
       <p>
         Registry <code id="ftReg">—</code><br />
         Resolver <code id="ftRes">—</code><br />
         Registrar <code id="ftRar">—</code>
       </p>
-      <p style="margin-top:10px">Shibarium · RicSwap Name Service · one-time RIC fee</p>
+      <p style="margin-top:10px">
+        Shibarium · RicSwap Name Service · one-time RIC fee ·
+        <a href="#developers">For developers</a> ·
+        <a href="sns/INTEGRATION.md">INTEGRATION.md</a>
+      </p>
     </footer>
   </div>
 
@@ -1232,10 +1345,53 @@
     $("ftReg").textContent = CONFIG.registry;
     $("ftRes").textContent = CONFIG.resolver;
     $("ftRar").textContent = CONFIG.registrar;
+    if ($("devReg")) $("devReg").textContent = CONFIG.registry;
+    if ($("devRes")) $("devRes").textContent = CONFIG.resolver;
+    if ($("devRar")) $("devRar").textContent = CONFIG.registrar;
     $("sideRegistrar").innerHTML =
       "<a href=\"" + explorerAddress(CONFIG.registrar) + "\" target=\"_blank\" rel=\"noopener\">" +
       shortAddr(CONFIG.registrar) + "</a>";
   }
+
+  function copyText(text, okMsg) {
+    var status = $("devCopyStatus");
+    function done(ok) {
+      if (status) {
+        status.style.color = ok ? "var(--green)" : "var(--red)";
+        status.textContent = ok ? okMsg : "Copy failed — select the snippet manually.";
+      }
+    }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(function () { done(true); }).catch(function () { done(false); });
+    } else {
+      try {
+        var ta = document.createElement("textarea");
+        ta.value = text;
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand("copy");
+        document.body.removeChild(ta);
+        done(true);
+      } catch (e) {
+        done(false);
+      }
+    }
+  }
+
+  window.ricCopyResolve = function () {
+    var pre = $("devSnippet");
+    copyText(pre ? pre.textContent : "", "Resolve snippet copied.");
+  };
+  window.ricCopyAddrs = function () {
+    var text =
+      "Shibarium (109)\n" +
+      "RICRegistry:  " + CONFIG.registry + "\n" +
+      "RICResolver:  " + CONFIG.resolver + "\n" +
+      "RICRegistrarV2: " + CONFIG.registrar + "\n" +
+      "namehash(ric): " + CONFIG.tldNode + "\n" +
+      "Docs: sns/INTEGRATION.md\n";
+    copyText(text, "Addresses copied — paste into Discord / GitHub / DMs.");
+  };
 
   function bindEvents() {
     $("mintLabel").addEventListener("input", scheduleMintCheck);
