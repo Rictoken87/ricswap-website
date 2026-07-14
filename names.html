@@ -1,0 +1,1282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>RicSwap Names — *.ric on Shibarium</title>
+  <meta name="description" content="Mint yourname.ric and send tokens to names on Shibarium. Pay once in RIC." />
+  <link rel="icon" type="image/png" href="riclogo.png" />
+  <link rel="apple-touch-icon" href="riclogo.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #0b0d12;
+      --bg2: #12161f;
+      --bg3: #1a2030;
+      --border: rgba(255,255,255,0.08);
+      --border-strong: rgba(255,255,255,0.14);
+      --text: #f2f4f8;
+      --muted: #8b93a7;
+      --accent: #f5a623;
+      --accent2: #ff6b35;
+      --green: #3dd68c;
+      --red: #ff5c6c;
+      --blue: #5b8cff;
+      --radius: 16px;
+      --shadow: 0 20px 60px rgba(0,0,0,0.45);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: "DM Sans", system-ui, sans-serif;
+      background:
+        radial-gradient(1200px 600px at 10% -10%, rgba(245,166,35,0.12), transparent 50%),
+        radial-gradient(900px 500px at 100% 0%, rgba(255,107,53,0.08), transparent 45%),
+        var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      line-height: 1.5;
+    }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .wrap { max-width: 1080px; margin: 0 auto; padding: 24px 20px 80px; }
+    header {
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 16px; padding: 8px 0 28px; flex-wrap: wrap;
+    }
+    .brand { display: flex; align-items: center; gap: 12px; }
+    .brand img.logo-img {
+      width: 42px; height: 42px; border-radius: 12px; object-fit: cover;
+      box-shadow: 0 8px 24px rgba(245,166,35,0.25); display: block;
+      background: var(--bg3);
+    }
+    .brand h1 { font-size: 1.15rem; font-weight: 700; letter-spacing: -0.02em; }
+    .brand p { font-size: 0.8rem; color: var(--muted); }
+    .header-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    .nav-link {
+      color: var(--muted); font-size: 0.88rem; font-weight: 600;
+      padding: 8px 12px; border-radius: 999px; border: 1px solid transparent;
+    }
+    .nav-link:hover { color: var(--text); text-decoration: none; border-color: var(--border); }
+    .wallet-btn {
+      border: 1px solid var(--border-strong); background: var(--bg3); color: var(--text);
+      border-radius: 999px; padding: 10px 18px; font: inherit; font-weight: 600;
+      font-size: 0.9rem; cursor: pointer; transition: 0.15s ease;
+    }
+    .wallet-btn:hover { border-color: var(--accent); color: var(--accent); }
+    .wallet-btn.connected {
+      background: rgba(61,214,140,0.1); border-color: rgba(61,214,140,0.35); color: var(--green);
+    }
+    .hero { margin-bottom: 22px; }
+    .hero h2 {
+      font-size: clamp(1.6rem, 3vw, 2.2rem); letter-spacing: -0.03em; margin-bottom: 10px;
+    }
+    .hero p { color: var(--muted); max-width: 640px; font-size: 1.02rem; }
+    .pills { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
+    .pill {
+      font-size: 0.78rem; font-weight: 600; padding: 6px 12px; border-radius: 999px;
+      background: rgba(245,166,35,0.1); color: var(--accent);
+      border: 1px solid rgba(245,166,35,0.22);
+    }
+    .tabs {
+      display: flex; gap: 8px; margin-bottom: 18px; flex-wrap: wrap;
+    }
+    .tab {
+      border: 1px solid var(--border-strong); background: var(--bg2); color: var(--muted);
+      border-radius: 999px; padding: 10px 18px; font: inherit; font-weight: 700;
+      font-size: 0.9rem; cursor: pointer;
+    }
+    .tab:hover { color: var(--text); border-color: var(--accent); }
+    .tab.active {
+      color: #111; background: linear-gradient(135deg, var(--accent), var(--accent2));
+      border-color: transparent;
+    }
+    .panel { display: none; }
+    .panel.active { display: block; }
+    .grid {
+      display: grid; grid-template-columns: 1.35fr 0.9fr; gap: 20px;
+    }
+    @media (max-width: 900px) { .grid { grid-template-columns: 1fr; } }
+    .card {
+      background: linear-gradient(180deg, rgba(255,255,255,0.03), transparent 40%), var(--bg2);
+      border: 1px solid var(--border); border-radius: var(--radius);
+      box-shadow: var(--shadow); padding: 22px;
+    }
+    .card h3 { font-size: 1rem; margin-bottom: 16px; letter-spacing: -0.01em; }
+    .field { margin-bottom: 14px; }
+    .field label {
+      display: flex; justify-content: space-between; align-items: baseline; gap: 8px;
+      font-size: 0.82rem; font-weight: 600; color: var(--muted); margin-bottom: 6px;
+    }
+    .field label span.hint { font-weight: 500; font-size: 0.75rem; opacity: 0.85; }
+    .field input, .field select {
+      width: 100%; background: var(--bg); border: 1px solid var(--border-strong);
+      color: var(--text); border-radius: 12px; padding: 12px 14px; font: inherit;
+      font-size: 0.95rem; outline: none;
+    }
+    .field input:focus, .field select:focus { border-color: var(--accent); }
+    .input-suffix {
+      display: flex; align-items: stretch; gap: 0;
+      border: 1px solid var(--border-strong); border-radius: 12px; overflow: hidden;
+      background: var(--bg);
+    }
+    .input-suffix input {
+      border: none; border-radius: 0; flex: 1; min-width: 0;
+    }
+    .input-suffix .sfx {
+      display: flex; align-items: center; padding: 0 14px;
+      font-family: "JetBrains Mono", monospace; font-size: 0.9rem;
+      color: var(--accent); background: rgba(245,166,35,0.08);
+      border-left: 1px solid var(--border-strong); font-weight: 600;
+    }
+    .preview {
+      margin: 4px 0 14px; font-family: "JetBrains Mono", monospace;
+      font-size: 1.05rem; color: var(--accent); font-weight: 600;
+      min-height: 1.4em;
+    }
+    .status-line {
+      font-size: 0.88rem; color: var(--muted); margin-bottom: 12px; min-height: 1.4em;
+    }
+    .status-line.ok { color: var(--green); }
+    .status-line.bad { color: var(--red); }
+    .status-line.warn { color: var(--accent); }
+    .fee-box {
+      margin: 12px 0 14px; padding: 14px; border-radius: 14px;
+      border: 1px solid rgba(245,166,35,0.28); background: rgba(245,166,35,0.06);
+    }
+    .fee-title { font-weight: 700; font-size: 0.95rem; margin-bottom: 10px; color: var(--accent); }
+    .fee-row {
+      display: flex; justify-content: space-between; gap: 10px;
+      font-size: 0.86rem; padding: 4px 0; color: var(--muted);
+    }
+    .fee-row strong {
+      color: var(--text); font-family: "JetBrains Mono", monospace;
+      font-weight: 500; text-align: right;
+    }
+    .fee-note { margin-top: 10px; font-size: 0.78rem; color: var(--muted); line-height: 1.45; }
+    .submit {
+      width: 100%; margin-top: 8px; border: none; border-radius: 14px;
+      padding: 15px 18px; font: inherit; font-weight: 700; font-size: 1rem;
+      cursor: pointer; color: #111;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      box-shadow: 0 10px 30px rgba(245,166,35,0.25);
+      transition: transform 0.12s, opacity 0.12s;
+    }
+    .submit:hover:not(:disabled) { transform: translateY(-1px); }
+    .submit:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
+    .approve-btn {
+      width: 100%; margin-top: 12px; border: 1px solid rgba(245,166,35,0.45);
+      background: transparent; color: var(--accent); border-radius: 12px;
+      padding: 12px; font: inherit; font-weight: 700; cursor: pointer;
+    }
+    .approve-btn:hover:not(:disabled) { background: rgba(245,166,35,0.12); }
+    .approve-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+    .approve-btn.ready { border-color: rgba(61,214,140,0.45); color: var(--green); }
+    .side .stat {
+      display: flex; justify-content: space-between; gap: 12px;
+      padding: 10px 0; border-bottom: 1px solid var(--border); font-size: 0.9rem;
+    }
+    .side .stat:last-child { border-bottom: none; }
+    .side .stat span:first-child { color: var(--muted); }
+    .side .stat strong {
+      font-family: "JetBrains Mono", monospace; font-weight: 500;
+      text-align: right; word-break: break-all;
+    }
+    .guarantees { list-style: none; font-size: 0.86rem; color: var(--muted); }
+    .guarantees li {
+      padding: 8px 0; border-bottom: 1px solid var(--border);
+      display: flex; gap: 10px; align-items: flex-start;
+    }
+    .guarantees li:last-child { border-bottom: none; }
+    .guarantees li::before {
+      content: "✓"; color: var(--green); font-weight: 700; flex-shrink: 0;
+    }
+    .status {
+      margin-top: 14px; padding: 12px 14px; border-radius: 12px;
+      font-size: 0.88rem; display: none; word-break: break-word;
+    }
+    .status.show { display: block; }
+    .status.info {
+      background: rgba(91,140,255,0.1); border: 1px solid rgba(91,140,255,0.3); color: #b8c9ff;
+    }
+    .status.ok {
+      background: rgba(61,214,140,0.1); border: 1px solid rgba(61,214,140,0.3); color: #b6f5d2;
+    }
+    .status.err {
+      background: rgba(255,92,108,0.1); border: 1px solid rgba(255,92,108,0.3); color: #ffc0c6;
+    }
+    .resolve-box {
+      margin: 12px 0 16px; padding: 14px; border-radius: 14px;
+      border: 1px solid var(--border); background: var(--bg);
+    }
+    .resolve-box .label { font-size: 0.78rem; color: var(--muted); margin-bottom: 4px; }
+    .resolve-box .addr {
+      font-family: "JetBrains Mono", monospace; font-size: 0.88rem;
+      word-break: break-all; color: var(--text);
+    }
+    .resolve-box.ok { border-color: rgba(61,214,140,0.35); }
+    .resolve-box.bad { border-color: rgba(255,92,108,0.35); }
+    .row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    @media (max-width: 560px) { .row { grid-template-columns: 1fr; } }
+    .net-warn {
+      display: none; margin-bottom: 16px; padding: 12px 14px; border-radius: 12px;
+      background: rgba(255,92,108,0.1); border: 1px solid rgba(255,92,108,0.35);
+      color: #ffc0c6; font-size: 0.88rem;
+    }
+    .net-warn.show {
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 12px; flex-wrap: wrap;
+    }
+    .net-warn button {
+      border: 1px solid rgba(255,92,108,0.5); background: transparent; color: #ffc0c6;
+      border-radius: 999px; padding: 8px 14px; font: inherit; font-weight: 600;
+      font-size: 0.82rem; cursor: pointer;
+    }
+    #walletStatus {
+      margin: 0 0 16px; padding: 10px 14px; border-radius: 12px;
+      font-size: 0.86rem; display: none; word-break: break-word;
+    }
+    #walletStatus.show { display: block; }
+    #walletStatus.info {
+      background: rgba(91,140,255,0.12); border: 1px solid rgba(91,140,255,0.3); color: #b8c9ff;
+    }
+    #walletStatus.ok {
+      background: rgba(61,214,140,0.12); border: 1px solid rgba(61,214,140,0.3); color: #b6f5d2;
+    }
+    #walletStatus.err {
+      background: rgba(255,92,108,0.12); border: 1px solid rgba(255,92,108,0.3); color: #ffc0c6;
+    }
+    footer {
+      margin-top: 36px; text-align: center; color: var(--muted); font-size: 0.8rem;
+    }
+    footer code {
+      font-family: "JetBrains Mono", monospace; font-size: 0.72rem; color: #aab2c5;
+    }
+    .tier-table {
+      width: 100%; border-collapse: collapse; font-size: 0.84rem; margin-top: 8px;
+    }
+    .tier-table th, .tier-table td {
+      text-align: left; padding: 8px 0; border-bottom: 1px solid var(--border);
+    }
+    .tier-table th { color: var(--muted); font-weight: 600; }
+    .tier-table td:last-child, .tier-table th:last-child { text-align: right; }
+    .mono { font-family: "JetBrains Mono", monospace; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div class="brand">
+        <img class="logo-img" src="riclogo.png" alt="RicSwap logo" width="42" height="42"
+             onerror="this.onerror=null;this.src='https://raw.githubusercontent.com/Rictoken87/ricswap-website/main/riclogo.png'" />
+        <div>
+          <h1>RicSwap Names</h1>
+          <p>*.ric on Shibarium · pay once in RIC</p>
+        </div>
+      </div>
+      <div class="header-actions">
+        <a class="nav-link" href="launchpad.html">Launchpad</a>
+        <a class="nav-link" href="index.html">Home</a>
+        <button type="button" class="wallet-btn" id="connectBtn" onclick="window.ricConnect && window.ricConnect(); return false;">Connect wallet</button>
+      </div>
+    </header>
+
+    <div id="walletStatus" role="status" aria-live="polite"></div>
+
+    <div id="netWarn" class="net-warn">
+      <span>Switch to <strong>Shibarium</strong> (chain 109) to use names.</span>
+      <button type="button" onclick="window.ricSwitchNet && window.ricSwitchNet(); return false;">Switch network</button>
+    </div>
+
+    <section class="hero">
+      <h2>Your name on Shibarium</h2>
+      <p>
+        Mint <strong>name.ric</strong> once, then send assets to people by name — not only by hex.
+        Fees are length-based and paid only in <strong>RIC</strong> (50% burned).
+      </p>
+      <div class="pills">
+        <span class="pill">5+ letters · 50 RIC</span>
+        <span class="pill">4 letters · 300 RIC</span>
+        <span class="pill">3 letters · 1,000 RIC</span>
+        <span class="pill">1–2 letters · premium (manual)</span>
+        <span class="pill">No yearly renewal</span>
+      </div>
+    </section>
+
+    <div class="tabs" role="tablist">
+      <button type="button" class="tab active" data-tab="mint" onclick="window.ricTab('mint')">Mint name</button>
+      <button type="button" class="tab" data-tab="send" onclick="window.ricTab('send')">Send to name</button>
+      <button type="button" class="tab" data-tab="primary" onclick="window.ricTab('primary')">Set primary</button>
+    </div>
+
+    <!-- ═══════════ MINT ═══════════ -->
+    <div id="panel-mint" class="panel active">
+      <div class="grid">
+        <div class="card">
+          <h3>Register a name</h3>
+          <div class="field">
+            <label>Name <span class="hint">a–z, 0–9, hyphen · 3–32 chars</span></label>
+            <div class="input-suffix">
+              <input id="mintLabel" type="text" autocomplete="off" spellcheck="false"
+                     placeholder="tommy" maxlength="32" />
+              <span class="sfx">.ric</span>
+            </div>
+          </div>
+          <div class="preview" id="mintPreview">—.ric</div>
+          <div class="status-line" id="mintAvail">Type a name to check availability &amp; price.</div>
+
+          <div class="fee-box">
+            <div class="fee-title">Registration fee</div>
+            <div class="fee-row"><span>Price</span><strong id="mintPrice">—</strong></div>
+            <div class="fee-row"><span>Your RIC balance</span><strong id="ricBalance">—</strong></div>
+            <div class="fee-row"><span>Allowance</span><strong id="ricAllowance">—</strong></div>
+            <div class="fee-row"><span>Burn / treasury</span><strong>50% / 50%</strong></div>
+            <p class="fee-note">One-time fee. Name stays yours until you transfer it. No yearly renewal.</p>
+          </div>
+
+          <button type="button" class="approve-btn" id="approveBtn" disabled
+                  onclick="window.ricApprove && window.ricApprove(); return false;">
+            1. Approve RIC
+          </button>
+          <button type="button" class="submit" id="mintBtn" disabled
+                  onclick="window.ricMint && window.ricMint(); return false;">
+            2. Mint name
+          </button>
+          <div id="mintStatus" class="status"></div>
+        </div>
+
+        <div class="card side">
+          <h3>How it works</h3>
+          <ul class="guarantees">
+            <li>Pay once in RIC — no annual renewal</li>
+            <li>Name resolves to your wallet address</li>
+            <li>Use it in RicSwap to send to friends by name</li>
+            <li>Short names cost more (status / scarcity)</li>
+          </ul>
+          <table class="tier-table">
+            <thead>
+              <tr><th>Length</th><th>Fee</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>5+ letters</td><td class="mono">50 RIC</td></tr>
+              <tr><td>4 letters</td><td class="mono">300 RIC</td></tr>
+              <tr><td>3 letters</td><td class="mono">1,000 RIC</td></tr>
+              <tr><td>1–2 letters</td><td class="mono">Premium · request</td></tr>
+            </tbody>
+          </table>
+          <div class="stat" style="margin-top:16px; border-top:1px solid var(--border); padding-top:12px;">
+            <span>Registrar</span>
+            <strong id="sideRegistrar">—</strong>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════ SEND ═══════════ -->
+    <div id="panel-send" class="panel">
+      <div class="grid">
+        <div class="card">
+          <h3>Send to a name</h3>
+          <div class="field">
+            <label>Recipient <span class="hint">name only or name.ric</span></label>
+            <div class="input-suffix">
+              <input id="sendName" type="text" autocomplete="off" spellcheck="false"
+                     placeholder="alice" maxlength="40" />
+              <span class="sfx">.ric</span>
+            </div>
+          </div>
+          <div class="preview" id="sendPreview">—.ric</div>
+
+          <div class="resolve-box" id="resolveBox">
+            <div class="label">Resolves to</div>
+            <div class="addr" id="resolveAddr">Enter a name and click Resolve</div>
+          </div>
+
+          <button type="button" class="approve-btn" style="margin-top:0"
+                  onclick="window.ricResolve && window.ricResolve(); return false;">
+            Resolve name
+          </button>
+
+          <div class="field" style="margin-top:16px">
+            <label>Asset</label>
+            <select id="sendAsset">
+              <option value="BONE">BONE (native)</option>
+              <option value="RIC" selected>RIC</option>
+              <option value="CUSTOM">Custom ERC-20…</option>
+            </select>
+          </div>
+          <div class="field" id="customTokenField" style="display:none">
+            <label>Token contract</label>
+            <input id="customToken" type="text" placeholder="0x…" spellcheck="false" autocomplete="off" />
+          </div>
+          <div class="field">
+            <label>Amount <span class="hint" id="sendBalHint">balance: —</span></label>
+            <input id="sendAmount" type="text" inputmode="decimal" placeholder="0.0" autocomplete="off" />
+          </div>
+
+          <button type="button" class="approve-btn" id="sendApproveBtn" style="display:none" disabled
+                  onclick="window.ricSendApprove && window.ricSendApprove(); return false;">
+            Approve token
+          </button>
+          <button type="button" class="submit" id="sendBtn" disabled
+                  onclick="window.ricSend && window.ricSend(); return false;">
+            Send
+          </button>
+          <div id="sendStatus" class="status"></div>
+        </div>
+
+        <div class="card side">
+          <h3>Safety</h3>
+          <ul class="guarantees">
+            <li>Always check the resolved <span class="mono">0x…</span> before sending</li>
+            <li>Names are UX — not a guarantee of identity</li>
+            <li>Works in RicSwap (this page). Other sites need to integrate .ric</li>
+            <li>Unregistered or empty resolve = do not send</li>
+          </ul>
+          <div class="stat" style="margin-top:12px">
+            <span>Resolved</span>
+            <strong id="sideResolved">—</strong>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════ PRIMARY ═══════════ -->
+    <div id="panel-primary" class="panel">
+      <div class="grid">
+        <div class="card">
+          <h3>Set primary name</h3>
+          <p style="color:var(--muted); font-size:0.9rem; margin-bottom:14px">
+            Link a name you own (that already points to your wallet) so UIs can show
+            <span class="mono">you.ric</span> instead of a long hex address.
+          </p>
+          <div class="field">
+            <label>Your name</label>
+            <div class="input-suffix">
+              <input id="primaryLabel" type="text" autocomplete="off" spellcheck="false"
+                     placeholder="tommy" maxlength="32" />
+              <span class="sfx">.ric</span>
+            </div>
+          </div>
+          <div class="field">
+            <label>Current primary for this wallet</label>
+            <input id="currentPrimary" type="text" readonly value="—" />
+          </div>
+          <button type="button" class="submit" id="primaryBtn" disabled
+                  onclick="window.ricSetPrimary && window.ricSetPrimary(); return false;">
+            Set as primary
+          </button>
+          <div id="primaryStatus" class="status"></div>
+        </div>
+        <div class="card side">
+          <h3>Requirements</h3>
+          <ul class="guarantees">
+            <li>You must own the name</li>
+            <li>Name must resolve to your connected wallet</li>
+            <li>Mint first if you do not have a name yet</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <footer>
+      <p>
+        Registry <code id="ftReg">—</code><br />
+        Resolver <code id="ftRes">—</code><br />
+        Registrar <code id="ftRar">—</code>
+      </p>
+      <p style="margin-top:10px">Shibarium · RicSwap Name Service · one-time RIC fee</p>
+    </footer>
+  </div>
+
+  <script>
+    window.__loadEthers = function (src, next) {
+      var s = document.createElement("script");
+      s.src = src;
+      s.async = true;
+      s.onload = function () {
+        if (typeof ethers !== "undefined") {
+          console.log("[RicNames] ethers loaded from", src);
+          return;
+        }
+        if (next) next();
+      };
+      s.onerror = function () {
+        console.warn("[RicNames] ethers failed:", src);
+        if (next) next();
+      };
+      document.head.appendChild(s);
+    };
+    window.__loadEthers(
+      "https://cdn.jsdelivr.net/npm/ethers@6.13.5/dist/ethers.umd.min.js",
+      function () {
+        window.__loadEthers(
+          "https://unpkg.com/ethers@6.13.5/dist/ethers.umd.min.js",
+          function () {
+            window.__loadEthers("https://cdnjs.cloudflare.com/ajax/libs/ethers/6.13.5/ethers.umd.min.js");
+          }
+        );
+      }
+    );
+  </script>
+
+  <script>
+(function () {
+  "use strict";
+
+  var CONFIG = {
+    chainId: 109,
+    chainIdHex: "0x6d",
+    chainName: "Shibarium",
+    rpcUrls: [
+      "https://www.shibrpc.com",
+      "https://rpc.shibarium.shib.io",
+      "https://shibarium-rpc.publicnode.com"
+    ],
+    blockExplorer: "https://www.shibariumscan.io",
+    nativeCurrency: { name: "BONE", symbol: "BONE", decimals: 18 },
+    ric: "0x12C94d3A30daa09f81Ea6c037004E6e99A4A3dfc",
+    registry: "0x9689B3d52c8EC938D17B211c47B18F8C546aBC2b",
+    resolver: "0xE21b46f1161793644468ffF7b1c6aebc87a2F231",
+    registrar: "0x6A19491B4136cC335EF44af9D36fB30e31909534", // RICRegistrarV2
+    tldNode: "0xd08a790ab3e21305fa5c768150b5940f292548d6f0cff5c158788a20e3df6218"
+  };
+
+  var REGISTRAR_ABI = [
+    "function price(string label) view returns (uint256)",
+    "function available(string label) view returns (bool)",
+    "function valid(string label) pure returns (bool)",
+    "function registerSelf(string label) returns (bytes32)",
+    "function register(string label, address owner_, address resolveTo) returns (bytes32)",
+    "function namehashOf(string label) view returns (bytes32)",
+    "function priceTiersWhole() pure returns (uint256,uint256,uint256)",
+    "function reserved(bytes32) view returns (bool)",
+    "function totalRegistered() view returns (uint256)"
+  ];
+
+  var RESOLVER_ABI = [
+    "function addr(bytes32 node) view returns (address)",
+    "function setPrimary(string fullName, bytes32 node)",
+    "function primaryName(address) view returns (string)",
+    "function primaryNode(address) view returns (bytes32)"
+  ];
+
+  var REGISTRY_ABI = [
+    "function owner(bytes32 node) view returns (address)",
+    "function resolver(bytes32 node) view returns (address)"
+  ];
+
+  var ERC20_ABI = [
+    "function balanceOf(address) view returns (uint256)",
+    "function allowance(address owner, address spender) view returns (uint256)",
+    "function approve(address spender, uint256 amount) returns (bool)",
+    "function decimals() view returns (uint8)",
+    "function symbol() view returns (string)",
+    "function transfer(address to, uint256 amount) returns (bool)"
+  ];
+
+  var ethProvider = null;
+  var provider = null;
+  var signer = null;
+  var account = null;
+  var connecting = false;
+  var ricDecimals = 18;
+  var mintFeeWei = null;
+  var hasMintAllowance = false;
+  var resolvedTo = null;
+  var mintCheckTimer = null;
+  var sendTokenDecimals = 18;
+
+  function $(id) { return document.getElementById(id); }
+
+  function shortAddr(a) {
+    if (!a) return "—";
+    return a.slice(0, 6) + "…" + a.slice(-4);
+  }
+
+  function explorerTx(hash) {
+    return CONFIG.blockExplorer + "/tx/" + hash;
+  }
+
+  function explorerAddress(addr) {
+    return CONFIG.blockExplorer + "/address/" + addr;
+  }
+
+  function setStatus(elId, type, msg) {
+    var el = $(elId);
+    if (!el) return;
+    el.className = "status show " + type;
+    el.innerHTML = msg;
+  }
+
+  function walletStatus(type, msg) {
+    var el = $("walletStatus");
+    if (!el) return;
+    el.className = "show " + type;
+    el.innerHTML = msg;
+    console.log("[RicNames]", type, msg.replace(/<[^>]+>/g, " "));
+  }
+
+  function getEthereum() {
+    var eth = window.ethereum;
+    if (!eth) return null;
+    if (eth.providers && eth.providers.length) {
+      for (var i = 0; i < eth.providers.length; i++) {
+        if (eth.providers[i].isMetaMask) return eth.providers[i];
+      }
+      return eth.providers[0];
+    }
+    return eth;
+  }
+
+  function waitForEthereum(timeoutMs) {
+    return new Promise(function (resolve) {
+      var existing = getEthereum();
+      if (existing) return resolve(existing);
+      var done = false;
+      function finish(eth) {
+        if (done) return;
+        done = true;
+        window.removeEventListener("ethereum#initialized", onInit);
+        resolve(eth || getEthereum());
+      }
+      function onInit() { finish(getEthereum()); }
+      window.addEventListener("ethereum#initialized", onInit, { once: true });
+      var t0 = Date.now();
+      var iv = setInterval(function () {
+        var e = getEthereum();
+        if (e || Date.now() - t0 > timeoutMs) {
+          clearInterval(iv);
+          finish(e);
+        }
+      }, 100);
+    });
+  }
+
+  function waitForEthers(timeoutMs) {
+    return new Promise(function (resolve) {
+      if (typeof ethers !== "undefined") return resolve(true);
+      var t0 = Date.now();
+      var iv = setInterval(function () {
+        if (typeof ethers !== "undefined") {
+          clearInterval(iv);
+          resolve(true);
+        } else if (Date.now() - t0 > timeoutMs) {
+          clearInterval(iv);
+          resolve(false);
+        }
+      }, 50);
+    });
+  }
+
+  async function switchToShibarium(eth) {
+    var chainId = await eth.request({ method: "eth_chainId" });
+    var num = parseInt(chainId, 16);
+    if (num === CONFIG.chainId || String(chainId).toLowerCase() === CONFIG.chainIdHex) {
+      $("netWarn").classList.remove("show");
+      return true;
+    }
+    $("netWarn").classList.add("show");
+    try {
+      await eth.request({
+        method: "wallet_switchEthereumChain",
+        params: [{ chainId: CONFIG.chainIdHex }]
+      });
+      $("netWarn").classList.remove("show");
+      return true;
+    } catch (err) {
+      var code = err && (err.code || (err.data && err.data.originalError && err.data.originalError.code));
+      if (code === 4902 || /Unrecognized chain|not been added|wallet_addEthereumChain/i.test(String(err.message || err))) {
+        await eth.request({
+          method: "wallet_addEthereumChain",
+          params: [{
+            chainId: CONFIG.chainIdHex,
+            chainName: CONFIG.chainName,
+            nativeCurrency: CONFIG.nativeCurrency,
+            rpcUrls: CONFIG.rpcUrls,
+            blockExplorerUrls: [CONFIG.blockExplorer]
+          }]
+        });
+        $("netWarn").classList.remove("show");
+        return true;
+      }
+      if (code === 4001) {
+        walletStatus("err", "Network switch rejected. Select <strong>Shibarium</strong> in your wallet.");
+        return false;
+      }
+      throw err;
+    }
+  }
+
+  /** Normalize user input to bare label (no .ric, lowercase). */
+  function normalizeLabel(raw) {
+    var s = String(raw || "").trim().toLowerCase();
+    if (s.endsWith(".ric")) s = s.slice(0, -4);
+    return s;
+  }
+
+  function isValidClientLabel(label) {
+    if (!label || label.length < 3 || label.length > 32) return false;
+    if (label[0] === "-" || label[label.length - 1] === "-") return false;
+    return /^[a-z0-9-]+$/.test(label);
+  }
+
+  function namehashLabel(label) {
+    // keccak256(abi.encodePacked(TLD_NODE, keccak256(bytes(label))))
+    var labelHash = ethers.keccak256(ethers.toUtf8Bytes(label));
+    return ethers.keccak256(ethers.concat([CONFIG.tldNode, labelHash]));
+  }
+
+  // ─── Tabs ─────────────────────────────────────────────
+  function ricTab(name) {
+    var tabs = document.querySelectorAll(".tab");
+    for (var i = 0; i < tabs.length; i++) {
+      tabs[i].classList.toggle("active", tabs[i].getAttribute("data-tab") === name);
+    }
+    $("panel-mint").classList.toggle("active", name === "mint");
+    $("panel-send").classList.toggle("active", name === "send");
+    $("panel-primary").classList.toggle("active", name === "primary");
+    if (name === "primary" && account) refreshPrimaryUi();
+    if (name === "send") updateSendAssetUi();
+  }
+  window.ricTab = ricTab;
+
+  // ─── Connect ──────────────────────────────────────────
+  async function connectWallet() {
+    if (connecting) return;
+    connecting = true;
+    var btn = $("connectBtn");
+    try {
+      if (btn) btn.textContent = "Connecting…";
+      walletStatus("info", "Looking for wallet…");
+
+      ethProvider = await waitForEthereum(2500);
+      if (!ethProvider) {
+        walletStatus(
+          "err",
+          "No wallet detected. Install <a href=\"https://metamask.io/download/\" target=\"_blank\" rel=\"noopener\">MetaMask</a>, unlock it, then reload.<br/>" +
+          (location.protocol === "file:"
+            ? "<br/><strong>Local file:</strong> wallets often block file:// — host this page on https or a local server."
+            : "")
+        );
+        if (btn) btn.textContent = "Connect wallet";
+        return;
+      }
+
+      walletStatus("info", "Approve the connection in your wallet…");
+      var accounts = await ethProvider.request({ method: "eth_requestAccounts" });
+      if (!accounts || !accounts.length) {
+        walletStatus("err", "No account returned. Unlock wallet and try again.");
+        if (btn) btn.textContent = "Connect wallet";
+        return;
+      }
+      account = accounts[0];
+
+      try {
+        await switchToShibarium(ethProvider);
+      } catch (netErr) {
+        console.warn(netErr);
+        $("netWarn").classList.add("show");
+      }
+
+      var ethersOk = await waitForEthers(8000);
+      if (!ethersOk) {
+        if (btn) {
+          btn.textContent = shortAddr(account);
+          btn.classList.add("connected");
+        }
+        walletStatus(
+          "err",
+          "Wallet connected as " + shortAddr(account) + ", but <strong>ethers.js</strong> failed to load. Allow cdn.jsdelivr.net / unpkg.com or disable adblock, then refresh."
+        );
+        return;
+      }
+
+      provider = new ethers.BrowserProvider(ethProvider, "any");
+      signer = await provider.getSigner();
+      account = await signer.getAddress();
+
+      if (btn) {
+        btn.textContent = shortAddr(account);
+        btn.classList.add("connected");
+      }
+      walletStatus("ok", "Connected: <strong>" + shortAddr(account) + "</strong>");
+      await refreshMintFeeUi();
+      await refreshPrimaryUi();
+      await updateSendBalance();
+    } catch (e) {
+      console.error(e);
+      var msg = (e && (e.shortMessage || e.message)) || String(e);
+      if (/user rejected|denied|4001|ACTION_REJECTED/i.test(msg)) {
+        walletStatus("err", "Connection rejected. Click <strong>Connect wallet</strong> again.");
+      } else {
+        walletStatus("err", "Connect failed: " + msg);
+      }
+      if (btn && !account) btn.textContent = "Connect wallet";
+    } finally {
+      connecting = false;
+    }
+  }
+  window.ricConnect = connectWallet;
+  window.ricSwitchNet = async function () {
+    try {
+      ethProvider = getEthereum() || (await waitForEthereum(1000));
+      if (!ethProvider) {
+        walletStatus("err", "No wallet found.");
+        return;
+      }
+      await switchToShibarium(ethProvider);
+      if (account) {
+        provider = new ethers.BrowserProvider(ethProvider, "any");
+        signer = await provider.getSigner();
+      }
+    } catch (e) {
+      walletStatus("err", (e && (e.shortMessage || e.message)) || String(e));
+    }
+  };
+
+  // ─── Mint UI ──────────────────────────────────────────
+  async function refreshMintFeeUi() {
+    if (!provider || !account || typeof ethers === "undefined") return;
+    try {
+      var ric = new ethers.Contract(CONFIG.ric, ERC20_ABI, provider);
+      try { ricDecimals = await ric.decimals(); } catch (e) { ricDecimals = 18; }
+      var bal = await ric.balanceOf(account);
+      var allowance = await ric.allowance(account, CONFIG.registrar);
+      $("ricBalance").textContent = ethers.formatUnits(bal, ricDecimals) + " RIC";
+      $("ricAllowance").textContent = ethers.formatUnits(allowance, ricDecimals) + " RIC";
+      if (mintFeeWei != null) {
+        hasMintAllowance = allowance >= mintFeeWei;
+        $("approveBtn").disabled = false;
+        $("approveBtn").classList.toggle("ready", hasMintAllowance);
+        $("approveBtn").textContent = hasMintAllowance ? "1. RIC approved ✓" : "1. Approve RIC";
+        $("mintBtn").disabled = !hasMintAllowance;
+      }
+    } catch (e) {
+      console.warn(e);
+    }
+  }
+
+  async function checkMintName() {
+    var label = normalizeLabel($("mintLabel").value);
+    $("mintPreview").textContent = label ? label + ".ric" : "—.ric";
+    mintFeeWei = null;
+    hasMintAllowance = false;
+    $("mintBtn").disabled = true;
+    $("approveBtn").disabled = true;
+    $("approveBtn").classList.remove("ready");
+    $("approveBtn").textContent = "1. Approve RIC";
+    $("mintPrice").textContent = "—";
+
+    var avail = $("mintAvail");
+    avail.className = "status-line";
+
+    if (!label) {
+      avail.textContent = "Type a name to check availability & price.";
+      return;
+    }
+    // 1–2 letter = premium only (not public mint on V2)
+    if (label.length >= 1 && label.length <= 2 && /^[a-z0-9]+$/.test(label)) {
+      avail.className = "status-line warn";
+      avail.textContent = label + ".ric is premium (1–2 letter). Not public mint — request manual approval.";
+      $("mintPrice").textContent = "Premium (manual)";
+      return;
+    }
+    if (!isValidClientLabel(label)) {
+      avail.className = "status-line bad";
+      avail.textContent = "Invalid: use 3–32 chars, a–z 0–9 hyphen, no leading/trailing hyphen. 1–2 letter = premium request.";
+      return;
+    }
+
+    var readProvider = provider;
+    if (!readProvider && typeof ethers !== "undefined") {
+      try {
+        readProvider = new ethers.JsonRpcProvider(CONFIG.rpcUrls[0], CONFIG.chainId);
+      } catch (e) { /* ignore */ }
+    }
+    if (!readProvider || typeof ethers === "undefined") {
+      avail.className = "status-line warn";
+      avail.textContent = "Connect wallet (or wait for network) to check availability.";
+      return;
+    }
+
+    try {
+      avail.textContent = "Checking…";
+      var reg = new ethers.Contract(CONFIG.registrar, REGISTRAR_ABI, readProvider);
+      var valid = await reg.valid(label);
+      if (!valid) {
+        avail.className = "status-line bad";
+        avail.textContent = "Invalid name (on-chain rules).";
+        return;
+      }
+      var available = await reg.available(label);
+      var price = await reg.price(label);
+      mintFeeWei = price;
+      $("mintPrice").textContent = ethers.formatUnits(price, ricDecimals) + " RIC";
+
+      if (available) {
+        avail.className = "status-line ok";
+        avail.textContent = label + ".ric is available · " + ethers.formatUnits(price, ricDecimals) + " RIC";
+        $("approveBtn").disabled = !account;
+        if (account) await refreshMintFeeUi();
+      } else {
+        avail.className = "status-line bad";
+        avail.textContent = label + ".ric is taken or reserved.";
+        // still show price for reference
+      }
+    } catch (e) {
+      console.error(e);
+      avail.className = "status-line bad";
+      avail.textContent = "Check failed: " + ((e && (e.shortMessage || e.message)) || String(e));
+    }
+  }
+
+  function scheduleMintCheck() {
+    clearTimeout(mintCheckTimer);
+    mintCheckTimer = setTimeout(checkMintName, 350);
+  }
+
+  async function approveRic() {
+    try {
+      if (!account) await connectWallet();
+      if (!account || !signer) return;
+      if (mintFeeWei == null) {
+        setStatus("mintStatus", "err", "Enter a valid available name first.");
+        return;
+      }
+      setStatus("mintStatus", "info", "Approve RIC in your wallet…");
+      $("approveBtn").disabled = true;
+      var ric = new ethers.Contract(CONFIG.ric, ERC20_ABI, signer);
+      var tx = await ric.approve(CONFIG.registrar, mintFeeWei);
+      setStatus("mintStatus", "info", "Waiting for approve… <a href=\"" + explorerTx(tx.hash) + "\" target=\"_blank\" rel=\"noopener\">tx</a>");
+      await tx.wait();
+      setStatus("mintStatus", "ok", "RIC approved for registrar.");
+      await refreshMintFeeUi();
+    } catch (e) {
+      console.error(e);
+      setStatus("mintStatus", "err", (e && (e.shortMessage || e.message)) || String(e));
+      $("approveBtn").disabled = false;
+    }
+  }
+  window.ricApprove = approveRic;
+
+  async function mintName() {
+    try {
+      if (!account) await connectWallet();
+      if (!account || !signer) return;
+      var label = normalizeLabel($("mintLabel").value);
+      if (!isValidClientLabel(label)) {
+        setStatus("mintStatus", "err", "Invalid name.");
+        return;
+      }
+      if (mintFeeWei == null) {
+        setStatus("mintStatus", "err", "Price unknown — re-check the name.");
+        return;
+      }
+      setStatus("mintStatus", "info", "Confirm mint in your wallet…");
+      $("mintBtn").disabled = true;
+      var reg = new ethers.Contract(CONFIG.registrar, REGISTRAR_ABI, signer);
+      var tx = await reg.registerSelf(label);
+      setStatus("mintStatus", "info", "Minting… <a href=\"" + explorerTx(tx.hash) + "\" target=\"_blank\" rel=\"noopener\">tx</a>");
+      var receipt = await tx.wait();
+      setStatus(
+        "mintStatus",
+        "ok",
+        "Registered <strong>" + label + ".ric</strong> → " + shortAddr(account) +
+        " · <a href=\"" + explorerTx(receipt.hash) + "\" target=\"_blank\" rel=\"noopener\">view tx</a>"
+      );
+      await checkMintName();
+      await refreshMintFeeUi();
+      await refreshPrimaryUi();
+    } catch (e) {
+      console.error(e);
+      var msg = (e && (e.shortMessage || e.reason || e.message)) || String(e);
+      if (/NameTaken|name taken/i.test(msg)) msg = "Name is already taken.";
+      if (/NameIsReserved|reserved/i.test(msg)) msg = "Name is reserved (premium list).";
+      if (/InvalidName/i.test(msg)) msg = "Invalid name.";
+      if (/insufficient|allowance|ERC20/i.test(msg)) msg = "Need RIC balance + approve first. " + msg;
+      setStatus("mintStatus", "err", msg);
+      $("mintBtn").disabled = false;
+      await refreshMintFeeUi();
+    }
+  }
+  window.ricMint = mintName;
+
+  // ─── Resolve / Send ───────────────────────────────────
+  async function getReadProvider() {
+    if (provider) return provider;
+    if (typeof ethers === "undefined") return null;
+    try {
+      return new ethers.JsonRpcProvider(CONFIG.rpcUrls[0], CONFIG.chainId);
+    } catch (e) {
+      return null;
+    }
+  }
+
+  async function resolveNameToAddress(label) {
+    var rp = await getReadProvider();
+    if (!rp) throw new Error("Network not ready — connect wallet or wait for ethers.");
+    var node = namehashLabel(label);
+    var resolver = new ethers.Contract(CONFIG.resolver, RESOLVER_ABI, rp);
+    var addr = await resolver.addr(node);
+    return { node: node, addr: addr };
+  }
+
+  async function ricResolve() {
+    try {
+      var label = normalizeLabel($("sendName").value);
+      $("sendPreview").textContent = label ? label + ".ric" : "—.ric";
+      resolvedTo = null;
+      $("sendBtn").disabled = true;
+      $("sideResolved").textContent = "—";
+      var box = $("resolveBox");
+      box.className = "resolve-box";
+
+      if (!label || !isValidClientLabel(label)) {
+        $("resolveAddr").textContent = "Enter a valid name (3–32, a–z 0–9 -).";
+        box.classList.add("bad");
+        return;
+      }
+
+      $("resolveAddr").textContent = "Resolving…";
+      var r = await resolveNameToAddress(label);
+      if (!r.addr || r.addr === ethers.ZeroAddress) {
+        $("resolveAddr").textContent = "Not registered or no address set — do not send.";
+        box.classList.add("bad");
+        setStatus("sendStatus", "err", label + ".ric does not resolve to an address.");
+        return;
+      }
+      resolvedTo = r.addr;
+      $("resolveAddr").innerHTML =
+        "<a href=\"" + explorerAddress(r.addr) + "\" target=\"_blank\" rel=\"noopener\">" + r.addr + "</a>";
+      box.classList.add("ok");
+      $("sideResolved").textContent = shortAddr(r.addr);
+      $("sendBtn").disabled = false;
+      setStatus("sendStatus", "ok", "Resolved " + label + ".ric → " + shortAddr(r.addr) + ". Confirm this address before sending.");
+      await updateSendBalance();
+    } catch (e) {
+      console.error(e);
+      $("resolveAddr").textContent = "Resolve failed.";
+      $("resolveBox").classList.add("bad");
+      setStatus("sendStatus", "err", (e && (e.shortMessage || e.message)) || String(e));
+    }
+  }
+  window.ricResolve = ricResolve;
+
+  function updateSendAssetUi() {
+    var asset = $("sendAsset").value;
+    $("customTokenField").style.display = asset === "CUSTOM" ? "block" : "none";
+    // ERC20 needs approve only when sending to self-transfer via contract — transfer() needs no approve
+    $("sendApproveBtn").style.display = "none";
+    updateSendBalance();
+  }
+
+  async function updateSendBalance() {
+    var hint = $("sendBalHint");
+    if (!hint) return;
+    if (!account || !provider || typeof ethers === "undefined") {
+      hint.textContent = "balance: —";
+      return;
+    }
+    try {
+      var asset = $("sendAsset").value;
+      if (asset === "BONE") {
+        var bal = await provider.getBalance(account);
+        hint.textContent = "balance: " + ethers.formatEther(bal) + " BONE";
+        sendTokenDecimals = 18;
+      } else {
+        var tokenAddr = asset === "RIC" ? CONFIG.ric : String($("customToken").value || "").trim();
+        if (!/^0x[a-fA-F0-9]{40}$/.test(tokenAddr)) {
+          hint.textContent = "balance: —";
+          return;
+        }
+        var tok = new ethers.Contract(tokenAddr, ERC20_ABI, provider);
+        try { sendTokenDecimals = await tok.decimals(); } catch (e) { sendTokenDecimals = 18; }
+        var b = await tok.balanceOf(account);
+        var sym = asset === "RIC" ? "RIC" : "tokens";
+        try { if (asset === "CUSTOM") sym = await tok.symbol(); } catch (e2) { /* */ }
+        hint.textContent = "balance: " + ethers.formatUnits(b, sendTokenDecimals) + " " + sym;
+      }
+    } catch (e) {
+      hint.textContent = "balance: —";
+    }
+  }
+
+  async function ricSend() {
+    try {
+      if (!account) await connectWallet();
+      if (!account || !signer) return;
+
+      var label = normalizeLabel($("sendName").value);
+      // Re-resolve right before send (safety)
+      var r = await resolveNameToAddress(label);
+      if (!r.addr || r.addr === ethers.ZeroAddress) {
+        setStatus("sendStatus", "err", "Name does not resolve. Aborting.");
+        return;
+      }
+      resolvedTo = r.addr;
+      $("resolveAddr").innerHTML =
+        "<a href=\"" + explorerAddress(r.addr) + "\" target=\"_blank\" rel=\"noopener\">" + r.addr + "</a>";
+      $("resolveBox").className = "resolve-box ok";
+
+      var amountStr = String($("sendAmount").value || "").trim();
+      if (!amountStr || Number(amountStr) <= 0) {
+        setStatus("sendStatus", "err", "Enter a valid amount.");
+        return;
+      }
+
+      var asset = $("sendAsset").value;
+      $("sendBtn").disabled = true;
+      setStatus(
+        "sendStatus",
+        "info",
+        "Sending to <strong>" + label + ".ric</strong> = " + shortAddr(r.addr) + " … confirm in wallet"
+      );
+
+      var tx;
+      if (asset === "BONE") {
+        var wei = ethers.parseEther(amountStr);
+        tx = await signer.sendTransaction({ to: r.addr, value: wei });
+      } else {
+        var tokenAddr = asset === "RIC" ? CONFIG.ric : String($("customToken").value || "").trim();
+        if (!/^0x[a-fA-F0-9]{40}$/.test(tokenAddr)) {
+          setStatus("sendStatus", "err", "Invalid token address.");
+          $("sendBtn").disabled = false;
+          return;
+        }
+        var tok = new ethers.Contract(tokenAddr, ERC20_ABI, signer);
+        var dec = 18;
+        try { dec = await tok.decimals(); } catch (e) { /* */ }
+        var amt = ethers.parseUnits(amountStr, dec);
+        tx = await tok.transfer(r.addr, amt);
+      }
+
+      setStatus("sendStatus", "info", "Waiting… <a href=\"" + explorerTx(tx.hash) + "\" target=\"_blank\" rel=\"noopener\">tx</a>");
+      var receipt = await tx.wait();
+      setStatus(
+        "sendStatus",
+        "ok",
+        "Sent to <strong>" + label + ".ric</strong> (" + shortAddr(r.addr) + ") · " +
+        "<a href=\"" + explorerTx(receipt.hash) + "\" target=\"_blank\" rel=\"noopener\">view tx</a>"
+      );
+      $("sendBtn").disabled = false;
+      await updateSendBalance();
+    } catch (e) {
+      console.error(e);
+      setStatus("sendStatus", "err", (e && (e.shortMessage || e.message)) || String(e));
+      $("sendBtn").disabled = false;
+    }
+  }
+  window.ricSend = ricSend;
+  window.ricSendApprove = function () { /* transfer needs no approve */ };
+
+  // ─── Primary ──────────────────────────────────────────
+  async function refreshPrimaryUi() {
+    if (!provider || !account || typeof ethers === "undefined") return;
+    try {
+      var resolver = new ethers.Contract(CONFIG.resolver, RESOLVER_ABI, provider);
+      var name = await resolver.primaryName(account);
+      $("currentPrimary").value = name && name.length ? name : "(none)";
+      $("primaryBtn").disabled = false;
+    } catch (e) {
+      $("currentPrimary").value = "—";
+    }
+  }
+
+  async function ricSetPrimary() {
+    try {
+      if (!account) await connectWallet();
+      if (!account || !signer) return;
+      var label = normalizeLabel($("primaryLabel").value);
+      if (!isValidClientLabel(label)) {
+        setStatus("primaryStatus", "err", "Invalid name.");
+        return;
+      }
+      var fullName = label + ".ric";
+      var node = namehashLabel(label);
+
+      // Pre-check ownership + resolve
+      var registry = new ethers.Contract(CONFIG.registry, REGISTRY_ABI, provider);
+      var owner = await registry.owner(node);
+      if (owner.toLowerCase() !== account.toLowerCase()) {
+        setStatus("primaryStatus", "err", "You do not own " + fullName + ".");
+        return;
+      }
+      var resolver = new ethers.Contract(CONFIG.resolver, RESOLVER_ABI, provider);
+      var addr = await resolver.addr(node);
+      if (addr.toLowerCase() !== account.toLowerCase()) {
+        setStatus("primaryStatus", "err", fullName + " must resolve to your wallet first (it points to " + shortAddr(addr) + ").");
+        return;
+      }
+
+      setStatus("primaryStatus", "info", "Confirm setPrimary in wallet…");
+      $("primaryBtn").disabled = true;
+      var resSigner = new ethers.Contract(CONFIG.resolver, RESOLVER_ABI, signer);
+      var tx = await resSigner.setPrimary(fullName, node);
+      setStatus("primaryStatus", "info", "Waiting… <a href=\"" + explorerTx(tx.hash) + "\" target=\"_blank\" rel=\"noopener\">tx</a>");
+      await tx.wait();
+      setStatus("primaryStatus", "ok", "Primary set to <strong>" + fullName + "</strong>");
+      await refreshPrimaryUi();
+      $("primaryBtn").disabled = false;
+    } catch (e) {
+      console.error(e);
+      setStatus("primaryStatus", "err", (e && (e.shortMessage || e.message)) || String(e));
+      $("primaryBtn").disabled = false;
+    }
+  }
+  window.ricSetPrimary = ricSetPrimary;
+
+  // ─── Init ─────────────────────────────────────────────
+  function initFooter() {
+    $("ftReg").textContent = CONFIG.registry;
+    $("ftRes").textContent = CONFIG.resolver;
+    $("ftRar").textContent = CONFIG.registrar;
+    $("sideRegistrar").innerHTML =
+      "<a href=\"" + explorerAddress(CONFIG.registrar) + "\" target=\"_blank\" rel=\"noopener\">" +
+      shortAddr(CONFIG.registrar) + "</a>";
+  }
+
+  function bindEvents() {
+    $("mintLabel").addEventListener("input", scheduleMintCheck);
+    $("sendName").addEventListener("input", function () {
+      var label = normalizeLabel($("sendName").value);
+      $("sendPreview").textContent = label ? label + ".ric" : "—.ric";
+      resolvedTo = null;
+      $("sendBtn").disabled = true;
+    });
+    $("sendAsset").addEventListener("change", updateSendAssetUi);
+    $("customToken").addEventListener("change", updateSendBalance);
+    $("customToken").addEventListener("input", function () {
+      clearTimeout(window.__balT);
+      window.__balT = setTimeout(updateSendBalance, 400);
+    });
+
+    var eth = getEthereum();
+    if (eth) {
+      eth.on && eth.on("accountsChanged", function (accs) {
+        account = accs && accs[0] ? accs[0] : null;
+        if (!account) {
+          $("connectBtn").textContent = "Connect wallet";
+          $("connectBtn").classList.remove("connected");
+          walletStatus("info", "Wallet disconnected.");
+          return;
+        }
+        connectWallet();
+      });
+      eth.on && eth.on("chainChanged", function () {
+        window.location.reload();
+      });
+    }
+  }
+
+  initFooter();
+  bindEvents();
+  // Auto-check name if ethers loads without wallet (public RPC)
+  waitForEthers(10000).then(function (ok) {
+    if (ok && $("mintLabel").value) checkMintName();
+  });
+})();
+  </script>
+</body>
+</html>
