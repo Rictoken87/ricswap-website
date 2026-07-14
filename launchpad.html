@@ -5,6 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>RicSwap Launchpad — Fair Token Launch on Shibarium</title>
   <meta name="description" content="Launch a CleanToken with locked BONE liquidity on RicSwap. Atomic deploy + LP + lock." />
+  <link rel="icon" type="image/png" href="riclogo.png" />
+  <link rel="apple-touch-icon" href="riclogo.png" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
@@ -64,16 +66,13 @@
       gap: 12px;
     }
 
-    .logo {
+    .brand img.logo-img {
       width: 42px;
       height: 42px;
       border-radius: 12px;
-      background: linear-gradient(135deg, var(--accent), var(--accent2));
-      display: grid;
-      place-items: center;
-      font-weight: 700;
-      font-size: 18px;
-      color: #111;
+      object-fit: cover;
+      display: block;
+      background: var(--bg3);
       box-shadow: 0 8px 24px rgba(245,166,35,0.25);
     }
 
@@ -527,13 +526,18 @@
   <div class="wrap">
     <header>
       <div class="brand">
-        <div class="logo">R</div>
+        <img class="logo-img" src="riclogo.png" alt="RicSwap logo" width="42" height="42"
+             onerror="this.onerror=null;this.src='https://raw.githubusercontent.com/Rictoken87/ricswap-website/main/riclogo.png'" />
         <div>
           <h1>RicSwap Launchpad</h1>
           <p>Fair launches on Shibarium · CleanToken + locked LP</p>
         </div>
       </div>
-      <button type="button" class="wallet-btn" id="connectBtn" onclick="window.ricConnect && window.ricConnect(); return false;">Connect wallet</button>
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+        <a href="names.html" style="color:var(--muted);font-size:0.88rem;font-weight:600;text-decoration:none">Names</a>
+        <a href="index.html" style="color:var(--muted);font-size:0.88rem;font-weight:600;text-decoration:none">Home</a>
+        <button type="button" class="wallet-btn" id="connectBtn" onclick="window.ricConnect && window.ricConnect(); return false;">Connect wallet</button>
+      </div>
     </header>
 
     <div id="walletStatus" class="status" role="status" aria-live="polite"></div>
@@ -713,7 +717,6 @@
       <p>RicSwap · Shibarium · Factory <code id="footerFactory"></code></p>
       <p style="margin-top: 6px;">
         <a href="https://www.shibariumscan.io" target="_blank" rel="noopener">Explorer</a>
-        <a href="index.html"> HOME </a>
       </p>
     </footer>
   </div>
