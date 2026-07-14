@@ -217,6 +217,7 @@
     }
     .resolve-box.ok { border-color: rgba(61,214,140,0.35); }
     .resolve-box.bad { border-color: rgba(255,92,108,0.35); }
+    .resolve-box.warn { border-color: rgba(245,166,35,0.45); }
     .row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
     @media (max-width: 560px) { .row { grid-template-columns: 1fr; } }
     .net-warn {
@@ -494,14 +495,15 @@
         <div class="card">
           <h3>Set primary name</h3>
           <p style="color:var(--muted); font-size:0.9rem; margin-bottom:14px">
-            Link a name you own (that already points to your wallet) so UIs can show
+            Link a name you own so UIs can show
             <span class="mono">you.ric</span> instead of a long hex address.
+            Use the <strong>same wallet</strong> that minted the name.
           </p>
           <div class="field">
             <label>Your name</label>
             <div class="input-suffix">
               <input id="primaryLabel" type="text" autocomplete="off" spellcheck="false"
-                     placeholder="tommy" maxlength="32" />
+                     placeholder="haru" maxlength="32" />
               <span class="sfx">.ric</span>
             </div>
           </div>
@@ -509,7 +511,15 @@
             <label>Current primary for this wallet</label>
             <input id="currentPrimary" type="text" readonly value="—" />
           </div>
-          <button type="button" class="submit" id="primaryBtn" disabled
+          <div class="resolve-box" id="primaryDiag" style="margin-top:0;margin-bottom:14px">
+            <div class="label">Checks (owner / resolve / you)</div>
+            <div class="addr" id="primaryDiagText">Connect wallet and enter your name, then click Set as primary.</div>
+          </div>
+          <button type="button" class="approve-btn" style="margin-top:0"
+                  onclick="window.ricCheckPrimary && window.ricCheckPrimary(); return false;">
+            Check ownership
+          </button>
+          <button type="button" class="submit" id="primaryBtn"
                   onclick="window.ricSetPrimary && window.ricSetPrimary(); return false;">
             Set as primary
           </button>
@@ -518,8 +528,9 @@
         <div class="card side">
           <h3>Requirements</h3>
           <ul class="guarantees">
-            <li>You must own the name</li>
-            <li>Name must resolve to your connected wallet</li>
+            <li>Connected wallet must <strong>own</strong> the name</li>
+            <li>Name should resolve to that same wallet (we can fix resolve if needed)</li>
+            <li>Type label only: <span class="mono">haru</span> not the full URL</li>
             <li>Mint first if you do not have a name yet</li>
           </ul>
         </div>
@@ -642,10 +653,9 @@ async function resolveRic(name, provider) {
     chainId: 109,
     chainIdHex: "0x6d",
     chainName: "Shibarium",
+    // Canonical Shibarium RPC (prefer this everywhere)
     rpcUrls: [
-      "https://www.shibrpc.com",
-      "https://rpc.shibarium.shib.io",
-      "https://shibarium-rpc.publicnode.com"
+      "https://rpc.shibarium.shib.io"
     ],
     blockExplorer: "https://www.shibariumscan.io",
     nativeCurrency: { name: "BONE", symbol: "BONE", decimals: 18 },
@@ -670,6 +680,7 @@ async function resolveRic(name, provider) {
 
   var RESOLVER_ABI = [
     "function addr(bytes32 node) view returns (address)",
+    "function setAddr(bytes32 node, address a)",
     "function setPrimary(string fullName, bytes32 node)",
     "function primaryName(address) view returns (string)",
     "function primaryNode(address) view returns (bytes32)"
@@ -1002,20 +1013,18 @@ async function resolveRic(name, provider) {
       return;
     }
 
-    var readProvider = provider;
-    if (!readProvider && typeof ethers !== "undefined") {
-      try {
-        readProvider = new ethers.JsonRpcProvider(CONFIG.rpcUrls[0], CONFIG.chainId);
-      } catch (e) { /* ignore */ }
-    }
-    if (!readProvider || typeof ethers === "undefined") {
+    if (typeof ethers === "undefined") {
       avail.className = "status-line warn";
-      avail.textContent = "Connect wallet (or wait for network) to check availability.";
+      avail.textContent = "Loading ethers.js… wait a moment, or disable adblock and refresh.";
       return;
     }
 
     try {
       avail.textContent = "Checking…";
+      var readProvider = await getReadProvider();
+      if (!readProvider) {
+        throw new Error("No RPC available");
+      }
       var reg = new ethers.Contract(CONFIG.registrar, REGISTRAR_ABI, readProvider);
       var valid = await reg.valid(label);
       if (!valid) {
@@ -1036,12 +1045,31 @@ async function resolveRic(name, provider) {
       } else {
         avail.className = "status-line bad";
         avail.textContent = label + ".ric is taken or reserved.";
-        // still show price for reference
       }
     } catch (e) {
       console.error(e);
+      var msg = (e && (e.shortMessage || e.message)) || String(e);
+      var est = estimateFeeWhole(label);
+      if (est != null && typeof ethers !== "undefined") {
+        mintFeeWei = ethers.parseUnits(String(est), ricDecimals);
+        $("mintPrice").textContent = est + " RIC (est.)";
+      }
       avail.className = "status-line bad";
-      avail.textContent = "Check failed: " + ((e && (e.shortMessage || e.message)) || String(e));
+      // Friendlier help for the common browser/RPC failure
+      if (/Failed to fetch|NETWORK_ERROR|timeout|RPC|CORS|Load failed|NetworkError/i.test(msg)) {
+        avail.innerHTML =
+          "Network check failed (RPC). <strong>Connect wallet on Shibarium</strong> and try again — " +
+          "reads will use MetaMask’s RPC. " +
+          "Also open this page via <strong>https</strong> (not file://). " +
+          (est != null ? "Fee if free: <strong>" + est + " RIC</strong> for this length." : "");
+        // Allow approve attempt if wallet connected (user can still try mint; chain will enforce)
+        if (account && mintFeeWei != null) {
+          $("approveBtn").disabled = false;
+          avail.className = "status-line warn";
+        }
+      } else {
+        avail.textContent = "Check failed: " + msg;
+      }
     }
   }
 
@@ -1097,8 +1125,11 @@ async function resolveRic(name, provider) {
         "mintStatus",
         "ok",
         "Registered <strong>" + label + ".ric</strong> → " + shortAddr(account) +
-        " · <a href=\"" + explorerTx(receipt.hash) + "\" target=\"_blank\" rel=\"noopener\">view tx</a>"
+        " · <a href=\"" + explorerTx(receipt.hash) + "\" target=\"_blank\" rel=\"noopener\">view tx</a>" +
+        " · You can set it as primary in the <strong>Set primary</strong> tab."
       );
+      // Prefill primary tab for convenience
+      if ($("primaryLabel")) $("primaryLabel").value = label;
       await checkMintName();
       await refreshMintFeeUi();
       await refreshPrimaryUi();
@@ -1117,14 +1148,67 @@ async function resolveRic(name, provider) {
   window.ricMint = mintName;
 
   // ─── Resolve / Send ───────────────────────────────────
+  /**
+   * Prefer connected wallet RPC (works even when public RPCs block browser CORS).
+   * Then try each public RPC until one answers.
+   */
   async function getReadProvider() {
-    if (provider) return provider;
     if (typeof ethers === "undefined") return null;
-    try {
-      return new ethers.JsonRpcProvider(CONFIG.rpcUrls[0], CONFIG.chainId);
-    } catch (e) {
-      return null;
+
+    // 1) Already connected BrowserProvider
+    if (provider) {
+      try {
+        await provider.getBlockNumber();
+        return provider;
+      } catch (e) {
+        console.warn("[RicNames] wallet provider read failed, trying public RPCs", e);
+      }
     }
+
+    // 2) Injected wallet without full connect — still often works for eth_call
+    var eth = getEthereum();
+    if (eth) {
+      try {
+        var bp = new ethers.BrowserProvider(eth, "any");
+        await bp.getBlockNumber();
+        return bp;
+      } catch (e) {
+        console.warn("[RicNames] injected provider failed", e);
+      }
+    }
+
+    // 3) Public RPCs (skip dead ones)
+    var lastErr = null;
+    for (var i = 0; i < CONFIG.rpcUrls.length; i++) {
+      var url = CONFIG.rpcUrls[i];
+      try {
+        var rp = new ethers.JsonRpcProvider(url, CONFIG.chainId, {
+          staticNetwork: true
+        });
+        await Promise.race([
+          rp.getBlockNumber(),
+          new Promise(function (_, rej) {
+            setTimeout(function () { rej(new Error("RPC timeout: " + url)); }, 8000);
+          })
+        ]);
+        console.log("[RicNames] using RPC", url);
+        return rp;
+      } catch (e) {
+        lastErr = e;
+        console.warn("[RicNames] RPC failed", url, e && (e.message || e));
+      }
+    }
+    if (lastErr) throw lastErr;
+    return null;
+  }
+
+  /** Local fee estimate when chain is unreachable (matches V2 defaults). */
+  function estimateFeeWhole(label) {
+    var len = label.length;
+    if (len === 3) return 1000;
+    if (len === 4) return 300;
+    if (len >= 5) return 50;
+    return null;
   }
 
   async function resolveNameToAddress(label) {
@@ -1286,16 +1370,89 @@ async function resolveRic(name, provider) {
 
   // ─── Primary ──────────────────────────────────────────
   async function refreshPrimaryUi() {
-    if (!provider || !account || typeof ethers === "undefined") return;
+    if (!account || typeof ethers === "undefined") return;
+    $("primaryBtn").disabled = false;
     try {
-      var resolver = new ethers.Contract(CONFIG.resolver, RESOLVER_ABI, provider);
+      var rp = provider || (await getReadProvider());
+      if (!rp) {
+        $("currentPrimary").value = "(connect wallet)";
+        return;
+      }
+      var resolver = new ethers.Contract(CONFIG.resolver, RESOLVER_ABI, rp);
       var name = await resolver.primaryName(account);
       $("currentPrimary").value = name && name.length ? name : "(none)";
-      $("primaryBtn").disabled = false;
     } catch (e) {
-      $("currentPrimary").value = "—";
+      console.warn(e);
+      $("currentPrimary").value = "(none)";
     }
   }
+
+  async function resolvePrimaryNode(label) {
+    // Prefer on-chain namehashOf (same as mint path)
+    try {
+      var rp = provider || (await getReadProvider());
+      if (rp) {
+        var reg = new ethers.Contract(CONFIG.registrar, REGISTRAR_ABI, rp);
+        return await reg.namehashOf(label);
+      }
+    } catch (e) {
+      console.warn("namehashOf failed, using local", e);
+    }
+    return namehashLabel(label);
+  }
+
+  async function ricCheckPrimary() {
+    try {
+      if (!account) await connectWallet();
+      if (!account) return;
+      var label = normalizeLabel($("primaryLabel").value);
+      var box = $("primaryDiag");
+      var text = $("primaryDiagText");
+      if (!isValidClientLabel(label)) {
+        box.className = "resolve-box bad";
+        text.textContent = "Invalid label. Use 3–32 chars, a–z 0–9 hyphen.";
+        return;
+      }
+      var fullName = label + ".ric";
+      text.textContent = "Checking " + fullName + "…";
+      var rp = provider || (await getReadProvider());
+      if (!rp) throw new Error("No network — connect wallet on Shibarium");
+      var node = await resolvePrimaryNode(label);
+      var registry = new ethers.Contract(CONFIG.registry, REGISTRY_ABI, rp);
+      var resolver = new ethers.Contract(CONFIG.resolver, RESOLVER_ABI, rp);
+      var owner = await registry.owner(node);
+      var addr = await resolver.addr(node);
+      var you = account;
+      var ownOk = owner && owner.toLowerCase() === you.toLowerCase();
+      var addrOk = addr && addr.toLowerCase() === you.toLowerCase();
+      box.className = "resolve-box " + (ownOk && addrOk ? "ok" : ownOk ? "warn" : "bad");
+      text.innerHTML =
+        "<strong>" + fullName + "</strong><br/>" +
+        "Owner: " + (owner === ethers.ZeroAddress ? "(none)" : owner) +
+        (ownOk ? " ✓ you" : " ✗ not you") + "<br/>" +
+        "Resolves: " + (addr === ethers.ZeroAddress ? "(unset)" : addr) +
+        (addrOk ? " ✓ you" : "") + "<br/>" +
+        "Connected: " + you +
+        (!ownOk
+          ? "<br/><br/>Switch MetaMask to the wallet that minted this name."
+          : !addrOk
+            ? "<br/><br/>Resolve is not your wallet — Set as primary will fix it (setAddr + setPrimary)."
+            : "<br/><br/>Ready — click Set as primary.");
+      setStatus(
+        "primaryStatus",
+        ownOk ? (addrOk ? "ok" : "info") : "err",
+        ownOk
+          ? (addrOk ? "Checks passed for " + fullName : "You own it; will fix resolve on set.")
+          : "Connected wallet does not own " + fullName + "."
+      );
+    } catch (e) {
+      console.error(e);
+      $("primaryDiag").className = "resolve-box bad";
+      $("primaryDiagText").textContent = (e && (e.shortMessage || e.message)) || String(e);
+      setStatus("primaryStatus", "err", (e && (e.shortMessage || e.message)) || String(e));
+    }
+  }
+  window.ricCheckPrimary = ricCheckPrimary;
 
   async function ricSetPrimary() {
     try {
@@ -1303,38 +1460,70 @@ async function resolveRic(name, provider) {
       if (!account || !signer) return;
       var label = normalizeLabel($("primaryLabel").value);
       if (!isValidClientLabel(label)) {
-        setStatus("primaryStatus", "err", "Invalid name.");
+        setStatus("primaryStatus", "err", "Invalid name. Type e.g. haru (not haru.ric in a wrong format).");
         return;
       }
       var fullName = label + ".ric";
-      var node = namehashLabel(label);
+      var node = await resolvePrimaryNode(label);
 
-      // Pre-check ownership + resolve
-      var registry = new ethers.Contract(CONFIG.registry, REGISTRY_ABI, provider);
+      var registry = new ethers.Contract(CONFIG.registry, REGISTRY_ABI, provider || signer);
       var owner = await registry.owner(node);
-      if (owner.toLowerCase() !== account.toLowerCase()) {
-        setStatus("primaryStatus", "err", "You do not own " + fullName + ".");
+      if (!owner || owner === ethers.ZeroAddress) {
+        setStatus("primaryStatus", "err", fullName + " is not registered.");
         return;
       }
-      var resolver = new ethers.Contract(CONFIG.resolver, RESOLVER_ABI, provider);
-      var addr = await resolver.addr(node);
-      if (addr.toLowerCase() !== account.toLowerCase()) {
-        setStatus("primaryStatus", "err", fullName + " must resolve to your wallet first (it points to " + shortAddr(addr) + ").");
+      if (owner.toLowerCase() !== account.toLowerCase()) {
+        setStatus(
+          "primaryStatus",
+          "err",
+          "You do not own " + fullName + ".<br/>Owner: <code>" + owner +
+          "</code><br/>Connected: <code>" + account +
+          "</code><br/>Switch to the minting wallet in MetaMask."
+        );
+        await ricCheckPrimary();
         return;
+      }
+
+      var resSigner = new ethers.Contract(CONFIG.resolver, RESOLVER_ABI, signer);
+      var addr = await resSigner.addr(node);
+
+      // Contract requires addr == msg.sender. Fix resolve if needed (owner can setAddr).
+      if (!addr || addr === ethers.ZeroAddress || addr.toLowerCase() !== account.toLowerCase()) {
+        setStatus(
+          "primaryStatus",
+          "info",
+          "Pointing " + fullName + " at your wallet first (setAddr)… confirm in wallet"
+        );
+        $("primaryBtn").disabled = true;
+        var txAddr = await resSigner.setAddr(node, account);
+        setStatus(
+          "primaryStatus",
+          "info",
+          "Waiting setAddr… <a href=\"" + explorerTx(txAddr.hash) + "\" target=\"_blank\" rel=\"noopener\">tx</a>"
+        );
+        await txAddr.wait();
       }
 
       setStatus("primaryStatus", "info", "Confirm setPrimary in wallet…");
       $("primaryBtn").disabled = true;
-      var resSigner = new ethers.Contract(CONFIG.resolver, RESOLVER_ABI, signer);
       var tx = await resSigner.setPrimary(fullName, node);
-      setStatus("primaryStatus", "info", "Waiting… <a href=\"" + explorerTx(tx.hash) + "\" target=\"_blank\" rel=\"noopener\">tx</a>");
+      setStatus(
+        "primaryStatus",
+        "info",
+        "Waiting… <a href=\"" + explorerTx(tx.hash) + "\" target=\"_blank\" rel=\"noopener\">tx</a>"
+      );
       await tx.wait();
       setStatus("primaryStatus", "ok", "Primary set to <strong>" + fullName + "</strong>");
       await refreshPrimaryUi();
+      await ricCheckPrimary();
       $("primaryBtn").disabled = false;
     } catch (e) {
       console.error(e);
-      setStatus("primaryStatus", "err", (e && (e.shortMessage || e.message)) || String(e));
+      var msg = (e && (e.shortMessage || e.reason || e.message)) || String(e);
+      if (/NotAuthorized|not authorized/i.test(msg)) {
+        msg = "Not authorized — use the wallet that owns the name, and ensure it resolves to you.";
+      }
+      setStatus("primaryStatus", "err", msg);
       $("primaryBtn").disabled = false;
     }
   }
