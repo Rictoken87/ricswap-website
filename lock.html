@@ -4,9 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="theme-color" content="#030407">
-<meta name="description" content="RicSwap LP Locker — trustless lock for 90 days to forever. No admin. No early unlock. Prove commitment on Shibarium.">
+<meta name="description" content="RicSwap trustless locker — lock LP liquidity or team tokens on Shibarium. No admin. No early unlock. Hall of Commitment for long & forever locks.">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://unpkg.com https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://rpc.shibarium.shib.io https://*.shibarium.shib.io https://shibariumscan.io https://www.shibariumscan.io https://cdn.jsdelivr.net https://unpkg.com https://cdnjs.cloudflare.com https://raw.githubusercontent.com; object-src 'none'; base-uri 'self'; form-action 'none'">
-<title>RicSwap | LP Lock — Prove You're Not a Rug</title>
+<title>RicSwap | Lock LP & Team Tokens — Prove You're Not a Rug</title>
 <link rel="icon" type="image/png" href="riclogo.png">
 <link rel="apple-touch-icon" href="riclogo.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -224,6 +224,33 @@ input{font-family:var(--mono);outline:none;border:none;background:transparent;co
 }
 .tab.active{background:rgba(255,77,0,.12);border-color:rgba(255,77,0,.35);color:var(--magma)}
 
+.mode-row{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap}
+.mode-btn{
+  flex:1;min-width:140px;padding:12px 14px;border-radius:14px;border:1px solid var(--rim);
+  background:var(--pit);color:var(--smoke);font-size:13px;font-weight:700;text-align:left;cursor:pointer;
+}
+.mode-btn small{display:block;font-weight:500;font-size:11px;color:var(--ash);margin-top:4px;line-height:1.35}
+.mode-btn.active{
+  border-color:rgba(255,77,0,.45);color:var(--gold);
+  background:linear-gradient(135deg,rgba(255,77,0,.14),rgba(232,184,75,.08));
+}
+.mode-btn.active.token-mode{
+  border-color:rgba(77,159,255,.45);color:var(--blue);
+  background:linear-gradient(135deg,rgba(77,159,255,.14),rgba(167,139,250,.08));
+}
+.pct-box{
+  display:none;margin:0 0 12px;padding:12px 14px;border-radius:12px;
+  border:1px solid rgba(77,159,255,.25);background:rgba(77,159,255,.06);
+  font-family:var(--mono);font-size:12px;color:var(--fog);line-height:1.5;
+}
+.pct-box.show{display:block}
+.pct-box b{color:var(--blue)}
+.pct-box .warn{color:var(--gold);display:block;margin-top:4px;font-size:11px}
+.badge.lp{background:rgba(0,255,178,.1);color:var(--green);border:1px solid rgba(0,255,178,.3)}
+.badge.team{background:rgba(77,159,255,.12);color:var(--blue);border:1px solid rgba(77,159,255,.3)}
+.badge.team-forever{background:rgba(167,139,250,.18);color:#e9d5ff;border:1px solid rgba(167,139,250,.4)}
+.badge.lp-forever{background:linear-gradient(90deg,rgba(167,139,250,.2),rgba(255,77,0,.15));color:#fff;border:1px solid rgba(255,77,0,.35)}
+
 .empty{text-align:center;padding:36px 16px;color:var(--ash);font-size:14px;border:1px dashed var(--rim);border-radius:14px}
 
 .footer{
@@ -253,17 +280,17 @@ input{font-family:var(--mono);outline:none;border:none;background:transparent;co
   </nav>
 
   <section class="hero">
-    <div class="hero-badge">✦ Trustless LP Locker · No Admin · No Early Exit</div>
-    <h1>LOCK YOUR LP.<br><span>PROVE YOU'RE NOT A RUG.</span></h1>
+    <div class="hero-badge">✦ Trustless Locker · LP + Team tokens · No Admin · No Early Exit</div>
+    <h1>LOCK LP OR TEAM TOKENS.<br><span>PROVE YOU'RE NOT A RUG.</span></h1>
     <p>
-      Founders worldwide lock liquidity on RicSwap. No owner. No pause. No backdoor.
-      Once locked, <strong style="color:var(--fog)">nobody</strong> — not even RicSwap — can withdraw before unlock.
+      Founders worldwide lock <strong style="color:var(--fog)">liquidity</strong> and <strong style="color:var(--fog)">team allocations</strong> on RicSwap.
+      No owner. No pause. No backdoor. Once locked, <strong style="color:var(--fog)">nobody</strong> can withdraw before unlock.
     </p>
     <div class="trust-row">
-      <span class="trust-pill"><em>No admin</em> override</span>
+      <span class="trust-pill"><em>LP lock</em> = pool safety</span>
+      <span class="trust-pill"><em>Token lock</em> = team can’t dump</span>
       <span class="trust-pill">Extend <em>only later</em></span>
-      <span class="trust-pill">Forever = <em>on-chain record</em></span>
-      <span class="trust-pill">Shibarium <em>verified locker</em></span>
+      <span class="trust-pill">∞ Forever on the <em>Hall</em></span>
     </div>
   </section>
 
@@ -277,25 +304,39 @@ input{font-family:var(--mono);outline:none;border:none;background:transparent;co
     <!-- CREATE LOCK -->
     <div class="card">
       <h2>Create Lock</h2>
-      <div class="sub">Lock LP · build trust · share proof</div>
+      <div class="sub" id="createSub">Lock LP or team tokens · build trust · share proof</div>
+
+      <div class="mode-row">
+        <button type="button" class="mode-btn active" id="modeLp" onclick="setLockMode('lp')">
+          Lock LP
+          <small>Pair liquidity · #1 anti-rug signal buyers look for</small>
+        </button>
+        <button type="button" class="mode-btn" id="modeToken" onclick="setLockMode('token')">
+          Lock project token
+          <small>Team / founder allocation · show % of supply</small>
+        </button>
+      </div>
 
       <div class="field">
-        <label>LP / Pair token address</label>
+        <label id="tokenLabel">LP / Pair token address</label>
         <input id="lpToken" placeholder="0x… pair (LP) contract" spellcheck="false" autocomplete="off" oninput="onLpInput()">
       </div>
       <div class="meta-line" id="lpMeta">Paste your LP token address from the pair</div>
 
       <div class="row2">
         <div class="field">
-          <label>Amount to lock</label>
-          <input id="lpAmount" placeholder="0.0" inputmode="decimal" autocomplete="off">
+          <label id="amountLabel">Amount to lock</label>
+          <input id="lpAmount" placeholder="0.0" inputmode="decimal" autocomplete="off" oninput="updateSupplyPct()">
         </div>
         <div class="field">
-          <label>Your LP balance</label>
+          <label id="balLabel">Your LP balance</label>
           <input id="lpBal" readonly value="—" style="color:var(--smoke)">
         </div>
       </div>
-      <button type="button" class="btn-sec" style="margin-top:0;margin-bottom:10px" onclick="setMaxLp()">Use max LP balance</button>
+      <div class="pct-box" id="pctBox">
+        <span id="pctLine">—</span>
+      </div>
+      <button type="button" class="btn-sec" style="margin-top:0;margin-bottom:10px" id="maxBtn" onclick="setMaxLp()">Use max balance</button>
 
       <div class="field" style="margin-bottom:6px">
         <label>Lock duration</label>
@@ -337,8 +378,9 @@ input{font-family:var(--mono);outline:none;border:none;background:transparent;co
           <li><strong style="color:var(--green)">No early unlock</strong> — the code cannot withdraw early.</li>
           <li><strong style="color:var(--gold)">Extend only later</strong> — strengthen commitment, never weaken it.</li>
           <li><strong style="color:var(--purple)">Forever locks</strong> — featured on the Hall of Commitment.</li>
+          <li><strong style="color:var(--blue)">LP lock</strong> = pool can’t be pulled · <strong style="color:var(--blue)">Token lock</strong> = team can’t dump.</li>
+          <li>Team locks show <strong style="color:var(--fog)">% of total supply</strong> so buyers see real commitment.</li>
           <li>Share your lock ID so buyers can verify on Shibariumscan.</li>
-          <li>Works for any ERC-20 / LP token on Shibarium (usually LP).</li>
         </ul>
         <p style="margin-top:14px;font-family:var(--mono);font-size:11px;color:var(--ash);word-break:break-all">
           Locker: <span id="sideLocker">—</span>
@@ -352,13 +394,15 @@ input{font-family:var(--mono);outline:none;border:none;background:transparent;co
     <div class="hall-head">
       <div>
         <h2>HALL OF COMMITMENT</h2>
-        <p>Projects that lock longer — or forever — earn the spotlight. Real locks. On-chain. Verifiable.</p>
+        <p>LP pool locks and team token locks that commit longer — or forever — earn the spotlight. Real locks. On-chain. Verifiable.</p>
       </div>
       <button type="button" class="btn-sec" style="width:auto;padding:10px 16px" onclick="loadHall()">Refresh hall</button>
     </div>
     <div class="filters">
       <button type="button" class="filter-btn active" data-f="featured" onclick="setFilter('featured',this)">Featured (1y+ / ∞)</button>
       <button type="button" class="filter-btn" data-f="forever" onclick="setFilter('forever',this)">∞ Forever</button>
+      <button type="button" class="filter-btn" data-f="lp" onclick="setFilter('lp',this)">LP locks</button>
+      <button type="button" class="filter-btn" data-f="team" onclick="setFilter('team',this)">Team token locks</button>
       <button type="button" class="filter-btn" data-f="all" onclick="setFilter('all',this)">All active</button>
     </div>
     <div class="lock-grid" id="hallGrid"></div>
@@ -415,7 +459,8 @@ input{font-family:var(--mono);outline:none;border:none;background:transparent;co
     "function approve(address,uint256) returns (bool)",
     "function decimals() view returns (uint8)",
     "function symbol() view returns (string)",
-    "function name() view returns (string)"
+    "function name() view returns (string)",
+    "function totalSupply() view returns (uint256)"
   ];
   var PAIR_ABI = [
     "function token0() view returns (address)",
@@ -429,10 +474,12 @@ input{font-family:var(--mono);outline:none;border:none;background:transparent;co
   var signer = null;
   var account = null;
   var presetDays = 180;
-  var lpInfo = null; // {decimals, symbol, balance}
+  var lockMode = "lp"; // lp | token
+  var lpInfo = null; // {decimals, symbol, balance, name, totalSupply, isLp, pairNote}
   var hallFilter = "featured";
   var hallCache = [];
   var locking = false;
+  var pairDetectCache = {}; // token addr -> isLp boolean
 
   function $(id) { return document.getElementById(id); }
   function esc(s) {
@@ -549,17 +596,96 @@ input{font-family:var(--mono);outline:none;border:none;background:transparent;co
     if (btn) btn.classList.add("active");
     updateUnlockPreview();
   };
+
+  window.setLockMode = function (mode) {
+    lockMode = mode === "token" ? "token" : "lp";
+    var lpBtn = $("modeLp");
+    var tkBtn = $("modeToken");
+    if (lpBtn) {
+      lpBtn.classList.toggle("active", lockMode === "lp");
+      lpBtn.classList.remove("token-mode");
+    }
+    if (tkBtn) {
+      tkBtn.classList.toggle("active", lockMode === "token");
+      tkBtn.classList.toggle("token-mode", lockMode === "token");
+    }
+    if (lockMode === "lp") {
+      $("tokenLabel").textContent = "LP / Pair token address";
+      $("lpToken").placeholder = "0x… pair (LP) contract";
+      $("amountLabel").textContent = "Amount to lock";
+      $("balLabel").textContent = "Your LP balance";
+      $("maxBtn").textContent = "Use max LP balance";
+      $("createSub").textContent = "Lock liquidity · #1 buyer trust signal";
+      $("lpMeta").textContent = "Paste your LP token address from the pair";
+      $("lockBtn").textContent = account ? "Approve & Lock LP" : "Connect wallet to lock";
+    } else {
+      $("tokenLabel").textContent = "Project token address";
+      $("lpToken").placeholder = "0x… your project token (not LP)";
+      $("amountLabel").textContent = "Amount to lock (team allocation)";
+      $("balLabel").textContent = "Your token balance";
+      $("maxBtn").textContent = "Use max token balance";
+      $("createSub").textContent = "Lock team tokens · show % of supply";
+      $("lpMeta").textContent = "Paste your project token — we’ll show % of total supply";
+      $("lockBtn").textContent = account ? "Approve & Lock tokens" : "Connect wallet to lock";
+    }
+    $("lpMeta").className = "meta-line";
+    $("pctBox").classList.remove("show");
+    updateUnlockPreview();
+    onLpInput();
+  };
+
   function updateUnlockPreview() {
     var el = $("unlockPreview");
+    var kind = lockMode === "lp" ? "LP" : "team token";
     if (presetDays === 0) {
-      el.innerHTML = "Unlock: <strong style=\"color:var(--purple)\">∞ FOREVER</strong> — featured on Hall of Commitment";
+      el.innerHTML = "Unlock: <strong style=\"color:var(--purple)\">∞ FOREVER</strong> — " + kind + " featured on Hall of Commitment";
       el.className = "meta-line ok";
     } else {
       var ts = Number(unlockTimestamp());
-      el.textContent = "Unlock: " + fmtDate(ts) + " · duration " + presetDays + " days";
+      el.textContent = "Unlock: " + fmtDate(ts) + " · " + presetDays + " days · " + kind + " lock";
       el.className = "meta-line";
     }
   }
+
+  window.updateSupplyPct = function () {
+    var box = $("pctBox");
+    var line = $("pctLine");
+    if (!box || !line) return;
+    if (lockMode !== "token" || !lpInfo || !lpInfo.totalSupply || lpInfo.totalSupply === 0n) {
+      box.classList.remove("show");
+      return;
+    }
+    var amtStr = $("lpAmount").value.trim();
+    if (!amtStr || Number(amtStr) <= 0) {
+      box.classList.add("show");
+      var locked = lpInfo.totalLockedOnLocker || 0n;
+      var lockedPct = Number(locked * 10000n / lpInfo.totalSupply) / 100;
+      line.innerHTML =
+        "Token: <b>" + esc(lpInfo.symbol) + "</b>" +
+        (lpInfo.name ? " · " + esc(lpInfo.name) : "") +
+        "<br>Total supply: <b>" + esc(fmtAmt(lpInfo.totalSupply, lpInfo.decimals)) + "</b>" +
+        (locked > 0n
+          ? "<br>Already locked in RicSwap locker: <b>" + lockedPct.toFixed(2) + "%</b> of supply"
+          : "<br>Enter amount to see % of total supply you will lock") +
+        "<span class=\"warn\">Tip: locking a meaningful % (e.g. team 5–20%+) is more convincing than a tiny amount.</span>";
+      return;
+    }
+    try {
+      var amount = ethers.parseUnits(amtStr, lpInfo.decimals);
+      var pct = Number(amount * 10000n / lpInfo.totalSupply) / 100;
+      var pctStr = pct < 0.0001 ? "< 0.0001" : pct.toFixed(4);
+      var warn = "";
+      if (pct < 0.1) warn = "<span class=\"warn\">⚠ Very small % of supply — buyers may ignore this lock.</span>";
+      else if (pct >= 5) warn = "<span class=\"warn\" style=\"color:var(--green)\">✓ Strong signal if this is team/founder allocation.</span>";
+      box.classList.add("show");
+      line.innerHTML =
+        "You will lock <b>" + esc(pctStr) + "%</b> of total supply" +
+        " (" + esc(fmtAmt(amount, lpInfo.decimals)) + " / " + esc(fmtAmt(lpInfo.totalSupply, lpInfo.decimals)) + " " + esc(lpInfo.symbol) + ")" +
+        warn;
+    } catch (_) {
+      box.classList.remove("show");
+    }
+  };
 
   // ─── Connect ────────────────────────────────────────────
   window.connect = async function () {
@@ -597,7 +723,7 @@ input{font-family:var(--mono);outline:none;border:none;background:transparent;co
       btn.classList.add("connected");
       $("lockOwner").placeholder = account;
       $("lockBtn").disabled = false;
-      $("lockBtn").textContent = "Approve & Lock LP";
+      $("lockBtn").textContent = lockMode === "lp" ? "Approve & Lock LP" : "Approve & Lock tokens";
       setStatus("ok", "Connected. Locks return only to the beneficiary after unlock.");
       eth.on && eth.on("accountsChanged", function () { location.reload(); });
       eth.on && eth.on("chainChanged", function () { location.reload(); });
@@ -610,14 +736,47 @@ input{font-family:var(--mono);outline:none;border:none;background:transparent;co
     }
   };
 
-  // ─── LP token meta ──────────────────────────────────────
+  // ─── Token / LP meta ────────────────────────────────────
+  async function detectIsLp(addr, prov) {
+    var key = addr.toLowerCase();
+    if (pairDetectCache[key] !== undefined) return pairDetectCache[key];
+    try {
+      var pair = new ethers.Contract(addr, PAIR_ABI, prov);
+      var t0 = await pair.token0();
+      var t1 = await pair.token1();
+      if (!t0 || !t1 || t0 === ethers.ZeroAddress) {
+        pairDetectCache[key] = false;
+        return false;
+      }
+      try {
+        var fac = new ethers.Contract(CFG.FACTORY, FAC_ABI, prov);
+        var gp = await fac.getPair(t0, t1);
+        pairDetectCache[key] = {
+          isLp: true,
+          official: !!(gp && gp.toLowerCase() === addr.toLowerCase()),
+          token0: t0,
+          token1: t1
+        };
+      } catch (_) {
+        pairDetectCache[key] = { isLp: true, official: false, token0: t0, token1: t1 };
+      }
+      return pairDetectCache[key];
+    } catch (_) {
+      pairDetectCache[key] = false;
+      return false;
+    }
+  }
+
   window.onLpInput = async function () {
     lpInfo = null;
     var raw = $("lpToken").value.trim();
     var meta = $("lpMeta");
     $("lpBal").value = "—";
+    $("pctBox").classList.remove("show");
     if (!raw) {
-      meta.textContent = "Paste your LP token address from the pair";
+      meta.textContent = lockMode === "lp"
+        ? "Paste your LP token address from the pair"
+        : "Paste your project token address (team allocation)";
       meta.className = "meta-line";
       return;
     }
@@ -631,29 +790,54 @@ input{font-family:var(--mono);outline:none;border:none;background:transparent;co
       var addr = ethers.getAddress(raw);
       var prov = provider || (await getReadProvider());
       var tok = new ethers.Contract(addr, ERC20_ABI, prov);
-      var dec = 18, sym = "LP", bal = 0n;
-      try { dec = Number(await tok.decimals()); } catch (_) {}
-      try { sym = String(await tok.symbol()).replace(/[^\w.\-$]/g, "").slice(0, 16) || "LP"; } catch (_) {}
+      var dec = 18, sym = "TOKEN", name = "", bal = 0n, totalSupply = 0n, totalLockedOnLocker = 0n;
+      try { dec = Number(await tok.decimals()); if (dec > 36) dec = 18; } catch (_) {}
+      try { sym = String(await tok.symbol()).replace(/[^\w.\-$]/g, "").slice(0, 16) || "TOKEN"; } catch (_) {}
+      try { name = String(await tok.name()).replace(/[^\w.\- $]/g, "").slice(0, 40); } catch (_) {}
+      try { totalSupply = await tok.totalSupply(); } catch (_) { totalSupply = 0n; }
       if (account) {
         try { bal = await tok.balanceOf(account); } catch (_) {}
       }
-      // Soft pair check
-      var pairNote = "";
       try {
-        var pair = new ethers.Contract(addr, PAIR_ABI, prov);
-        var t0 = await pair.token0();
-        var t1 = await pair.token1();
-        var fac = new ethers.Contract(CFG.FACTORY, FAC_ABI, prov);
-        var gp = await fac.getPair(t0, t1);
-        if (gp && gp.toLowerCase() === addr.toLowerCase()) pairNote = " · official RicSwap pair ✓";
-        else pairNote = " · not on official factory (still lockable)";
-      } catch (_) {
-        pairNote = " · ERC-20 lock (any token supported)";
+        var locker = new ethers.Contract(CFG.LOCKER, LOCKER_ABI, prov);
+        totalLockedOnLocker = await locker.totalLocked(addr);
+      } catch (_) {}
+
+      var det = await detectIsLp(addr, prov);
+      var isLp = !!(det && det.isLp);
+      var pairNote = "";
+      if (isLp) {
+        pairNote = det.official
+          ? " · detected as LP · official RicSwap pair ✓"
+          : " · detected as LP pair (still lockable)";
+      } else {
+        pairNote = " · project token (ERC-20)";
       }
-      lpInfo = { address: addr, decimals: dec, symbol: sym, balance: bal };
+
+      // Mode guidance (don’t block — just warn)
+      var modeWarn = "";
+      if (lockMode === "lp" && !isLp) {
+        modeWarn = " · ⚠ looks like a project token — switch to “Lock project token” if that’s intended";
+      }
+      if (lockMode === "token" && isLp) {
+        modeWarn = " · ⚠ looks like an LP pair — switch to “Lock LP” for pool locks";
+      }
+
+      lpInfo = {
+        address: addr,
+        decimals: dec,
+        symbol: sym,
+        name: name,
+        balance: bal,
+        totalSupply: totalSupply,
+        totalLockedOnLocker: totalLockedOnLocker,
+        isLp: isLp,
+        officialLp: !!(det && det.official)
+      };
       $("lpBal").value = fmtAmt(bal, dec) + " " + sym;
-      meta.textContent = sym + " · " + dec + " decimals" + pairNote;
-      meta.className = "meta-line ok";
+      meta.textContent = sym + (name ? " · " + name : "") + " · " + dec + " decimals" + pairNote + modeWarn;
+      meta.className = modeWarn ? "meta-line" : "meta-line ok";
+      updateSupplyPct();
     } catch (e) {
       meta.textContent = "Could not load token";
       meta.className = "meta-line bad";
@@ -663,6 +847,7 @@ input{font-family:var(--mono);outline:none;border:none;background:transparent;co
   window.setMaxLp = function () {
     if (!lpInfo || !ethers) return;
     $("lpAmount").value = ethers.formatUnits(lpInfo.balance, lpInfo.decimals);
+    updateSupplyPct();
   };
 
   // ─── Create lock ────────────────────────────────────────
@@ -673,11 +858,11 @@ input{font-family:var(--mono);outline:none;border:none;background:transparent;co
     $("lockBtn").disabled = true;
     try {
       await onLpInput();
-      if (!lpInfo) throw new Error("Enter a valid LP / token address");
+      if (!lpInfo) throw new Error("Enter a valid token address");
       var amtStr = $("lpAmount").value.trim();
       if (!amtStr || Number(amtStr) <= 0) throw new Error("Enter amount to lock");
       var amount = ethers.parseUnits(amtStr, lpInfo.decimals);
-      if (amount > lpInfo.balance) throw new Error("Insufficient LP balance");
+      if (amount > lpInfo.balance) throw new Error("Insufficient balance");
       var unlockTime = unlockTimestamp();
       if (presetDays !== 0 && unlockTime <= BigInt(Math.floor(Date.now() / 1000))) {
         throw new Error("Unlock time must be in the future");
@@ -689,25 +874,43 @@ input{font-family:var(--mono);outline:none;border:none;background:transparent;co
         owner = ethers.getAddress(ownerRaw);
       }
 
+      // Soft mismatch warnings
+      if (lockMode === "lp" && !lpInfo.isLp) {
+        if (!confirm("This address does not look like an LP pair.\n\nContinue as a project token lock anyway?")) {
+          locking = false; $("lockBtn").disabled = false; return;
+        }
+      }
+      if (lockMode === "token" && lpInfo.isLp) {
+        if (!confirm("This address looks like an LP pair.\n\nFor pool safety, use “Lock LP”. Continue as token lock anyway?")) {
+          locking = false; $("lockBtn").disabled = false; return;
+        }
+      }
+
+      var kind = (lockMode === "lp" || lpInfo.isLp) ? "LP" : "TEAM TOKEN";
+      var pctLine = "";
+      if (lockMode === "token" && lpInfo.totalSupply && lpInfo.totalSupply > 0n) {
+        var pct = Number(amount * 10000n / lpInfo.totalSupply) / 100;
+        pctLine = "\n% of supply: " + (pct < 0.0001 ? "< 0.0001" : pct.toFixed(4)) + "%";
+      }
+
       var confirmMsg =
-        "Lock LP on trustless LiquidityLocker\n\n" +
-        "Token: " + lpInfo.symbol + "\n" +
-        "Amount: " + amtStr + "\n" +
+        "Lock " + kind + " on trustless LiquidityLocker\n\n" +
+        "Token: " + lpInfo.symbol + (lpInfo.name ? " (" + lpInfo.name + ")" : "") + "\n" +
+        "Amount: " + amtStr + pctLine + "\n" +
         "Unlock: " + (presetDays === 0 ? "FOREVER" : fmtDate(unlockTime)) + "\n" +
         "Beneficiary: " + owner + "\n" +
         "Locker: " + CFG.LOCKER + "\n\n" +
         "No one can withdraw early. Forever cannot be undone.\nContinue?";
       if (presetDays === 0) {
         confirmMsg =
-          "∞ FOREVER LOCK\n\n" +
-          "This commitment is permanent for practical purposes.\n" +
-          "Amount: " + amtStr + " " + lpInfo.symbol + "\n" +
+          "∞ FOREVER " + kind + " LOCK\n\n" +
+          "Amount: " + amtStr + " " + lpInfo.symbol + pctLine + "\n" +
           "You will be featured on the Hall of Commitment.\n\n" +
-          "Type mindset: this is for projects that will never pull LP.\nContinue?";
+          "This is for projects that commit long-term.\nContinue?";
       }
       if (!confirm(confirmMsg)) { locking = false; $("lockBtn").disabled = false; return; }
 
-      setStatus("info", "Approving exact LP amount to locker…");
+      setStatus("info", "Approving exact amount to locker…");
       var tok = new ethers.Contract(lpInfo.address, ERC20_ABI, signer);
       var allow = await tok.allowance(account, CFG.LOCKER);
       if (allow < amount) {
@@ -737,7 +940,7 @@ input{font-family:var(--mono);outline:none;border:none;background:transparent;co
       var link = CFG.EXPLORER + "/tx/" + tx.hash;
       setStatus(
         "ok",
-        "Locked" + (lockId != null ? " · Lock #" + lockId : "") +
+        kind + " locked" + (lockId != null ? " · Lock #" + lockId : "") +
         '! <a href="' + link + '" target="_blank" rel="noopener">View tx</a>'
       );
       $("lpAmount").value = "";
@@ -749,7 +952,9 @@ input{font-family:var(--mono);outline:none;border:none;background:transparent;co
     } finally {
       locking = false;
       $("lockBtn").disabled = false;
-      $("lockBtn").textContent = account ? "Approve & Lock LP" : "Connect wallet to lock";
+      $("lockBtn").textContent = account
+        ? (lockMode === "lp" ? "Approve & Lock LP" : "Approve & Lock tokens")
+        : "Connect wallet to lock";
     }
   };
 
@@ -764,12 +969,16 @@ input{font-family:var(--mono);outline:none;border:none;background:transparent;co
     var unlockTime = L.unlockTime || L[3];
     var withdrawn = L.withdrawn === undefined ? L[4] : L.withdrawn;
     if (!token || token === ethers.ZeroAddress) return null;
-    var sym = "LP", dec = 18;
+    var sym = "TOKEN", dec = 18, name = "", totalSupply = 0n;
     try {
       var t = new ethers.Contract(token, ERC20_ABI, prov);
-      try { dec = Number(await t.decimals()); } catch (_) {}
-      try { sym = String(await t.symbol()).replace(/[^\w.\-$]/g, "").slice(0, 16) || "LP"; } catch (_) {}
+      try { dec = Number(await t.decimals()); if (dec > 36) dec = 18; } catch (_) {}
+      try { sym = String(await t.symbol()).replace(/[^\w.\-$]/g, "").slice(0, 16) || "TOKEN"; } catch (_) {}
+      try { name = String(await t.name()).replace(/[^\w.\- $]/g, "").slice(0, 40); } catch (_) {}
+      try { totalSupply = await t.totalSupply(); } catch (_) { totalSupply = 0n; }
     } catch (_) {}
+    var det = await detectIsLp(token, prov);
+    var isLp = !!(det && det.isLp);
     return {
       id: String(id),
       token: token,
@@ -778,7 +987,11 @@ input{font-family:var(--mono);outline:none;border:none;background:transparent;co
       unlockTime: unlockTime,
       withdrawn: !!withdrawn,
       symbol: sym,
-      decimals: dec
+      name: name,
+      decimals: dec,
+      totalSupply: totalSupply,
+      isLp: isLp,
+      officialLp: !!(det && det.official)
     };
   }
 
@@ -797,17 +1010,53 @@ input{font-family:var(--mono);outline:none;border:none;background:transparent;co
     var tier = tierOf(lock);
     var forever = tier === "forever";
     var long = tier === "long";
+    var isLp = !!lock.isLp;
     var cls = "lock-card" + (forever ? " forever" : long ? " long" : "");
-    var badge =
-      forever ? '<span class="badge forever">∞ Forever</span>' :
-      long ? '<span class="badge long">1Y+ Commitment</span>' :
-      tier === "mid" ? '<span class="badge mid">90d+</span>' :
-      tier === "done" ? '<span class="badge done">Unlocked / Done</span>' :
-      '<span class="badge short">Active</span>';
-    var ribbon = forever ? '<div class="ribbon">Forever</div>' : (long ? '<div class="ribbon" style="background:linear-gradient(90deg,var(--gold),var(--magma))">Long lock</div>' : "");
+    // Kind badge (LP vs team) + duration badge
+    var kindBadge = isLp
+      ? (forever
+          ? '<span class="badge lp-forever">LP ∞ Forever</span>'
+          : '<span class="badge lp">LP lock</span>')
+      : (forever
+          ? '<span class="badge team-forever">Team ∞ Forever</span>'
+          : '<span class="badge team">Team token</span>');
+    var durBadge = "";
+    if (isLp && forever) {
+      // kind already says LP Forever
+    } else if (!isLp && forever) {
+      // kind already says Team Forever
+    } else if (forever) {
+      durBadge = ' <span class="badge forever">∞ Forever</span>';
+    } else if (long) {
+      durBadge = ' <span class="badge long">1Y+ Commitment</span>';
+    } else if (tier === "mid") {
+      durBadge = ' <span class="badge mid">90d+</span>';
+    } else if (tier === "done") {
+      durBadge = ' <span class="badge done">Unlocked / Done</span>';
+    } else {
+      durBadge = ' <span class="badge short">Active</span>';
+    }
+    var badge = kindBadge + durBadge;
+    var ribbon = forever
+      ? '<div class="ribbon">' + (isLp ? "LP Forever" : "Team Forever") + "</div>"
+      : (long ? '<div class="ribbon" style="background:linear-gradient(90deg,var(--gold),var(--magma))">Long lock</div>' : "");
     var now = Math.floor(Date.now() / 1000);
     var left = Number(lock.unlockTime) > now ? Number(lock.unlockTime) - now : 0;
     var leftStr = forever ? "∞" : fmtDuration(left);
+
+    // % of supply for team tokens (not LP)
+    var supplyLine = "";
+    if (!isLp && lock.totalSupply && lock.totalSupply > 0n && lock.amount != null) {
+      try {
+        var pct = Number(BigInt(lock.amount) * 10000n / BigInt(lock.totalSupply)) / 100;
+        var pctStr = pct < 0.0001 ? "< 0.0001" : pct.toFixed(4);
+        supplyLine = "<br>% of supply: <b>" + esc(pctStr) + "%</b>";
+      } catch (_) {}
+    } else if (isLp && lock.officialLp) {
+      supplyLine = "<br>Pair: <b>official RicSwap LP ✓</b>";
+    }
+
+    var kindLabel = isLp ? "LP" : "Team token";
     var actions = "";
     if (opts.mine && account && lock.owner.toLowerCase() === account.toLowerCase() && !lock.withdrawn) {
       var canWithdraw = !forever && Number(lock.unlockTime) <= now;
@@ -827,9 +1076,13 @@ input{font-family:var(--mono);outline:none;border:none;background:transparent;co
     }
     return (
       '<div class="' + cls + '">' + ribbon + badge +
-      '<div class="lock-title">Lock #' + esc(lock.id) + " · " + esc(lock.symbol) + "</div>" +
+      '<div class="lock-title">Lock #' + esc(lock.id) + " · " + esc(lock.symbol) +
+      (lock.name && !isLp ? " <span style=\"color:var(--ash);font-size:.85em;font-weight:500\">" + esc(lock.name) + "</span>" : "") +
+      "</div>" +
       '<div class="lock-meta">' +
-      "Amount: <b>" + esc(fmtAmt(lock.amount, lock.decimals)) + " " + esc(lock.symbol) + "</b><br>" +
+      "Type: <b>" + kindLabel + "</b><br>" +
+      "Amount: <b>" + esc(fmtAmt(lock.amount, lock.decimals)) + " " + esc(lock.symbol) + "</b>" +
+      supplyLine + "<br>" +
       "Unlock: <b>" + esc(fmtDate(lock.unlockTime)) + "</b><br>" +
       "Remaining: <b>" + esc(leftStr) + "</b><br>" +
       "Owner: <b>" + esc(short(lock.owner)) + "</b><br>" +
@@ -971,18 +1224,24 @@ input{font-family:var(--mono);outline:none;border:none;background:transparent;co
   function renderHall() {
     var grid = $("hallGrid");
     var list = hallCache.filter(function (lock) {
+      if (lock.withdrawn) return false;
       var tier = tierOf(lock);
       if (hallFilter === "forever") return tier === "forever";
       if (hallFilter === "featured") return tier === "forever" || tier === "long";
-      return !lock.withdrawn;
+      if (hallFilter === "lp") return !!lock.isLp;
+      if (hallFilter === "team") return !lock.isLp;
+      // all
+      return true;
     });
     if (!list.length) {
       grid.innerHTML = "";
       $("hallEmpty").style.display = "block";
-      $("hallEmpty").textContent =
-        hallFilter === "forever"
-          ? "No forever locks yet. Lock ∞ to lead the hall."
-          : "No matching locks in this filter.";
+      var emptyMsg = "No matching locks in this filter.";
+      if (hallFilter === "forever") emptyMsg = "No forever locks yet. Lock ∞ to lead the hall.";
+      else if (hallFilter === "lp") emptyMsg = "No LP locks yet. Lock your pair to prove pool safety.";
+      else if (hallFilter === "team") emptyMsg = "No team token locks yet. Lock founder allocation & show % of supply.";
+      else if (hallFilter === "featured") emptyMsg = "No 1y+ / forever locks yet — lock long to get featured.";
+      $("hallEmpty").textContent = emptyMsg;
       return;
     }
     $("hallEmpty").style.display = "none";
