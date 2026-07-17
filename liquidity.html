@@ -1236,6 +1236,7 @@ body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(
 
       var link = CONFIG.EXPLORER + "/tx/" + tx.hash;
       setSt("success", 'Done. LP to your wallet. <a href="' + link + '" target="_blank" rel="noopener">Explorer ↗</a>');
+      setSt("success", 'Done. LP to your wallet. <a href="' + link + '" target="_blank" rel="noopener">Explorer ↗</a> · <a href="lock.html" style="color:var(--gold);font-weight:700">Lock LP to prove commitment →</a>');
       manualRatioTouch = false;
       await loadToken("A");
       await loadToken("B");
