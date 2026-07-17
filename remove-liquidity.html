@@ -1,0 +1,1061 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#030407">
+<meta name="description" content="RicSwap — hardened remove liquidity. Exact LP approve to Router only. Tokens always to your wallet.">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://unpkg.com https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://rpc.shibarium.shib.io https://*.shibarium.shib.io https://shibariumscan.io https://www.shibariumscan.io https://cdn.jsdelivr.net https://unpkg.com https://cdnjs.cloudflare.com https://raw.githubusercontent.com; object-src 'none'; base-uri 'self'; form-action 'none'">
+<title>RicSwap | Remove Liquidity (Hardened)</title>
+<link rel="icon" type="image/png" href="riclogo.png">
+<link rel="apple-touch-icon" href="riclogo.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+   DESIGN SYSTEM -- identical to swap.html + liquidity.html
+   ============================================================ */
+:root {
+  --void:  #030407; --deep:  #05060e; --well:  #080918;
+  --pit:   #0b0c1c; --card:  #0e1022; --lift:  #12142c;
+  --rim:   rgba(255,255,255,0.055); --rim2: rgba(255,77,0,0.28);
+  --magma: #ff4d00; --ember: #ff8c00; --gold:  #e8b84b;
+  --green: #00ffb2; --red:   #ff3366; --blue:  #4d9fff;
+  --ash:   #383b52; --smoke: #656880; --fog:   #a0a2bc;
+  --mist:  #c4c6dc; --white: #eef0f8;
+  --mono:    'JetBrains Mono', monospace;
+  --display: 'Bebas Neue', sans-serif;
+  --body:    'DM Sans', sans-serif;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{height:100%}
+body{background:var(--void);color:var(--fog);font-family:var(--body);font-size:15px;
+  line-height:1.6;min-height:100vh;-webkit-font-smoothing:antialiased;
+  display:flex;flex-direction:column;overflow-x:hidden}
+a{color:inherit;text-decoration:none}
+button{font-family:var(--body);cursor:pointer;border:none;outline:none}
+input{font-family:var(--body);outline:none;border:none;background:transparent}
+
+body::before{content:'';position:fixed;inset:0;
+  background-image:linear-gradient(rgba(255,77,0,.016)1px,transparent 1px),
+    linear-gradient(90deg,rgba(255,77,0,.016)1px,transparent 1px);
+  background-size:52px 52px;pointer-events:none;z-index:0}
+body::after{content:'';position:fixed;inset:0;
+  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  opacity:0.014;pointer-events:none;z-index:0}
+.bg-glow{position:fixed;top:30%;left:50%;transform:translate(-50%,-50%);
+  width:600px;height:600px;
+  background:radial-gradient(circle,rgba(77,159,255,.04)0%,transparent 70%);
+  pointer-events:none;z-index:0}
+
+/*  Header  */
+.header{position:sticky;top:0;z-index:200;background:rgba(3,4,7,0.88);
+  backdrop-filter:blur(24px);border-bottom:1px solid var(--rim);
+  padding:0 24px;height:64px;display:flex;align-items:center;
+  justify-content:space-between;gap:12px}
+.brand{display:flex;align-items:center;gap:10px;flex-shrink:0;text-decoration:none}
+.brand img{width:34px;height:34px;border-radius:10px;object-fit:cover;display:block;
+  box-shadow:0 6px 16px rgba(245,166,35,.22)}
+.logo{font-family:var(--display);font-size:26px;letter-spacing:2px;
+  background:linear-gradient(135deg,var(--gold),var(--magma));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.sec-banner{margin:0 0 14px;padding:12px 14px;border-radius:12px;
+  border:1px solid rgba(0,255,178,.2);background:rgba(0,255,178,.05);
+  font-size:12px;color:var(--smoke);line-height:1.5}
+.sec-banner strong{color:var(--green)}
+.header-nav{display:flex;align-items:center;gap:2px;flex:1;justify-content:center}
+.nav-link{padding:6px 16px;border-radius:8px;font-size:14px;font-weight:500;
+  color:var(--smoke);cursor:pointer;transition:all .2s;white-space:nowrap;
+  background:transparent;border:none}
+.nav-link:hover{color:var(--fog)}
+.nav-link.active{color:var(--white);background:rgba(255,255,255,.06)}
+.header-right{display:flex;align-items:center;gap:8px;flex-shrink:0}
+.net-badge{display:flex;align-items:center;gap:5px;padding:5px 11px;border-radius:20px;
+  background:rgba(0,255,178,.06);border:1px solid rgba(0,255,178,.15);
+  font-family:var(--mono);font-size:10px;color:var(--green);letter-spacing:.5px}
+.pulse{width:5px;height:5px;border-radius:50%;background:var(--green);
+  animation:pulse 2s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+.connect-btn{display:flex;align-items:center;gap:8px;padding:9px 18px;border-radius:10px;
+  font-size:13px;font-weight:500;background:linear-gradient(135deg,var(--magma),var(--ember));
+  color:white;transition:all .2s;border:none;cursor:pointer;white-space:nowrap}
+.connect-btn:hover{transform:translateY(-1px);box-shadow:0 8px 24px rgba(255,77,0,.38)}
+.connect-btn.connected{background:transparent;border:1px solid rgba(0,255,178,.25);color:var(--green)}
+.connect-btn.connected:hover{background:rgba(0,255,178,.05);transform:none;box-shadow:none}
+.connect-btn svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+
+/*  Main  */
+.main{position:relative;z-index:1;flex:1;display:flex;
+  align-items:flex-start;justify-content:center;padding:40px 24px 80px}
+
+/*  Card  */
+.rm-card{width:100%;max-width:560px;background:var(--card);
+  border:1px solid var(--rim);border-radius:20px;overflow:hidden;position:relative}
+.rm-card::before{content:'';position:absolute;top:-1px;left:12%;right:12%;height:1px;
+  background:linear-gradient(90deg,transparent,rgba(77,159,255,.45),transparent)}
+
+.card-header{padding:20px 20px 0;display:flex;align-items:center;justify-content:space-between}
+.card-title{font-family:var(--display);font-size:28px;letter-spacing:2px;color:var(--white)}
+.card-sub{font-family:var(--mono);font-size:10px;color:var(--ash);letter-spacing:1px;
+  text-transform:uppercase;margin-top:2px}
+.add-link{display:flex;align-items:center;gap:5px;font-family:var(--mono);font-size:11px;
+  color:var(--smoke);padding:6px 12px;border:1px solid var(--rim);border-radius:8px;
+  cursor:pointer;transition:all .2s;white-space:nowrap}
+.add-link:hover{border-color:var(--rim2);color:var(--magma)}
+.add-link svg{width:12px;height:12px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+
+.card-body{padding:20px}
+
+/*  Section label  */
+.sec-label{font-family:var(--mono);font-size:9px;letter-spacing:2px;
+  text-transform:uppercase;color:var(--ash);margin-bottom:10px;
+  display:flex;align-items:center;justify-content:space-between}
+.sec-label::after{content:'';flex:1;height:1px;background:var(--rim);margin-left:12px}
+.sec-label-right{font-family:var(--mono);font-size:9px;color:var(--smoke);
+  margin-left:auto;cursor:pointer;padding:2px 8px;border-radius:4px;
+  background:transparent;border:none;transition:color .15s}
+.sec-label-right:hover{color:var(--white)}
+
+/*  Position card  */
+.pos-card{background:var(--pit);border:1px solid var(--rim);border-radius:14px;
+  padding:16px;margin-bottom:10px;cursor:pointer;transition:all .2s}
+.pos-card:hover{border-color:rgba(255,255,255,.1)}
+.pos-card.selected{border-color:rgba(255,77,0,.4);background:rgba(255,77,0,.03)}
+
+.pos-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.pos-pair{display:flex;align-items:center;gap:10px}
+.pair-avs{display:flex;align-items:center}
+.av{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;
+  justify-content:center;font-family:var(--mono);font-size:10px;font-weight:700;
+  overflow:hidden;border:2px solid var(--card);flex-shrink:0}
+.av img{width:100%;height:100%;object-fit:cover;border-radius:50%}
+.av+.av{margin-left:-8px}
+.pair-name{font-weight:600;font-size:16px;color:var(--white)}
+.share-badge{font-family:var(--mono);font-size:10px;color:var(--green);
+  background:rgba(0,255,178,.08);border:1px solid rgba(0,255,178,.18);
+  border-radius:4px;padding:2px 8px}
+
+.pos-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px}
+.pos-cell{background:var(--well);border:1px solid var(--rim);border-radius:9px;padding:10px 12px}
+.pc-lbl{font-family:var(--mono);font-size:9px;color:var(--ash);
+  text-transform:uppercase;letter-spacing:1px;margin-bottom:4px}
+.pc-val{font-family:var(--mono);font-size:13px;font-weight:700;color:var(--white)}
+
+.lp-row{font-family:var(--mono);font-size:11px;color:var(--smoke);text-align:center;
+  padding:8px;background:var(--well);border:1px solid var(--rim);border-radius:8px;margin-bottom:10px}
+.lp-row span{color:var(--white);font-weight:500}
+
+.sel-btn{width:100%;padding:9px;background:transparent;border:1px solid var(--rim);
+  border-radius:9px;color:var(--smoke);font-family:var(--mono);font-size:11px;
+  cursor:pointer;transition:all .15s}
+.sel-btn:hover{border-color:var(--rim2);color:var(--fog)}
+.pos-card.selected .sel-btn{background:rgba(255,77,0,.08);border-color:rgba(255,77,0,.3);color:var(--magma)}
+
+/*  Skeleton  */
+.skel{background:var(--pit);border:1px solid var(--rim);border-radius:14px;
+  padding:16px;margin-bottom:10px;animation:shimmer 1.5s ease infinite}
+@keyframes shimmer{0%,100%{opacity:.35}50%{opacity:.7}}
+.skel-line{background:var(--rim);border-radius:4px;margin-bottom:8px}
+
+/*  Empty / manual  */
+.pos-empty{text-align:center;padding:36px 20px;font-family:var(--mono);
+  font-size:12px;color:var(--ash)}
+.pos-empty .icon{font-size:32px;margin-bottom:10px}
+
+.manual-wrap{margin-top:12px;background:var(--pit);border:1px solid var(--rim);
+  border-radius:12px;padding:14px 16px;display:none}
+.manual-lbl{font-family:var(--mono);font-size:9px;color:var(--ash);
+  text-transform:uppercase;letter-spacing:1.5px;margin-bottom:8px}
+.manual-input{width:100%;background:var(--well);border:1px solid var(--rim);
+  border-radius:8px;color:var(--white);padding:9px 12px;
+  font-family:var(--mono);font-size:12px;transition:border-color .2s}
+.manual-input:focus{border-color:rgba(255,77,0,.3)}
+.manual-input::placeholder{color:var(--ash)}
+
+/*  Remove panel  */
+.remove-panel{display:none;margin-top:16px;background:var(--pit);
+  border:1px solid var(--rim);border-radius:14px;padding:18px;
+  animation:fadeUp .3s ease both}
+.remove-panel.show{display:block}
+@keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+
+.rm-hdr{display:flex;align-items:center;gap:12px;padding-bottom:14px;
+  border-bottom:1px solid var(--rim);margin-bottom:16px}
+.rm-name{font-weight:600;font-size:15px;color:var(--white)}
+.rm-sub{font-family:var(--mono);font-size:10px;color:var(--ash);margin-top:2px}
+
+/* Percentage selector */
+.pct-label{font-family:var(--mono);font-size:9px;letter-spacing:2px;
+  text-transform:uppercase;color:var(--ash);margin-bottom:10px}
+.pct-btns{display:flex;gap:6px;margin-bottom:12px}
+.pct-btn{flex:1;padding:8px;background:transparent;border:1px solid var(--rim);
+  border-radius:8px;font-family:var(--mono);font-size:11px;color:var(--ash);
+  cursor:pointer;transition:all .15s}
+.pct-btn:hover{border-color:var(--rim2);color:var(--fog)}
+.pct-btn.active{background:rgba(255,77,0,.1);border-color:rgba(255,77,0,.3);
+  color:var(--magma);font-weight:600}
+
+.pct-display{text-align:center;font-family:var(--display);font-size:48px;
+  letter-spacing:2px;color:var(--white);margin:6px 0;line-height:1}
+.pct-slider{width:100%;margin:8px 0 16px;cursor:pointer;
+  -webkit-appearance:none;appearance:none;height:3px;border-radius:2px;
+  background:var(--rim);outline:none}
+.pct-slider::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;
+  border-radius:50%;background:var(--magma);cursor:pointer;border:2px solid var(--card);
+  box-shadow:0 2px 8px rgba(255,77,0,.4)}
+.pct-slider::-moz-range-thumb{width:18px;height:18px;border-radius:50%;
+  background:var(--magma);cursor:pointer;border:2px solid var(--card)}
+
+/* You will receive */
+.recv-label{font-family:var(--mono);font-size:9px;letter-spacing:2px;
+  text-transform:uppercase;color:var(--ash);margin-bottom:8px}
+.recv-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
+.recv-card{background:var(--well);border:1px solid var(--rim);border-radius:10px;padding:14px}
+.rc-sym{display:flex;align-items:center;gap:6px;font-family:var(--mono);
+  font-size:10px;color:var(--ash);margin-bottom:8px;letter-spacing:.5px}
+.rc-av{width:16px;height:16px;border-radius:50%;display:flex;align-items:center;
+  justify-content:center;font-family:var(--mono);font-size:7px;font-weight:700;
+  overflow:hidden;flex-shrink:0}
+.rc-av img{width:100%;height:100%;object-fit:cover;border-radius:50%}
+.rc-amt{font-family:var(--display);font-size:22px;letter-spacing:1px;color:var(--green)}
+.rc-sub{font-family:var(--mono);font-size:10px;color:var(--ash);margin-top:2px}
+
+.lp-burn-row{display:flex;justify-content:space-between;align-items:center;
+  padding:8px 12px;background:var(--well);border:1px solid var(--rim);
+  border-radius:8px;margin-bottom:12px;font-family:var(--mono);font-size:11px}
+.lp-burn-k{color:var(--ash)}
+.lp-burn-v{color:var(--white);font-weight:500}
+
+/* Slippage */
+.slip-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.slip-lbl{font-family:var(--mono);font-size:9px;letter-spacing:1.5px;
+  text-transform:uppercase;color:var(--ash)}
+.slip-btns{display:flex;gap:4px}
+.slip-btn{font-family:var(--mono);font-size:10px;padding:5px 11px;
+  background:transparent;border:1px solid var(--rim);border-radius:6px;
+  color:var(--ash);cursor:pointer;transition:all .15s}
+.slip-btn:hover{border-color:var(--rim2);color:var(--fog)}
+.slip-btn.active{background:rgba(255,77,0,.1);border-color:rgba(255,77,0,.3);color:var(--magma)}
+
+/* Remove button */
+.remove-btn{width:100%;padding:16px;border-radius:14px;font-size:15px;font-weight:600;
+  letter-spacing:.3px;background:linear-gradient(135deg,var(--magma),var(--ember));
+  color:white;transition:all .2s;position:relative;overflow:hidden;border:none;cursor:pointer}
+.remove-btn::before{content:'';position:absolute;inset:0;
+  background:linear-gradient(135deg,rgba(255,255,255,.1),transparent);
+  opacity:0;transition:opacity .2s}
+.remove-btn:hover:not(:disabled)::before{opacity:1}
+.remove-btn:hover:not(:disabled){transform:translateY(-1px);box-shadow:0 10px 30px rgba(255,77,0,.38)}
+.remove-btn:disabled{background:var(--well);color:var(--ash);cursor:not-allowed;transform:none;box-shadow:none}
+
+/* Status */
+.status-box{margin-top:12px;padding:10px 14px;background:var(--pit);
+  border:1px solid var(--rim);border-radius:10px;font-family:var(--mono);
+  font-size:11px;color:var(--smoke);display:flex;align-items:center;
+  gap:8px;min-height:38px;transition:all .2s}
+.status-box.success{border-color:rgba(0,255,178,.3);color:var(--green)}
+.status-box.error{border-color:rgba(255,51,102,.3);color:var(--red)}
+.status-box.loading{border-color:rgba(255,77,0,.3);color:var(--magma)}
+.status-box a{color:inherit;text-decoration:underline}
+
+/* Success card */
+.success-card{display:none;margin-top:12px;background:rgba(0,255,178,.05);
+  border:1px solid rgba(0,255,178,.2);border-radius:14px;padding:18px;
+  animation:fadeUp .3s ease both}
+.success-card.show{display:block}
+.success-title{font-family:var(--mono);font-size:9px;color:var(--ash);
+  text-transform:uppercase;letter-spacing:2px;margin-bottom:12px}
+.success-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.success-cell{background:rgba(0,255,178,.05);border:1px solid rgba(0,255,178,.15);
+  border-radius:8px;padding:12px}
+.success-lbl{font-family:var(--mono);font-size:9px;color:var(--ash);
+  text-transform:uppercase;letter-spacing:1px;margin-bottom:4px}
+.success-val{font-family:var(--display);font-size:22px;letter-spacing:1px;color:var(--green)}
+
+/* Spinner */
+.spinner{width:14px;height:14px;border:2px solid rgba(255,77,0,.2);
+  border-top-color:var(--magma);border-radius:50%;
+  animation:spin .7s linear infinite;flex-shrink:0;display:inline-block}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+@media(max-width:600px){
+  .header-nav{display:none}
+  .header{padding:0 14px}
+  .main{padding:20px 14px 60px}
+  .net-badge{display:none}
+  .card-body{padding:14px}
+  .pct-display{font-size:36px}
+}
+</style>
+</head>
+<body>
+<div class="bg-glow"></div>
+
+<!-- HEADER -->
+<div class="header">
+  <a class="brand" href="index.html" aria-label="RicSwap home">
+    <img src="riclogo.png" alt="RicSwap" width="34" height="34"
+         onerror="this.onerror=null;this.src='https://raw.githubusercontent.com/Rictoken87/ricswap-website/main/riclogo.png'">
+    <span class="logo">RicSwap</span>
+  </a>
+  <nav class="header-nav">
+    <a class="nav-link" href="index.html">Home</a>
+    <a class="nav-link" href="swap.html">Swap</a>
+    <a class="nav-link" href="liquidity.html">Add LP</a>
+    <a class="nav-link active" href="remove-liquidity.html">Remove LP</a>
+    <a class="nav-link" href="names.html">Names</a>
+  </nav>
+  <div class="header-right">
+    <div class="net-badge"><div class="pulse"></div><span>Shibarium</span></div>
+    <button type="button" class="connect-btn" id="connectBtn" onclick="connWallet()">
+      <svg viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 3H8a2 2 0 00-2 2v2h12V5a2 2 0 00-2-2z"/></svg>
+      <span id="connectLabel">Connect Wallet</span>
+    </button>
+  </div>
+</div>
+
+<!-- MAIN -->
+<div class="main">
+  <div style="width:100%;max-width:560px">
+
+    <div class="rm-card" style="animation:fadeUp .3s ease both">
+
+      <div class="card-header">
+        <div>
+          <div class="card-title">Remove Liquidity</div>
+          <div class="card-sub">Hardened · exact LP approve · tokens to you only</div>
+        </div>
+        <a class="add-link" href="liquidity.html">
+          <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Add Liquidity
+        </a>
+      </div>
+
+      <div class="card-body">
+
+        <div class="sec-banner" id="secBanner">
+          <strong>Hardened remove:</strong> LP approve is <strong>exact amount only</strong> to RicSwap Router.
+          Withdrawn tokens always go to <strong>your connected wallet</strong>. Slippage is a min-receive limit, not a fee.
+          Default max <strong>1%</strong> (Advanced up to 3%).
+        </div>
+
+        <!-- Positions section -->
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+          <div style="font-family:var(--mono);font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--ash);display:flex;align-items:center;gap:8px;">
+            Your Positions
+            <span id="posCount" style="display:none;font-family:var(--mono);font-size:10px;color:var(--green);background:rgba(0,255,178,.08);border:1px solid rgba(0,255,178,.18);border-radius:10px;padding:1px 8px;"></span>
+          </div>
+          <button onclick="loadPositions()" style="background:none;border:none;font-family:var(--mono);font-size:10px;color:var(--ash);cursor:pointer;padding:2px 8px;border-radius:4px;transition:color .15s" onmouseover="this.style.color='var(--white)'" onmouseout="this.style.color='var(--ash)'">
+            &#8635; refresh
+          </button>
+        </div>
+
+        <div id="posList">
+          <div class="pos-empty" id="posEmpty">
+            <div class="icon">&#128167;</div>
+            Connect wallet to view your positions
+          </div>
+        </div>
+
+        <!-- Manual LP input -->
+        <div class="manual-wrap" id="manualWrap">
+          <div class="manual-lbl">Or enter LP address manually</div>
+          <input class="manual-input" id="manualLP" placeholder="0x... Pair contract address" oninput="onManualLP()">
+        </div>
+
+        <!-- Remove panel -->
+        <div class="remove-panel" id="removePanel">
+
+          <div class="rm-hdr">
+            <div class="pair-avs" id="rmAvs"></div>
+            <div>
+              <div class="rm-name" id="rmName">-- / --</div>
+              <div class="rm-sub" id="rmSub">LP balance: --</div>
+            </div>
+          </div>
+
+          <div class="pct-label">Amount to Remove</div>
+          <div class="pct-btns">
+            <button class="pct-btn" onclick="setPct(25,this)">25%</button>
+            <button class="pct-btn" onclick="setPct(50,this)">50%</button>
+            <button class="pct-btn" onclick="setPct(75,this)">75%</button>
+            <button class="pct-btn active" onclick="setPct(100,this)">MAX</button>
+          </div>
+          <div class="pct-display" id="pctDisplay">100%</div>
+          <input type="range" class="pct-slider" id="pctSlider" min="1" max="100" value="100" oninput="onSlider()">
+
+          <div class="recv-label">You Will Receive</div>
+          <div class="recv-grid">
+            <div class="recv-card">
+              <div class="rc-sym"><div class="rc-av" id="rcAv0"></div><span id="rcSym0">--</span></div>
+              <div class="rc-amt" id="rcAmt0">--</div>
+              <div class="rc-sub" id="rcSub0"></div>
+            </div>
+            <div class="recv-card">
+              <div class="rc-sym"><div class="rc-av" id="rcAv1"></div><span id="rcSym1">--</span></div>
+              <div class="rc-amt" id="rcAmt1">--</div>
+              <div class="rc-sub" id="rcSub1"></div>
+            </div>
+          </div>
+
+          <div class="lp-burn-row">
+            <span class="lp-burn-k">LP tokens to burn</span>
+            <span class="lp-burn-v" id="lpBurnVal">--</span>
+          </div>
+
+          <div class="slip-row">
+            <span class="slip-lbl">Slippage (capped)</span>
+            <div class="slip-btns">
+              <button type="button" class="slip-btn" data-slip="50" onclick="setSlip(0.5,this)">0.5%</button>
+              <button type="button" class="slip-btn active" data-slip="100" onclick="setSlip(1,this)">1%</button>
+              <button type="button" class="slip-btn" data-slip="300" onclick="setSlip(3,this)">3%</button>
+            </div>
+          </div>
+
+          <div style="font-family:var(--mono);font-size:10px;color:var(--ash);margin:0 0 12px;line-height:1.45">
+            Recipient: <span id="recvTo" style="color:var(--green)">your wallet only</span>
+            · Spender: <span style="color:var(--green)">Router only</span>
+          </div>
+
+          <button type="button" class="remove-btn" id="removeBtn" onclick="confirmRemove()">
+            Remove Liquidity
+          </button>
+
+        </div>
+
+        <!-- Status -->
+        <div class="status-box" id="statusBox">
+          <span>&#9675;</span>
+          <span id="statusTxt">Connect wallet to begin</span>
+        </div>
+
+        <!-- Success card -->
+        <div class="success-card" id="successCard">
+          <div class="success-title">Removed Successfully</div>
+          <div class="success-grid">
+            <div class="success-cell">
+              <div class="success-lbl" id="scLbl0">--</div>
+              <div class="success-val" id="scVal0">--</div>
+            </div>
+            <div class="success-cell">
+              <div class="success-lbl" id="scLbl1">--</div>
+              <div class="success-val" id="scVal1">--</div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+//  Hardened config — frozen production addresses
+const CFG = Object.freeze({
+  ROUTER:   '0x652875c0F607CB392C0F9E5FB957A7055c2deD2e',
+  FACTORY:  '0xD8fFEECfDE1698a70A26a094afBE917bA58E2F70',
+  WBONE:    '0xC76F4c819D820369Fb2d7C1531aB3Bb18e6fE8d8',
+  RIC:      '0x12C94d3A30daa09f81Ea6c037004E6e99A4A3dfc',
+  CHAIN_ID: 109n,
+  CHAIN_HEX:'0x6d',
+  EXPLORER: 'https://www.shibariumscan.io',
+  RPC:      'https://rpc.shibarium.shib.io',
+  LOGO_CDN: 'https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/shibarium/assets',
+  MAX_U112: 2n**112n - 1n,
+  MAX_SLIP_BPS: 300,      // hard cap 3%
+  DEFAULT_SLIP_BPS: 100,  // 1%
+  DEADLINE_SEC: 180,      // 3 minutes
+  ZERO: '0x0000000000000000000000000000000000000000',
+});
+// Back-compat names used below
+const ROUTER = CFG.ROUTER, FACTORY = CFG.FACTORY, WBONE = CFG.WBONE;
+const CHAIN_ID = CFG.CHAIN_ID, CHAIN_HEX = CFG.CHAIN_HEX, EXPLORER = CFG.EXPLORER;
+const LOGO_CDN = CFG.LOGO_CDN, MAX_U112 = CFG.MAX_U112;
+
+const KNOWN_TOKENS = [
+  { symbol:'BONE',  address:WBONE,  decimals:18, isNative:true,  color:'#ff4d00', official:true },
+  { symbol:'RIC',   address:CFG.RIC, decimals:18, isNative:false, color:'#ff4d00', official:true },
+  { symbol:'SHIB',  address:'0x495eea66b0f8b636d441dc6a98d8f5c3d455c4c0', decimals:18, isNative:false, color:'#ff6b6b', official:true },
+  { symbol:'LEASH', address:'0x53cd0b4b8d92e0c58d5aae2a95e5eeae9cd2c10d', decimals:18, isNative:false, color:'#9b59b6', official:true },
+  { symbol:'TREAT', address:'0x3f1ede1feb0fe88b7e30f74a73e3d36ccacd21b2', decimals:18, isNative:false, color:'#e67e22', official:true },
+];
+
+const ERC20    = ['function balanceOf(address) view returns (uint256)','function decimals() view returns (uint8)','function symbol() view returns (string)','function name() view returns (string)','function allowance(address,address) view returns (uint256)','function approve(address,uint256) returns (bool)'];
+const PAIR_ABI = ['function token0() view returns (address)','function token1() view returns (address)','function getReserves() view returns (uint112,uint112,uint32)','function totalSupply() view returns (uint256)','function balanceOf(address) view returns (uint256)','function allowance(address,address) view returns (uint256)','function approve(address,uint256) returns (bool)','function factory() view returns (address)'];
+const FAC_ABI  = ['function getPair(address,address) view returns (address)','function allPairs(uint256) view returns (address)','function allPairsLength() view returns (uint256)'];
+const RABI     = ['function removeLiquidity(address,address,uint256,uint256,uint256,address,uint256) returns (uint256,uint256)','function removeLiquidityETH(address,uint256,uint256,uint256,address,uint256) returns (uint256,uint256)','function factory() view returns (address)','function WETH() view returns (address)'];
+
+//  State 
+let ethers     = null;
+let prov, sign, uAddr;
+let positions  = [];
+let selPos     = null;
+let rmPct      = 100;
+let slipBps    = BigInt(CFG.DEFAULT_SLIP_BPS);
+let removing   = false;
+const tkCache  = {};
+
+function esc(s){
+  return String(s==null?'':s)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+function assertSpenderIsRouter(spender){
+  if(!spender || spender.toLowerCase()!==CFG.ROUTER.toLowerCase())
+    throw new Error('SECURITY: approve spender is not RicSwap Router. Aborted.');
+}
+function assertRecipientIsUser(to){
+  if(!uAddr || !to || to.toLowerCase()!==uAddr.toLowerCase())
+    throw new Error('SECURITY: recipient is not your wallet. Aborted.');
+}
+function clampSlip(){
+  if(Number(slipBps) > CFG.MAX_SLIP_BPS) slipBps = BigInt(CFG.MAX_SLIP_BPS);
+  if(Number(slipBps) < 1) slipBps = 1n;
+}
+
+//  Multi-CDN ethers
+function loadEthersScript(src){
+  return new Promise(function(resolve,reject){
+    var s=document.createElement('script'); s.src=src; s.async=true;
+    s.onload=function(){ if(typeof window.ethers!=='undefined') resolve(window.ethers); else reject(new Error('missing')); };
+    s.onerror=function(){ reject(new Error(src)); };
+    document.head.appendChild(s);
+  });
+}
+async function getEthers() {
+  if (ethers) return ethers;
+  if (typeof window.ethers !== 'undefined') { ethers = window.ethers; return ethers; }
+  var cdns = [
+    'https://cdn.jsdelivr.net/npm/ethers@6.13.5/dist/ethers.umd.min.js',
+    'https://unpkg.com/ethers@6.13.5/dist/ethers.umd.min.js',
+    'https://cdnjs.cloudflare.com/ajax/libs/ethers/6.13.5/ethers.umd.min.js'
+  ];
+  var last;
+  for (var i=0;i<cdns.length;i++){
+    try { ethers = await loadEthersScript(cdns[i]); return ethers; }
+    catch(e){ last=e; }
+  }
+  throw last || new Error('Could not load ethers.js');
+}
+
+function getEthereum(){
+  var eth=window.ethereum;
+  if(!eth) return null;
+  if(eth.providers && eth.providers.length){
+    for(var i=0;i<eth.providers.length;i++) if(eth.providers[i].isMetaMask) return eth.providers[i];
+    return eth.providers[0];
+  }
+  return eth;
+}
+
+//  Wallet 
+async function connWallet() {
+  const eth = getEthereum();
+  if (!eth) return alert('Please install MetaMask or Rabby Wallet');
+  const btn = document.getElementById('connectBtn');
+  btn.style.opacity = '.6';
+  try {
+    await getEthers();
+    await eth.request({ method: 'eth_requestAccounts' });
+    prov  = new ethers.BrowserProvider(eth, 'any');
+    sign  = await prov.getSigner();
+    uAddr = await sign.getAddress();
+
+    const net = await prov.getNetwork();
+    if (net.chainId !== CHAIN_ID) {
+      setSt('loading', null, 'Switching to Shibarium...');
+      try {
+        await eth.request({ method:'wallet_switchEthereumChain', params:[{chainId:CHAIN_HEX}] });
+      } catch(e) {
+        if (e.code===4902 || /Unrecognized chain|not been added/i.test(String(e.message||''))) {
+          await eth.request({ method:'wallet_addEthereumChain', params:[{
+            chainId:CHAIN_HEX, chainName:'Shibarium',
+            nativeCurrency:{name:'BONE',symbol:'BONE',decimals:18},
+            rpcUrls:[CFG.RPC], blockExplorerUrls:[EXPLORER],
+          }]});
+        } else {
+          setSt('error','','Please switch to Shibarium manually (Chain ID 109)');
+          btn.style.opacity='1'; return;
+        }
+      }
+      prov  = new ethers.BrowserProvider(eth, 'any');
+      sign  = await prov.getSigner();
+      uAddr = await sign.getAddress();
+    }
+
+    // Verify router points at official factory + WBONE
+    try {
+      const rtr = new ethers.Contract(ROUTER, RABI, prov);
+      const [fac, weth] = await Promise.all([rtr.factory(), rtr.WETH()]);
+      if (fac.toLowerCase() !== FACTORY.toLowerCase())
+        throw new Error('SECURITY: Router.factory() mismatch. Do not use this page.');
+      if (weth.toLowerCase() !== WBONE.toLowerCase())
+        throw new Error('SECURITY: Router WETH/WBONE mismatch. Do not use this page.');
+    } catch(ve) {
+      if (String(ve.message||'').includes('SECURITY')) throw ve;
+      console.warn('Router verify soft-fail', ve);
+    }
+
+    btn.classList.add('connected');
+    document.getElementById('connectLabel').textContent = uAddr.slice(0,6)+'...'+uAddr.slice(-4);
+    const recv = document.getElementById('recvTo');
+    if(recv) recv.textContent = uAddr.slice(0,6)+'…'+uAddr.slice(-4)+' (you)';
+    eth.removeAllListeners && eth.removeAllListeners('accountsChanged');
+    eth.removeAllListeners && eth.removeAllListeners('chainChanged');
+    eth.on && eth.on('accountsChanged',()=>location.reload());
+    eth.on && eth.on('chainChanged',()=>location.reload());
+    setSt('','','Connected — tokens always return to your wallet; LP approve = exact to Router only');
+    await loadPositions();
+  } catch(e) {
+    setSt('error','', e.code===4001||e.code==='ACTION_REJECTED' ? 'Connection rejected' : decErr(e));
+  } finally { btn.style.opacity='1'; }
+}
+
+//  Position discovery 
+async function loadPositions() {
+  if (!uAddr || !prov) return;
+  showSkeletons();
+  document.getElementById('successCard').classList.remove('show');
+  document.getElementById('removePanel').classList.remove('show');
+  selPos = null; positions = [];
+
+  try {
+    const factory = new ethers.Contract(FACTORY, FAC_ABI, prov);
+
+    // Pass 1: known token combinations (fast ~15 calls)
+    const addrs = [...new Set(KNOWN_TOKENS.map(t=>t.address.toLowerCase()))];
+    const checks = [];
+    for (let i=0;i<addrs.length;i++)
+      for (let j=i+1;j<addrs.length;j++)
+        checks.push(factory.getPair(addrs[i],addrs[j]).catch(()=>null));
+    const known = (await Promise.all(checks)).filter(a=>a&&a!=='0x0000000000000000000000000000000000000000');
+
+    // Pass 2: allPairs fallback (capped 100)
+    let total=0;
+    try{total=Number(await factory.allPairsLength());}catch(_){}
+    const cap=Math.min(total,100);
+    const all=(await Promise.all(Array.from({length:cap},(_,i)=>factory.allPairs(i).catch(()=>null)))).filter(Boolean);
+
+    // Merge deduplicated
+    const seen=new Set(known.map(a=>a.toLowerCase()));
+    for(const a of all) if(!seen.has(a.toLowerCase())){known.push(a);seen.add(a.toLowerCase());}
+
+    // Check LP balance for each
+    const results=await Promise.allSettled(known.map(a=>checkPos(a)));
+    positions=results.filter(r=>r.status==='fulfilled'&&r.value).map(r=>r.value);
+    renderPositions();
+
+    if(total>100) {
+      setSt('warning','',`Showing first 100 pairs. ${total-100} not scanned. Use manual input below.`);
+      document.getElementById('manualWrap').style.display='block';
+    } else if(!positions.length) {
+      setSt('','','No positions found. Add liquidity first or enter LP address manually.');
+      document.getElementById('manualWrap').style.display='block';
+    } else {
+      setSt('','',`${positions.length} position${positions.length>1?'s':''} found`);
+    }
+  } catch(e) {
+    clearSkels();
+    setSt('error','','Error: '+decErr(e));
+    document.getElementById('manualWrap').style.display='block';
+  }
+}
+
+async function checkPos(addr) {
+  if (!addr) return null;
+  try {
+    const pair = new ethers.Contract(addr, PAIR_ABI, prov);
+    const bal  = await pair.balanceOf(uAddr);
+    if (bal===0n) return null;
+    const [t0a,t1a,res,ts]=await Promise.all([pair.token0(),pair.token1(),pair.getReserves(),pair.totalSupply()]);
+    if (ts===0n) return null;
+    // Prefer factory.getPair match (pair is official RicSwap pair)
+    let factoryOk = true;
+    try {
+      const fac = new ethers.Contract(FACTORY, FAC_ABI, prov);
+      const gp = await fac.getPair(t0a, t1a);
+      factoryOk = gp && gp.toLowerCase() === addr.toLowerCase();
+    } catch(_) { /* soft */ }
+    // Optional: pair.factory() if present
+    try {
+      const pf = await pair.factory();
+      if (pf && pf.toLowerCase() !== FACTORY.toLowerCase()) factoryOk = false;
+    } catch(_) {}
+    if (!factoryOk) return null; // reject non-factory pairs for safety
+    const [t0,t1]=await Promise.all([getTkInfo(t0a),getTkInfo(t1a)]);
+    const r0=res[0]>MAX_U112?MAX_U112:res[0], r1=res[1]>MAX_U112?MAX_U112:res[1];
+    const amt0=r0*bal/ts, amt1=r1*bal/ts;
+    const sharePct=Number(bal*10000n/ts)/100;
+    return {addr,pair,t0,t1,bal,totalSupply:ts,amt0,amt1,reserves:res,sharePct,factoryOk:true};
+  } catch(_){return null;}
+}
+
+async function getTkInfo(addr) {
+  const k=addr.toLowerCase();
+  if(tkCache[k]) return tkCache[k];
+  const known=KNOWN_TOKENS.find(t=>t.address.toLowerCase()===k);
+  if(known){tkCache[k]=known;return known;}
+  if(k===WBONE.toLowerCase()){const t={symbol:'BONE',address:addr,decimals:18,isNative:true,color:'#ff4d00',official:true};tkCache[k]=t;return t;}
+  try {
+    const c=new ethers.Contract(addr,ERC20,prov);
+    const [dec,sym]=await Promise.all([c.decimals().catch(()=>18),c.symbol().catch(async()=>{try{return await c.name()}catch{return addr.slice(0,6)+'...'}})]);
+    const cleanSym = String(sym||'?').replace(/[^\w.\-$]/g,'').slice(0,16)||'TOKEN';
+    const t={symbol:cleanSym,address:addr,decimals:Number(dec)>36?18:Number(dec),isNative:false,color:'#555880',official:false};
+    tkCache[k]=t;return t;
+  } catch(_){return{symbol:addr.slice(0,6)+'...',address:addr,decimals:18,isNative:false,color:'#555880',official:false};}
+}
+
+//  Render 
+function showSkeletons() {
+  clearCards();
+  document.getElementById('posEmpty').style.display='none';
+  for(let i=0;i<2;i++){
+    const sk=document.createElement('div');sk.className='skel';
+    sk.innerHTML='<div class="skel-line" style="height:18px;width:55%;margin-bottom:12px"></div><div class="skel-line" style="height:12px;width:100%"></div><div class="skel-line" style="height:12px;width:70%;margin-top:6px"></div>';
+    document.getElementById('posList').insertBefore(sk,document.getElementById('posEmpty'));
+  }
+}
+function clearSkels(){document.querySelectorAll('.skel').forEach(e=>e.remove());}
+function clearCards(){document.querySelectorAll('.pos-card,.skel').forEach(e=>e.remove());}
+
+function renderPositions() {
+  clearSkels(); clearCards();
+  const empty=document.getElementById('posEmpty');
+  const count=document.getElementById('posCount');
+  if(!positions.length){
+    empty.style.display='block';
+    empty.innerHTML='<div class="icon">&#128167;</div>No liquidity positions found.<br>Add liquidity first.';
+    count.style.display='none';return;
+  }
+  empty.style.display='none';
+  count.style.display='inline';
+  count.textContent=positions.length+' found';
+  const list=document.getElementById('posList');
+  positions.forEach((pos,idx)=>{
+    const card=document.createElement('div');
+    card.className='pos-card';card.id='pc'+idx;
+    card.style.cssText='animation:fadeUp .3s ease both;animation-delay:'+(idx*60)+'ms';
+    const a0=fmtAmt(pos.amt0,pos.t0.decimals),a1=fmtAmt(pos.amt1,pos.t1.decimals);
+    const lp=fmtAmt(pos.bal,18),pct=pos.sharePct<0.0001?'< 0.0001':pos.sharePct.toFixed(4);
+    card.innerHTML=`
+      <div class="pos-top">
+        <div class="pos-pair">
+          <div class="pair-avs" id="avs${idx}"></div>
+          <span class="pair-name">${esc(pos.t0.symbol)} / ${esc(pos.t1.symbol)}</span>
+        </div>
+        <span class="share-badge">${esc(String(pct))}% of pool</span>
+      </div>
+      <div class="pos-grid">
+        <div class="pos-cell"><div class="pc-lbl">${esc(pos.t0.symbol)}</div><div class="pc-val">${esc(a0)}</div></div>
+        <div class="pos-cell"><div class="pc-lbl">${esc(pos.t1.symbol)}</div><div class="pc-val">${esc(a1)}</div></div>
+      </div>
+      <div class="lp-row">LP tokens: <span>${esc(lp)}</span></div>
+      <button type="button" class="sel-btn" onclick="selectPos(${idx})">Remove this position</button>`;
+    // Avatars
+    const avsEl=card.querySelector('#avs'+idx);
+    avsEl.appendChild(makeAv(pos.t0,28));
+    const av1=makeAv(pos.t1,28);av1.style.marginLeft='-8px';avsEl.appendChild(av1);
+    list.insertBefore(card,empty);
+  });
+}
+
+function makeAv(token,size){
+  const c=token.color||'#555880',wrap=document.createElement('div');
+  wrap.className='av';wrap.style.cssText=`width:${size}px;height:${size}px;background:${c}22;color:${c}`;
+  const addr=token.isNative?WBONE:token.address;
+  if(addr){
+    try{
+      const cs=ethers.getAddress(addr),img=document.createElement('img');
+      img.src=`${LOGO_CDN}/${cs}/logo.png`;
+      img.onerror=()=>{img.remove();wrap.textContent=(token.symbol||'?').slice(0,2).toUpperCase();};
+      wrap.appendChild(img);
+    }catch(_){wrap.textContent=(token.symbol||'?').slice(0,2).toUpperCase();}
+  }else wrap.textContent=(token.symbol||'?').slice(0,2).toUpperCase();
+  return wrap;
+}
+
+function setSmallAv(el,token){
+  el.style.background=(token.color||'#555880')+'22';el.style.color=token.color||'#555880';el.innerHTML='';
+  const addr=token.isNative?WBONE:token.address;
+  if(addr){try{const cs=ethers.getAddress(addr),img=document.createElement('img');img.src=`${LOGO_CDN}/${cs}/logo.png`;img.onerror=()=>{img.remove();el.textContent=(token.symbol||'?').slice(0,2).toUpperCase();};el.appendChild(img);}catch(_){el.textContent=(token.symbol||'?').slice(0,2).toUpperCase();}}
+}
+
+//  Select position 
+function selectPos(idx) {
+  document.querySelectorAll('.pos-card').forEach(c=>c.classList.remove('selected'));
+  document.querySelectorAll('.sel-btn').forEach(b=>b.textContent='Remove this position');
+  selPos=positions[idx];
+  const card=document.getElementById('pc'+idx);
+  if(card){card.classList.add('selected');card.querySelector('.sel-btn').textContent='Selected';}
+  document.getElementById('rmName').textContent=selPos.t0.symbol+' / '+selPos.t1.symbol;
+  document.getElementById('rmSub').textContent='LP balance: '+fmtAmt(selPos.bal,18)+' · pair verified via factory';
+  const rmAvs=document.getElementById('rmAvs');rmAvs.innerHTML='';
+  rmAvs.appendChild(makeAv(selPos.t0,28));
+  const av1=makeAv(selPos.t1,28);av1.style.marginLeft='-8px';rmAvs.appendChild(av1);
+  setPct(100,document.querySelector('.pct-btn:last-child'));
+  document.getElementById('removePanel').classList.add('show');
+  document.getElementById('successCard').classList.remove('show');
+  setTimeout(()=>document.getElementById('removePanel').scrollIntoView({behavior:'smooth',block:'start'}),100);
+}
+
+//  Percentage + preview 
+function setPct(p,btn){
+  rmPct=p;
+  document.getElementById('pctSlider').value=p;
+  document.getElementById('pctDisplay').textContent=p+'%';
+  document.querySelectorAll('.pct-btn').forEach(b=>b.classList.remove('active'));
+  if(btn)btn.classList.add('active');
+  updatePreview();
+}
+
+function onSlider(){
+  rmPct=parseInt(document.getElementById('pctSlider').value);
+  document.getElementById('pctDisplay').textContent=rmPct+'%';
+  document.querySelectorAll('.pct-btn').forEach(b=>b.classList.remove('active'));
+  updatePreview();
+}
+
+function setSlip(p,btn){
+  let bps = Math.round(Number(p)*100);
+  if(bps > CFG.MAX_SLIP_BPS) bps = CFG.MAX_SLIP_BPS;
+  if(bps < 1) bps = 1;
+  slipBps=BigInt(bps);
+  document.querySelectorAll('.slip-btn').forEach(b=>{
+    const v = Number(b.getAttribute('data-slip')||0);
+    b.classList.toggle('active', v===bps);
+  });
+  if(btn)btn.classList.add('active');
+  updatePreview();
+}
+
+function updatePreview(){
+  if(!selPos) return;
+  const{bal,totalSupply,amt0,amt1,t0,t1}=selPos;
+  if(totalSupply===0n){setSt('error','','Pool total supply is zero');return;}
+  const p=BigInt(rmPct);
+  const lpBurn=bal*p/100n,rcv0=amt0*p/100n,rcv1=amt1*p/100n;
+  setSmallAv(document.getElementById('rcAv0'),t0);
+  document.getElementById('rcSym0').textContent=t0.symbol;
+  document.getElementById('rcAmt0').textContent=fmtAmt(rcv0,t0.decimals);
+  setSmallAv(document.getElementById('rcAv1'),t1);
+  document.getElementById('rcSym1').textContent=t1.symbol;
+  document.getElementById('rcAmt1').textContent=fmtAmt(rcv1,t1.decimals);
+  document.getElementById('lpBurnVal').textContent=fmtAmt(lpBurn,18)+' LP';
+}
+
+//  Manual LP input 
+let manualTimer=null;
+async function onManualLP(){
+  clearTimeout(manualTimer);
+  manualTimer=setTimeout(loadManualLP,500);
+}
+async function loadManualLP(){
+  const addr=document.getElementById('manualLP').value.trim();
+  if(!ethers||!ethers.isAddress(addr)||!prov) return;
+  setSt('loading',null,'Loading pair...');
+  const pos=await checkPos(addr);
+  if(!pos){setSt('error','','No LP balance at this address or invalid pair');return;}
+  if(!positions.find(p=>p.addr.toLowerCase()===addr.toLowerCase()))positions.unshift(pos);
+  renderPositions();
+  setSt('','','Position loaded');
+}
+
+//  Confirm then remove 
+function confirmRemove(){
+  if(!selPos || !uAddr) return;
+  clampSlip();
+  const p = rmPct;
+  const lp = fmtAmt(selPos.bal * BigInt(p) / 100n, 18);
+  const a0 = fmtAmt(selPos.amt0 * BigInt(p) / 100n, selPos.t0.decimals);
+  const a1 = fmtAmt(selPos.amt1 * BigInt(p) / 100n, selPos.t1.decimals);
+  const ok = confirm(
+    'Remove liquidity (hardened)\n\n'+
+    'Pair: '+selPos.t0.symbol+' / '+selPos.t1.symbol+'\n'+
+    'LP to burn: '+lp+' ('+p+'%)\n'+
+    'Est. receive: '+a0+' '+selPos.t0.symbol+' + '+a1+' '+selPos.t1.symbol+'\n'+
+    'Min receive uses '+ (Number(slipBps)/100) +'% slippage (not a fee)\n'+
+    'Tokens go to: '+uAddr+'\n'+
+    'LP approve: exact amount → Router only\n\n'+
+    'Continue?'
+  );
+  if(ok) doRemove();
+}
+window.confirmRemove = confirmRemove;
+
+//  Remove liquidity (hardened)
+async function doRemove(){
+  if(!selPos || removing) return;
+  removing = true;
+  const btn=document.getElementById('removeBtn');
+  btn.disabled=true;
+  document.getElementById('successCard').classList.remove('show');
+
+  try{
+    if(!uAddr || !sign) throw new Error('Connect wallet first');
+    clampSlip();
+    assertRecipientIsUser(uAddr);
+    assertSpenderIsRouter(ROUTER);
+
+    // Re-load position on-chain (stale guard)
+    setSt('loading',null,'Refreshing position on-chain...');
+    const fresh = await checkPos(selPos.addr);
+    if(!fresh) throw new Error('Position no longer available or not a RicSwap factory pair');
+    selPos = fresh;
+    updatePreview();
+
+    const{bal,totalSupply,amt0,amt1,t0,t1,addr}=selPos;
+    if(totalSupply===0n) throw new Error('Pool total supply is zero');
+    const p=BigInt(rmPct);
+    const lpBurn=bal*p/100n;
+    if(lpBurn===0n) throw new Error('Amount too small');
+    if(lpBurn>bal) throw new Error('Exceeds balance');
+
+    // Live pair contract
+    const pair = new ethers.Contract(addr, PAIR_ABI, sign);
+    const liveBal = await pair.balanceOf(uAddr);
+    if(lpBurn > liveBal) throw new Error('LP balance changed — refresh and try again');
+
+    // Re-verify factory linkage
+    const fac = new ethers.Contract(FACTORY, FAC_ABI, prov);
+    const gp = await fac.getPair(t0.address, t1.address);
+    if(!gp || gp.toLowerCase() !== addr.toLowerCase())
+      throw new Error('SECURITY: pair is not registered on RicSwap factory');
+
+    const exp0=amt0*p/100n,exp1=amt1*p/100n;
+    // Recompute expected from live reserves for accuracy
+    const [res, ts] = await Promise.all([pair.getReserves(), pair.totalSupply()]);
+    const r0=res[0]>MAX_U112?MAX_U112:res[0], r1=res[1]>MAX_U112?MAX_U112:res[1];
+    const liveExp0 = ts>0n ? r0*lpBurn/ts : exp0;
+    const liveExp1 = ts>0n ? r1*lpBurn/ts : exp1;
+    const min0=liveExp0*(10000n-slipBps)/10000n, min1=liveExp1*(10000n-slipBps)/10000n;
+
+    const router=new ethers.Contract(ROUTER,RABI,sign);
+    const deadline=BigInt(Math.floor(Date.now()/1000)+CFG.DEADLINE_SEC);
+    const to = uAddr; // freeze
+    assertRecipientIsUser(to);
+
+    const t0isETH=t0.address.toLowerCase()===WBONE.toLowerCase();
+    const t1isETH=t1.address.toLowerCase()===WBONE.toLowerCase();
+    const hasETH=t0isETH||t1isETH;
+
+    // Exact LP approve to Router only
+    setSt('loading',null,'Approving exact LP amount → Router only...');
+    const allow=await pair.allowance(uAddr,ROUTER);
+    if(allow<lpBurn){
+      assertSpenderIsRouter(ROUTER);
+      const tx=await new ethers.Contract(addr,ERC20,sign).approve(ROUTER,lpBurn);
+      setSt('loading',null,'Waiting for approval...');
+      await tx.wait();
+    }
+
+    // Simulate
+    setSt('loading',null,'Simulating remove...');
+    try{
+      if(hasETH){
+        const tAddr=t0isETH?t1.address:t0.address;
+        const tMin=t0isETH?min1:min0,eMin=t0isETH?min0:min1;
+        await router.removeLiquidityETH.staticCall(tAddr,lpBurn,tMin,eMin,to,deadline);
+      }else{
+        await router.removeLiquidity.staticCall(t0.address,t1.address,lpBurn,min0,min1,to,deadline);
+      }
+    }catch(se){throw new Error('Simulation failed: '+decErr(se));}
+
+    // Send
+    setSt('loading',null,'Confirm in wallet — to = your address...');
+    btn.textContent='Confirming...';
+    let tx;
+    if(hasETH){
+      const tAddr=t0isETH?t1.address:t0.address;
+      const tMin=t0isETH?min1:min0,eMin=t0isETH?min0:min1;
+      tx=await router.removeLiquidityETH(tAddr,lpBurn,tMin,eMin,to,deadline);
+    }else{
+      tx=await router.removeLiquidity(t0.address,t1.address,lpBurn,min0,min1,to,deadline);
+    }
+    setSt('loading',null,'Confirming on chain...');
+    const receipt=await tx.wait();
+
+    // Parse actual received amounts
+    let rcv0=liveExp0, rcv1=liveExp1;
+    try{
+      const topic=ethers.id('Transfer(address,address,uint256)');
+      for(const log of receipt.logs){
+        if(log.topics[0]===topic&&log.topics.length===3){
+          const toAddr=ethers.getAddress('0x'+log.topics[2].slice(26));
+          if(toAddr.toLowerCase()===uAddr.toLowerCase()){
+            const amt=BigInt(log.data);
+            if(log.address.toLowerCase()===t0.address.toLowerCase()) rcv0=amt;
+            if(log.address.toLowerCase()===t1.address.toLowerCase()) rcv1=amt;
+          }
+        }
+      }
+    }catch(_){}
+
+    document.getElementById('scLbl0').textContent=t0.symbol+' received';
+    document.getElementById('scVal0').textContent=fmtAmt(rcv0,t0.decimals);
+    document.getElementById('scLbl1').textContent=t1.symbol+' received';
+    document.getElementById('scVal1').textContent=fmtAmt(rcv1,t1.decimals);
+    document.getElementById('successCard').classList.add('show');
+    setSt('success','',
+      `Removed! ${esc(fmtAmt(rcv0,t0.decimals))} ${esc(t0.symbol)} + ${esc(fmtAmt(rcv1,t1.decimals))} ${esc(t1.symbol)} ` +
+      `<a href="${EXPLORER}/tx/${esc(tx.hash)}" target="_blank" rel="noopener">View ↗</a>`
+    );
+    selPos=null;
+    document.getElementById('removePanel').classList.remove('show');
+    await loadPositions();
+
+  }catch(e){setSt('error','',decErr(e));}
+  finally{removing=false;btn.disabled=false;btn.textContent='Remove Liquidity';}
+}
+
+//  Helpers 
+function fmtAmt(val,dec){
+  if(val===undefined||val===null)return '--';
+  const s=ethers?ethers.formatUnits(val,dec):'0';
+  const n=parseFloat(s);
+  if(!n)return '0';
+  if(n<0.000001)return '< 0.000001';
+  if(n<0.001)return n.toFixed(8);
+  if(n<1)return n.toFixed(6);
+  if(n<10000)return n.toFixed(4);
+  return n.toLocaleString(undefined,{maximumFractionDigits:2});
+}
+
+function setSt(type,icon,msg){
+  const box=document.getElementById('statusBox'),txt=document.getElementById('statusTxt');
+  box.className='status-box'+(type?' '+type:'');
+  const old=box.querySelector('.spinner,.st-ic');if(old)old.remove();
+  if(type==='loading'){const sp=document.createElement('div');sp.className='spinner';box.insertBefore(sp,txt);}
+  else if(icon){const ic=document.createElement('span');ic.className='st-ic';ic.textContent=icon;box.insertBefore(ic,txt);}
+  if(type==='success')txt.innerHTML=msg;else txt.textContent=msg;
+}
+
+function decErr(e){
+  if(!e)return 'Unknown error';
+  if(e.code===4001||e.code==='ACTION_REJECTED')return 'Rejected by user';
+  if(e.reason)return e.reason;if(e.shortMessage)return e.shortMessage;
+  if(e.error?.reason)return e.error.reason;
+  const data=e?.data||e?.error?.data||e?.info?.error?.data;
+  if(typeof data==='string'&&data.startsWith('0x08c379a0')){try{return ethers.AbiCoder.defaultAbiCoder().decode(['string'],'0x'+data.slice(10))[0];}catch(_){}}
+  if(typeof data==='string'&&data.startsWith('0x4e487b71')){try{const c=Number(ethers.AbiCoder.defaultAbiCoder().decode(['uint256'],'0x'+data.slice(10))[0]);const msgs={1:'Assertion failed',11:'Arithmetic overflow',12:'Division by zero',22:'Array out of bounds'};return 'Panic: '+(msgs[c]||'code '+c);}catch(_){}}
+  const raw=e.message||String(e);
+  const m=raw.match(/reason="([^"]+)"/);if(m)return m[1];
+  if(raw.includes('overflow'))return 'Overflow -- try smaller amount or increase slippage';
+  return raw.replace('missing revert data','Transaction reverted -- try increasing slippage').slice(0,200);
+}
+
+//  Auto-reconnect 
+(async()=>{
+  try { await getEthers(); } catch(e) {
+    setSt('error','','Failed to load ethers.js — allow CDN scripts.');
+  }
+  const eth = getEthereum();
+  if(eth){
+    try{
+      const accs=await eth.request({method:'eth_accounts'});
+      if(accs.length>0) connWallet();
+    }catch(_){}
+  }
+})();
+</script>
+</body>
+</html>
