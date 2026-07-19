@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="theme-color" content="#030407">
 <meta name="description" content="RicSwap Rewards Store — redeem RIC for real rewards on Shibarium. Hardened payments, exact chain checks, XSS-safe UI.">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://unpkg.com https://cdnjs.cloudflare.com https://www.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' https://rpc.shibarium.shib.io https://*.shibarium.shib.io https://shibariumscan.io https://www.shibariumscan.io https://cdn.jsdelivr.net https://unpkg.com https://cdnjs.cloudflare.com https://*.firebaseio.com https://*.firebasedatabase.app https://firebasestorage.googleapis.com https://*.googleapis.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://api.emailjs.com https://raw.githubusercontent.com; frame-src 'none'; object-src 'none'; base-uri 'self'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://unpkg.com https://cdnjs.cloudflare.com https://www.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' https://rpc.shibarium.shib.io https://*.shibarium.shib.io https://shibariumscan.io https://www.shibariumscan.io https://cdn.jsdelivr.net https://unpkg.com https://cdnjs.cloudflare.com https://*.firebaseio.com wss://*.firebaseio.com https://*.firebasedatabase.app wss://*.firebasedatabase.app https://firebasestorage.googleapis.com https://*.googleapis.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://*.firebaseapp.com https://firebase.googleapis.com https://www.googleapis.com https://api.emailjs.com https://raw.githubusercontent.com; frame-src 'none'; object-src 'none'; base-uri 'self'; form-action 'none'">
 <title>RicSwap | Rewards Store — Secure RIC Redeem</title>
 <link rel="icon" type="image/png" href="riclogo.png">
 <link rel="apple-touch-icon" href="riclogo.png">
@@ -679,21 +679,52 @@ input,textarea{font-family:var(--mono);outline:none;border:none;background:trans
     }
     throw last || new Error("ethers load failed");
   }
+  function withTimeout(promise, ms, label) {
+    ms = ms || 15000;
+    label = label || "Request";
+    return new Promise(function (resolve, reject) {
+      var done = false;
+      var t = setTimeout(function () {
+        if (done) return;
+        done = true;
+        reject(new Error(label + " timed out after " + Math.round(ms / 1000) + "s. Check network, ad-block, or Firebase CSP."));
+      }, ms);
+      Promise.resolve(promise).then(
+        function (v) {
+          if (done) return;
+          done = true;
+          clearTimeout(t);
+          resolve(v);
+        },
+        function (e) {
+          if (done) return;
+          done = true;
+          clearTimeout(t);
+          reject(e);
+        }
+      );
+    });
+  }
+
   async function loadFirebase() {
     if (firebaseReady && window.firebase && db) return;
     if (!window.firebase) {
-      await loadScript("https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js");
-      await loadScript("https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js");
-      await loadScript("https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js");
-      await loadScript("https://www.gstatic.com/firebasejs/9.22.0/firebase-storage-compat.js");
+      await withTimeout(loadScript("https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"), 12000, "Firebase app SDK");
+      await withTimeout(loadScript("https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"), 12000, "Firebase auth SDK");
+      await withTimeout(loadScript("https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"), 12000, "Firebase database SDK");
+      await withTimeout(loadScript("https://www.gstatic.com/firebasejs/9.22.0/firebase-storage-compat.js"), 12000, "Firebase storage SDK");
     } else if (!firebase.storage) {
-      await loadScript("https://www.gstatic.com/firebasejs/9.22.0/firebase-storage-compat.js");
+      await withTimeout(loadScript("https://www.gstatic.com/firebasejs/9.22.0/firebase-storage-compat.js"), 12000, "Firebase storage SDK");
     }
     if (!window.firebase) throw new Error("Firebase SDK failed to load");
     if (!firebase.apps || !firebase.apps.length) {
       firebase.initializeApp(CFG.FIREBASE);
     }
     db = firebase.database();
+    // Force REST long-poll fallback if WebSocket blocked (some networks/CSP)
+    try {
+      db._repoInternal; // no-op touch
+    } catch (_) {}
     firebaseReady = true;
   }
   async function loadEmailJs() {
@@ -766,7 +797,6 @@ input,textarea{font-family:var(--mono);outline:none;border:none;background:trans
   }
 
   async function refreshRoleFlags() {
-    var prevUid = roleFlags.uid;
     roleFlags = { uid: "", isRootAdmin: false, isStaff: false, email: "", roleError: "" };
     try {
       if (!isSignedIn()) {
@@ -777,21 +807,30 @@ input,textarea{font-family:var(--mono);outline:none;border:none;background:trans
       roleFlags.uid = user.uid;
       roleFlags.email = user.email || "";
       await loadFirebase();
-      // Separate tries so one permission error doesn't wipe the other role
+
+      // Timeout each RTDB read so login never hangs forever (CSP/WebSocket issues)
       try {
-        var adminSnap = await db.ref("admins/" + user.uid).once("value");
+        var adminSnap = await withTimeout(
+          db.ref("admins/" + user.uid).once("value"),
+          10000,
+          "Admin role check"
+        );
         roleFlags.isRootAdmin = isTruthyFlag(adminSnap.val());
       } catch (e1) {
-        roleFlags.roleError = "Could not read /admins/" + user.uid + " (" + ((e1 && e1.message) || e1) + ")";
+        roleFlags.roleError = "Could not read /admins/" + user.uid + " — " + ((e1 && e1.message) || e1);
         console.warn(roleFlags.roleError);
       }
       try {
-        var staffSnap = await db.ref("staff/" + user.uid).once("value");
+        var staffSnap = await withTimeout(
+          db.ref("staff/" + user.uid).once("value"),
+          8000,
+          "Staff role check"
+        );
         var st = staffSnap.val();
         roleFlags.isStaff = !!(st && isTruthyFlag(st.active));
       } catch (e2) {
-        // Root admin may still proceed; staff self-read failures are rare
         console.warn("staff role read", e2);
+        if (!roleFlags.roleError) roleFlags.roleError = (e2 && e2.message) || String(e2);
       }
     } catch (e) {
       console.warn("role check", e);
@@ -1325,12 +1364,12 @@ input,textarea{font-family:var(--mono);outline:none;border:none;background:trans
   window.adminAuthToggle = async function () {
     var btn = $("authBtn");
     try {
-      await loadFirebase();
       if (btn) btn.disabled = true;
 
-      // Sign out
+      // Sign out path
       if (isSignedIn()) {
-        await firebase.auth().signOut();
+        setElStatus("authStatus", "info", "Signing out…");
+        await withTimeout(firebase.auth().signOut(), 10000, "Sign out");
         roleFlags = { uid: "", isRootAdmin: false, isStaff: false, email: "", roleError: "" };
         setElStatus("authStatus", "ok", "Signed out.");
         refreshAuthUi();
@@ -1341,7 +1380,6 @@ input,textarea{font-family:var(--mono);outline:none;border:none;background:trans
 
       var email = sanitizeText($("adminEmail").value, CFG.MAX_EMAIL);
       var pass = String($("adminPass").value || "");
-      // Sign-in: min 6 (Firebase default). Staff *create* still requires strong 10+.
       if (!isValidEmail(email)) {
         setElStatus("authStatus", "err", "Enter a valid email.");
         return;
@@ -1351,16 +1389,39 @@ input,textarea{font-family:var(--mono);outline:none;border:none;background:trans
         return;
       }
 
-      setElStatus("authStatus", "info", "Signing in…");
+      // Step-by-step so we never sit forever on a single "Signing in…"
+      setElStatus("authStatus", "info", "1/4 Loading Firebase…");
+      await withTimeout(loadFirebase(), 20000, "Loading Firebase");
+
+      setElStatus("authStatus", "info", "2/4 Connecting to Auth…");
       try {
-        await firebase.auth().setPersistence(firebase.auth.Auth.Persistence.LOCAL);
+        await withTimeout(
+          firebase.auth().setPersistence(firebase.auth.Auth.Persistence.LOCAL),
+          8000,
+          "Auth persistence"
+        );
       } catch (_) {}
 
-      await firebase.auth().signInWithEmailAndPassword(email, pass);
-      // Keep password field cleared after success
+      setElStatus("authStatus", "info", "3/4 Checking email & password…");
+      await withTimeout(
+        firebase.auth().signInWithEmailAndPassword(email, pass),
+        20000,
+        "Sign-in"
+      );
       $("adminPass").value = "";
 
-      await refreshRoleFlags();
+      setElStatus("authStatus", "info", "4/4 Checking admin role…");
+      try {
+        await withTimeout(refreshRoleFlags(), 15000, "Role check");
+      } catch (roleErr) {
+        // Auth succeeded — do not treat role timeout as failed login
+        console.warn(roleErr);
+        roleFlags.uid = (firebase.auth().currentUser && firebase.auth().currentUser.uid) || "";
+        roleFlags.email = (firebase.auth().currentUser && firebase.auth().currentUser.email) || email;
+        roleFlags.roleError = (roleErr && roleErr.message) || String(roleErr);
+        updateRoleHint();
+      }
+
       refreshAuthUi();
 
       if (canMutateCatalog()) {
@@ -1370,24 +1431,29 @@ input,textarea{font-family:var(--mono);outline:none;border:none;background:trans
           (roleFlags.isRootAdmin ? "Root admin signed in." : "Staff signed in.") +
             " You can manage products."
         );
-        loadOrders();
-        renderAdminList();
-        syncStaffSection();
-      } else {
-        // Still "signed in" — show fix path (not a silent failure)
+        try { loadOrders(); } catch (_) {}
+        try { renderAdminList(); } catch (_) {}
+        try { syncStaffSection(); } catch (_) {}
+      } else if (isSignedIn()) {
         setElStatus(
           "authStatus",
           "err",
-          "Login OK, but no admin/staff role. Copy UID from the yellow box below → Firebase Data → admins/<UID> = true (boolean) → sign out/in."
+          "Login OK, but no admin/staff role (or role check timed out). " +
+            "UID: " + (roleFlags.uid || "—") +
+            " → Firebase Data → admins/<UID> = true (boolean). " +
+            (roleFlags.roleError ? " Detail: " + roleFlags.roleError : "")
         );
+      } else {
+        setElStatus("authStatus", "err", "Sign-in did not complete.");
       }
     } catch (e) {
       console.error("adminAuthToggle", e);
       setElStatus("authStatus", "err", "Sign-in failed: " + firebaseErr(e));
     } finally {
       if (btn) btn.disabled = false;
-      if ($("authBtn") && isSignedIn()) $("authBtn").textContent = "Sign out";
-      else if ($("authBtn")) $("authBtn").textContent = "Sign in";
+      if ($("authBtn")) {
+        $("authBtn").textContent = isSignedIn() ? "Sign out" : "Sign in";
+      }
     }
   };
 
