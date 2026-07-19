@@ -332,12 +332,16 @@ input,textarea{font-family:var(--mono);outline:none;border:none;background:trans
     <p class="sub">Sign in with email + password. Root admin or staff accounts can manage products &amp; orders.</p>
 
     <div class="auth-box" id="authBox">
-      <p id="authState">Signed out. Use the email/password assigned by the owner (or your root admin account).</p>
-      <div class="auth-row">
-        <input id="adminEmail" type="email" maxlength="120" placeholder="Staff / admin email" autocomplete="username">
-        <input id="adminPass" type="password" maxlength="128" placeholder="Password" autocomplete="current-password">
-        <button type="button" class="btn-main" style="width:auto;padding:12px 16px" id="authBtn" onclick="adminAuthToggle()">Sign in</button>
+      <p id="authState">Signed out. Use your Firebase email + password (Authentication → Users).</p>
+      <div class="field" style="margin-bottom:8px">
+        <label for="adminEmail">Email</label>
+        <input id="adminEmail" type="email" maxlength="120" placeholder="admin@…" autocomplete="username">
       </div>
+      <div class="field" style="margin-bottom:8px">
+        <label for="adminPass">Password</label>
+        <input id="adminPass" type="password" maxlength="128" placeholder="Your password" autocomplete="current-password">
+      </div>
+      <button type="button" class="btn-main" id="authBtn" onclick="adminAuthToggle()">Sign in</button>
       <div class="status" id="authStatus"></div>
       <p class="hint" id="roleHint" style="margin-top:10px;margin-bottom:0;display:none"></p>
     </div>
@@ -348,18 +352,23 @@ input,textarea{font-family:var(--mono);outline:none;border:none;background:trans
     </div>
 
     <div class="admin-section" id="staffSection" style="display:none">
-      <h3>Create staff login (root admin only)</h3>
+      <h3>Staff accounts (root admin only)</h3>
       <p class="hint">
-        Creates a Firebase email/password account and grants <b>staff</b> access (products, photos, orders).
-        Share the email + password with your staff. They sign in here — <b>no wallet needed</b>.
+        <b>Maximum safety:</b> only root admin can create/disable/delete staff.
+        Creating staff requires <b>your admin password</b> again. Staff get products/orders access only — never root admin.
+        Disable removes access immediately; Delete removes the staff record (disable Auth user in Firebase Console if you want full account removal).
       </p>
       <div class="field">
-        <label for="staffEmail">Staff email</label>
+        <label for="staffEmail">New staff email</label>
         <input id="staffEmail" type="email" maxlength="120" placeholder="staff@example.com" autocomplete="off">
       </div>
       <div class="field">
-        <label for="staffPass">Temporary password (min 8)</label>
-        <input id="staffPass" type="text" maxlength="128" placeholder="Set a strong password" autocomplete="off">
+        <label for="staffPass">Staff password (min 10, letters + numbers)</label>
+        <input id="staffPass" type="text" maxlength="128" placeholder="Strong temporary password" autocomplete="new-password">
+      </div>
+      <div class="field">
+        <label for="staffAdminConfirm">Confirm YOUR admin password</label>
+        <input id="staffAdminConfirm" type="password" maxlength="128" placeholder="Re-enter your admin password" autocomplete="current-password">
       </div>
       <button type="button" class="btn-main" id="addStaffBtn" onclick="addStaff()">Create staff account</button>
       <div class="status" id="staffStatus"></div>
@@ -486,6 +495,8 @@ input,textarea{font-family:var(--mono);outline:none;border:none;background:trans
   /** Role flags loaded from RTDB after Auth sign-in */
   var roleFlags = { uid: "", isRootAdmin: false, isStaff: false, email: "" };
   var staffCache = {}; // uid -> {email, active}
+  var staffCreateCount = 0;
+  var STAFF_CREATE_MAX_SESSION = 10;
 
   function $(id) { return document.getElementById(id); }
   function esc(s) {
@@ -749,21 +760,42 @@ input,textarea{font-family:var(--mono);outline:none;border:none;background:trans
     return true; // Staff button always open — login is inside the panel
   }
 
+  function isTruthyFlag(v) {
+    // Accept boolean true, or common mistakes (string "true" / 1) so admin isn't locked out
+    return v === true || v === 1 || v === "true" || v === "1";
+  }
+
   async function refreshRoleFlags() {
-    roleFlags = { uid: "", isRootAdmin: false, isStaff: false, email: "" };
+    var prevUid = roleFlags.uid;
+    roleFlags = { uid: "", isRootAdmin: false, isStaff: false, email: "", roleError: "" };
     try {
-      if (!isSignedIn()) return roleFlags;
+      if (!isSignedIn()) {
+        updateRoleHint();
+        return roleFlags;
+      }
       var user = firebase.auth().currentUser;
       roleFlags.uid = user.uid;
       roleFlags.email = user.email || "";
       await loadFirebase();
-      var adminSnap = await db.ref("admins/" + user.uid).once("value");
-      roleFlags.isRootAdmin = adminSnap.val() === true;
-      var staffSnap = await db.ref("staff/" + user.uid).once("value");
-      var st = staffSnap.val();
-      roleFlags.isStaff = !!(st && st.active === true);
+      // Separate tries so one permission error doesn't wipe the other role
+      try {
+        var adminSnap = await db.ref("admins/" + user.uid).once("value");
+        roleFlags.isRootAdmin = isTruthyFlag(adminSnap.val());
+      } catch (e1) {
+        roleFlags.roleError = "Could not read /admins/" + user.uid + " (" + ((e1 && e1.message) || e1) + ")";
+        console.warn(roleFlags.roleError);
+      }
+      try {
+        var staffSnap = await db.ref("staff/" + user.uid).once("value");
+        var st = staffSnap.val();
+        roleFlags.isStaff = !!(st && isTruthyFlag(st.active));
+      } catch (e2) {
+        // Root admin may still proceed; staff self-read failures are rare
+        console.warn("staff role read", e2);
+      }
     } catch (e) {
       console.warn("role check", e);
+      roleFlags.roleError = (e && e.message) || String(e);
     }
     updateRoleHint();
     return roleFlags;
@@ -778,14 +810,23 @@ input,textarea{font-family:var(--mono);outline:none;border:none;background:trans
     }
     el.style.display = "block";
     if (roleFlags.isRootAdmin) {
-      el.innerHTML = "<b>Role: Root admin</b> · full access · UID <code style=\"color:var(--fog)\">" + esc(roleFlags.uid) + "</code>";
+      el.innerHTML =
+        "<b style=\"color:var(--green)\">Role: Root admin</b> · full access<br>" +
+        "UID: <code style=\"color:var(--fog);word-break:break-all\">" + esc(roleFlags.uid) + "</code>";
     } else if (roleFlags.isStaff) {
-      el.innerHTML = "<b>Role: Staff</b> · products, photos, orders · UID <code style=\"color:var(--fog)\">" + esc(roleFlags.uid) + "</code>";
+      el.innerHTML =
+        "<b style=\"color:var(--green)\">Role: Staff</b> · products, photos, orders<br>" +
+        "UID: <code style=\"color:var(--fog);word-break:break-all\">" + esc(roleFlags.uid) + "</code>";
     } else {
       el.innerHTML =
-        "<b style=\"color:var(--red)\">Signed in but not authorized.</b> " +
-        "Your UID is not under <code>/admins</code> or active <code>/staff</code>. " +
-        "In Firebase Data, set <code>admins/" + esc(roleFlags.uid) + " = true</code> (boolean).";
+        "<b style=\"color:var(--red)\">Signed in, but no publish role.</b><br>" +
+        "Email: " + esc(roleFlags.email || "—") + "<br>" +
+        "UID: <code style=\"color:var(--fog);word-break:break-all\">" + esc(roleFlags.uid) + "</code><br>" +
+        "In Firebase → Realtime Database → Data, add:<br>" +
+        "<code style=\"color:var(--gold)\">admins / " + esc(roleFlags.uid) + " = true</code> " +
+        "(type must be <b>boolean</b>, not string).<br>" +
+        "Then sign out and sign in again." +
+        (roleFlags.roleError ? "<br><span style=\"color:var(--ash)\">Detail: " + esc(roleFlags.roleError) + "</span>" : "");
     }
   }
 
@@ -795,21 +836,52 @@ input,textarea{font-family:var(--mono);outline:none;border:none;background:trans
 
   function firebaseErr(e) {
     if (!e) return "Unknown error";
-    var code = e.code || "";
+    var code = String(e.code || "");
     var msg = e.message || String(e);
-    if (/permission_denied|PERMISSION_DENIED/i.test(code + msg)) {
-      return "Permission denied. Your account is not in /admins or active /staff. Check UID under Realtime Database → Data.";
+    var both = code + " " + msg;
+    if (/permission_denied|PERMISSION_DENIED/i.test(both)) {
+      return "Permission denied. Check /admins/<UID>=true (boolean) or active /staff. Re-publish database rules if needed.";
     }
-    if (/EMAIL_EXISTS|email-already-in-use/i.test(code + msg)) {
-      return "That email already has an account. Use a new email, or disable old staff and create another.";
+    if (/auth\/wrong-password|wrong-password|INVALID_LOGIN|invalid-credential|INVALID_PASSWORD/i.test(both)) {
+      return "Wrong email or password.";
     }
-    if (/weak-password/i.test(code + msg)) {
-      return "Password too weak (use 8+ characters).";
+    if (/auth\/user-not-found|user-not-found/i.test(both)) {
+      return "No account with that email. Create it in Firebase → Authentication → Users.";
     }
-    if (/invalid-email/i.test(code + msg)) {
+    if (/auth\/too-many-requests|too-many-requests/i.test(both)) {
+      return "Too many attempts. Wait a few minutes and try again.";
+    }
+    if (/auth\/network-request-failed|network-request-failed/i.test(both)) {
+      return "Network error reaching Firebase Auth. Check connection / ad blockers.";
+    }
+    if (/auth\/invalid-email|invalid-email/i.test(both)) {
       return "Invalid email address.";
     }
+    if (/EMAIL_EXISTS|email-already-in-use/i.test(both)) {
+      return "That email already has an account. Use another email, or disable that staff row.";
+    }
+    if (/weak-password/i.test(both)) {
+      return "Password too weak (staff needs 10+ chars with letters and numbers).";
+    }
+    if (/requires-recent-login/i.test(both)) {
+      return "For security, sign out and sign in again, then retry.";
+    }
     return (code ? code + " · " : "") + msg;
+  }
+
+  function isStrongStaffPassword(p) {
+    p = String(p || "");
+    if (p.length < 10 || p.length > 128) return false;
+    if (!/[A-Za-z]/.test(p)) return false;
+    if (!/[0-9]/.test(p)) return false;
+    return true;
+  }
+
+  async function reauthRootAdmin(password) {
+    var user = firebase.auth().currentUser;
+    if (!user || !user.email) throw new Error("Not signed in as admin.");
+    var cred = firebase.auth.EmailAuthProvider.credential(user.email, password);
+    await user.reauthenticateWithCredential(cred);
   }
 
   /* ─── Connect ───────────────────────────────────────────── */
@@ -1251,43 +1323,71 @@ input,textarea{font-family:var(--mono);outline:none;border:none;background:trans
   }
 
   window.adminAuthToggle = async function () {
+    var btn = $("authBtn");
     try {
       await loadFirebase();
+      if (btn) btn.disabled = true;
+
+      // Sign out
       if (isSignedIn()) {
         await firebase.auth().signOut();
-        roleFlags = { uid: "", isRootAdmin: false, isStaff: false, email: "" };
+        roleFlags = { uid: "", isRootAdmin: false, isStaff: false, email: "", roleError: "" };
         setElStatus("authStatus", "ok", "Signed out.");
         refreshAuthUi();
         $("orderHistory").innerHTML = "<p style=\"color:var(--ash)\">Sign in to load orders.</p>";
+        $("staffSection").style.display = "none";
         return;
       }
+
       var email = sanitizeText($("adminEmail").value, CFG.MAX_EMAIL);
       var pass = String($("adminPass").value || "");
-      if (!isValidEmail(email) || pass.length < 8) {
-        setElStatus("authStatus", "err", "Valid email + password (8+) required.");
+      // Sign-in: min 6 (Firebase default). Staff *create* still requires strong 10+.
+      if (!isValidEmail(email)) {
+        setElStatus("authStatus", "err", "Enter a valid email.");
         return;
       }
+      if (pass.length < 6) {
+        setElStatus("authStatus", "err", "Enter your password (at least 6 characters).");
+        return;
+      }
+
       setElStatus("authStatus", "info", "Signing in…");
+      try {
+        await firebase.auth().setPersistence(firebase.auth.Auth.Persistence.LOCAL);
+      } catch (_) {}
+
       await firebase.auth().signInWithEmailAndPassword(email, pass);
+      // Keep password field cleared after success
       $("adminPass").value = "";
+
       await refreshRoleFlags();
-      if (!canMutateCatalog()) {
+      refreshAuthUi();
+
+      if (canMutateCatalog()) {
+        setElStatus(
+          "authStatus",
+          "ok",
+          (roleFlags.isRootAdmin ? "Root admin signed in." : "Staff signed in.") +
+            " You can manage products."
+        );
+        loadOrders();
+        renderAdminList();
+        syncStaffSection();
+      } else {
+        // Still "signed in" — show fix path (not a silent failure)
         setElStatus(
           "authStatus",
           "err",
-          "Signed in, but this account cannot publish. Add boolean true at Data → admins/" +
-            firebase.auth().currentUser.uid
+          "Login OK, but no admin/staff role. Copy UID from the yellow box below → Firebase Data → admins/<UID> = true (boolean) → sign out/in."
         );
-      } else {
-        setElStatus("authStatus", "ok", "Signed in with publish access.");
-      }
-      refreshAuthUi();
-      if (canMutateCatalog()) {
-        loadOrders();
-        renderAdminList();
       }
     } catch (e) {
-      setElStatus("authStatus", "err", firebaseErr(e));
+      console.error("adminAuthToggle", e);
+      setElStatus("authStatus", "err", "Sign-in failed: " + firebaseErr(e));
+    } finally {
+      if (btn) btn.disabled = false;
+      if ($("authBtn") && isSignedIn()) $("authBtn").textContent = "Sign out";
+      else if ($("authBtn")) $("authBtn").textContent = "Sign in";
     }
   };
 
@@ -1666,24 +1766,45 @@ input,textarea{font-family:var(--mono);outline:none;border:none;background:trans
       return;
     }
     uids.forEach(function (uid) {
-      var rowData = staffCache[uid] || {};
+      // Skip legacy wallet-string entries
+      var rowData = staffCache[uid];
+      if (typeof rowData === "string") return;
+      rowData = rowData || {};
+      if (!rowData.email && rowData.active === undefined) return;
+
       var row = document.createElement("div");
       row.className = "list-item";
       var left = document.createElement("div");
       var title = document.createElement("div");
-      title.textContent = (rowData.email || "(no email)") + (rowData.active === false ? " · DISABLED" : " · active");
+      var active = isTruthyFlag(rowData.active);
+      title.textContent = (rowData.email || "(no email)") + (active ? " · ACTIVE" : " · DISABLED");
       var meta = document.createElement("small");
       meta.textContent = "UID: " + uid;
       left.appendChild(title);
       left.appendChild(meta);
       row.appendChild(left);
+
       if (canManageStaffAccounts()) {
-        var btn = document.createElement("button");
-        btn.type = "button";
-        btn.className = "btn-danger";
-        btn.textContent = rowData.active === false ? "Enable" : "Disable";
-        btn.addEventListener("click", function () { toggleStaff(uid, rowData.active === false); });
-        row.appendChild(btn);
+        var actions = document.createElement("div");
+        actions.style.display = "flex";
+        actions.style.gap = "6px";
+        actions.style.flexWrap = "wrap";
+
+        var tgl = document.createElement("button");
+        tgl.type = "button";
+        tgl.className = "btn-danger";
+        tgl.textContent = active ? "Disable" : "Enable";
+        tgl.addEventListener("click", function () { toggleStaff(uid, !active); });
+
+        var del = document.createElement("button");
+        del.type = "button";
+        del.className = "btn-danger";
+        del.textContent = "Delete";
+        del.addEventListener("click", function () { deleteStaff(uid); });
+
+        actions.appendChild(tgl);
+        actions.appendChild(del);
+        row.appendChild(actions);
       }
       list.appendChild(row);
     });
@@ -1693,38 +1814,70 @@ input,textarea{font-family:var(--mono);outline:none;border:none;background:trans
     clearElStatus("staffStatus");
     await refreshRoleFlags();
     if (!canManageStaffAccounts()) {
-      return setElStatus("staffStatus", "err", "Only root admin (/admins/UID) can create staff logins.");
+      return setElStatus("staffStatus", "err", "Only root admin can create staff.");
     }
+    if (staffCreateCount >= STAFF_CREATE_MAX_SESSION) {
+      return setElStatus("staffStatus", "err", "Session limit: too many staff creates. Refresh page later.");
+    }
+
     var email = sanitizeText($("staffEmail").value, CFG.MAX_EMAIL);
     var pass = String($("staffPass").value || "");
+    var adminPass = String($("staffAdminConfirm").value || "");
+
     if (!isValidEmail(email)) {
       return setElStatus("staffStatus", "err", "Enter a valid staff email.");
     }
-    if (pass.length < 8) {
-      return setElStatus("staffStatus", "err", "Password must be at least 8 characters.");
+    if (!isStrongStaffPassword(pass)) {
+      return setElStatus(
+        "staffStatus",
+        "err",
+        "Staff password: min 10 chars, must include letters and numbers."
+      );
     }
+    if (adminPass.length < 6) {
+      return setElStatus("staffStatus", "err", "Re-enter YOUR admin password to confirm.");
+    }
+    // Never allow staff email == root admin email confusion
+    if (roleFlags.email && email.toLowerCase() === roleFlags.email.toLowerCase()) {
+      return setElStatus("staffStatus", "err", "Use a different email than the root admin.");
+    }
+
     var btn = $("addStaffBtn");
     if (btn) { btn.disabled = true; btn.textContent = "Creating…"; }
     try {
       await loadFirebase();
-      // Secondary app so root admin stays signed in
+
+      // Step 1: re-auth root admin (proves they still know the password)
+      setElStatus("staffStatus", "info", "Verifying admin password…");
+      await reauthRootAdmin(adminPass);
+
+      // Step 2: create Auth user on secondary app (root stays signed in)
+      setElStatus("staffStatus", "info", "Creating staff Auth account…");
       var secondary =
         firebase.apps.filter(function (a) { return a.name === "StaffCreate"; })[0] ||
         firebase.initializeApp(CFG.FIREBASE, "StaffCreate");
       var cred = await secondary.auth().createUserWithEmailAndPassword(email, pass);
       var uid = cred.user.uid;
-      await secondary.auth().signOut();
+      try { await secondary.auth().signOut(); } catch (_) {}
+
+      // Step 3: grant staff role in RTDB (only admin can write — rules enforced)
+      // Never write to /admins from client for staff
+      setElStatus("staffStatus", "info", "Granting staff role…");
       await db.ref("staff/" + uid).set({
         email: email,
         active: true,
-        createdAt: firebase.database.ServerValue.TIMESTAMP
+        createdAt: firebase.database.ServerValue.TIMESTAMP,
+        createdBy: firebase.auth().currentUser.uid
       });
+
+      staffCreateCount++;
       $("staffEmail").value = "";
       $("staffPass").value = "";
+      $("staffAdminConfirm").value = "";
       setElStatus(
         "staffStatus",
         "ok",
-        "Staff created. Share login: " + email + " / (password you set). They open Staff → Sign in."
+        "Staff created securely. Share email + password offline. They use Staff → Sign in. UID: " + uid
       );
       await loadStaffList();
     } catch (e) {
@@ -1736,20 +1889,65 @@ input,textarea{font-family:var(--mono);outline:none;border:none;background:trans
   };
 
   window.toggleStaff = async function (uid, enable) {
-    if (!canManageStaffAccounts()) return;
-    if (!uid) return;
+    await refreshRoleFlags();
+    if (!canManageStaffAccounts()) {
+      return setElStatus("staffStatus", "err", "Only root admin can enable/disable staff.");
+    }
+    if (!uid || !/^[A-Za-z0-9]{10,128}$/.test(uid)) return;
     try {
       var snap = await db.ref("staff/" + uid).once("value");
-      var cur = snap.val() || {};
+      var cur = snap.val();
+      if (!cur || typeof cur !== "object") {
+        return setElStatus("staffStatus", "err", "Staff record not found.");
+      }
+      var email = sanitizeText(cur.email || "", CFG.MAX_EMAIL);
+      if (!isValidEmail(email)) {
+        return setElStatus("staffStatus", "err", "Staff record missing valid email.");
+      }
       await db.ref("staff/" + uid).set({
-        email: cur.email || "",
+        email: email,
         active: !!enable,
-        createdAt: cur.createdAt || firebase.database.ServerValue.TIMESTAMP
+        createdAt: cur.createdAt || firebase.database.ServerValue.TIMESTAMP,
+        updatedAt: firebase.database.ServerValue.TIMESTAMP,
+        updatedBy: firebase.auth().currentUser.uid
       });
-      setElStatus("staffStatus", "ok", enable ? "Staff enabled." : "Staff disabled (cannot publish).");
+      setElStatus(
+        "staffStatus",
+        "ok",
+        enable ? "Staff enabled — can publish again." : "Staff disabled — access revoked immediately."
+      );
       await loadStaffList();
     } catch (e) {
       setElStatus("staffStatus", "err", firebaseErr(e));
+    }
+  };
+
+  window.deleteStaff = async function (uid) {
+    await refreshRoleFlags();
+    if (!canManageStaffAccounts()) {
+      return setElStatus("staffStatus", "err", "Only root admin can delete staff.");
+    }
+    if (!uid || !/^[A-Za-z0-9]{10,128}$/.test(uid)) return;
+    var row = staffCache[uid] || {};
+    var label = row.email || uid;
+    if (!confirm(
+      "DELETE staff access for:\n" + label + "\n\n" +
+      "This removes their publish rights immediately.\n" +
+      "To fully delete the Auth login, also remove the user in Firebase → Authentication → Users.\n\nContinue?"
+    )) return;
+    var adminPass = prompt("Type YOUR admin password to confirm delete:");
+    if (adminPass == null) return;
+    try {
+      await reauthRootAdmin(String(adminPass));
+      await db.ref("staff/" + uid).remove();
+      setElStatus(
+        "staffStatus",
+        "ok",
+        "Staff record deleted. Optional: delete Auth user " + label + " in Firebase Console."
+      );
+      await loadStaffList();
+    } catch (e) {
+      setElStatus("staffStatus", "err", "Delete failed: " + firebaseErr(e));
     }
   };
 
