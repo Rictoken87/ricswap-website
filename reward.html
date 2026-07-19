@@ -60,10 +60,9 @@ input,textarea{font-family:var(--mono);outline:none;border:none;background:trans
 }
 .wallet-btn.connected{background:rgba(0,255,178,.1);border:1px solid rgba(0,255,178,.35);color:var(--green);box-shadow:none}
 .admin-btn{
-  display:none;padding:10px 14px;border-radius:999px;font-weight:700;font-size:12px;
+  display:inline-flex;padding:10px 14px;border-radius:999px;font-weight:700;font-size:12px;
   background:var(--pit);border:1px solid var(--rim);color:var(--fog);
 }
-.admin-btn.show{display:inline-flex}
 .admin-btn:hover{border-color:rgba(232,184,75,.4);color:var(--gold)}
 
 .hero{text-align:center;padding:8px 0 28px;max-width:720px;margin:0 auto}
@@ -330,31 +329,39 @@ input,textarea{font-family:var(--mono);outline:none;border:none;background:trans
   <div class="modal-box">
     <button type="button" class="btn-sec" style="width:auto;float:right;margin:0" onclick="closeAdminPanel()">Close</button>
     <h2>Staff console</h2>
-    <p class="sub">Wallet alone is not enough for writes. Sign in with Firebase Admin auth. Deploy database rules.</p>
+    <p class="sub">Sign in with email + password. Root admin or staff accounts can manage products &amp; orders.</p>
 
     <div class="auth-box" id="authBox">
-      <p id="authState">Firebase Admin: signed out. Product/order writes require admin auth (see firebase-database.rules.json).</p>
+      <p id="authState">Signed out. Use the email/password assigned by the owner (or your root admin account).</p>
       <div class="auth-row">
-        <input id="adminEmail" type="email" maxlength="120" placeholder="Admin email" autocomplete="username">
+        <input id="adminEmail" type="email" maxlength="120" placeholder="Staff / admin email" autocomplete="username">
         <input id="adminPass" type="password" maxlength="128" placeholder="Password" autocomplete="current-password">
         <button type="button" class="btn-main" style="width:auto;padding:12px 16px" id="authBtn" onclick="adminAuthToggle()">Sign in</button>
       </div>
       <div class="status" id="authStatus"></div>
+      <p class="hint" id="roleHint" style="margin-top:10px;margin-bottom:0;display:none"></p>
     </div>
 
     <div class="admin-section">
-      <h3>Recent orders (admin auth required)</h3>
+      <h3>Recent orders</h3>
       <div id="orderHistory"><p style="color:var(--ash)">Sign in to load orders.</p></div>
     </div>
 
     <div class="admin-section" id="staffSection" style="display:none">
-      <h3>Staff wallets (who sees the Staff button)</h3>
-      <p class="hint">Sign in as <b>Firebase Admin</b> first. Paste a full <b>0x</b> address (42 characters). Staff wallets open Staff UI; product writes still need Firebase Admin login.</p>
+      <h3>Create staff login (root admin only)</h3>
+      <p class="hint">
+        Creates a Firebase email/password account and grants <b>staff</b> access (products, photos, orders).
+        Share the email + password with your staff. They sign in here — <b>no wallet needed</b>.
+      </p>
       <div class="field">
-        <label for="staffWallet">Wallet address</label>
-        <input id="staffWallet" placeholder="0x…" spellcheck="false" maxlength="42" autocomplete="off">
+        <label for="staffEmail">Staff email</label>
+        <input id="staffEmail" type="email" maxlength="120" placeholder="staff@example.com" autocomplete="off">
       </div>
-      <button type="button" class="btn-main" id="addStaffBtn" onclick="addStaff()">Add staff wallet</button>
+      <div class="field">
+        <label for="staffPass">Temporary password (min 8)</label>
+        <input id="staffPass" type="text" maxlength="128" placeholder="Set a strong password" autocomplete="off">
+      </div>
+      <button type="button" class="btn-main" id="addStaffBtn" onclick="addStaff()">Create staff account</button>
       <div class="status" id="staffStatus"></div>
       <div id="staffList" style="margin-top:10px"></div>
     </div>
@@ -362,9 +369,8 @@ input,textarea{font-family:var(--mono);outline:none;border:none;background:trans
     <div class="admin-section">
       <h3>Add product</h3>
       <p class="hint">
-        <b>Photo rules (auto-checked):</b> JPG / PNG / WebP · max <b>12 MB</b> original ·
-        min <b>200×200</b> px · we resize to max <b>1200 px</b> and compress for fast load.
-        Phone camera or gallery works.
+        <b>Photo:</b> JPG / PNG / WebP · max 12 MB · min 200×200 · auto-resized to 1200px.
+        Sign in first, then upload, then publish.
       </p>
       <div class="field"><label for="pName">Name</label><input id="pName" maxlength="80" placeholder="e.g. RicSwap T-shirt"></div>
       <div class="row2">
@@ -398,6 +404,7 @@ input,textarea{font-family:var(--mono);outline:none;border:none;background:trans
       </details>
 
       <button type="button" class="btn-main" style="margin-top:14px" id="addProductBtn" onclick="addProduct()">Publish product</button>
+      <div class="status" id="productStatus"></div>
     </div>
 
     <div class="admin-section" style="border-bottom:none;margin-bottom:0;padding-bottom:0">
@@ -435,7 +442,7 @@ input,textarea{font-family:var(--mono);outline:none;border:none;background:trans
     MAX_SHIP_CITY: 60,
     MAX_SHIP_NOTES: 160,
     SHIP_LS_KEY: "ricswap_ship_v1",
-    MAX_IMAGE_URL: 1000,
+    MAX_IMAGE_URL: 2500,
     /* Photo upload limits (enforced client-side before Storage) */
     IMG_MAX_INPUT_BYTES: 12 * 1024 * 1024,
     IMG_MIN_SIDE: 200,
@@ -470,12 +477,15 @@ input,textarea{font-family:var(--mono);outline:none;border:none;background:trans
   var account = null;
   var db = null;
   var firebaseReady = false;
-  var staffWallets = []; // lowercase addresses
   var productCache = {}; // id -> product
   var currentProduct = null;
   var paying = false;
   var adminBusy = false;
+  var uploadingImage = false;
   var uploadedImageUrl = ""; // set after successful Storage upload
+  /** Role flags loaded from RTDB after Auth sign-in */
+  var roleFlags = { uid: "", isRootAdmin: false, isStaff: false, email: "" };
+  var staffCache = {}; // uid -> {email, active}
 
   function $(id) { return document.getElementById(id); }
   function esc(s) {
@@ -723,34 +733,83 @@ input,textarea{font-family:var(--mono);outline:none;border:none;background:trans
     }
   }
 
-  function isMasterWallet() {
-    return !!(account && account.toLowerCase() === CFG.MASTER.toLowerCase());
-  }
-  function isStaffWallet() {
-    if (!account) return false;
-    if (isMasterWallet()) return true;
-    var a = account.toLowerCase();
-    return staffWallets.some(function (s) { return s === a; });
-  }
-  function isFirebaseAdmin() {
+  function isSignedIn() {
     try {
       return !!(window.firebase && firebase.auth && firebase.auth().currentUser);
     } catch (_) { return false; }
   }
-  function canOpenAdminUi() {
-    // Show panel only to staff wallets OR signed-in Firebase admin
-    return isStaffWallet() || isFirebaseAdmin();
-  }
+  /** Root admin (/admins/uid) or active staff (/staff/uid/active) — matches DB rules */
   function canMutateCatalog() {
-    // Real write authority = Firebase Auth (enforced by rules)
-    return isFirebaseAdmin();
+    return !!(roleFlags.isRootAdmin || roleFlags.isStaff);
+  }
+  function canManageStaffAccounts() {
+    return !!roleFlags.isRootAdmin;
+  }
+  function canOpenAdminUi() {
+    return true; // Staff button always open — login is inside the panel
+  }
+
+  async function refreshRoleFlags() {
+    roleFlags = { uid: "", isRootAdmin: false, isStaff: false, email: "" };
+    try {
+      if (!isSignedIn()) return roleFlags;
+      var user = firebase.auth().currentUser;
+      roleFlags.uid = user.uid;
+      roleFlags.email = user.email || "";
+      await loadFirebase();
+      var adminSnap = await db.ref("admins/" + user.uid).once("value");
+      roleFlags.isRootAdmin = adminSnap.val() === true;
+      var staffSnap = await db.ref("staff/" + user.uid).once("value");
+      var st = staffSnap.val();
+      roleFlags.isStaff = !!(st && st.active === true);
+    } catch (e) {
+      console.warn("role check", e);
+    }
+    updateRoleHint();
+    return roleFlags;
+  }
+
+  function updateRoleHint() {
+    var el = $("roleHint");
+    if (!el) return;
+    if (!isSignedIn()) {
+      el.style.display = "none";
+      return;
+    }
+    el.style.display = "block";
+    if (roleFlags.isRootAdmin) {
+      el.innerHTML = "<b>Role: Root admin</b> · full access · UID <code style=\"color:var(--fog)\">" + esc(roleFlags.uid) + "</code>";
+    } else if (roleFlags.isStaff) {
+      el.innerHTML = "<b>Role: Staff</b> · products, photos, orders · UID <code style=\"color:var(--fog)\">" + esc(roleFlags.uid) + "</code>";
+    } else {
+      el.innerHTML =
+        "<b style=\"color:var(--red)\">Signed in but not authorized.</b> " +
+        "Your UID is not under <code>/admins</code> or active <code>/staff</code>. " +
+        "In Firebase Data, set <code>admins/" + esc(roleFlags.uid) + " = true</code> (boolean).";
+    }
   }
 
   function updateAdminBtn() {
-    var btn = $("adminBtn");
-    if (!btn) return;
-    if (canOpenAdminUi()) btn.classList.add("show");
-    else btn.classList.remove("show");
+    // Always visible — CSS handles it
+  }
+
+  function firebaseErr(e) {
+    if (!e) return "Unknown error";
+    var code = e.code || "";
+    var msg = e.message || String(e);
+    if (/permission_denied|PERMISSION_DENIED/i.test(code + msg)) {
+      return "Permission denied. Your account is not in /admins or active /staff. Check UID under Realtime Database → Data.";
+    }
+    if (/EMAIL_EXISTS|email-already-in-use/i.test(code + msg)) {
+      return "That email already has an account. Use a new email, or disable old staff and create another.";
+    }
+    if (/weak-password/i.test(code + msg)) {
+      return "Password too weak (use 8+ characters).";
+    }
+    if (/invalid-email/i.test(code + msg)) {
+      return "Invalid email address.";
+    }
+    return (code ? code + " · " : "") + msg;
   }
 
   /* ─── Connect ───────────────────────────────────────────── */
@@ -1162,16 +1221,14 @@ input,textarea{font-family:var(--mono);outline:none;border:none;background:trans
   function syncStaffSection() {
     var sec = $("staffSection");
     if (!sec) return;
-    // Any Firebase Admin can appoint staff (no master-wallet gate)
-    sec.style.display = canMutateCatalog() ? "block" : "none";
-    renderStaffList();
+    sec.style.display = canManageStaffAccounts() ? "block" : "none";
+    if (canManageStaffAccounts()) loadStaffList();
+    else renderStaffList();
   }
 
-  window.openAdminPanel = function () {
-    if (!canOpenAdminUi()) {
-      return alert("Staff only. Connect a staff/master wallet or sign in as Firebase Admin.");
-    }
+  window.openAdminPanel = async function () {
     $("adminOverlay").classList.add("show");
+    await refreshRoleFlags();
     refreshAuthUi();
     renderAdminList();
     syncStaffSection();
@@ -1182,20 +1239,23 @@ input,textarea{font-family:var(--mono);outline:none;border:none;background:trans
   };
 
   function refreshAuthUi() {
-    var user = isFirebaseAdmin() ? firebase.auth().currentUser : null;
-    $("authState").textContent = user
-      ? ("Firebase Admin: signed in as " + user.email + " · products, photos & staff wallets unlocked")
-      : "Firebase Admin: signed out. Sign in to publish products, upload photos, appoint staff, and read orders.";
+    var user = isSignedIn() ? firebase.auth().currentUser : null;
+    if (user) {
+      $("authState").textContent = "Signed in as " + (user.email || user.uid);
+    } else {
+      $("authState").textContent = "Signed out. Use email + password (root admin or staff account).";
+    }
     $("authBtn").textContent = user ? "Sign out" : "Sign in";
-    updateAdminBtn();
+    updateRoleHint();
     syncStaffSection();
   }
 
   window.adminAuthToggle = async function () {
     try {
       await loadFirebase();
-      if (isFirebaseAdmin()) {
+      if (isSignedIn()) {
         await firebase.auth().signOut();
+        roleFlags = { uid: "", isRootAdmin: false, isStaff: false, email: "" };
         setElStatus("authStatus", "ok", "Signed out.");
         refreshAuthUi();
         $("orderHistory").innerHTML = "<p style=\"color:var(--ash)\">Sign in to load orders.</p>";
@@ -1204,18 +1264,30 @@ input,textarea{font-family:var(--mono);outline:none;border:none;background:trans
       var email = sanitizeText($("adminEmail").value, CFG.MAX_EMAIL);
       var pass = String($("adminPass").value || "");
       if (!isValidEmail(email) || pass.length < 8) {
-        setElStatus("authStatus", "err", "Valid admin email + password (8+) required.");
+        setElStatus("authStatus", "err", "Valid email + password (8+) required.");
         return;
       }
       setElStatus("authStatus", "info", "Signing in…");
       await firebase.auth().signInWithEmailAndPassword(email, pass);
       $("adminPass").value = "";
-      setElStatus("authStatus", "ok", "Signed in. You can appoint staff and publish products with photos.");
+      await refreshRoleFlags();
+      if (!canMutateCatalog()) {
+        setElStatus(
+          "authStatus",
+          "err",
+          "Signed in, but this account cannot publish. Add boolean true at Data → admins/" +
+            firebase.auth().currentUser.uid
+        );
+      } else {
+        setElStatus("authStatus", "ok", "Signed in with publish access.");
+      }
       refreshAuthUi();
-      loadOrders();
-      renderAdminList();
+      if (canMutateCatalog()) {
+        loadOrders();
+        renderAdminList();
+      }
     } catch (e) {
-      setElStatus("authStatus", "err", (e && e.message) || String(e));
+      setElStatus("authStatus", "err", firebaseErr(e));
     }
   };
 
@@ -1300,11 +1372,16 @@ input,textarea{font-family:var(--mono);outline:none;border:none;background:trans
   }
 
   async function uploadProductImage(file) {
-    if (!canMutateCatalog()) throw new Error("Sign in as Firebase Admin first");
+    await refreshRoleFlags();
+    if (!canMutateCatalog()) {
+      throw new Error("Not authorized to upload. Sign in with an admin/staff account (check role hint).");
+    }
     await loadFirebase();
     if (!firebase.storage) throw new Error("Firebase Storage SDK missing — re-upload reward.html");
+    uploadingImage = true;
     var compressed = await compressImageFile(file);
     setUploadProgress(5);
+    setElStatus("productStatus", "info", "Uploading photo…");
     setElStatus("adminStatus", "info", "Uploading photo…");
     var path = "products/" + firebase.auth().currentUser.uid + "/" + compressed.name;
     var ref = firebase.storage().ref().child(path);
@@ -1333,8 +1410,10 @@ input,textarea{font-family:var(--mono);outline:none;border:none;background:trans
     $("imgPreviewMeta").textContent =
       compressed.width + "×" + compressed.height + " · " +
       Math.round(compressed.bytes / 1024) + " KB · auto-compressed JPG";
-    setElStatus("adminStatus", "ok", "Photo ready. Fill name/price/stock and publish.");
+    setElStatus("productStatus", "ok", "Photo ready — click Publish product.");
+    setElStatus("adminStatus", "ok", "Photo ready — click Publish product.");
     setTimeout(function () { setUploadProgress(-1); }, 800);
+    uploadingImage = false;
     return url;
   }
 
@@ -1356,15 +1435,19 @@ input,textarea{font-family:var(--mono);outline:none;border:none;background:trans
       var file = input.files && input.files[0];
       if (!file) return;
       try {
+        await refreshRoleFlags();
         if (!canMutateCatalog()) {
-          setElStatus("adminStatus", "err", "Sign in as Firebase Admin before uploading.");
+          setElStatus("productStatus", "err", "Sign in with an authorized admin/staff account first.");
+          setElStatus("adminStatus", "err", "Sign in with an authorized admin/staff account first.");
           input.value = "";
           return;
         }
         await uploadProductImage(file);
       } catch (e) {
         console.error(e);
-        setElStatus("adminStatus", "err", (e && e.message) || String(e));
+        uploadingImage = false;
+        setElStatus("productStatus", "err", firebaseErr(e));
+        setElStatus("adminStatus", "err", firebaseErr(e));
         setUploadProgress(-1);
       }
     });
@@ -1387,13 +1470,15 @@ input,textarea{font-family:var(--mono);outline:none;border:none;background:trans
         var file = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
         if (!file) return;
         try {
+          await refreshRoleFlags();
           if (!canMutateCatalog()) {
-            setElStatus("adminStatus", "err", "Sign in as Firebase Admin before uploading.");
+            setElStatus("productStatus", "err", "Sign in with an authorized admin/staff account first.");
             return;
           }
           await uploadProductImage(file);
         } catch (err) {
-          setElStatus("adminStatus", "err", (err && err.message) || String(err));
+          uploadingImage = false;
+          setElStatus("productStatus", "err", firebaseErr(err));
           setUploadProgress(-1);
         }
       });
@@ -1482,41 +1567,64 @@ input,textarea{font-family:var(--mono);outline:none;border:none;background:trans
 
   window.addProduct = async function () {
     if (adminBusy) return;
+    if (uploadingImage) {
+      return setElStatus("productStatus", "err", "Wait for photo upload to finish.");
+    }
+    clearElStatus("productStatus");
+    await refreshRoleFlags();
     if (!canMutateCatalog()) {
-      return setElStatus("adminStatus", "err", "Sign in as Firebase Admin first.");
+      return setElStatus(
+        "productStatus",
+        "err",
+        "Cannot publish: not authorized. Sign in, then ensure Data → admins/" +
+          (roleFlags.uid || "YOUR_UID") +
+          " = true (boolean)."
+      );
     }
     var name = sanitizeText($("pName").value, CFG.MAX_NAME);
     var price = parsePrice($("pPrice").value);
-    var image = sanitizeText(uploadedImageUrl || $("pImage").value, CFG.MAX_IMAGE_URL);
+    var image = sanitizeText(uploadedImageUrl || ($("pImage") && $("pImage").value) || "", CFG.MAX_IMAGE_URL);
     var stock = parseStock($("pStock").value);
-    if (!name || price === null || stock === null) {
-      return setElStatus("adminStatus", "err", "Valid name, price, and stock required.");
+    if (!name) {
+      return setElStatus("productStatus", "err", "Enter a product name.");
+    }
+    if (price === null) {
+      return setElStatus("productStatus", "err", "Enter a valid price in RIC (number > 0).");
+    }
+    if (stock === null) {
+      return setElStatus("productStatus", "err", "Enter valid stock (0 or more).");
     }
     if (image && !isHttpsUrl(image)) {
-      return setElStatus("adminStatus", "err", "Image must be https:// (upload photo or paste https link).");
+      return setElStatus("productStatus", "err", "Image must be https:// (upload or paste link).");
     }
     if (image.length > CFG.MAX_IMAGE_URL) {
-      return setElStatus("adminStatus", "err", "Image URL too long.");
+      return setElStatus("productStatus", "err", "Image URL too long (" + image.length + " chars).");
     }
     adminBusy = true;
     var btn = $("addProductBtn");
     if (btn) { btn.disabled = true; btn.textContent = "Publishing…"; }
+    setElStatus("productStatus", "info", "Saving product…");
     try {
-      await db.ref("products").push({
+      // Explicit numbers for RTDB .isNumber() validation
+      var payload = {
         name: name,
-        price: price,
+        price: Number(price),
+        stock: Number(stock),
         image: image || "",
-        stock: stock,
         createdAt: firebase.database.ServerValue.TIMESTAMP,
         createdBy: firebase.auth().currentUser.uid
-      });
+      };
+      await db.ref("products").push(payload);
       $("pName").value = "";
       $("pPrice").value = "";
       $("pStock").value = "10";
       clearProductImage();
+      setElStatus("productStatus", "ok", "Product published — it should appear on the store.");
       setElStatus("adminStatus", "ok", "Product published.");
     } catch (e) {
-      setElStatus("adminStatus", "err", "Write denied: " + ((e && e.message) || e) + " — check /admins/<uid>=true.");
+      console.error("addProduct", e);
+      setElStatus("productStatus", "err", "Publish failed: " + firebaseErr(e));
+      setElStatus("adminStatus", "err", "Publish failed: " + firebaseErr(e));
     } finally {
       adminBusy = false;
       if (btn) { btn.disabled = false; btn.textContent = "Publish product"; }
@@ -1535,26 +1643,46 @@ input,textarea{font-family:var(--mono);outline:none;border:none;background:trans
     }
   };
 
+  async function loadStaffList() {
+    if (!canManageStaffAccounts()) return;
+    try {
+      var snap = await db.ref("staff").once("value");
+      staffCache = snap.val() || {};
+      renderStaffList();
+    } catch (e) {
+      staffCache = {};
+      renderStaffList();
+      setElStatus("staffStatus", "err", "Could not load staff: " + firebaseErr(e));
+    }
+  }
+
   function renderStaffList() {
     var list = $("staffList");
     if (!list) return;
     list.innerHTML = "";
-    if (!staffWallets.length) {
-      list.innerHTML = "<p style=\"color:var(--ash)\">No staff wallets.</p>";
+    var uids = Object.keys(staffCache || {});
+    if (!uids.length) {
+      list.innerHTML = "<p style=\"color:var(--ash)\">No staff accounts yet.</p>";
       return;
     }
-    staffWallets.forEach(function (addr) {
+    uids.forEach(function (uid) {
+      var rowData = staffCache[uid] || {};
       var row = document.createElement("div");
       row.className = "list-item";
-      var span = document.createElement("span");
-      span.textContent = addr;
-      row.appendChild(span);
-      if (canMutateCatalog()) {
+      var left = document.createElement("div");
+      var title = document.createElement("div");
+      title.textContent = (rowData.email || "(no email)") + (rowData.active === false ? " · DISABLED" : " · active");
+      var meta = document.createElement("small");
+      meta.textContent = "UID: " + uid;
+      left.appendChild(title);
+      left.appendChild(meta);
+      row.appendChild(left);
+      if (canManageStaffAccounts()) {
         var btn = document.createElement("button");
         btn.type = "button";
         btn.className = "btn-danger";
-        btn.textContent = "Remove";
-        btn.addEventListener("click", function () { removeStaff(addr); });
+        btn.textContent = rowData.active === false ? "Enable" : "Disable";
+        btn.addEventListener("click", function () { toggleStaff(uid, rowData.active === false); });
         row.appendChild(btn);
       }
       list.appendChild(row);
@@ -1563,67 +1691,65 @@ input,textarea{font-family:var(--mono);outline:none;border:none;background:trans
 
   window.addStaff = async function () {
     clearElStatus("staffStatus");
-    if (!canMutateCatalog()) {
-      return setElStatus("staffStatus", "err", "Sign in as Firebase Admin first (top of this panel).");
+    await refreshRoleFlags();
+    if (!canManageStaffAccounts()) {
+      return setElStatus("staffStatus", "err", "Only root admin (/admins/UID) can create staff logins.");
     }
-    if (!firebase.auth().currentUser) {
-      return setElStatus("staffStatus", "err", "Session expired — sign in again.");
+    var email = sanitizeText($("staffEmail").value, CFG.MAX_EMAIL);
+    var pass = String($("staffPass").value || "");
+    if (!isValidEmail(email)) {
+      return setElStatus("staffStatus", "err", "Enter a valid staff email.");
+    }
+    if (pass.length < 8) {
+      return setElStatus("staffStatus", "err", "Password must be at least 8 characters.");
     }
     var btn = $("addStaffBtn");
+    if (btn) { btn.disabled = true; btn.textContent = "Creating…"; }
     try {
       await loadFirebase();
-      var raw = sanitizeText($("staffWallet").value, 42);
-      var addr = normalizeEthAddress(raw);
-      if (!addr) {
-        return setElStatus("staffStatus", "err", "Invalid address. Need 0x + 40 hex chars (42 total).");
-      }
-      if (addr === CFG.MASTER.toLowerCase()) {
-        return setElStatus("staffStatus", "err", "Master wallet is already full admin — no need to add.");
-      }
-      if (staffWallets.indexOf(addr) !== -1) {
-        return setElStatus("staffStatus", "err", "That wallet is already on the staff list.");
-      }
-      if (btn) { btn.disabled = true; btn.textContent = "Adding…"; }
-      // Key = address, value = address string (matches database rules cleanly)
-      await db.ref("staff/" + addr).set(addr);
-      $("staffWallet").value = "";
-      setElStatus("staffStatus", "ok", "Staff wallet added: " + short(addr));
-      setElStatus("adminStatus", "ok", "Staff wallet added: " + short(addr));
+      // Secondary app so root admin stays signed in
+      var secondary =
+        firebase.apps.filter(function (a) { return a.name === "StaffCreate"; })[0] ||
+        firebase.initializeApp(CFG.FIREBASE, "StaffCreate");
+      var cred = await secondary.auth().createUserWithEmailAndPassword(email, pass);
+      var uid = cred.user.uid;
+      await secondary.auth().signOut();
+      await db.ref("staff/" + uid).set({
+        email: email,
+        active: true,
+        createdAt: firebase.database.ServerValue.TIMESTAMP
+      });
+      $("staffEmail").value = "";
+      $("staffPass").value = "";
+      setElStatus(
+        "staffStatus",
+        "ok",
+        "Staff created. Share login: " + email + " / (password you set). They open Staff → Sign in."
+      );
+      await loadStaffList();
     } catch (e) {
-      var msg = (e && (e.message || e.code)) || String(e);
-      if (/permission_denied|PERMISSION_DENIED/i.test(msg)) {
-        msg = "Permission denied. Re-publish firebase-database.rules.json and confirm /admins/<your-UID> = true.";
-      }
-      setElStatus("staffStatus", "err", "Could not add staff: " + msg);
-      setElStatus("adminStatus", "err", "Could not add staff: " + msg);
+      console.error(e);
+      setElStatus("staffStatus", "err", "Could not create staff: " + firebaseErr(e));
     } finally {
-      if (btn) { btn.disabled = false; btn.textContent = "Add staff wallet"; }
+      if (btn) { btn.disabled = false; btn.textContent = "Create staff account"; }
     }
   };
 
-  window.removeStaff = async function (addr) {
-    if (!canMutateCatalog()) return;
-    addr = normalizeEthAddress(addr) || String(addr || "").toLowerCase();
-    if (!confirm("Remove staff " + addr + "?")) return;
+  window.toggleStaff = async function (uid, enable) {
+    if (!canManageStaffAccounts()) return;
+    if (!uid) return;
     try {
-      // New format: staff/<address> = address
-      await db.ref("staff/" + addr).remove();
-      // Legacy push() objects: scan and remove
-      var snap = await db.ref("staff").once("value");
-      var val = snap.val() || {};
-      var updates = {};
-      Object.keys(val).forEach(function (k) {
-        var v = val[k];
-        var a = typeof v === "string" ? v : (v && v.address);
-        if (a && String(a).toLowerCase() === addr) {
-          updates[k] = null;
-        }
+      var snap = await db.ref("staff/" + uid).once("value");
+      var cur = snap.val() || {};
+      await db.ref("staff/" + uid).set({
+        email: cur.email || "",
+        active: !!enable,
+        createdAt: cur.createdAt || firebase.database.ServerValue.TIMESTAMP
       });
-      if (Object.keys(updates).length) await db.ref("staff").update(updates);
-      setElStatus("staffStatus", "ok", "Staff removed.");
-      setElStatus("adminStatus", "ok", "Staff removed.");
+      setElStatus("staffStatus", "ok", enable ? "Staff enabled." : "Staff disabled (cannot publish).");
+      await loadStaffList();
     } catch (e) {
-      setElStatus("staffStatus", "err", (e && e.message) || String(e));
+      setElStatus("staffStatus", "err", firebaseErr(e));
     }
   };
 
@@ -1643,28 +1769,10 @@ input,textarea{font-family:var(--mono);outline:none;border:none;background:trans
       $("rewardsGrid").appendChild(empty);
     });
 
-    db.ref("staff").on("value", function (snapshot) {
-      var val = snapshot.val() || {};
-      staffWallets = [];
-      Object.keys(val).forEach(function (k) {
-        var v = val[k];
-        var a = typeof v === "string" ? v : (v && v.address);
-        if (a && typeof a === "string" && /^0x[a-fA-F0-9]{40}$/i.test(a)) {
-          staffWallets.push(a.toLowerCase());
-        }
-      });
-      updateAdminBtn();
-      renderStaffList();
-    }, function () {
-      // Staff may be non-readable under strict rules — OK
-      staffWallets = [];
-      updateAdminBtn();
-    });
-
-    firebase.auth().onAuthStateChanged(function () {
+    firebase.auth().onAuthStateChanged(async function () {
+      await refreshRoleFlags();
       refreshAuthUi();
-      updateAdminBtn();
-      if (isFirebaseAdmin() && $("adminOverlay").classList.contains("show")) {
+      if (canMutateCatalog() && $("adminOverlay").classList.contains("show")) {
         loadOrders();
         syncStaffSection();
       }
