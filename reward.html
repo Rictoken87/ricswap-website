@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="theme-color" content="#030407">
 <meta name="description" content="RicSwap Rewards Store — redeem RIC for real rewards on Shibarium. Hardened payments, exact chain checks, XSS-safe UI.">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://unpkg.com https://cdnjs.cloudflare.com https://www.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://rpc.shibarium.shib.io https://*.shibarium.shib.io https://shibariumscan.io https://www.shibariumscan.io https://cdn.jsdelivr.net https://unpkg.com https://cdnjs.cloudflare.com https://*.firebaseio.com https://*.firebasedatabase.app https://*.googleapis.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://api.emailjs.com https://raw.githubusercontent.com; frame-src 'none'; object-src 'none'; base-uri 'self'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://unpkg.com https://cdnjs.cloudflare.com https://www.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' https://rpc.shibarium.shib.io https://*.shibarium.shib.io https://shibariumscan.io https://www.shibariumscan.io https://cdn.jsdelivr.net https://unpkg.com https://cdnjs.cloudflare.com https://*.firebaseio.com https://*.firebasedatabase.app https://firebasestorage.googleapis.com https://*.googleapis.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://api.emailjs.com https://raw.githubusercontent.com; frame-src 'none'; object-src 'none'; base-uri 'self'; form-action 'none'">
 <title>RicSwap | Rewards Store — Secure RIC Redeem</title>
 <link rel="icon" type="image/png" href="riclogo.png">
 <link rel="apple-touch-icon" href="riclogo.png">
@@ -182,6 +182,37 @@ input,textarea{font-family:var(--mono);outline:none;border:none;background:trans
   font-family:var(--mono);font-size:12px;color:var(--fog);margin-bottom:14px;line-height:1.6;
 }
 .pay-summary b{color:var(--gold)}
+.hint{
+  font-size:12px;color:var(--smoke);line-height:1.5;margin:0 0 12px;
+  padding:10px 12px;border-radius:10px;background:rgba(255,255,255,.03);border:1px solid var(--rim);
+}
+.hint b{color:var(--fog)}
+.upload-zone{
+  border:1.5px dashed rgba(232,184,75,.35);border-radius:14px;padding:16px;
+  background:rgba(232,184,75,.04);text-align:center;cursor:pointer;transition:border-color .15s,background .15s;
+}
+.upload-zone:hover,.upload-zone.drag{border-color:var(--gold);background:rgba(232,184,75,.1)}
+.upload-zone strong{display:block;color:var(--white);font-size:14px;margin-bottom:4px}
+.upload-zone span{font-size:12px;color:var(--smoke)}
+.upload-zone input[type=file]{display:none}
+.img-preview-wrap{
+  display:none;margin-top:12px;border-radius:12px;overflow:hidden;border:1px solid var(--rim);
+  background:var(--pit);position:relative;
+}
+.img-preview-wrap.show{display:block}
+.img-preview-wrap img{width:100%;max-height:220px;object-fit:cover;display:block}
+.img-preview-meta{padding:8px 10px;font-family:var(--mono);font-size:11px;color:var(--ash)}
+.img-preview-actions{display:flex;gap:8px;padding:0 10px 10px}
+.img-preview-actions button{flex:1}
+.progress-bar{
+  display:none;height:6px;border-radius:99px;background:var(--pit);overflow:hidden;margin-top:10px;
+}
+.progress-bar.show{display:block}
+.progress-bar i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--magma),var(--gold));transition:width .15s}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media(max-width:520px){.row2{grid-template-columns:1fr}}
+.optional-url{margin-top:10px}
+.optional-url summary{cursor:pointer;color:var(--ash);font-size:12px;font-weight:600;margin-bottom:8px}
 </style>
 </head>
 <body>
@@ -278,22 +309,55 @@ input,textarea{font-family:var(--mono);outline:none;border:none;background:trans
     </div>
 
     <div class="admin-section" id="staffSection" style="display:none">
-      <h3>Appoint staff wallet (master wallet + admin auth)</h3>
+      <h3>Staff wallets (who sees the Staff button)</h3>
+      <p class="hint">Any <b>Firebase Admin</b> can appoint wallets. They only need a wallet to open Staff; product writes still need Firebase Admin login.</p>
       <div class="field">
-        <label for="staffWallet">Staff wallet</label>
-        <input id="staffWallet" placeholder="0x…" spellcheck="false" maxlength="42">
+        <label for="staffWallet">Wallet address</label>
+        <input id="staffWallet" placeholder="0x…" spellcheck="false" maxlength="42" autocomplete="off">
       </div>
-      <button type="button" class="btn-main" onclick="addStaff()">Add staff wallet</button>
+      <button type="button" class="btn-main" id="addStaffBtn" onclick="addStaff()">Add staff wallet</button>
       <div id="staffList" style="margin-top:10px"></div>
     </div>
 
     <div class="admin-section">
-      <h3>Add product (admin auth)</h3>
-      <div class="field"><label for="pName">Name</label><input id="pName" maxlength="80" placeholder="Product name"></div>
-      <div class="field"><label for="pPrice">Price (RIC)</label><input id="pPrice" type="number" min="0.0001" step="any" placeholder="e.g. 100"></div>
-      <div class="field"><label for="pImage">Image URL (https only)</label><input id="pImage" maxlength="400" placeholder="https://…" spellcheck="false"></div>
-      <div class="field"><label for="pStock">Stock</label><input id="pStock" type="number" min="0" step="1" value="10"></div>
-      <button type="button" class="btn-main" onclick="addProduct()">Add product</button>
+      <h3>Add product</h3>
+      <p class="hint">
+        <b>Photo rules (auto-checked):</b> JPG / PNG / WebP · max <b>12 MB</b> original ·
+        min <b>200×200</b> px · we resize to max <b>1200 px</b> and compress for fast load.
+        Phone camera or gallery works.
+      </p>
+      <div class="field"><label for="pName">Name</label><input id="pName" maxlength="80" placeholder="e.g. RicSwap T-shirt"></div>
+      <div class="row2">
+        <div class="field"><label for="pPrice">Price (RIC)</label><input id="pPrice" type="number" min="0.0001" step="any" placeholder="100" inputmode="decimal"></div>
+        <div class="field"><label for="pStock">Stock</label><input id="pStock" type="number" min="0" step="1" value="10" inputmode="numeric"></div>
+      </div>
+
+      <div class="field">
+        <label>Product photo</label>
+        <div class="upload-zone" id="uploadZone" onclick="document.getElementById('pFile').click()">
+          <strong>📷 Upload or take photo</strong>
+          <span>Tap to choose from phone / computer</span>
+          <input type="file" id="pFile" accept="image/jpeg,image/png,image/webp,image/*" capture="environment">
+        </div>
+        <div class="progress-bar" id="uploadProgress"><i id="uploadProgressBar"></i></div>
+        <div class="img-preview-wrap" id="imgPreviewWrap">
+          <img id="imgPreview" alt="Preview">
+          <div class="img-preview-meta" id="imgPreviewMeta">—</div>
+          <div class="img-preview-actions">
+            <button type="button" class="btn-sec" style="margin:0" onclick="clearProductImage()">Remove photo</button>
+          </div>
+        </div>
+      </div>
+
+      <details class="optional-url">
+        <summary>Or paste image link (optional)</summary>
+        <div class="field" style="margin-bottom:0">
+          <label for="pImage">HTTPS image URL</label>
+          <input id="pImage" maxlength="1000" placeholder="https://…" spellcheck="false" autocomplete="off">
+        </div>
+      </details>
+
+      <button type="button" class="btn-main" style="margin-top:14px" id="addProductBtn" onclick="addProduct()">Publish product</button>
     </div>
 
     <div class="admin-section" style="border-bottom:none;margin-bottom:0;padding-bottom:0">
@@ -325,7 +389,14 @@ input,textarea{font-family:var(--mono);outline:none;border:none;background:trans
     MAX_NAME: 80,
     MAX_EMAIL: 120,
     MAX_SHIP: 500,
-    MAX_IMAGE: 400,
+    MAX_IMAGE_URL: 1000,
+    /* Photo upload limits (enforced client-side before Storage) */
+    IMG_MAX_INPUT_BYTES: 12 * 1024 * 1024,
+    IMG_MIN_SIDE: 200,
+    IMG_MAX_SIDE: 1200,
+    IMG_JPEG_QUALITY: 0.82,
+    IMG_MAX_OUTPUT_BYTES: 900 * 1024,
+    IMG_TYPES: Object.freeze(["image/jpeg", "image/png", "image/webp"]),
     EMAILJS_PUBLIC: "Y5GsSScYku74Bt0LH",
     EMAILJS_SERVICE: "service_577894p",
     EMAILJS_TEMPLATE: "template_zga1woa",
@@ -358,6 +429,7 @@ input,textarea{font-family:var(--mono);outline:none;border:none;background:trans
   var currentProduct = null;
   var paying = false;
   var adminBusy = false;
+  var uploadedImageUrl = ""; // set after successful Storage upload
 
   function $(id) { return document.getElementById(id); }
   function esc(s) {
@@ -455,11 +527,14 @@ input,textarea{font-family:var(--mono);outline:none;border:none;background:trans
     throw last || new Error("ethers load failed");
   }
   async function loadFirebase() {
-    if (firebaseReady && window.firebase) return;
+    if (firebaseReady && window.firebase && db) return;
     if (!window.firebase) {
       await loadScript("https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js");
       await loadScript("https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js");
       await loadScript("https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js");
+      await loadScript("https://www.gstatic.com/firebasejs/9.22.0/firebase-storage-compat.js");
+    } else if (!firebase.storage) {
+      await loadScript("https://www.gstatic.com/firebasejs/9.22.0/firebase-storage-compat.js");
     }
     if (!window.firebase) throw new Error("Firebase SDK failed to load");
     if (!firebase.apps || !firebase.apps.length) {
@@ -584,7 +659,7 @@ input,textarea{font-family:var(--mono);outline:none;border:none;background:trans
     var price = parsePrice(raw.price);
     var stock = parseStock(raw.stock);
     if (stock === null) stock = 0;
-    var image = sanitizeText(raw.image || "", CFG.MAX_IMAGE);
+    var image = sanitizeText(raw.image || "", CFG.MAX_IMAGE_URL);
     if (image && !isHttpsUrl(image)) image = "";
     if (!name || price === null) return null;
     return { id: String(id), name: name, price: price, stock: stock, image: image };
@@ -937,6 +1012,14 @@ input,textarea{font-family:var(--mono);outline:none;border:none;background:trans
   }
 
   /* ─── Admin ─────────────────────────────────────────────── */
+  function syncStaffSection() {
+    var sec = $("staffSection");
+    if (!sec) return;
+    // Any Firebase Admin can appoint staff (no master-wallet gate)
+    sec.style.display = canMutateCatalog() ? "block" : "none";
+    renderStaffList();
+  }
+
   window.openAdminPanel = function () {
     if (!canOpenAdminUi()) {
       return alert("Staff only. Connect a staff/master wallet or sign in as Firebase Admin.");
@@ -944,8 +1027,7 @@ input,textarea{font-family:var(--mono);outline:none;border:none;background:trans
     $("adminOverlay").classList.add("show");
     refreshAuthUi();
     renderAdminList();
-    renderStaffList();
-    $("staffSection").style.display = isMasterWallet() && canMutateCatalog() ? "block" : "none";
+    syncStaffSection();
     if (canMutateCatalog()) loadOrders();
   };
   window.closeAdminPanel = function () {
@@ -955,10 +1037,11 @@ input,textarea{font-family:var(--mono);outline:none;border:none;background:trans
   function refreshAuthUi() {
     var user = isFirebaseAdmin() ? firebase.auth().currentUser : null;
     $("authState").textContent = user
-      ? ("Firebase Admin: signed in as " + user.email)
-      : "Firebase Admin: signed out. Catalog/order reads & writes need admin auth under hardened rules.";
+      ? ("Firebase Admin: signed in as " + user.email + " · products, photos & staff wallets unlocked")
+      : "Firebase Admin: signed out. Sign in to publish products, upload photos, appoint staff, and read orders.";
     $("authBtn").textContent = user ? "Sign out" : "Sign in";
     updateAdminBtn();
+    syncStaffSection();
   }
 
   window.adminAuthToggle = async function () {
@@ -980,15 +1063,195 @@ input,textarea{font-family:var(--mono);outline:none;border:none;background:trans
       setElStatus("authStatus", "info", "Signing in…");
       await firebase.auth().signInWithEmailAndPassword(email, pass);
       $("adminPass").value = "";
-      setElStatus("authStatus", "ok", "Signed in. Writes allowed if your UID is under /admins in RTDB.");
+      setElStatus("authStatus", "ok", "Signed in. You can appoint staff and publish products with photos.");
       refreshAuthUi();
       loadOrders();
       renderAdminList();
-      $("staffSection").style.display = isMasterWallet() && canMutateCatalog() ? "block" : "none";
     } catch (e) {
       setElStatus("authStatus", "err", (e && e.message) || String(e));
     }
   };
+
+  /* ─── Image compress + Firebase Storage upload ─────────── */
+  function setUploadProgress(pct) {
+    var bar = $("uploadProgress");
+    var fill = $("uploadProgressBar");
+    if (!bar || !fill) return;
+    if (pct == null || pct < 0) {
+      bar.classList.remove("show");
+      fill.style.width = "0%";
+      return;
+    }
+    bar.classList.add("show");
+    fill.style.width = Math.min(100, Math.max(0, pct)) + "%";
+  }
+
+  function loadImageFromFile(file) {
+    return new Promise(function (resolve, reject) {
+      var url = URL.createObjectURL(file);
+      var img = new Image();
+      img.onload = function () {
+        URL.revokeObjectURL(url);
+        resolve(img);
+      };
+      img.onerror = function () {
+        URL.revokeObjectURL(url);
+        reject(new Error("Could not read image"));
+      };
+      img.src = url;
+    });
+  }
+
+  function canvasToJpegBlob(canvas, quality) {
+    return new Promise(function (resolve) {
+      canvas.toBlob(function (blob) { resolve(blob); }, "image/jpeg", quality);
+    });
+  }
+
+  async function compressImageFile(file) {
+    if (!file || !file.type) throw new Error("No image selected");
+    var typeOk = CFG.IMG_TYPES.indexOf(file.type) !== -1 || /^image\/(jpeg|png|webp)$/i.test(file.type);
+    if (!typeOk) throw new Error("Use JPG, PNG, or WebP only");
+    if (file.size > CFG.IMG_MAX_INPUT_BYTES) {
+      throw new Error("File too large (max " + Math.round(CFG.IMG_MAX_INPUT_BYTES / (1024 * 1024)) + " MB before compress)");
+    }
+    var img = await loadImageFromFile(file);
+    var w = img.naturalWidth || img.width;
+    var h = img.naturalHeight || img.height;
+    if (w < CFG.IMG_MIN_SIDE || h < CFG.IMG_MIN_SIDE) {
+      throw new Error("Image too small (min " + CFG.IMG_MIN_SIDE + "×" + CFG.IMG_MIN_SIDE + " px)");
+    }
+    var scale = Math.min(1, CFG.IMG_MAX_SIDE / Math.max(w, h));
+    var tw = Math.max(1, Math.round(w * scale));
+    var th = Math.max(1, Math.round(h * scale));
+    var canvas = document.createElement("canvas");
+    canvas.width = tw;
+    canvas.height = th;
+    var ctx = canvas.getContext("2d");
+    ctx.fillStyle = "#0b0c1c";
+    ctx.fillRect(0, 0, tw, th);
+    ctx.drawImage(img, 0, 0, tw, th);
+
+    var quality = CFG.IMG_JPEG_QUALITY;
+    var blob = await canvasToJpegBlob(canvas, quality);
+    // Step down quality if still huge
+    while (blob && blob.size > CFG.IMG_MAX_OUTPUT_BYTES && quality > 0.5) {
+      quality -= 0.08;
+      blob = await canvasToJpegBlob(canvas, quality);
+    }
+    if (!blob) throw new Error("Compress failed");
+    if (blob.size > CFG.IMG_MAX_OUTPUT_BYTES * 1.5) {
+      throw new Error("Image still too large after compress — try a simpler photo");
+    }
+    return {
+      blob: blob,
+      width: tw,
+      height: th,
+      bytes: blob.size,
+      name: "product-" + Date.now() + ".jpg"
+    };
+  }
+
+  async function uploadProductImage(file) {
+    if (!canMutateCatalog()) throw new Error("Sign in as Firebase Admin first");
+    await loadFirebase();
+    if (!firebase.storage) throw new Error("Firebase Storage SDK missing — re-upload reward.html");
+    var compressed = await compressImageFile(file);
+    setUploadProgress(5);
+    setElStatus("adminStatus", "info", "Uploading photo…");
+    var path = "products/" + firebase.auth().currentUser.uid + "/" + compressed.name;
+    var ref = firebase.storage().ref().child(path);
+    var task = ref.put(compressed.blob, {
+      contentType: "image/jpeg",
+      cacheControl: "public,max-age=31536000"
+    });
+    await new Promise(function (resolve, reject) {
+      task.on(
+        "state_changed",
+        function (snap) {
+          if (snap.totalBytes) {
+            setUploadProgress(Math.round((snap.bytesTransferred / snap.totalBytes) * 100));
+          }
+        },
+        reject,
+        resolve
+      );
+    });
+    var url = await ref.getDownloadURL();
+    setUploadProgress(100);
+    uploadedImageUrl = url;
+    $("pImage").value = url;
+    $("imgPreview").src = url;
+    $("imgPreviewWrap").classList.add("show");
+    $("imgPreviewMeta").textContent =
+      compressed.width + "×" + compressed.height + " · " +
+      Math.round(compressed.bytes / 1024) + " KB · auto-compressed JPG";
+    setElStatus("adminStatus", "ok", "Photo ready. Fill name/price/stock and publish.");
+    setTimeout(function () { setUploadProgress(-1); }, 800);
+    return url;
+  }
+
+  window.clearProductImage = function () {
+    uploadedImageUrl = "";
+    if ($("pImage")) $("pImage").value = "";
+    if ($("pFile")) $("pFile").value = "";
+    if ($("imgPreviewWrap")) $("imgPreviewWrap").classList.remove("show");
+    if ($("imgPreview")) $("imgPreview").removeAttribute("src");
+    if ($("imgPreviewMeta")) $("imgPreviewMeta").textContent = "—";
+    setUploadProgress(-1);
+  };
+
+  function bindImageUploadUi() {
+    var zone = $("uploadZone");
+    var input = $("pFile");
+    if (!input) return;
+    input.addEventListener("change", async function () {
+      var file = input.files && input.files[0];
+      if (!file) return;
+      try {
+        if (!canMutateCatalog()) {
+          setElStatus("adminStatus", "err", "Sign in as Firebase Admin before uploading.");
+          input.value = "";
+          return;
+        }
+        await uploadProductImage(file);
+      } catch (e) {
+        console.error(e);
+        setElStatus("adminStatus", "err", (e && e.message) || String(e));
+        setUploadProgress(-1);
+      }
+    });
+    if (zone) {
+      ["dragenter", "dragover"].forEach(function (ev) {
+        zone.addEventListener(ev, function (e) {
+          e.preventDefault();
+          e.stopPropagation();
+          zone.classList.add("drag");
+        });
+      });
+      ["dragleave", "drop"].forEach(function (ev) {
+        zone.addEventListener(ev, function (e) {
+          e.preventDefault();
+          e.stopPropagation();
+          zone.classList.remove("drag");
+        });
+      });
+      zone.addEventListener("drop", async function (e) {
+        var file = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+        if (!file) return;
+        try {
+          if (!canMutateCatalog()) {
+            setElStatus("adminStatus", "err", "Sign in as Firebase Admin before uploading.");
+            return;
+          }
+          await uploadProductImage(file);
+        } catch (err) {
+          setElStatus("adminStatus", "err", (err && err.message) || String(err));
+          setUploadProgress(-1);
+        }
+      });
+    }
+  }
 
   async function loadOrders() {
     var box = $("orderHistory");
@@ -1076,15 +1339,20 @@ input,textarea{font-family:var(--mono);outline:none;border:none;background:trans
     }
     var name = sanitizeText($("pName").value, CFG.MAX_NAME);
     var price = parsePrice($("pPrice").value);
-    var image = sanitizeText($("pImage").value, CFG.MAX_IMAGE);
+    var image = sanitizeText(uploadedImageUrl || $("pImage").value, CFG.MAX_IMAGE_URL);
     var stock = parseStock($("pStock").value);
     if (!name || price === null || stock === null) {
       return setElStatus("adminStatus", "err", "Valid name, price, and stock required.");
     }
     if (image && !isHttpsUrl(image)) {
-      return setElStatus("adminStatus", "err", "Image must be https:// URL or empty.");
+      return setElStatus("adminStatus", "err", "Image must be https:// (upload photo or paste https link).");
+    }
+    if (image.length > CFG.MAX_IMAGE_URL) {
+      return setElStatus("adminStatus", "err", "Image URL too long.");
     }
     adminBusy = true;
+    var btn = $("addProductBtn");
+    if (btn) { btn.disabled = true; btn.textContent = "Publishing…"; }
     try {
       await db.ref("products").push({
         name: name,
@@ -1096,13 +1364,14 @@ input,textarea{font-family:var(--mono);outline:none;border:none;background:trans
       });
       $("pName").value = "";
       $("pPrice").value = "";
-      $("pImage").value = "";
       $("pStock").value = "10";
-      setElStatus("adminStatus", "ok", "Product added.");
+      clearProductImage();
+      setElStatus("adminStatus", "ok", "Product published.");
     } catch (e) {
-      setElStatus("adminStatus", "err", "Write denied: " + ((e && e.message) || e) + " — set /admins/<uid>=true in RTDB.");
+      setElStatus("adminStatus", "err", "Write denied: " + ((e && e.message) || e) + " — check /admins/<uid>=true.");
     } finally {
       adminBusy = false;
+      if (btn) { btn.disabled = false; btn.textContent = "Publish product"; }
     }
   };
 
@@ -1132,7 +1401,7 @@ input,textarea{font-family:var(--mono);outline:none;border:none;background:trans
       var span = document.createElement("span");
       span.textContent = addr;
       row.appendChild(span);
-      if (isMasterWallet() && canMutateCatalog()) {
+      if (canMutateCatalog()) {
         var btn = document.createElement("button");
         btn.type = "button";
         btn.className = "btn-danger";
@@ -1145,29 +1414,40 @@ input,textarea{font-family:var(--mono);outline:none;border:none;background:trans
   }
 
   window.addStaff = async function () {
-    if (!isMasterWallet() || !canMutateCatalog()) {
-      return alert("Master wallet + Firebase Admin required.");
+    if (!canMutateCatalog()) {
+      return setElStatus("adminStatus", "err", "Sign in as Firebase Admin to appoint staff.");
     }
+    var btn = $("addStaffBtn");
     try {
       await loadEthers();
       var raw = sanitizeText($("staffWallet").value, 42);
-      if (!ethersLib.isAddress(raw)) return alert("Invalid address");
+      if (!ethersLib.isAddress(raw)) {
+        return setElStatus("adminStatus", "err", "Invalid wallet address.");
+      }
       var addr = ethersLib.getAddress(raw).toLowerCase();
-      if (addr === CFG.MASTER.toLowerCase()) return alert("Master is already admin.");
+      if (addr === CFG.MASTER.toLowerCase()) {
+        return setElStatus("adminStatus", "err", "Master wallet is already full admin.");
+      }
+      if (staffWallets.indexOf(addr) !== -1) {
+        return setElStatus("adminStatus", "err", "That wallet is already staff.");
+      }
+      if (btn) { btn.disabled = true; btn.textContent = "Adding…"; }
       await db.ref("staff").push({
         address: addr,
         addedAt: firebase.database.ServerValue.TIMESTAMP,
         addedBy: firebase.auth().currentUser.uid
       });
       $("staffWallet").value = "";
-      setElStatus("adminStatus", "ok", "Staff wallet added.");
+      setElStatus("adminStatus", "ok", "Staff wallet added: " + short(addr));
     } catch (e) {
-      setElStatus("adminStatus", "err", (e && e.message) || String(e));
+      setElStatus("adminStatus", "err", "Could not add staff: " + ((e && e.message) || e));
+    } finally {
+      if (btn) { btn.disabled = false; btn.textContent = "Add staff wallet"; }
     }
   };
 
   window.removeStaff = async function (addr) {
-    if (!isMasterWallet() || !canMutateCatalog()) return;
+    if (!canMutateCatalog()) return;
     if (!confirm("Remove staff " + addr + "?")) return;
     try {
       var snap = await db.ref("staff").once("value");
@@ -1181,6 +1461,7 @@ input,textarea{font-family:var(--mono);outline:none;border:none;background:trans
         }
       });
       if (Object.keys(updates).length) await db.ref("staff").update(updates);
+      setElStatus("adminStatus", "ok", "Staff removed.");
     } catch (e) {
       setElStatus("adminStatus", "err", (e && e.message) || String(e));
     }
@@ -1225,7 +1506,7 @@ input,textarea{font-family:var(--mono);outline:none;border:none;background:trans
       updateAdminBtn();
       if (isFirebaseAdmin() && $("adminOverlay").classList.contains("show")) {
         loadOrders();
-        $("staffSection").style.display = isMasterWallet() ? "block" : "none";
+        syncStaffSection();
       }
     });
   }
@@ -1241,6 +1522,7 @@ input,textarea{font-family:var(--mono);outline:none;border:none;background:trans
   // Footer + init
   $("ftMaster").textContent = CFG.MASTER;
   $("ftRic").textContent = CFG.RIC;
+  bindImageUploadUi();
 
   (async function init() {
     try {
