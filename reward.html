@@ -270,16 +270,55 @@ input,textarea{font-family:var(--mono);outline:none;border:none;background:trans
 <div class="overlay" id="receiptModal" role="dialog" aria-modal="true" aria-labelledby="checkoutTitle">
   <div class="modal-box">
     <h2 id="checkoutTitle">Secure checkout</h2>
-    <p class="sub">You will pay exact RIC on Shibarium. Double-check email and shipping before confirming.</p>
+    <p class="sub">Pay exact RIC on Shibarium. Enter a real shipping address so we can deliver your reward.</p>
     <div class="pay-summary" id="paySummary">—</div>
+
     <div class="field">
-      <label for="customerEmail">Email (receipt)</label>
+      <label for="customerEmail">Email (order + receipt)</label>
       <input id="customerEmail" type="email" maxlength="120" autocomplete="email" placeholder="you@example.com" spellcheck="false">
     </div>
     <div class="field">
-      <label for="shippingAddress">Shipping address</label>
-      <textarea id="shippingAddress" maxlength="500" rows="4" placeholder="Full name, street, city, country, postal code"></textarea>
+      <label for="shipPhone">Phone (WhatsApp / courier)</label>
+      <input id="shipPhone" type="tel" maxlength="30" autocomplete="tel" placeholder="+855 …" spellcheck="false">
     </div>
+    <div class="field">
+      <label for="shipName">Full name (on package)</label>
+      <input id="shipName" type="text" maxlength="80" autocomplete="name" placeholder="As on ID / delivery">
+    </div>
+    <div class="field">
+      <label for="shipLine1">Street address / house no.</label>
+      <input id="shipLine1" type="text" maxlength="120" autocomplete="address-line1" placeholder="Street, building, unit">
+    </div>
+    <div class="field">
+      <label for="shipLine2">Apartment / landmark (optional)</label>
+      <input id="shipLine2" type="text" maxlength="120" autocomplete="address-line2" placeholder="Near market, floor, etc.">
+    </div>
+    <div class="row2">
+      <div class="field">
+        <label for="shipCity">City</label>
+        <input id="shipCity" type="text" maxlength="60" autocomplete="address-level2" placeholder="City">
+      </div>
+      <div class="field">
+        <label for="shipRegion">Province / state</label>
+        <input id="shipRegion" type="text" maxlength="60" autocomplete="address-level1" placeholder="Province">
+      </div>
+    </div>
+    <div class="row2">
+      <div class="field">
+        <label for="shipPostal">Postal code</label>
+        <input id="shipPostal" type="text" maxlength="20" autocomplete="postal-code" placeholder="Code">
+      </div>
+      <div class="field">
+        <label for="shipCountry">Country</label>
+        <input id="shipCountry" type="text" maxlength="60" autocomplete="country-name" placeholder="e.g. Cambodia" value="Cambodia">
+      </div>
+    </div>
+    <div class="field">
+      <label for="shipNotes">Delivery notes (optional)</label>
+      <textarea id="shipNotes" maxlength="160" rows="2" placeholder="Call on arrival, leave with guard…"></textarea>
+    </div>
+    <p class="hint" style="margin-top:0">We only use this to ship your order. Double-check phone + address before paying — RIC transfers cannot be reversed.</p>
+
     <button type="button" class="btn-main" id="payBtn" onclick="sendReceipt()">Pay with RIC &amp; confirm</button>
     <button type="button" class="btn-sec" onclick="closeReceiptModal()">Cancel</button>
     <div class="status" id="payStatus"></div>
@@ -310,12 +349,13 @@ input,textarea{font-family:var(--mono);outline:none;border:none;background:trans
 
     <div class="admin-section" id="staffSection" style="display:none">
       <h3>Staff wallets (who sees the Staff button)</h3>
-      <p class="hint">Any <b>Firebase Admin</b> can appoint wallets. They only need a wallet to open Staff; product writes still need Firebase Admin login.</p>
+      <p class="hint">Sign in as <b>Firebase Admin</b> first. Paste a full <b>0x</b> address (42 characters). Staff wallets open Staff UI; product writes still need Firebase Admin login.</p>
       <div class="field">
         <label for="staffWallet">Wallet address</label>
         <input id="staffWallet" placeholder="0x…" spellcheck="false" maxlength="42" autocomplete="off">
       </div>
       <button type="button" class="btn-main" id="addStaffBtn" onclick="addStaff()">Add staff wallet</button>
+      <div class="status" id="staffStatus"></div>
       <div id="staffList" style="margin-top:10px"></div>
     </div>
 
@@ -389,6 +429,12 @@ input,textarea{font-family:var(--mono);outline:none;border:none;background:trans
     MAX_NAME: 80,
     MAX_EMAIL: 120,
     MAX_SHIP: 500,
+    MAX_PHONE: 30,
+    MAX_SHIP_NAME: 80,
+    MAX_SHIP_LINE: 120,
+    MAX_SHIP_CITY: 60,
+    MAX_SHIP_NOTES: 160,
+    SHIP_LS_KEY: "ricswap_ship_v1",
     MAX_IMAGE_URL: 1000,
     /* Photo upload limits (enforced client-side before Storage) */
     IMG_MAX_INPUT_BYTES: 12 * 1024 * 1024,
@@ -490,6 +536,92 @@ input,textarea{font-family:var(--mono);outline:none;border:none;background:trans
     var i = e.indexOf("@");
     if (i < 1) return "•••";
     return e.slice(0, 1) + "•••" + e.slice(i);
+  }
+  function isEthAddress(a) {
+    return /^0x[a-fA-F0-9]{40}$/.test(String(a || "").trim());
+  }
+  function normalizeEthAddress(a) {
+    a = String(a || "").trim();
+    if (!isEthAddress(a)) return null;
+    return a.toLowerCase();
+  }
+  function isValidPhone(p) {
+    p = String(p || "").trim();
+    if (p.length < 8 || p.length > CFG.MAX_PHONE) return false;
+    // digits, spaces, +, -, ( )
+    if (!/^[+0-9()\-\s]+$/.test(p)) return false;
+    var digits = p.replace(/\D/g, "");
+    return digits.length >= 8 && digits.length <= 15;
+  }
+  function readShipForm() {
+    return {
+      email: sanitizeText($("customerEmail") && $("customerEmail").value, CFG.MAX_EMAIL),
+      phone: sanitizeText($("shipPhone") && $("shipPhone").value, CFG.MAX_PHONE),
+      name: sanitizeText($("shipName") && $("shipName").value, CFG.MAX_SHIP_NAME),
+      line1: sanitizeText($("shipLine1") && $("shipLine1").value, CFG.MAX_SHIP_LINE),
+      line2: sanitizeText($("shipLine2") && $("shipLine2").value, CFG.MAX_SHIP_LINE),
+      city: sanitizeText($("shipCity") && $("shipCity").value, CFG.MAX_SHIP_CITY),
+      region: sanitizeText($("shipRegion") && $("shipRegion").value, CFG.MAX_SHIP_CITY),
+      postal: sanitizeText($("shipPostal") && $("shipPostal").value, 20),
+      country: sanitizeText($("shipCountry") && $("shipCountry").value, CFG.MAX_SHIP_CITY),
+      notes: sanitizeText($("shipNotes") && $("shipNotes").value, CFG.MAX_SHIP_NOTES)
+    };
+  }
+  function formatShippingBlock(s) {
+    var lines = [];
+    if (s.name) lines.push(s.name);
+    if (s.phone) lines.push("Tel: " + s.phone);
+    if (s.line1) lines.push(s.line1);
+    if (s.line2) lines.push(s.line2);
+    var cityLine = [s.city, s.region, s.postal].filter(Boolean).join(", ");
+    if (cityLine) lines.push(cityLine);
+    if (s.country) lines.push(s.country);
+    if (s.notes) lines.push("Notes: " + s.notes);
+    return lines.join("\n").slice(0, CFG.MAX_SHIP);
+  }
+  function validateShipForm(s) {
+    if (!isValidEmail(s.email)) return "Enter a valid email for order updates.";
+    if (!isValidPhone(s.phone)) return "Enter a valid phone (8–15 digits, include country code if possible).";
+    if (!s.name || s.name.length < 2) return "Enter the full name for the package.";
+    if (!s.line1 || s.line1.length < 5) return "Enter street address / house number.";
+    if (!s.city || s.city.length < 2) return "Enter city.";
+    if (!s.country || s.country.length < 2) return "Enter country.";
+    var block = formatShippingBlock(s);
+    if (block.length < 15) return "Shipping details look incomplete.";
+    return null;
+  }
+  function saveShipDraft(s) {
+    try {
+      localStorage.setItem(CFG.SHIP_LS_KEY, JSON.stringify({
+        email: s.email,
+        phone: s.phone,
+        name: s.name,
+        line1: s.line1,
+        line2: s.line2,
+        city: s.city,
+        region: s.region,
+        postal: s.postal,
+        country: s.country
+        // notes not saved (often one-off)
+      }));
+    } catch (_) {}
+  }
+  function loadShipDraft() {
+    try {
+      var raw = localStorage.getItem(CFG.SHIP_LS_KEY);
+      if (!raw) return;
+      var s = JSON.parse(raw);
+      if (!s || typeof s !== "object") return;
+      if ($("customerEmail") && s.email) $("customerEmail").value = s.email;
+      if ($("shipPhone") && s.phone) $("shipPhone").value = s.phone;
+      if ($("shipName") && s.name) $("shipName").value = s.name;
+      if ($("shipLine1") && s.line1) $("shipLine1").value = s.line1;
+      if ($("shipLine2") && s.line2) $("shipLine2").value = s.line2;
+      if ($("shipCity") && s.city) $("shipCity").value = s.city;
+      if ($("shipRegion") && s.region) $("shipRegion").value = s.region;
+      if ($("shipPostal") && s.postal) $("shipPostal").value = s.postal;
+      if ($("shipCountry") && s.country) $("shipCountry").value = s.country;
+    } catch (_) {}
   }
 
   /* ─── Dynamic script loaders (multi-CDN) ────────────────── */
@@ -789,10 +921,12 @@ input,textarea{font-family:var(--mono);outline:none;border:none;background:trans
         "Product: <b>" + esc(p.name) + "</b><br>" +
         "Price: <b>" + esc(String(p.price)) + " RIC</b><br>" +
         "Pay to: <b>" + esc(short(CFG.MASTER)) + "</b><br>" +
-        "Chain: <b>Shibarium (109)</b> · exact transfer (no approve)";
+        "Chain: <b>Shibarium (109)</b> · exact transfer (no approve)<br>" +
+        "<span style=\"color:var(--ash)\">Fill shipping below so we can deliver this item.</span>";
       clearElStatus("payStatus");
-      $("customerEmail").value = "";
-      $("shippingAddress").value = "";
+      // Prefill last shipping draft (buyer convenience); never clear country default if empty
+      loadShipDraft();
+      if ($("shipCountry") && !$("shipCountry").value) $("shipCountry").value = "Cambodia";
       $("payBtn").disabled = false;
       $("payBtn").textContent = "Pay with RIC & confirm";
       $("receiptModal").classList.add("show");
@@ -837,16 +971,15 @@ input,textarea{font-family:var(--mono);outline:none;border:none;background:trans
     if (!account || !signer) return connectWallet();
     if (!currentProduct) return alert("No product selected.");
 
-    var email = sanitizeText($("customerEmail").value, CFG.MAX_EMAIL);
-    var shipping = sanitizeText($("shippingAddress").value, CFG.MAX_SHIP);
-    if (!isValidEmail(email)) {
-      setElStatus("payStatus", "err", "Enter a valid email (max " + CFG.MAX_EMAIL + " chars).");
+    var ship = readShipForm();
+    var shipErr = validateShipForm(ship);
+    if (shipErr) {
+      setElStatus("payStatus", "err", shipErr);
       return;
     }
-    if (shipping.length < 10) {
-      setElStatus("payStatus", "err", "Enter a full shipping address (min 10 chars).");
-      return;
-    }
+    var email = ship.email;
+    var shipping = formatShippingBlock(ship);
+    saveShipDraft(ship);
 
     paying = true;
     var payBtn = $("payBtn");
@@ -901,9 +1034,11 @@ input,textarea{font-family:var(--mono);outline:none;border:none;background:trans
       var confirmMsg =
         "Pay " + live.price + " RIC for:\n" +
         live.name + "\n\n" +
-        "To: " + master + "\n" +
+        "Ship to:\n" + shipping + "\n\n" +
+        "Email: " + email + "\n" +
+        "To wallet: " + master + "\n" +
         "Chain: Shibarium (109)\n" +
-        "Exact transfer — no approve, no infinite allowance.\n\nContinue?";
+        "Exact transfer — cannot reverse.\n\nContinue?";
       if (!confirm(confirmMsg)) {
         paying = false;
         payBtn.disabled = false;
@@ -935,6 +1070,15 @@ input,textarea{font-family:var(--mono);outline:none;border:none;background:trans
         price: live.price,
         email: email,
         shipping: shipping,
+        shipName: ship.name,
+        shipPhone: ship.phone,
+        shipLine1: ship.line1,
+        shipLine2: ship.line2 || "",
+        shipCity: ship.city,
+        shipRegion: ship.region || "",
+        shipPostal: ship.postal || "",
+        shipCountry: ship.country,
+        shipNotes: ship.notes || "",
         txHash: tx.hash,
         user: account,
         chainId: CFG.CHAIN_ID,
@@ -969,6 +1113,9 @@ input,textarea{font-family:var(--mono);outline:none;border:none;background:trans
             product_name: live.name,
             amount_ric: live.price,
             shipping_address: shipping,
+            ship_phone: ship.phone,
+            ship_name: ship.name,
+            ship_country: ship.country,
             tx_hash: tx.hash,
             user_wallet: account
           });
@@ -1322,7 +1469,8 @@ input,textarea{font-family:var(--mono);outline:none;border:none;background:trans
           "Product: " + (order.productName || "") + "\n" +
           "Price: " + order.price + " RIC\n" +
           "Email: " + (order.email || "") + "\n" +
-          "Ship: " + (order.shipping || order.address || "") + "\n" +
+          "Phone: " + (order.shipPhone || "") + "\n\n" +
+          "SHIP TO:\n" + (order.shipping || order.address || "") + "\n\n" +
           "User: " + (order.user || "") + "\n" +
           "Tx: " + (order.txHash || "") + "\n" +
           "Status: " + (order.status || "")
@@ -1414,33 +1562,40 @@ input,textarea{font-family:var(--mono);outline:none;border:none;background:trans
   }
 
   window.addStaff = async function () {
+    clearElStatus("staffStatus");
     if (!canMutateCatalog()) {
-      return setElStatus("adminStatus", "err", "Sign in as Firebase Admin to appoint staff.");
+      return setElStatus("staffStatus", "err", "Sign in as Firebase Admin first (top of this panel).");
+    }
+    if (!firebase.auth().currentUser) {
+      return setElStatus("staffStatus", "err", "Session expired — sign in again.");
     }
     var btn = $("addStaffBtn");
     try {
-      await loadEthers();
+      await loadFirebase();
       var raw = sanitizeText($("staffWallet").value, 42);
-      if (!ethersLib.isAddress(raw)) {
-        return setElStatus("adminStatus", "err", "Invalid wallet address.");
+      var addr = normalizeEthAddress(raw);
+      if (!addr) {
+        return setElStatus("staffStatus", "err", "Invalid address. Need 0x + 40 hex chars (42 total).");
       }
-      var addr = ethersLib.getAddress(raw).toLowerCase();
       if (addr === CFG.MASTER.toLowerCase()) {
-        return setElStatus("adminStatus", "err", "Master wallet is already full admin.");
+        return setElStatus("staffStatus", "err", "Master wallet is already full admin — no need to add.");
       }
       if (staffWallets.indexOf(addr) !== -1) {
-        return setElStatus("adminStatus", "err", "That wallet is already staff.");
+        return setElStatus("staffStatus", "err", "That wallet is already on the staff list.");
       }
       if (btn) { btn.disabled = true; btn.textContent = "Adding…"; }
-      await db.ref("staff").push({
-        address: addr,
-        addedAt: firebase.database.ServerValue.TIMESTAMP,
-        addedBy: firebase.auth().currentUser.uid
-      });
+      // Key = address, value = address string (matches database rules cleanly)
+      await db.ref("staff/" + addr).set(addr);
       $("staffWallet").value = "";
+      setElStatus("staffStatus", "ok", "Staff wallet added: " + short(addr));
       setElStatus("adminStatus", "ok", "Staff wallet added: " + short(addr));
     } catch (e) {
-      setElStatus("adminStatus", "err", "Could not add staff: " + ((e && e.message) || e));
+      var msg = (e && (e.message || e.code)) || String(e);
+      if (/permission_denied|PERMISSION_DENIED/i.test(msg)) {
+        msg = "Permission denied. Re-publish firebase-database.rules.json and confirm /admins/<your-UID> = true.";
+      }
+      setElStatus("staffStatus", "err", "Could not add staff: " + msg);
+      setElStatus("adminStatus", "err", "Could not add staff: " + msg);
     } finally {
       if (btn) { btn.disabled = false; btn.textContent = "Add staff wallet"; }
     }
@@ -1448,22 +1603,27 @@ input,textarea{font-family:var(--mono);outline:none;border:none;background:trans
 
   window.removeStaff = async function (addr) {
     if (!canMutateCatalog()) return;
+    addr = normalizeEthAddress(addr) || String(addr || "").toLowerCase();
     if (!confirm("Remove staff " + addr + "?")) return;
     try {
+      // New format: staff/<address> = address
+      await db.ref("staff/" + addr).remove();
+      // Legacy push() objects: scan and remove
       var snap = await db.ref("staff").once("value");
       var val = snap.val() || {};
       var updates = {};
       Object.keys(val).forEach(function (k) {
         var v = val[k];
         var a = typeof v === "string" ? v : (v && v.address);
-        if (a && String(a).toLowerCase() === String(addr).toLowerCase()) {
+        if (a && String(a).toLowerCase() === addr) {
           updates[k] = null;
         }
       });
       if (Object.keys(updates).length) await db.ref("staff").update(updates);
+      setElStatus("staffStatus", "ok", "Staff removed.");
       setElStatus("adminStatus", "ok", "Staff removed.");
     } catch (e) {
-      setElStatus("adminStatus", "err", (e && e.message) || String(e));
+      setElStatus("staffStatus", "err", (e && e.message) || String(e));
     }
   };
 
