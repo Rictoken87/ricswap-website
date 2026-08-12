@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>RicSwap Launchpad — Infinite Drive</title>
+  <meta name="description" content="Deploy a fixed-supply CleanToken and lock LP on Infinite. Service-fee deploy tool — not investment advice." />
+  <link rel="icon" type="image/png" href="riclogo.png" />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #0b0d12; --bg2: #12161f; --bg3: #1a2030;
+      --border: rgba(255,255,255,0.08); --border-strong: rgba(255,255,255,0.14);
+      --text: #f2f4f8; --muted: #8b93a7;
+      --accent: #7dd3c0; --accent2: #5b8cff; --green: #3dd68c; --red: #ff5c6c;
+      --radius: 16px;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: "DM Sans", system-ui, sans-serif;
+      background:
+        radial-gradient(1000px 500px at 10% -10%, rgba(125,211,192,0.12), transparent 50%),
+        radial-gradient(800px 400px at 100% 0%, rgba(91,140,255,0.1), transparent 45%),
+        var(--bg);
+      color: var(--text); min-height: 100vh; line-height: 1.5;
+    }
+    a { color: var(--accent); }
+    .wrap { max-width: 1080px; margin: 0 auto; padding: 24px 20px 80px; }
+    header { display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap; padding-bottom: 24px; }
+    .brand { display: flex; align-items: center; gap: 12px; }
+    .brand h1 { font-size: 1.15rem; }
+    .brand p { font-size: 0.8rem; color: var(--muted); }
+    .wallet-btn {
+      border: 1px solid var(--border-strong); background: var(--bg3); color: var(--text);
+      border-radius: 999px; padding: 10px 18px; font: inherit; font-weight: 600; cursor: pointer;
+    }
+    .wallet-btn.connected { border-color: rgba(61,214,140,0.35); color: var(--green); }
+    .hero h2 { font-size: clamp(1.5rem, 3vw, 2rem); margin-bottom: 10px; letter-spacing: -0.03em; }
+    .hero p { color: var(--muted); max-width: 640px; }
+    .pills { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+    .pill {
+      font-size: 0.75rem; font-weight: 600; padding: 6px 12px; border-radius: 999px;
+      background: rgba(125,211,192,0.1); color: var(--accent); border: 1px solid rgba(125,211,192,0.25);
+    }
+    .notice {
+      margin: 18px 0; padding: 14px 16px; border-radius: 12px;
+      background: rgba(91,140,255,0.08); border: 1px solid rgba(91,140,255,0.25);
+      font-size: 0.88rem; color: var(--muted);
+    }
+    .notice strong { color: var(--text); }
+    .grid { display: grid; grid-template-columns: 1.35fr 0.9fr; gap: 20px; }
+    @media (max-width: 900px) { .grid { grid-template-columns: 1fr; } }
+    .card {
+      background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius);
+      padding: 22px; box-shadow: 0 20px 60px rgba(0,0,0,0.35);
+    }
+    .card h3 { font-size: 1.05rem; margin-bottom: 16px; }
+    label { display: block; font-size: 0.82rem; font-weight: 600; margin-bottom: 6px; }
+    .hint { font-weight: 500; color: var(--muted); }
+    input, select {
+      width: 100%; padding: 12px 14px; border-radius: 12px; border: 1px solid var(--border);
+      background: var(--bg3); color: var(--text); font: inherit; margin-bottom: 14px;
+    }
+    .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    @media (max-width: 600px) { .row2 { grid-template-columns: 1fr; } }
+    .fee-box {
+      background: rgba(125,211,192,0.06); border: 1px solid rgba(125,211,192,0.2);
+      border-radius: 12px; padding: 14px; margin: 8px 0 16px; font-size: 0.9rem;
+    }
+    .fee-box .fee-title { font-weight: 700; color: var(--accent); margin-bottom: 6px; }
+    .submit {
+      width: 100%; padding: 14px; border: none; border-radius: 12px; font: inherit; font-weight: 700;
+      background: linear-gradient(135deg, var(--accent), var(--accent2)); color: #0b0d12; cursor: pointer;
+    }
+    .submit:disabled { opacity: 0.45; cursor: not-allowed; }
+    .status { margin-top: 12px; font-size: 0.88rem; display: none; }
+    .status.show { display: block; }
+    .status.err { color: var(--red); }
+    .status.ok { color: var(--green); }
+    .status.info { color: var(--muted); }
+    .banner {
+      display: none; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;
+      padding: 12px 16px; margin-bottom: 16px; border-radius: 12px;
+      background: rgba(255,92,108,0.1); border: 1px solid rgba(255,92,108,0.35); font-size: 0.9rem;
+    }
+    .banner.show { display: flex; }
+    .banner button {
+      border: 1px solid var(--border-strong); background: var(--bg3); color: var(--text);
+      border-radius: 999px; padding: 8px 14px; font: inherit; font-weight: 600; cursor: pointer;
+    }
+    .stat { display: flex; justify-content: space-between; gap: 12px; padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 0.9rem; }
+    .stat:last-child { border-bottom: none; }
+    .stat span { color: var(--muted); }
+    ul.bullets { margin: 0 0 0 18px; color: var(--muted); font-size: 0.9rem; }
+    ul.bullets li { margin-bottom: 6px; }
+    footer { margin-top: 40px; padding-top: 20px; border-top: 1px solid var(--border); font-size: 0.8rem; color: var(--muted); }
+    code { font-family: "JetBrains Mono", monospace; font-size: 0.78rem; }
+    .success { display: none; margin-top: 16px; padding: 14px; border-radius: 12px; background: rgba(61,214,140,0.08); border: 1px solid rgba(61,214,140,0.3); }
+    .success.show { display: block; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div class="brand">
+        <img class="logo-img" src="riclogo.png" alt="RicSwap" width="42" height="42" style="width:42px;height:42px;border-radius:12px;object-fit:cover;background:var(--bg3)"
+             onerror="this.style.display='none'" />
+        <div>
+          <h1>RicSwap · Infinite Drive</h1>
+          <p>Infinite only (421018) · Separate from <a href="launchpad.html">Shibarium launchpad</a></p>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+        <a href="index.html" style="color:var(--muted);font-size:0.88rem;font-weight:600;text-decoration:none">Home</a>
+        <a href="launchpad.html" style="color:var(--muted);font-size:0.88rem;font-weight:600;text-decoration:none">Shibarium</a>
+        <span style="font-size:0.78rem;font-weight:700;color:var(--accent);border:1px solid rgba(125,211,192,0.35);padding:6px 12px;border-radius:999px">Drive</span>
+        <button type="button" class="wallet-btn" id="connectBtn">Connect wallet</button>
+      </div>
+    </header>
+
+    <section class="hero">
+      <h2>Deploy a fixed-supply token + lock LP</h2>
+      <p>
+        Permissionless tool: create an ownerless CleanToken, seed a <strong>42</strong> liquidity pool,
+        and lock LP in one transaction. You never receive LP tokens.
+        Fee is a <strong>native service charge</strong> for infrastructure — not an investment product.
+      </p>
+      <div class="pills">
+        <span class="pill">Chain ID 421018</span>
+        <span class="pill">Service fee in 42</span>
+        <span class="pill">No platform investment token</span>
+        <span class="pill">Min 30-day LP lock</span>
+      </div>
+    </section>
+
+    <div class="notice">
+      <strong>Not investment advice.</strong> This software deploys <em>your</em> token under published rules.
+      Project tokens are created by third parties. Do your own research. Nothing here is an offer of securities
+      or a claim of “Howey-safe” / regulatory approval.
+    </div>
+
+    <div class="banner" id="netBanner">
+      <span>Wrong network. Switch to Infinite Drive (chain ID 421018).</span>
+      <button type="button" id="switchNetBtn">Switch to Infinite</button>
+    </div>
+
+    <div class="grid">
+      <form class="card" id="launchForm" onsubmit="return false;">
+        <h3>Token details</h3>
+        <div class="row2">
+          <div>
+            <label>Token name <span class="hint">required</span></label>
+            <input id="name" type="text" placeholder="My Token" maxlength="32" />
+          </div>
+          <div>
+            <label>Symbol <span class="hint">required</span></label>
+            <input id="symbol" type="text" placeholder="TKN" maxlength="12" />
+          </div>
+        </div>
+        <label>Total supply <span class="hint">whole tokens (18 decimals on-chain)</span></label>
+        <input id="supply" type="text" inputmode="numeric" value="1000000" />
+        <label>Team allocation <span class="hint">max 25% — rest to LP</span></label>
+        <input id="teamBps" type="range" min="0" max="25" value="10" />
+        <div class="stat"><span>Team %</span><strong id="teamPctLabel">10%</strong></div>
+        <label>42 for liquidity <span class="hint" id="minLpHint">min set after factory live</span></label>
+        <input id="nativeLp" type="text" inputmode="decimal" value="1" />
+        <label>LP lock duration</label>
+        <select id="lockDays">
+          <option value="30">30 days (minimum)</option>
+          <option value="90">90 days</option>
+          <option value="180">180 days</option>
+          <option value="365">365 days</option>
+          <option value="permanent">Permanent</option>
+        </select>
+        <label>Project URI <span class="hint">optional</span></label>
+        <input id="uri" type="text" placeholder="https://… or ipfs://…" />
+
+        <div class="fee-box">
+          <div class="fee-title">Service fee (native 42)</div>
+          <div class="stat"><span>Launch fee</span><strong id="feeLabel">—</strong></div>
+          <div class="stat"><span>Min LP native</span><strong id="minLpLabel">—</strong></div>
+          <div class="stat"><span>You send (fee + LP)</span><strong id="totalPayLabel">—</strong></div>
+          <p style="margin-top:8px;font-size:0.82rem;color:var(--muted)">
+            Fee goes to the ops treasury as infrastructure payment. No platform-token burn/buyback mechanics on Infinite v1.
+          </p>
+        </div>
+
+        <button type="button" class="submit" id="launchBtn" disabled>Connect wallet to deploy</button>
+        <div class="status" id="status"></div>
+        <div class="success" id="successBox">
+          <strong>Deploy successful</strong>
+          <div class="stat"><span>Token</span><strong id="resToken">—</strong></div>
+          <div class="stat"><span>Pair</span><strong id="resPair">—</strong></div>
+          <div class="stat"><span>Lock ID</span><strong id="resLock">—</strong></div>
+          <div class="stat"><span>Tx</span><strong id="resTx">—</strong></div>
+        </div>
+      </form>
+
+      <aside>
+        <div class="card" style="margin-bottom:16px">
+          <h3>Allocation preview</h3>
+          <div class="stat"><span>To LP</span><strong id="prevLp">90%</strong></div>
+          <div class="stat"><span>Team</span><strong id="prevTeam">10%</strong></div>
+          <div class="stat"><span>Factory</span><strong id="factoryLabel">Not deployed</strong></div>
+        </div>
+        <div class="card">
+          <h3>On-chain rules</h3>
+          <ul class="bullets">
+            <li>CleanToken: no owner, mint, tax, or pause</li>
+            <li>LP created and locked in one transaction</li>
+            <li>Founder never receives LP tokens</li>
+            <li>Permissionless — no staff gate on-chain</li>
+            <li>Native service fee only (no Infinite platform investment token)</li>
+          </ul>
+        </div>
+      </aside>
+    </div>
+
+    <footer>
+      <p>
+        RicSwap · <strong>Infinite Drive</strong> launchpad (this page: <code>drive.html</code>) ·
+        Shibarium is a <a href="launchpad.html">separate page</a> · Not investment advice ·
+        <a href="https://scan.infinitedrive.xyz" target="_blank" rel="noopener">Explorer</a>
+      </p>
+      <p style="margin-top:8px">
+        Factory <code id="footerFactory">—</code>
+      </p>
+    </footer>
+  </div>
+
+  <script>
+    window.__loadEthers = function (src, next) {
+      var s = document.createElement("script");
+      s.src = src; s.async = true;
+      s.onload = function () { if (typeof ethers !== "undefined") { window.__ETHERS_READY = true; } else if (next) next(); };
+      s.onerror = function () { if (next) next(); };
+      document.head.appendChild(s);
+    };
+    window.__loadEthers(
+      "https://cdn.jsdelivr.net/npm/ethers@6.13.5/dist/ethers.umd.min.js",
+      function () {
+        window.__loadEthers("https://unpkg.com/ethers@6.13.5/dist/ethers.umd.min.js");
+      }
+    );
+  </script>
+  <script>
+(function () {
+  "use strict";
+
+  // Fill factory after deploy. Leave zero address until then.
+  var CONFIG = {
+    chainId: 421018,
+    chainIdHex: "0x66c9a",
+    chainName: "Infinite Improbability Drive",
+    rpcUrls: ["https://evm-rpc.infinitedrive.xyz"],
+    blockExplorer: "https://scan.infinitedrive.xyz",
+    nativeCurrency: { name: "Improbability", symbol: "42", decimals: 18 },
+    factory: "0x95feabdeCCa6cBC808D231895b80703905bE3b83",
+    // Fallback defaults if factory not readable yet (wei strings)
+    fallbackFeeWei: null,
+    fallbackMinLpWei: null,
+    permanentLockDuration: "115792089237316195423570985008687907853269984665640564039457584007913129639935"
+  };
+
+  var FACTORY_ABI = [
+    "function launch(string name_, string symbol_, uint256 totalSupply_, uint256 teamBps, uint256 lockDuration, string projectURI_) payable returns (address token, uint256 lockId)",
+    "function feeInfo() view returns (uint256 launchFeeNative, uint256 minNativeLiquidity, address treasury, uint256 pendingFees)",
+    "function claimFees()",
+    "function isLaunchpadToken(address token) view returns (bool)",
+    "event TokenLaunched(address indexed token, address indexed founder, address indexed pair, string name, string symbol, uint256 totalSupply, uint256 liquidityTokens, uint256 teamTokens, uint256 nativeLiquidity, uint256 lockId, uint256 unlockTime)"
+  ];
+
+  var provider = null, signer = null, account = null;
+  var launchFeeWei = null, minLpWei = null;
+  var factoryReady = false;
+
+  function $(id) { return document.getElementById(id); }
+  function setStatus(type, msg) {
+    var el = $("status");
+    el.className = "status show " + type;
+    el.textContent = msg;
+  }
+  function short(a) { return a ? a.slice(0, 6) + "…" + a.slice(-4) : "—"; }
+  function factoryConfigured() {
+    return /^0x[a-fA-F0-9]{40}$/.test(CONFIG.factory) &&
+      CONFIG.factory.toLowerCase() !== "0x0000000000000000000000000000000000000000";
+  }
+
+  function updatePreview() {
+    var team = parseInt($("teamBps").value, 10) || 0;
+    $("teamPctLabel").textContent = team + "%";
+    $("prevTeam").textContent = team + "%";
+    $("prevLp").textContent = (100 - team) + "%";
+    if (launchFeeWei && minLpWei && typeof ethers !== "undefined") {
+      $("feeLabel").textContent = ethers.formatEther(launchFeeWei) + " 42";
+      $("minLpLabel").textContent = ethers.formatEther(minLpWei) + " 42";
+      $("minLpHint").textContent = "min " + ethers.formatEther(minLpWei) + " 42";
+      try {
+        var lp = ethers.parseEther(String($("nativeLp").value || "0"));
+        var total = launchFeeWei + lp;
+        $("totalPayLabel").textContent = ethers.formatEther(total) + " 42";
+      } catch (e) {
+        $("totalPayLabel").textContent = "—";
+      }
+    }
+  }
+
+  async function ensureChain() {
+    var eth = window.ethereum;
+    if (!eth) throw new Error("No wallet");
+    var id = await eth.request({ method: "eth_chainId" });
+    if (parseInt(id, 16) === CONFIG.chainId) {
+      $("netBanner").classList.remove("show");
+      return true;
+    }
+    $("netBanner").classList.add("show");
+    return false;
+  }
+
+  async function switchChain() {
+    var eth = window.ethereum;
+    try {
+      await eth.request({
+        method: "wallet_switchEthereumChain",
+        params: [{ chainId: CONFIG.chainIdHex }]
+      });
+    } catch (e) {
+      if (e.code === 4902 || (e.message && e.message.indexOf("Unrecognized") >= 0)) {
+        await eth.request({
+          method: "wallet_addEthereumChain",
+          params: [{
+            chainId: CONFIG.chainIdHex,
+            chainName: CONFIG.chainName,
+            nativeCurrency: CONFIG.nativeCurrency,
+            rpcUrls: CONFIG.rpcUrls,
+            blockExplorerUrls: [CONFIG.blockExplorer]
+          }]
+        });
+      } else throw e;
+    }
+    await refresh();
+  }
+
+  async function connect() {
+    if (typeof ethers === "undefined") {
+      setStatus("err", "ethers.js still loading — wait a second");
+      return;
+    }
+    if (!window.ethereum) {
+      setStatus("err", "Install MetaMask or another EVM wallet");
+      return;
+    }
+    provider = new ethers.BrowserProvider(window.ethereum);
+    await provider.send("eth_requestAccounts", []);
+    signer = await provider.getSigner();
+    account = await signer.getAddress();
+    $("connectBtn").textContent = short(account);
+    $("connectBtn").classList.add("connected");
+    await refresh();
+  }
+
+  async function loadFees() {
+    factoryReady = factoryConfigured();
+    $("factoryLabel").textContent = factoryReady ? short(CONFIG.factory) : "Not deployed";
+    $("footerFactory").textContent = factoryReady ? CONFIG.factory : "Deploy factory first — see docs/01-DEPLOY-STEP-BY-STEP.md";
+    if (!factoryReady || !signer) {
+      launchFeeWei = null;
+      minLpWei = null;
+      updatePreview();
+      $("launchBtn").disabled = true;
+      $("launchBtn").textContent = factoryReady ? "Connect wallet to deploy" : "Factory not deployed yet";
+      return;
+    }
+    var okChain = await ensureChain();
+    if (!okChain) {
+      $("launchBtn").disabled = true;
+      $("launchBtn").textContent = "Switch to Infinite first";
+      return;
+    }
+    var c = new ethers.Contract(CONFIG.factory, FACTORY_ABI, provider);
+    var info = await c.feeInfo();
+    // v2 returns (fee, minLp, treasury, pendingFees) — named or indexed
+    launchFeeWei = info.launchFeeNative !== undefined ? info.launchFeeNative : info[0];
+    minLpWei = info.minNativeLiquidity !== undefined ? info.minNativeLiquidity : info[1];
+    updatePreview();
+    $("launchBtn").disabled = !account;
+    $("launchBtn").textContent = account ? "Deploy token + lock LP" : "Connect wallet to deploy";
+  }
+
+  async function refresh() {
+    try { await loadFees(); } catch (e) {
+      setStatus("err", "Could not read factory: " + (e.shortMessage || e.message || e));
+    }
+  }
+
+  async function launch() {
+    try {
+      if (!factoryReady) throw new Error("Factory address not set in CONFIG");
+      if (!signer) await connect();
+      if (!(await ensureChain())) throw new Error("Wrong network");
+
+      var name = $("name").value.trim();
+      var symbol = $("symbol").value.trim();
+      var supply = BigInt(String($("supply").value).replace(/[,_\s]/g, ""));
+      var teamPct = parseInt($("teamBps").value, 10) || 0;
+      var teamBps = teamPct * 100;
+      var lockSel = $("lockDays").value;
+      var lockDuration = lockSel === "permanent"
+        ? BigInt(CONFIG.permanentLockDuration)
+        : BigInt(parseInt(lockSel, 10) * 86400);
+      var uri = $("uri").value.trim();
+      var lp = ethers.parseEther(String($("nativeLp").value || "0"));
+
+      if (!name || !symbol) throw new Error("Name and symbol required");
+      if (supply <= 0n) throw new Error("Supply must be > 0");
+      if (lp < minLpWei) throw new Error("LP native below minimum");
+
+      var value = launchFeeWei + lp;
+      setStatus("info", "Confirm in wallet…");
+      var c = new ethers.Contract(CONFIG.factory, FACTORY_ABI, signer);
+      var tx = await c.launch(name, symbol, supply, teamBps, lockDuration, uri, { value: value });
+      setStatus("info", "Submitted " + short(tx.hash) + " — waiting…");
+      var rc = await tx.wait();
+      var token = "—", pair = "—", lockId = "—";
+      for (var i = 0; i < rc.logs.length; i++) {
+        try {
+          var parsed = c.interface.parseLog(rc.logs[i]);
+          if (parsed && parsed.name === "TokenLaunched") {
+            token = parsed.args.token;
+            pair = parsed.args.pair;
+            lockId = parsed.args.lockId.toString();
+          }
+        } catch (e2) {}
+      }
+      $("resToken").innerHTML = '<a target="_blank" rel="noopener" href="' + CONFIG.blockExplorer + "/address/" + token + '">' + short(token) + "</a>";
+      $("resPair").textContent = short(pair);
+      $("resLock").textContent = lockId;
+      $("resTx").innerHTML = '<a target="_blank" rel="noopener" href="' + CONFIG.blockExplorer + "/tx/" + rc.hash + '">' + short(rc.hash) + "</a>";
+      $("successBox").classList.add("show");
+      setStatus("ok", "Deploy complete");
+    } catch (e) {
+      setStatus("err", e.shortMessage || e.reason || e.message || String(e));
+    }
+  }
+
+  $("connectBtn").onclick = function () { connect().catch(function (e) { setStatus("err", e.message || e); }); };
+  $("switchNetBtn").onclick = function () { switchChain().catch(function (e) { setStatus("err", e.message || e); }); };
+  $("launchBtn").onclick = launch;
+  $("teamBps").oninput = updatePreview;
+  $("nativeLp").oninput = updatePreview;
+
+  if (window.ethereum) {
+    window.ethereum.on("accountsChanged", function () { connect().catch(function () {}); });
+    window.ethereum.on("chainChanged", function () { refresh(); });
+  }
+
+  updatePreview();
+  loadFees();
+})();
+  </script>
+</body>
+</html>
