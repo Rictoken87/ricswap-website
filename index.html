@@ -1153,8 +1153,8 @@ footer {
     <a href="lock.html">Lock</a>
     <a href="pools.html">Pools</a>
     <a href="launchpad.html">Launchpad</a>
+    <a href="drive.html" title="Infinite Drive launchpad (chain 421018)">Drive</a>
     <a href="names.html">Names</a>
-    <a href="reward.html">Reward</a>
     <a href="#ric">RIC</a>
     <a href="#contracts">Contracts</a>
   </div>
@@ -1184,7 +1184,14 @@ footer {
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
           Create Token
         </button>
+        <button class="btn-ghost" type="button" onclick="location.href='drive.html'" title="Separate launchpad on Infinite Drive">
+          Infinite Drive
+        </button>
       </div>
+      <p class="hero-sub" style="margin-top:16px;margin-bottom:0;font-size:14px;max-width:520px">
+        Also live: <a href="drive.html" style="color:var(--gold);font-weight:500">Drive launchpad on Infinite</a>
+        (chain 421018 · service fee in <strong style="color:var(--fog)">42</strong> · no RIC required).
+      </p>
       <div class="hero-badges">
         <div class="badge"><div class="badge-dot"></div> LP Locked on Launch</div>
         <div class="badge"><div class="badge-dot"></div> Ownerless CleanTokens</div>
@@ -1445,12 +1452,12 @@ footer {
   </div>
 </div>
 
-<!-- ═══ LAUNCHPAD ═══ -->
+<!-- ═══ LAUNCHPAD (SHIBARIUM) ═══ -->
 <div class="section" id="launchpad">
   <div class="reveal">
-    <div class="section-eyebrow">Launchpad</div>
+    <div class="section-eyebrow">Launchpad · Shibarium</div>
     <h2 class="section-title">FAIR LAUNCH<br>BY DEFAULT</h2>
-    <p class="section-sub">One transaction: deploy CleanToken → create BONE pool → lock LP. Founder never receives LP tokens.</p>
+    <p class="section-sub">One transaction on Shibarium: deploy CleanToken → create BONE pool → lock LP. Founder never receives LP tokens. Launch fee paid in RIC.</p>
   </div>
   <div class="launch-rules reveal">
     <div class="rule">
@@ -1466,8 +1473,58 @@ footer {
       <div class="t">BONE paired at launch. Meaningful native liquidity on day one.</div>
     </div>
   </div>
-  <div style="margin-top:40px" class="reveal">
-    <button class="btn-primary" type="button" onclick="location.href='launchpad.html'">Open Launchpad →</button>
+  <div style="margin-top:40px;display:flex;flex-wrap:wrap;gap:12px;align-items:center" class="reveal">
+    <button class="btn-primary" type="button" onclick="location.href='launchpad.html'">Open Shibarium Launchpad →</button>
+    <button class="btn-ghost" type="button" onclick="location.href='drive.html'">Launch on Infinite Drive</button>
+  </div>
+</div>
+
+<!-- ═══ INFINITE DRIVE ═══ -->
+<div class="section" id="drive" style="border-top:1px solid var(--rim); background:rgba(6,8,16,0.45);">
+  <div class="reveal">
+    <div class="section-eyebrow">Networks · Infinite</div>
+    <h2 class="section-title">INFINITE<br>DRIVE</h2>
+    <p class="section-sub">
+      Separate launchpad surface for <strong style="color:var(--fog);font-weight:500">Infinite Drive</strong> (EVM chain&nbsp;421018).
+      Permissionless CleanToken + locked LP. Service fee in native <strong style="color:var(--gold);font-weight:500">42</strong> — not RIC.
+      Not investment advice; project tokens are created by third parties.
+    </p>
+  </div>
+  <div class="launch-rules reveal">
+    <div class="rule">
+      <div class="k">421018</div>
+      <div class="t">Chain ID. Use Infinite Drive in MetaMask / Rabby — never confuse with Shibarium 109.</div>
+    </div>
+    <div class="rule">
+      <div class="k">42</div>
+      <div class="t">Native service fee + LP amount. No platform investment token on Infinite v1.</div>
+    </div>
+    <div class="rule">
+      <div class="k">30d+</div>
+      <div class="t">Min LP lock. Founder never receives LP; unlock beneficiary only after unlockTime.</div>
+    </div>
+  </div>
+  <div class="tok-card reveal" style="margin-top:36px;max-width:900px">
+    <h3 style="margin-bottom:8px">DRIVE CONTRACTS (INFINITE)</h3>
+    <p style="font-size:13px;color:var(--smoke);margin-bottom:16px">Always verify on scan.infinitedrive.xyz before interacting.</p>
+    <div class="addr-list">
+      <div class="addr-row">
+        <span class="label">Launchpad Factory</span>
+        <a href="https://scan.infinitedrive.xyz/address/0x95feabdeCCa6cBC808D231895b80703905bE3b83" target="_blank" rel="noopener">0x95feabdeCCa6cBC808D231895b80703905bE3b83</a>
+      </div>
+      <div class="addr-row">
+        <span class="label">Liquidity Locker</span>
+        <a href="https://scan.infinitedrive.xyz/address/0x24D0aBB2A08037fEf3Da0dA85D23ed35C1B1B980" target="_blank" rel="noopener">0x24D0aBB2A08037fEf3Da0dA85D23ed35C1B1B980</a>
+      </div>
+      <div class="addr-row">
+        <span class="label">DEX Router (DontPanic)</span>
+        <a href="https://scan.infinitedrive.xyz/address/0xBF07dFE35746894bAe373f63f4Bf2379F9BaFEc0" target="_blank" rel="noopener">0xBF07dFE35746894bAe373f63f4Bf2379F9BaFEc0</a>
+      </div>
+    </div>
+  </div>
+  <div style="margin-top:40px;display:flex;flex-wrap:wrap;gap:12px;align-items:center" class="reveal">
+    <button class="btn-primary" type="button" onclick="location.href='drive.html'">Open Drive Launchpad →</button>
+    <a class="btn-ghost" href="https://scan.infinitedrive.xyz" target="_blank" rel="noopener" style="display:inline-flex;align-items:center">Explorer</a>
   </div>
 </div>
 
@@ -1511,9 +1568,10 @@ footer {
   <div class="reveal">
     <div class="section-eyebrow">On-chain</div>
     <h2 class="section-title">CONTRACTS</h2>
-    <p class="section-sub">Official Shibarium mainnet addresses. Always double-check before interacting.</p>
+    <p class="section-sub">Official mainnet addresses by network. Always double-check before interacting.</p>
   </div>
   <div class="tok-card reveal" style="margin-top:40px;max-width:900px">
+    <h3 style="margin-bottom:12px">SHIBARIUM</h3>
     <div class="addr-list">
       <div class="addr-row">
         <span class="label">RIC Token</span>
@@ -1545,16 +1603,34 @@ footer {
       </div>
     </div>
   </div>
+  <div class="tok-card reveal" style="margin-top:20px;max-width:900px">
+    <h3 style="margin-bottom:12px">INFINITE DRIVE</h3>
+    <div class="addr-list">
+      <div class="addr-row">
+        <span class="label">Drive Factory</span>
+        <a href="https://scan.infinitedrive.xyz/address/0x95feabdeCCa6cBC808D231895b80703905bE3b83" target="_blank" rel="noopener">0x95feabdeCCa6cBC808D231895b80703905bE3b83</a>
+      </div>
+      <div class="addr-row">
+        <span class="label">Drive Locker</span>
+        <a href="https://scan.infinitedrive.xyz/address/0x24D0aBB2A08037fEf3Da0dA85D23ed35C1B1B980" target="_blank" rel="noopener">0x24D0aBB2A08037fEf3Da0dA85D23ed35C1B1B980</a>
+      </div>
+      <div class="addr-row">
+        <span class="label">App</span>
+        <a href="drive.html">ricswap.com/drive.html</a>
+      </div>
+    </div>
+  </div>
 </div>
 
 <!-- ═══ CTA ═══ -->
 <div class="cta-section reveal">
   <div class="cta-box">
     <h2 class="cta-title">READY TO<br>BUILD?</h2>
-    <p class="cta-sub">Swap on Shibarium, provide liquidity, lock LP or Team tokens, or launch a CleanToken with locked LP. Powered by RIC.</p>
+    <p class="cta-sub">Swap on Shibarium, launch with RIC, or deploy on Infinite Drive with a native 42 service fee. Non-custodial. Not investment advice.</p>
     <div class="cta-actions">
       <button class="btn-primary" type="button" onclick="location.href='swap.html'">Launch App →</button>
-      <button class="btn-ghost" type="button" onclick="location.href='launchpad.html'">Create Token</button>
+      <button class="btn-ghost" type="button" onclick="location.href='launchpad.html'">Shibarium Launchpad</button>
+      <button class="btn-ghost" type="button" onclick="location.href='drive.html'">Infinite Drive</button>
     </div>
   </div>
 </div>
@@ -1568,22 +1644,24 @@ footer {
              onerror="this.onerror=null;this.src='https://raw.githubusercontent.com/Rictoken87/ricswap-website/main/riclogo.png'" />
         <span class="logo-text">RICSWAP</span>
       </a>
-      <p>Fair-launch DEX on Shibarium. Locked LP. RIC utility. Non-custodial.</p>
+      <p>Fair-launch DEX on Shibarium. Drive launchpad on Infinite. Locked LP. Non-custodial.</p>
     </div>
     <div class="footer-col">
       <h4>Product</h4>
       <a href="swap.html">Swap</a>
       <a href="liquidity.html">Add Liquidity</a>
       <a href="pools.html">Pools</a>
-      <a href="launchpad.html">Launchpad</a>
+      <a href="launchpad.html">Launchpad (Shibarium)</a>
+      <a href="drive.html">Drive (Infinite)</a>
       <a href="names.html">Names (.ric)</a>
-      <a href="reward.html">Reward </a>
       <a href="#ric">RIC Tokenomics</a>
     </div>
     <div class="footer-col">
       <h4>Resources</h4>
       <a href="#contracts">Smart Contracts</a>
-      <a href="https://www.shibariumscan.io/address/0xe0FE5314ef6b25Fb4FD1B893399801E305e7e28E" target="_blank" rel="noopener">Factory (verified)</a>
+      <a href="#drive">Infinite Drive</a>
+      <a href="https://www.shibariumscan.io/address/0xe0FE5314ef6b25Fb4FD1B893399801E305e7e28E" target="_blank" rel="noopener">Shibarium Factory</a>
+      <a href="https://scan.infinitedrive.xyz/address/0x95feabdeCCa6cBC808D231895b80703905bE3b83" target="_blank" rel="noopener">Drive Factory</a>
       <a href="https://github.com/Rictoken87" target="_blank" rel="noopener">GitHub</a>
     </div>
     <div class="footer-col">
@@ -1594,10 +1672,10 @@ footer {
     </div>
   </div>
   <div class="footer-bottom">
-    <span>RicSwap © 2026 — Shibarium · Fair launches · RIC burns</span>
+    <span>RicSwap © 2026 — Shibarium · Infinite Drive · Fair launches</span>
     <div class="footer-status">
       <div class="net-dot"></div>
-      <span>Shibarium mainnet</span>
+      <span>Shibarium · Infinite</span>
     </div>
   </div>
 </footer>
