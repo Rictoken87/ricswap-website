@@ -1,0 +1,797 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <!-- [H1] CSP: restrict script sources to self + the two pinned CDNs.
+       'unsafe-inline' is required by the inline app script below; for the
+       strongest posture, move the app JS to a self-hosted file and drop it. -->
+  <meta http-equiv="Content-Security-Policy"
+        content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://evm-rpc.infinitedrive.xyz https://evm.infinitedrive.xyz https://scan.infinitedrive.xyz https://cdn.jsdelivr.net https://unpkg.com https://fonts.googleapis.com https://fonts.gstatic.com; frame-src 'none'; object-src 'none'; base-uri 'self'" />
+  <title>RicSwap Launchpad — Infinite Drive</title>
+  <meta name="description" content="Deploy a fixed-supply CleanToken and lock LP on Infinite Drive (chain 421018). Permissionless service-fee tool — not investment advice." />
+  <meta name="robots" content="index,follow" />
+  <meta name="theme-color" content="#0b0d12" />
+  <meta name="color-scheme" content="dark" />
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="RicSwap · Infinite Drive Launchpad" />
+  <meta property="og:description" content="Create an ownerless CleanToken, seed 42 liquidity, and lock LP in one transaction on Infinite Drive." />
+  <meta property="og:image" content="riclogo.png" />
+  <meta name="twitter:card" content="summary" />
+  <meta name="twitter:title" content="RicSwap · Infinite Drive Launchpad" />
+  <meta name="twitter:description" content="Permissionless CleanToken + locked LP on Infinite (421018)." />
+  <link rel="icon" type="image/png" href="riclogo.png" />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #0b0d12; --bg2: #12161f; --bg3: #1a2030;
+      --border: rgba(255,255,255,0.08); --border-strong: rgba(255,255,255,0.14);
+      --text: #f2f4f8; --muted: #8b93a7;
+      --accent: #7dd3c0; --accent2: #5b8cff; --green: #3dd68c; --red: #ff5c6c;
+      --radius: 16px;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: "DM Sans", system-ui, sans-serif;
+      background:
+        radial-gradient(1000px 500px at 10% -10%, rgba(125,211,192,0.12), transparent 50%),
+        radial-gradient(800px 400px at 100% 0%, rgba(91,140,255,0.1), transparent 45%),
+        var(--bg);
+      color: var(--text); min-height: 100vh; line-height: 1.5;
+    }
+    a { color: var(--accent); }
+    .wrap { max-width: 1080px; margin: 0 auto; padding: 24px 20px 80px; }
+    header { display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap; padding-bottom: 24px; }
+    .brand { display: flex; align-items: center; gap: 12px; }
+    .brand h1 { font-size: 1.15rem; }
+    .brand p { font-size: 0.8rem; color: var(--muted); }
+    .wallet-btn {
+      border: 1px solid var(--border-strong); background: var(--bg3); color: var(--text);
+      border-radius: 999px; padding: 10px 18px; font: inherit; font-weight: 600; cursor: pointer;
+    }
+    .wallet-btn.connected { border-color: rgba(61,214,140,0.35); color: var(--green); }
+    .hero h2 { font-size: clamp(1.5rem, 3vw, 2rem); margin-bottom: 10px; letter-spacing: -0.03em; }
+    .hero p { color: var(--muted); max-width: 640px; }
+    .pills { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+    .pill {
+      font-size: 0.75rem; font-weight: 600; padding: 6px 12px; border-radius: 999px;
+      background: rgba(125,211,192,0.1); color: var(--accent); border: 1px solid rgba(125,211,192,0.25);
+    }
+    .notice {
+      margin: 18px 0; padding: 14px 16px; border-radius: 12px;
+      background: rgba(91,140,255,0.08); border: 1px solid rgba(91,140,255,0.25);
+      font-size: 0.88rem; color: var(--muted);
+    }
+    .notice strong { color: var(--text); }
+    .grid { display: grid; grid-template-columns: 1.35fr 0.9fr; gap: 20px; }
+    @media (max-width: 900px) { .grid { grid-template-columns: 1fr; } }
+    .card {
+      background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius);
+      padding: 22px; box-shadow: 0 20px 60px rgba(0,0,0,0.35);
+    }
+    .card h3 { font-size: 1.05rem; margin-bottom: 16px; }
+    label { display: block; font-size: 0.82rem; font-weight: 600; margin-bottom: 6px; }
+    .hint { font-weight: 500; color: var(--muted); }
+    input, select {
+      width: 100%; padding: 12px 14px; border-radius: 12px; border: 1px solid var(--border);
+      background: var(--bg3); color: var(--text); font: inherit; margin-bottom: 14px;
+    }
+    .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    @media (max-width: 600px) { .row2 { grid-template-columns: 1fr; } }
+    .fee-box {
+      background: rgba(125,211,192,0.06); border: 1px solid rgba(125,211,192,0.2);
+      border-radius: 12px; padding: 14px; margin: 8px 0 16px; font-size: 0.9rem;
+    }
+    .fee-box .fee-title { font-weight: 700; color: var(--accent); margin-bottom: 6px; }
+    .submit {
+      width: 100%; padding: 14px; border: none; border-radius: 12px; font: inherit; font-weight: 700;
+      background: linear-gradient(135deg, var(--accent), var(--accent2)); color: #0b0d12; cursor: pointer;
+    }
+    .submit:disabled { opacity: 0.45; cursor: not-allowed; }
+    .status { margin-top: 12px; font-size: 0.88rem; display: none; }
+    .status.show { display: block; }
+    .status.err { color: var(--red); }
+    .status.ok { color: var(--green); }
+    .status.info { color: var(--muted); }
+    .banner {
+      display: none; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;
+      padding: 12px 16px; margin-bottom: 16px; border-radius: 12px;
+      background: rgba(255,92,108,0.1); border: 1px solid rgba(255,92,108,0.35); font-size: 0.9rem;
+    }
+    .banner.show { display: flex; }
+    .banner button {
+      border: 1px solid var(--border-strong); background: var(--bg3); color: var(--text);
+      border-radius: 999px; padding: 8px 14px; font: inherit; font-weight: 600; cursor: pointer;
+    }
+    .stat { display: flex; justify-content: space-between; gap: 12px; padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 0.9rem; }
+    .stat:last-child { border-bottom: none; }
+    .stat span { color: var(--muted); }
+    ul.bullets { margin: 0 0 0 18px; color: var(--muted); font-size: 0.9rem; }
+    ul.bullets li { margin-bottom: 6px; }
+    footer { margin-top: 40px; padding-top: 20px; border-top: 1px solid var(--border); font-size: 0.8rem; color: var(--muted); }
+    code { font-family: "JetBrains Mono", monospace; font-size: 0.78rem; }
+    .success { display: none; margin-top: 16px; padding: 14px; border-radius: 12px; background: rgba(61,214,140,0.08); border: 1px solid rgba(61,214,140,0.3); }
+    .success.show { display: block; }
+    .success-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+    .ghost-btn {
+      border: 1px solid var(--border-strong); background: var(--bg3); color: var(--text);
+      border-radius: 999px; padding: 8px 14px; font: inherit; font-size: 0.82rem; font-weight: 600; cursor: pointer;
+    }
+    .ghost-btn:hover { border-color: var(--accent); color: var(--accent); }
+    .ghost-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+    .sr-only {
+      position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+      overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0;
+    }
+    @media (prefers-reduced-motion: reduce) {
+      * { scroll-behavior: auto !important; transition: none !important; animation: none !important; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <a class="sr-only" href="#launchForm">Skip to launch form</a>
+    <header>
+      <div class="brand">
+        <img class="logo-img" src="riclogo.png" alt="RicSwap" width="42" height="42" style="width:42px;height:42px;border-radius:12px;object-fit:cover;background:var(--bg3)"
+             onerror="this.style.display='none'" />
+        <div>
+          <h1>RicSwap · Infinite Drive</h1>
+          <p>Infinite only (421018) · Separate from <a href="launchpad.html">Shibarium launchpad</a></p>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+        <a href="index.html" style="color:var(--muted);font-size:0.88rem;font-weight:600;text-decoration:none">Home</a>
+        <a href="launchpad.html" style="color:var(--muted);font-size:0.88rem;font-weight:600;text-decoration:none">Shibarium</a>
+        <span style="font-size:0.78rem;font-weight:700;color:var(--accent);border:1px solid rgba(125,211,192,0.35);padding:6px 12px;border-radius:999px">Drive</span>
+        <button type="button" class="wallet-btn" id="connectBtn">Connect wallet</button>
+      </div>
+    </header>
+
+    <section class="hero">
+      <h2>Deploy a fixed-supply token + lock LP</h2>
+      <p>
+        Permissionless tool: create an ownerless CleanToken, seed a <strong>42</strong> liquidity pool,
+        and lock LP in one transaction. You never receive LP tokens.
+        Fee is a <strong>native service charge</strong> for infrastructure — not an investment product.
+      </p>
+      <div class="pills">
+        <span class="pill">Chain ID 421018</span>
+        <span class="pill">Service fee in 42</span>
+        <span class="pill">No platform investment token</span>
+        <span class="pill">Min 30-day LP lock</span>
+      </div>
+    </section>
+
+    <div class="notice">
+      <strong>Not investment advice.</strong> This software deploys <em>your</em> token under published rules.
+      Project tokens are created by third parties. Do your own research. Nothing here is an offer of securities
+      or a claim of “Howey-safe” / regulatory approval.
+    </div>
+
+    <div class="banner" id="netBanner">
+      <span>Wrong network. Switch to Infinite Drive (chain ID 421018).</span>
+      <button type="button" id="switchNetBtn">Switch to Infinite</button>
+    </div>
+
+    <div class="grid">
+      <form class="card" id="launchForm" onsubmit="return false;">
+        <h3>Token details</h3>
+        <div class="row2">
+          <div>
+            <label>Token name <span class="hint">required</span></label>
+            <input id="name" type="text" placeholder="My Token" maxlength="32" />
+          </div>
+          <div>
+            <label>Symbol <span class="hint">required</span></label>
+            <input id="symbol" type="text" placeholder="TKN" maxlength="12" />
+          </div>
+        </div>
+        <label>Total supply <span class="hint">whole tokens only — contract multiplies by 10¹⁸</span></label>
+        <input id="supply" type="text" inputmode="numeric" value="1000000" autocomplete="off" />
+        <label>Team allocation <span class="hint">max 25% — rest to LP</span></label>
+        <input id="teamBps" type="range" min="0" max="25" value="10" />
+        <div class="stat"><span>Team %</span><strong id="teamPctLabel">10%</strong></div>
+        <label>42 for liquidity <span class="hint" id="minLpHint">min set after factory live</span></label>
+        <input id="nativeLp" type="text" inputmode="decimal" value="1" autocomplete="off" />
+        <label>LP lock duration</label>
+        <select id="lockDays">
+          <option value="30">30 days (minimum)</option>
+          <option value="90">90 days</option>
+          <option value="180">180 days</option>
+          <option value="365">365 days</option>
+          <option value="permanent">Permanent (no unlock)</option>
+        </select>
+        <label>Project URI <span class="hint">optional metadata</span></label>
+        <input id="uri" type="text" placeholder="https://… or ipfs://…" autocomplete="off" />
+
+        <div class="fee-box">
+          <div class="fee-title">Service fee (native 42)</div>
+          <div class="stat"><span>Launch fee</span><strong id="feeLabel">—</strong></div>
+          <div class="stat"><span>Min LP native</span><strong id="minLpLabel">—</strong></div>
+          <div class="stat"><span>You send (fee + LP)</span><strong id="totalPayLabel">—</strong></div>
+          <div class="stat"><span>Treasury</span><strong id="treasuryLabel">—</strong></div>
+          <p style="margin-top:8px;font-size:0.82rem;color:var(--muted)">
+            Fee accrues on-chain and is claimable to the ops treasury (infrastructure). No platform-token burn/buyback on Infinite v1.
+          </p>
+        </div>
+
+        <button type="button" class="submit" id="launchBtn" disabled>Connect wallet to deploy</button>
+        <div class="status" id="status"></div>
+        <div class="success" id="successBox">
+          <strong>Deploy successful</strong>
+          <div class="stat"><span>Token</span><strong id="resToken">—</strong></div>
+          <div class="stat"><span>Pair</span><strong id="resPair">—</strong></div>
+          <div class="stat"><span>Lock ID</span><strong id="resLock">—</strong></div>
+          <div class="stat"><span>Locker</span><strong id="resLocker">—</strong></div>
+          <div class="stat"><span>Tx</span><strong id="resTx">—</strong></div>
+          <div class="success-actions">
+            <button type="button" class="ghost-btn" id="addTokenBtn" disabled>Add token to wallet</button>
+            <button type="button" class="ghost-btn" id="copyTokenBtn" disabled>Copy token address</button>
+            <a class="ghost-btn" id="viewTokenBtn" href="#" target="_blank" rel="noopener noreferrer" style="display:none;text-decoration:none">View on explorer</a>
+          </div>
+        </div>
+      </form>
+
+      <aside>
+        <div class="card" style="margin-bottom:16px">
+          <h3>Allocation preview</h3>
+          <div class="stat"><span>To LP</span><strong id="prevLp">90%</strong></div>
+          <div class="stat"><span>Team</span><strong id="prevTeam">10%</strong></div>
+          <div class="stat"><span>Factory</span><strong id="factoryLabel">Not deployed</strong></div>
+        </div>
+        <div class="card">
+          <h3>On-chain rules</h3>
+          <ul class="bullets">
+            <li>CleanToken: no owner, mint, tax, or pause</li>
+            <li>LP created and locked in one transaction</li>
+            <li>Founder never receives LP tokens</li>
+            <li>Permissionless — no staff gate on-chain</li>
+            <li>Native service fee only (no platform investment token)</li>
+            <li>DEX: DontPanic router · LP lock: trustless locker</li>
+          </ul>
+        </div>
+      </aside>
+    </div>
+
+    <footer>
+      <p>
+        RicSwap · <strong>Infinite Drive</strong> launchpad ·
+        Shibarium is a <a href="launchpad.html">separate page</a> · Not investment advice ·
+        <a href="https://scan.infinitedrive.xyz" target="_blank" rel="noopener">Explorer</a>
+      </p>
+      <p style="margin-top:8px">
+        Factory <span id="footerFactory">—</span>
+      </p>
+      <p style="margin-top:6px">
+        Locker <span id="footerLocker">—</span>
+      </p>
+    </footer>
+  </div>
+
+  <!-- [H1] ethers pinned to 6.13.5 with Subresource Integrity. The hash is
+       sha384 of the exact dist/ethers.umd.min.js published to npm; jsdelivr
+       and unpkg serve that same byte-identical file, so one hash covers the
+       primary and the fallback. If either CDN ever serves anything else,
+       the browser refuses to execute it. For maximum robustness, self-host
+       the file with the same integrity attribute. -->
+  <script>
+    (function () {
+      var SRI = "sha384-NRAZj94DQk3dgtsOZzVYHbYVV1DFkF5QhL5RRxF0ILZLi6OQ7CsMlun748D42JbO";
+      function loadEthers(src, next) {
+        var s = document.createElement("script");
+        s.src = src;
+        s.async = true;
+        s.integrity = SRI;
+        s.crossOrigin = "anonymous";
+        s.onload = function () {
+          if (typeof ethers !== "undefined") { window.__ETHERS_READY = true; }
+          else if (next) next();
+        };
+        s.onerror = function () { if (next) next(); };
+        document.head.appendChild(s);
+      }
+      loadEthers(
+        "https://cdn.jsdelivr.net/npm/ethers@6.13.5/dist/ethers.umd.min.js",
+        function () {
+          loadEthers("https://unpkg.com/ethers@6.13.5/dist/ethers.umd.min.js");
+        }
+      );
+    })();
+  </script>
+  <script>
+(function () {
+  "use strict";
+
+  // Live Infinite mainnet (421018) — immutables verified on-chain 2026-08-12.
+  var CONFIG = {
+    chainId: 421018,
+    chainIdHex: "0x66c9a",
+    chainName: "Infinite Improbability Drive",
+    rpcUrls: [
+      "https://evm-rpc.infinitedrive.xyz",
+      "https://evm.infinitedrive.xyz"
+    ],
+    blockExplorer: "https://scan.infinitedrive.xyz",
+    nativeCurrency: { name: "Improbability", symbol: "42", decimals: 18 },
+    factory: "0x95feabdeCCa6cBC808D231895b80703905bE3b83",
+    locker: "0x24D0aBB2A08037fEf3Da0dA85D23ed35C1B1B980",
+    // Permanent lock: pass max uint as lockDuration; factory clamps unlockTime.
+    permanentLockDuration: "115792089237316195423570985008687907853269984665640564039457584007913129639935",
+    // Infinite estimateGas via wallets is flaky; explicit limit avoids bad estimates.
+    launchGasLimit: 5500000n,
+    maxNameLen: 32,
+    maxSymbolLen: 12,
+    maxSupplyWhole: 1000000000000000n // 1e15 whole tokens
+  };
+
+  var FACTORY_ABI = [
+    "function launch(string name_, string symbol_, uint256 totalSupply_, uint256 teamBps, uint256 lockDuration, string projectURI_) payable returns (address token, uint256 lockId)",
+    "function feeInfo() view returns (uint256 launchFeeNative, uint256 minNativeLiquidity, address treasury, uint256 pendingFees)",
+    "function claimFees()",
+    "function isLaunchpadToken(address token) view returns (bool)",
+    "function LOCKER() view returns (address)",
+    "event TokenLaunched(address indexed token, address indexed founder, address indexed pair, string name, string symbol, uint256 totalSupply, uint256 liquidityTokens, uint256 teamTokens, uint256 nativeLiquidity, uint256 lockId, uint256 unlockTime)"
+  ];
+
+  var provider = null, signer = null, account = null;
+  var launchFeeWei = null, minLpWei = null, treasuryAddr = null;
+  var factoryReady = false;
+  var launching = false;
+  var lastToken = null;
+  var lastTokenSymbol = "";
+
+  function $(id) { return document.getElementById(id); }
+  function setStatus(type, msg) {
+    var el = $("status");
+    el.className = "status show " + type;
+    el.textContent = msg;
+  }
+  function short(a) {
+    if (!a || typeof a !== "string") return "—";
+    return a.slice(0, 6) + "…" + a.slice(-4);
+  }
+  function isAddress(a) {
+    return /^0x[a-fA-F0-9]{40}$/.test(a || "");
+  }
+  function factoryConfigured() {
+    return isAddress(CONFIG.factory) &&
+      CONFIG.factory.toLowerCase() !== "0x0000000000000000000000000000000000000000";
+  }
+  function explorerAddress(addr) {
+    return CONFIG.blockExplorer + "/address/" + addr;
+  }
+  function explorerTx(hash) {
+    return CONFIG.blockExplorer + "/tx/" + hash;
+  }
+
+  // Never use innerHTML with untrusted data — DOM-only links.
+  function setLink(id, href, text) {
+    var host = $(id);
+    host.textContent = "";
+    var a = document.createElement("a");
+    a.target = "_blank";
+    a.rel = "noopener noreferrer";
+    a.href = href;
+    a.textContent = text;
+    host.appendChild(a);
+  }
+
+  function setFooterLink(elId, addr) {
+    var foot = $(elId);
+    if (!foot) return;
+    foot.textContent = "";
+    if (!isAddress(addr)) {
+      foot.textContent = "—";
+      return;
+    }
+    var a = document.createElement("a");
+    a.target = "_blank";
+    a.rel = "noopener noreferrer";
+    a.href = explorerAddress(addr);
+    a.textContent = addr;
+    foot.appendChild(a);
+  }
+
+  /**
+   * CRITICAL: CleanToken scales whole tokens by 10**18 on-chain.
+   * Pass WHOLE tokens only — never pre-scale to wei or supply is 10^18× too large.
+   */
+  function parseSupplyWholeTokens(raw) {
+    var cleaned = String(raw).replace(/[,_\s]/g, "");
+    if (!cleaned) throw new Error("Supply required");
+    if (!/^\d+$/.test(cleaned)) {
+      throw new Error("Supply must be a whole number (no decimals, no scientific notation)");
+    }
+    if (cleaned.length > 1 && cleaned[0] === "0") {
+      throw new Error("Supply has leading zeros");
+    }
+    var whole = BigInt(cleaned);
+    if (whole <= 0n) throw new Error("Supply must be > 0");
+    if (whole > CONFIG.maxSupplyWhole) {
+      throw new Error("Supply unreasonably large (max " + CONFIG.maxSupplyWhole.toString() + " whole tokens)");
+    }
+    return whole; // WHOLE tokens — factory/CleanToken multiplies by 10**18
+  }
+
+  function parseNameSymbol() {
+    var name = $("name").value.trim();
+    var symbol = $("symbol").value.trim();
+    if (!name || !symbol) throw new Error("Name and symbol required");
+    if (name.length > CONFIG.maxNameLen) throw new Error("Name max " + CONFIG.maxNameLen + " chars");
+    if (symbol.length > CONFIG.maxSymbolLen) throw new Error("Symbol max " + CONFIG.maxSymbolLen + " chars");
+    if (/[\x00-\x1f\x7f]/.test(name) || /[\x00-\x1f\x7f]/.test(symbol)) {
+      throw new Error("Name/symbol contain invalid control characters");
+    }
+    return { name: name, symbol: symbol };
+  }
+
+  function friendlyError(e) {
+    if (!e) return "Unknown error";
+    var msg = e.shortMessage || e.reason || e.message || String(e);
+    if (e.code === 4001 || e.code === "ACTION_REJECTED") return "Transaction rejected in wallet";
+    if (/insufficient funds|exceeds balance/i.test(msg)) return "Insufficient 42 balance for fee + LP + gas";
+    if (/Wrong network|network/i.test(msg) && /421018|chain/i.test(msg)) return msg;
+    if (/LP native below/i.test(msg)) return msg;
+    if (/user rejected|denied/i.test(msg)) return "Transaction rejected in wallet";
+    if (/CALL_EXCEPTION|execution reverted/i.test(msg)) {
+      return "Transaction reverted on-chain. Check fee+LP amount, lock ≥ 30 days, team ≤ 25%, and network 421018. " + msg;
+    }
+    return msg;
+  }
+
+  function updatePreview() {
+    var team = parseInt($("teamBps").value, 10) || 0;
+    if (team < 0) team = 0;
+    if (team > 25) team = 25;
+    $("teamPctLabel").textContent = team + "%";
+    $("prevTeam").textContent = team + "%";
+    $("prevLp").textContent = (100 - team) + "%";
+    if (launchFeeWei !== null && minLpWei !== null && typeof ethers !== "undefined") {
+      $("feeLabel").textContent = ethers.formatEther(launchFeeWei) + " 42";
+      $("minLpLabel").textContent = ethers.formatEther(minLpWei) + " 42";
+      $("minLpHint").textContent = "min " + ethers.formatEther(minLpWei) + " 42";
+      try {
+        var lp = ethers.parseEther(String($("nativeLp").value || "0"));
+        if (lp < 0n) throw new Error("neg");
+        var total = launchFeeWei + lp;
+        $("totalPayLabel").textContent = ethers.formatEther(total) + " 42";
+      } catch (e) {
+        $("totalPayLabel").textContent = "—";
+      }
+    }
+    if (treasuryAddr && isAddress(treasuryAddr)) {
+      $("treasuryLabel").textContent = short(treasuryAddr);
+    }
+  }
+
+  async function ensureChain() {
+    var eth = window.ethereum;
+    if (!eth) throw new Error("No wallet");
+    var id = await eth.request({ method: "eth_chainId" });
+    if (parseInt(id, 16) === CONFIG.chainId) {
+      $("netBanner").classList.remove("show");
+      return true;
+    }
+    $("netBanner").classList.add("show");
+    return false;
+  }
+
+  async function switchChain() {
+    var eth = window.ethereum;
+    try {
+      await eth.request({
+        method: "wallet_switchEthereumChain",
+        params: [{ chainId: CONFIG.chainIdHex }]
+      });
+    } catch (e) {
+      if (e.code === 4902 || (e.data && e.data.originalError && e.data.originalError.code === 4902) ||
+          (e.message && e.message.indexOf("Unrecognized") >= 0)) {
+        await eth.request({
+          method: "wallet_addEthereumChain",
+          params: [{
+            chainId: CONFIG.chainIdHex,
+            chainName: CONFIG.chainName,
+            nativeCurrency: CONFIG.nativeCurrency,
+            rpcUrls: CONFIG.rpcUrls,
+            blockExplorerUrls: [CONFIG.blockExplorer]
+          }]
+        });
+      } else throw e;
+    }
+    await refresh();
+  }
+
+  async function initSigner(promptUser) {
+    if (typeof ethers === "undefined") {
+      setStatus("err", "ethers.js still loading — wait a second");
+      return false;
+    }
+    if (!window.ethereum) {
+      setStatus("err", "Install MetaMask, Rabby, or another EVM wallet");
+      return false;
+    }
+    provider = new ethers.BrowserProvider(window.ethereum);
+    if (promptUser) {
+      await provider.send("eth_requestAccounts", []);
+    } else {
+      var accts = await provider.send("eth_accounts", []);
+      if (!accts || accts.length === 0) { resetWalletUI(); return false; }
+    }
+    signer = await provider.getSigner();
+    account = await signer.getAddress();
+    $("connectBtn").textContent = short(account);
+    $("connectBtn").classList.add("connected");
+    return true;
+  }
+
+  function resetWalletUI() {
+    signer = null; account = null;
+    $("connectBtn").textContent = "Connect wallet";
+    $("connectBtn").classList.remove("connected");
+    if (!launching) {
+      $("launchBtn").disabled = true;
+      $("launchBtn").textContent = "Connect wallet to deploy";
+    }
+  }
+
+  async function connect() {
+    if (await initSigner(true)) await refresh();
+  }
+
+  function readProvider() {
+    if (provider) return provider;
+    if (typeof ethers === "undefined") return null;
+    try { return new ethers.JsonRpcProvider(CONFIG.rpcUrls[0]); }
+    catch (e) { return null; }
+  }
+
+  async function loadFees() {
+    factoryReady = factoryConfigured();
+    $("factoryLabel").textContent = factoryReady ? short(CONFIG.factory) : "Not deployed";
+    setFooterLink("footerFactory", factoryReady ? CONFIG.factory : "");
+    setFooterLink("footerLocker", CONFIG.locker);
+
+    if (!factoryReady) {
+      launchFeeWei = null; minLpWei = null; treasuryAddr = null;
+      updatePreview();
+      $("launchBtn").disabled = true;
+      $("launchBtn").textContent = "Factory not deployed yet";
+      return;
+    }
+
+    var rp = readProvider();
+    if (rp) {
+      var c = new ethers.Contract(CONFIG.factory, FACTORY_ABI, rp);
+      var info = await c.feeInfo();
+      launchFeeWei = info.launchFeeNative !== undefined ? info.launchFeeNative : info[0];
+      minLpWei = info.minNativeLiquidity !== undefined ? info.minNativeLiquidity : info[1];
+      treasuryAddr = info.treasury !== undefined ? info.treasury : info[2];
+      try {
+        var onchainLocker = await c.LOCKER();
+        if (isAddress(onchainLocker)) CONFIG.locker = onchainLocker;
+      } catch (eL) { /* optional */ }
+    }
+    updatePreview();
+
+    if (launching) return;
+
+    if (!signer) {
+      $("launchBtn").disabled = true;
+      $("launchBtn").textContent = "Connect wallet to deploy";
+      return;
+    }
+    var okChain = await ensureChain();
+    if (!okChain) {
+      $("launchBtn").disabled = true;
+      $("launchBtn").textContent = "Switch to Infinite first";
+      return;
+    }
+    $("launchBtn").disabled = false;
+    $("launchBtn").textContent = "Deploy token + lock LP";
+  }
+
+  async function refresh() {
+    try { await loadFees(); } catch (e) {
+      setStatus("err", "Could not read factory: " + friendlyError(e));
+    }
+  }
+
+  async function launch() {
+    if (launching) return;
+    try {
+      launching = true;
+      $("launchBtn").disabled = true;
+      $("launchBtn").textContent = "Working…";
+
+      if (!factoryReady) throw new Error("Factory address not set in CONFIG");
+      if (typeof ethers === "undefined") throw new Error("ethers.js not loaded yet");
+      if (!signer) { if (!(await initSigner(true))) return; }
+      if (!(await ensureChain())) throw new Error("Wrong network — switch to Infinite Drive (421018)");
+
+      if (launchFeeWei === null || minLpWei === null) {
+        await loadFees();
+        if (launchFeeWei === null || minLpWei === null) {
+          throw new Error("Could not read fees from factory — check RPC and try again");
+        }
+      }
+
+      var ns = parseNameSymbol();
+      // WHOLE tokens only — do NOT multiply by 10**18 here.
+      var supplyWhole = parseSupplyWholeTokens($("supply").value);
+      var teamPct = parseInt($("teamBps").value, 10) || 0;
+      if (teamPct < 0 || teamPct > 25) throw new Error("Team allocation must be 0–25%");
+      var teamBps = teamPct * 100;
+      var lockSel = $("lockDays").value;
+      var lockDuration = lockSel === "permanent"
+        ? BigInt(CONFIG.permanentLockDuration)
+        : BigInt(parseInt(lockSel, 10) * 86400);
+      if (lockSel !== "permanent" && lockDuration < 30n * 86400n) {
+        throw new Error("Lock duration must be at least 30 days");
+      }
+      var uri = $("uri").value.trim();
+      if (uri.length > 2048) throw new Error("Project URI too long");
+
+      var lp;
+      try {
+        lp = ethers.parseEther(String($("nativeLp").value || "0"));
+      } catch (eLp) {
+        throw new Error("Invalid LP amount (use a number like 1 or 0.5)");
+      }
+      if (lp < minLpWei) {
+        throw new Error("LP native below minimum of " + ethers.formatEther(minLpWei) + " 42");
+      }
+
+      var value = launchFeeWei + lp;
+
+      // Preflight balance (native 42)
+      try {
+        var bal = await provider.getBalance(account);
+        if (bal < value) {
+          throw new Error(
+            "Need at least " + ethers.formatEther(value) + " 42 for fee+LP (plus gas). Wallet has " +
+            ethers.formatEther(bal) + " 42"
+          );
+        }
+      } catch (eBal) {
+        if (eBal.message && eBal.message.indexOf("Need at least") === 0) throw eBal;
+        // ignore RPC balance glitches
+      }
+
+      $("successBox").classList.remove("show");
+      $("resToken").textContent = "—";
+      $("resPair").textContent = "—";
+      $("resLock").textContent = "—";
+      $("resLocker").textContent = "—";
+      $("resTx").textContent = "—";
+
+      setStatus("info", "Confirm in wallet…");
+      var c = new ethers.Contract(CONFIG.factory, FACTORY_ABI, signer);
+      var tx = await c.launch(
+        ns.name,
+        ns.symbol,
+        supplyWhole,
+        teamBps,
+        lockDuration,
+        uri,
+        { value: value, gasLimit: CONFIG.launchGasLimit }
+      );
+      setStatus("info", "Submitted " + short(tx.hash) + " — waiting for confirmation…");
+      var rc = await tx.wait();
+      if (rc.status === 0) throw new Error("Transaction failed on-chain");
+
+      var token = null, pair = null, lockId = null;
+      for (var i = 0; i < rc.logs.length; i++) {
+        try {
+          var parsed = c.interface.parseLog({
+            topics: rc.logs[i].topics,
+            data: rc.logs[i].data
+          });
+          if (parsed && parsed.name === "TokenLaunched") {
+            token = parsed.args.token;
+            pair = parsed.args.pair;
+            lockId = parsed.args.lockId.toString();
+          }
+        } catch (e2) {}
+      }
+
+      lastToken = token;
+      lastTokenSymbol = ns.symbol;
+      if (token) setLink("resToken", explorerAddress(token), short(token));
+      else $("resToken").textContent = "(check tx logs)";
+      if (pair) setLink("resPair", explorerAddress(pair), short(pair));
+      else $("resPair").textContent = "—";
+      $("resLock").textContent = lockId !== null ? lockId : "—";
+      if (isAddress(CONFIG.locker)) setLink("resLocker", explorerAddress(CONFIG.locker), short(CONFIG.locker));
+      setLink("resTx", explorerTx(rc.hash), short(rc.hash));
+
+      $("addTokenBtn").disabled = !token;
+      $("copyTokenBtn").disabled = !token;
+      var viewBtn = $("viewTokenBtn");
+      if (token) {
+        viewBtn.href = explorerAddress(token);
+        viewBtn.style.display = "inline-block";
+      } else {
+        viewBtn.style.display = "none";
+      }
+
+      $("successBox").classList.add("show");
+      setStatus("ok", "Deploy complete — LP is locked; you never received LP tokens.");
+    } catch (e) {
+      setStatus("err", friendlyError(e));
+    } finally {
+      launching = false;
+      try { await loadFees(); } catch (e3) {
+        $("launchBtn").disabled = !signer;
+        $("launchBtn").textContent = signer ? "Deploy token + lock LP" : "Connect wallet to deploy";
+      }
+    }
+  }
+
+  async function addTokenToWallet() {
+    if (!lastToken || !window.ethereum) return;
+    try {
+      await window.ethereum.request({
+        method: "wallet_watchAsset",
+        params: {
+          type: "ERC20",
+          options: {
+            address: lastToken,
+            symbol: (lastTokenSymbol || "TKN").slice(0, 11),
+            decimals: 18
+          }
+        }
+      });
+      setStatus("ok", "Token add requested in wallet");
+    } catch (e) {
+      setStatus("err", friendlyError(e));
+    }
+  }
+
+  async function copyTokenAddress() {
+    if (!lastToken) return;
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(lastToken);
+      } else {
+        var ta = document.createElement("textarea");
+        ta.value = lastToken;
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand("copy");
+        document.body.removeChild(ta);
+      }
+      setStatus("ok", "Token address copied");
+    } catch (e) {
+      setStatus("err", "Could not copy — select address from explorer");
+    }
+  }
+
+  $("connectBtn").onclick = function () { connect().catch(function (e) { setStatus("err", friendlyError(e)); }); };
+  $("switchNetBtn").onclick = function () { switchChain().catch(function (e) { setStatus("err", friendlyError(e)); }); };
+  $("launchBtn").onclick = function () { launch(); };
+  $("addTokenBtn").onclick = function () { addTokenToWallet(); };
+  $("copyTokenBtn").onclick = function () { copyTokenAddress(); };
+  $("teamBps").oninput = updatePreview;
+  $("nativeLp").oninput = updatePreview;
+
+  if (window.ethereum) {
+    window.ethereum.on("accountsChanged", function (accounts) {
+      if (!accounts || accounts.length === 0) { resetWalletUI(); return; }
+      initSigner(false).then(function (ok) { if (ok) refresh(); }).catch(function () {});
+    });
+    window.ethereum.on("chainChanged", function () {
+      // Full reload is safest for ethers providers after chain switch
+      try { refresh(); } catch (e) { window.location.reload(); }
+    });
+  }
+
+  updatePreview();
+  (function bootFees() {
+    if (typeof ethers !== "undefined") { refresh(); }
+    else { setTimeout(bootFees, 250); }
+  })();
+})();
+  </script>
+</body>
+</html>
