@@ -417,6 +417,37 @@
       color: #aab2c5;
     }
 
+    .drive-banner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin: 0 0 20px;
+      padding: 14px 16px;
+      border-radius: 12px;
+      background: rgba(91,140,255,0.1);
+      border: 1px solid rgba(91,140,255,0.3);
+      font-size: 0.9rem;
+      color: var(--muted);
+    }
+    .drive-banner strong { color: var(--text); }
+    .drive-banner a.drive-cta {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 16px;
+      border-radius: 999px;
+      background: rgba(91,140,255,0.2);
+      border: 1px solid rgba(91,140,255,0.45);
+      color: #a8c4ff;
+      font-weight: 700;
+      font-size: 0.85rem;
+      text-decoration: none;
+      white-space: nowrap;
+    }
+    .drive-banner a.drive-cta:hover { background: rgba(91,140,255,0.32); text-decoration: none; }
+
     .net-warn {
       display: none;
       margin-bottom: 16px;
@@ -530,15 +561,26 @@
              onerror="this.onerror=null;this.src='https://raw.githubusercontent.com/Rictoken87/ricswap-website/main/riclogo.png'" />
         <div>
           <h1>RicSwap Launchpad</h1>
-          <p>Fair launches on Shibarium · CleanToken + locked LP</p>
+          <p>Shibarium only (chain 109) · CleanToken + locked LP</p>
         </div>
       </div>
       <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-        <a href="names.html" style="color:var(--muted);font-size:0.88rem;font-weight:600;text-decoration:none">Names</a>
         <a href="index.html" style="color:var(--muted);font-size:0.88rem;font-weight:600;text-decoration:none">Home</a>
+        <a href="names.html" style="color:var(--muted);font-size:0.88rem;font-weight:600;text-decoration:none">Names</a>
+        <span style="font-size:0.78rem;font-weight:700;color:var(--accent);border:1px solid rgba(245,166,35,0.35);padding:6px 12px;border-radius:999px">Shibarium</span>
+        <a href="drive.html" style="font-size:0.78rem;font-weight:700;color:#a8c4ff;border:1px solid rgba(91,140,255,0.4);padding:6px 12px;border-radius:999px;text-decoration:none" title="Separate launchpad for Infinite Drive">Drive</a>
         <button type="button" class="wallet-btn" id="connectBtn" onclick="window.ricConnect && window.ricConnect(); return false;">Connect wallet</button>
       </div>
     </header>
+
+    <div class="drive-banner" role="note">
+      <span>
+        <strong>Looking for Infinite Drive?</strong>
+        This page is <strong>Shibarium only</strong> (RIC fee + BONE LP).
+        For chain <strong>421018</strong> / native <strong>42</strong> fee, use the separate Drive launchpad.
+      </span>
+      <a class="drive-cta" href="drive.html">Open Infinite Drive →</a>
+    </div>
 
     <div id="walletStatus" class="status" role="status" aria-live="polite"></div>
 
@@ -549,6 +591,7 @@
         atomically. You never receive LP tokens. Launch fee: <strong>100 RIC</strong> (50% burned).
       </p>
       <div class="pills">
+        <span class="pill">Shibarium 109</span>
         <span class="pill">100 RIC launch</span>
         <span class="pill">+100 RIC verify (optional)</span>
         <span class="pill">50% RIC burned</span>
@@ -714,7 +757,12 @@
     </div>
 
     <footer>
-      <p>RicSwap · Shibarium · Factory <code id="footerFactory"></code></p>
+      <p>
+        RicSwap · <strong>Shibarium</strong> launchpad (this page) ·
+        Infinite: <a href="drive.html">Drive</a> ·
+        Home: <a href="index.html">ricswap.com</a> ·
+        Factory <code id="footerFactory"></code>
+      </p>
       <p style="margin-top: 6px;">
         <a href="https://www.shibariumscan.io" target="_blank" rel="noopener">Explorer</a>
       </p>
@@ -761,10 +809,9 @@
     chainId: 109,
     chainIdHex: "0x6d",
     chainName: "Shibarium",
+    // Canonical Shibarium RPC
     rpcUrls: [
-      "https://www.shibrpc.com",
-      "https://rpc.shibarium.shib.io",
-      "https://shibarium-rpc.publicnode.com"
+      "https://rpc.shibarium.shib.io"
     ],
     blockExplorer: "https://www.shibariumscan.io",
     nativeCurrency: { name: "BONE", symbol: "BONE", decimals: 18 },
