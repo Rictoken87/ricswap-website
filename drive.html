@@ -318,12 +318,23 @@
     locker: "0x24D0aBB2A08037fEf3Da0dA85D23ed35C1B1B980",
     // Permanent lock: pass max uint as lockDuration; factory clamps unlockTime.
     permanentLockDuration: "115792089237316195423570985008687907853269984665640564039457584007913129639935",
-    // Infinite estimateGas via wallets is flaky; explicit limit avoids bad estimates.
+    // Launch needs ~4.0M gas on Infinite; headroom for router + locker.
     launchGasLimit: 5500000n,
+    // Prefer legacy gasPrice on this Cosmos EVM (avoids ethers "could not coalesce error"
+    // when EIP-1559 fee fields from the wallet/RPC are incomplete).
+    preferLegacyGas: true,
     maxNameLen: 32,
     maxSymbolLen: 12,
     maxSupplyWhole: 1000000000000000n // 1e15 whole tokens
   };
+
+  var STATIC_NETWORK = null;
+  function getStaticNetwork() {
+    if (!STATIC_NETWORK && typeof ethers !== "undefined") {
+      STATIC_NETWORK = ethers.Network.from(CONFIG.chainId);
+    }
+    return STATIC_NETWORK;
+  }
 
   var FACTORY_ABI = [
     "function launch(string name_, string symbol_, uint256 totalSupply_, uint256 teamBps, uint256 lockDuration, string projectURI_) payable returns (address token, uint256 lockId)",
@@ -426,18 +437,83 @@
     return { name: name, symbol: symbol };
   }
 
+  function digError(e, depth) {
+    if (!e || depth > 6) return "";
+    var parts = [];
+    if (typeof e === "string") return e;
+    try {
+      if (e.shortMessage) parts.push(String(e.shortMessage));
+      if (e.reason) parts.push(String(e.reason));
+      if (e.message) parts.push(String(e.message));
+      if (e.code !== undefined && e.code !== null) parts.push("code=" + e.code);
+      if (e.data) {
+        if (typeof e.data === "string") parts.push(e.data);
+        else if (e.data.message) parts.push(String(e.data.message));
+      }
+      if (e.info) {
+        if (e.info.error) parts.push(digError(e.info.error, depth + 1));
+        if (e.info.payload && e.info.payload.method) parts.push("rpc=" + e.info.payload.method);
+      }
+      if (e.error) parts.push(digError(e.error, depth + 1));
+      if (e.cause) parts.push(digError(e.cause, depth + 1));
+      if (Array.isArray(e.errors)) {
+        for (var i = 0; i < e.errors.length; i++) parts.push(digError(e.errors[i], depth + 1));
+      }
+    } catch (ignore) {}
+    return parts.filter(Boolean).join(" | ");
+  }
+
   function friendlyError(e) {
     if (!e) return "Unknown error";
-    var msg = e.shortMessage || e.reason || e.message || String(e);
+    var raw = digError(e, 0) || String(e);
+    var msg = e.shortMessage || e.reason || e.message || raw;
     if (e.code === 4001 || e.code === "ACTION_REJECTED") return "Transaction rejected in wallet";
-    if (/insufficient funds|exceeds balance/i.test(msg)) return "Insufficient 42 balance for fee + LP + gas";
-    if (/Wrong network|network/i.test(msg) && /421018|chain/i.test(msg)) return msg;
+    if (/user rejected|denied|rejected the request/i.test(raw)) return "Transaction rejected in wallet";
+    if (/insufficient funds|exceeds balance|exceeds the balance/i.test(raw)) {
+      return "Insufficient 42 for fee + LP + gas. Need launch fee (1 42) + LP amount + gas.";
+    }
+    if (/could not coalesce/i.test(raw) || /coalesce error/i.test(msg)) {
+      return "Wallet/RPC fee error on Infinite (common). Fix: set Rabby/MetaMask RPC to https://evm-rpc.infinitedrive.xyz, chain 421018, then retry. Details: " + raw.slice(0, 220);
+    }
+    if (/network|chainId|chain id/i.test(raw) && !/execution reverted/i.test(raw)) {
+      return "Network mismatch — switch wallet to Infinite Drive (421018). " + msg;
+    }
     if (/LP native below/i.test(msg)) return msg;
-    if (/user rejected|denied/i.test(msg)) return "Transaction rejected in wallet";
-    if (/CALL_EXCEPTION|execution reverted/i.test(msg)) {
-      return "Transaction reverted on-chain. Check fee+LP amount, lock ≥ 30 days, team ≤ 25%, and network 421018. " + msg;
+    if (/CALL_EXCEPTION|execution reverted|revert/i.test(raw)) {
+      return "Transaction would revert. Check: fee+LP ≥ 1.1 42, lock ≥ 30 days, team ≤ 25%, whole-token supply, chain 421018. " + msg;
+    }
+    if (/UNPREDICTABLE_GAS_LIMIT|gas required exceeds/i.test(raw)) {
+      return "Gas estimation failed (tx likely reverts or RPC flaky). Check params and RPC. " + msg;
     }
     return msg;
+  }
+
+  async function buildTxOverrides(valueWei) {
+    var overrides = {
+      value: valueWei,
+      gasLimit: CONFIG.launchGasLimit
+    };
+    // Pull gas price from public RPC (more reliable than wallet fee market on Infinite).
+    try {
+      var rp = new ethers.JsonRpcProvider(CONFIG.rpcUrls[0], getStaticNetwork(), { staticNetwork: true });
+      var gp = await rp.send("eth_gasPrice", []);
+      var gasPrice = BigInt(gp);
+      if (gasPrice > 0n) {
+        // +25% buffer for inclusion
+        gasPrice = (gasPrice * 125n) / 100n;
+        if (CONFIG.preferLegacyGas) {
+          overrides.gasPrice = gasPrice;
+          overrides.type = 0;
+        } else {
+          overrides.maxFeePerGas = gasPrice;
+          overrides.maxPriorityFeePerGas = gasPrice < 1000000000n ? gasPrice : 1000000000n;
+        }
+      }
+    } catch (feeErr) {
+      // Fall through — wallet will attempt its own fee fields.
+      console.warn("fee fetch failed", feeErr);
+    }
+    return overrides;
   }
 
   function updatePreview() {
@@ -511,15 +587,24 @@
       setStatus("err", "Install MetaMask, Rabby, or another EVM wallet");
       return false;
     }
-    provider = new ethers.BrowserProvider(window.ethereum);
+    // Static network avoids ethers auto-detect race → "could not coalesce error" on custom chains.
+    provider = new ethers.BrowserProvider(window.ethereum, getStaticNetwork());
     if (promptUser) {
       await provider.send("eth_requestAccounts", []);
     } else {
       var accts = await provider.send("eth_accounts", []);
       if (!accts || accts.length === 0) { resetWalletUI(); return false; }
     }
+    // Re-bind after accounts so chain is current
+    provider = new ethers.BrowserProvider(window.ethereum, getStaticNetwork());
     signer = await provider.getSigner();
     account = await signer.getAddress();
+    var net = await provider.getNetwork();
+    if (Number(net.chainId) !== CONFIG.chainId) {
+      $("netBanner").classList.add("show");
+      setStatus("err", "Wallet is not on Infinite Drive (421018). Click Switch to Infinite.");
+      return false;
+    }
     $("connectBtn").textContent = short(account);
     $("connectBtn").classList.add("connected");
     return true;
@@ -542,8 +627,9 @@
   function readProvider() {
     if (provider) return provider;
     if (typeof ethers === "undefined") return null;
-    try { return new ethers.JsonRpcProvider(CONFIG.rpcUrls[0]); }
-    catch (e) { return null; }
+    try {
+      return new ethers.JsonRpcProvider(CONFIG.rpcUrls[0], getStaticNetwork(), { staticNetwork: true });
+    } catch (e) { return null; }
   }
 
   async function loadFees() {
@@ -665,20 +751,47 @@
       $("resLocker").textContent = "—";
       $("resTx").textContent = "—";
 
-      setStatus("info", "Confirm in wallet…");
+      // Re-init signer on correct static network right before send
+      if (!(await initSigner(false))) {
+        if (!(await initSigner(true))) return;
+      }
+      if (!(await ensureChain())) throw new Error("Wrong network — switch to Infinite Drive (421018)");
+
+      var overrides = await buildTxOverrides(value);
+      setStatus("info", "Confirm in wallet… (gas limit " + CONFIG.launchGasLimit.toString() + ")");
       var c = new ethers.Contract(CONFIG.factory, FACTORY_ABI, signer);
-      var tx = await c.launch(
-        ns.name,
-        ns.symbol,
-        supplyWhole,
-        teamBps,
-        lockDuration,
-        uri,
-        { value: value, gasLimit: CONFIG.launchGasLimit }
-      );
+      var tx;
+      try {
+        tx = await c.launch(
+          ns.name,
+          ns.symbol,
+          supplyWhole,
+          teamBps,
+          lockDuration,
+          uri,
+          overrides
+        );
+      } catch (sendErr) {
+        // Retry once with minimal overrides if fee fields were rejected
+        var msg = digError(sendErr, 0);
+        if (/coalesce|fee|maxFee|gasPrice|type/i.test(msg)) {
+          setStatus("info", "Retrying with simpler gas settings…");
+          tx = await c.launch(
+            ns.name,
+            ns.symbol,
+            supplyWhole,
+            teamBps,
+            lockDuration,
+            uri,
+            { value: value, gasLimit: CONFIG.launchGasLimit }
+          );
+        } else {
+          throw sendErr;
+        }
+      }
       setStatus("info", "Submitted " + short(tx.hash) + " — waiting for confirmation…");
       var rc = await tx.wait();
-      if (rc.status === 0) throw new Error("Transaction failed on-chain");
+      if (!rc || rc.status === 0) throw new Error("Transaction failed on-chain");
 
       var token = null, pair = null, lockId = null;
       for (var i = 0; i < rc.logs.length; i++) {
