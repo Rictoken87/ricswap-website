@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Infinite Drive · Stealth send</title>
+  <meta name="description" content="One-time receiving addresses on Infinite Drive. Not a mixer. Amounts stay public. Keys stay in an isolated worker." />
+  <meta name="robots" content="noindex" />
+  <meta name="color-scheme" content="dark" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' https://evm-rpc.infinitedrive.xyz https://infinitedrive.xyz https://scan.infinitedrive.xyz http://127.0.0.1:4174 http://localhost:4174; worker-src 'self'; frame-src 'none'; object-src 'none'; base-uri 'self'; form-action 'self'" />
+  <meta name="referrer" content="no-referrer" />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="./stealth.css" />
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div class="brand">
+        <h1>Infinite Drive stealth</h1>
+        <p>One-time addresses · chain 421018 · no custody · no fee token</p>
+      </div>
+      <div class="actions header-actions">
+        <button class="ghost" id="btn-switch" type="button">Switch to Infinite Drive</button>
+        <button class="wallet-btn" id="btn-connect" type="button">Connect wallet</button>
+      </div>
+    </header>
+
+    <section class="hero">
+      <h2>Break the public link to your receiving address. Not the amount.</h2>
+      <p>
+        Spend keys live in a <strong>Web Worker</strong>, not in the page DOM.
+        You unlock them with <strong>EIP-712 typed data</strong> (hardware wallets can show the fields).
+        Announce is free. The only extra 42 is an optional stipend for gas.
+      </p>
+      <div class="pills">
+        <span class="pill">Not a mixer</span>
+        <span class="pill">Worker-isolated keys</span>
+        <span class="pill">EIP-712 unlock</span>
+        <span class="pill">No stealth token</span>
+        <span class="pill" id="net-pill">Network: —</span>
+      </div>
+    </section>
+
+    <div class="notice">
+      <strong>Still not 10/10.</strong> Amounts and senders stay public. An independent audit has not been done.
+      Sweeping to a wallet people know is yours re-links you. A stolen origin (XSS) can still ask the worker to sign.
+    </div>
+
+    <div class="tabs" role="tablist">
+      <button class="tab active" data-tab="receive" type="button">Receive</button>
+      <button class="tab" data-tab="pay" type="button">Pay</button>
+      <button class="tab" data-tab="scan" type="button">Scan &amp; sweep</button>
+      <button class="tab" data-tab="settings" type="button">Settings</button>
+    </div>
+
+    <section class="panel active" id="panel-receive">
+      <div class="grid">
+        <div class="card">
+          <h3>Unlock stealth keys in the worker</h3>
+          <p class="hint">Wallet will show domain <code>Infinite Drive Stealth</code>. This is not a login. It derives spend + view keys.</p>
+          <button class="submit" id="btn-derive" type="button">Sign EIP-712 to unlock</button>
+          <div class="actions">
+            <button class="ghost" id="btn-register" type="button">Register public keys</button>
+            <button class="ghost" id="btn-copy-meta" type="button">Copy meta-address</button>
+            <button class="danger" id="btn-forget" type="button">Forget keys</button>
+          </div>
+          <div class="meta-box mono" id="meta-display">Locked. Sign typed data to unlock the worker.</div>
+          <p class="hint">Private keys are never shown, copied, or written to disk. Only this public meta-address is.</p>
+          <div class="status" id="receive-status"></div>
+        </div>
+        <div class="card">
+          <h3>How receiving works</h3>
+          <ul>
+            <li>Same wallet + chain always restores the same keys.</li>
+            <li>Register so payers can look up your 0x on the registry.</li>
+            <li>Scan is view-only until you explicitly enable sweep.</li>
+            <li>Closing the tab terminates the worker.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel" id="panel-pay">
+      <div class="grid">
+        <div class="card">
+          <h3>Pay a stealth recipient</h3>
+          <label>Recipient <span class="hint">meta-address or registered 0x</span></label>
+          <textarea id="pay-recipient" placeholder="st:drive:0x… or 0x wallet on the registry"></textarea>
+          <div class="row2">
+            <div>
+              <label>Amount (42)</label>
+              <input id="pay-amount" inputmode="decimal" placeholder="1.0" />
+            </div>
+            <div>
+              <label>Sweep stipend (42)</label>
+              <input id="pay-stipend" inputmode="decimal" placeholder="0.01" />
+            </div>
+          </div>
+          <label class="check">
+            <input id="pay-meta-amount" type="checkbox" />
+            <span>Put the amount in announcement metadata (worse privacy; default off — view tag only)</span>
+          </label>
+          <div class="stat"><span>Quoted stipend</span><strong id="pay-quote">—</strong></div>
+          <div class="stat"><span>Total 42 leaving your wallet</span><strong id="pay-total">—</strong></div>
+          <div class="stat"><span>Announce fee</span><strong>0 42</strong></div>
+          <button class="submit" id="btn-pay" type="button">Send 42 + announce</button>
+          <div class="status" id="pay-status"></div>
+        </div>
+        <div class="card">
+          <h3>What gets broadcast</h3>
+          <ol>
+            <li>Derive a one-time address from their public keys.</li>
+            <li>Transfer amount + stipend directly to that address.</li>
+            <li>Call <code>announce</code> with the ephemeral public key and a view tag. No value.</li>
+          </ol>
+          <div class="warn">
+            <strong>Do not send 42 to the announcer or registry.</strong>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel" id="panel-scan">
+      <div class="grid">
+        <div class="card">
+          <h3>View-only scan</h3>
+          <p class="hint">The worker uses the view key. The page never receives it.</p>
+          <div class="row2">
+            <div>
+              <label>From block</label>
+              <input id="scan-from" placeholder="0" />
+            </div>
+            <div>
+              <label>Withdraw to <span class="hint">leave empty until sweep; do not use your public wallet</span></label>
+              <input id="scan-to" placeholder="fresh 0x — not your social wallet" autocomplete="off" />
+            </div>
+          </div>
+          <label class="check">
+            <input id="enable-sweep" type="checkbox" />
+            <span>Enable sweep. I understand sending to a known wallet re-links me. Sweep is signed in the worker and broadcast as a raw tx (or via the local relayer).</span>
+          </label>
+          <button class="submit" id="btn-scan" type="button">Scan (view-only)</button>
+          <div class="status" id="scan-status"></div>
+          <div id="scan-hits"></div>
+        </div>
+        <div class="card">
+          <h3>Sweep warning</h3>
+          <ul>
+            <li>Default scan is watch-only.</li>
+            <li>The connected wallet is not used as the withdraw address.</li>
+            <li>Relayer only broadcasts signed bytes. It refuses 32-byte payloads (keys).</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel" id="panel-settings">
+      <div class="card">
+        <h3>Network &amp; contracts</h3>
+        <p class="hint">Public endpoints only. Keys are never saved.</p>
+        <label>RPC URL</label>
+        <input id="cfg-rpc" />
+        <div class="row2">
+          <div>
+            <label>Chain ID</label>
+            <input id="cfg-chain" placeholder="421018" />
+          </div>
+          <div>
+            <label>Scan from block</label>
+            <input id="cfg-from" placeholder="0" />
+          </div>
+        </div>
+        <label>StealthAnnouncer</label>
+        <input id="cfg-announcer" placeholder="0xea4249A3777b36594230501b88528A28A98c9E86" />
+        <label>StealthRegistry</label>
+        <input id="cfg-registry" placeholder="0x2204311689350C1Eb63fF9FDE427ff05fb3bF476" />
+        <label>Indexer / relayer gateway</label>
+        <input id="cfg-gateway" placeholder="http://127.0.0.1:4174" />
+        <button class="submit" id="btn-save-cfg" type="button">Save settings</button>
+        <div class="status" id="cfg-status"></div>
+      </div>
+    </section>
+
+    <footer>
+      ERC-5564 / ERC-6538 on Infinite Improbability Drive. Not a mixer. Not audited by a firm. Not 10/10.
+    </footer>
+  </div>
+  <script type="module" src="./stealth-app.js"></script>
+</body>
+</html>
