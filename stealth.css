@@ -25,7 +25,11 @@
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-html { scroll-behavior: smooth; }
+html {
+  scroll-behavior: smooth;
+  overflow-x: hidden;
+  -webkit-text-size-adjust: 100%;
+}
 
 body {
   background: var(--void);
@@ -34,7 +38,10 @@ body {
   font-size: 15px;
   line-height: 1.6;
   min-height: 100vh;
+  min-height: 100dvh;
+  overflow-x: hidden;
   -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: rgba(255, 77, 0, 0.15);
 }
 
 body::before {
@@ -57,7 +64,7 @@ a:hover { color: var(--ember); }
   z-index: 1;
   max-width: 1120px;
   margin: 0 auto;
-  padding: 96px 20px 80px;
+  padding: calc(96px + env(safe-area-inset-top, 0px)) max(20px, env(safe-area-inset-right, 0px)) calc(80px + env(safe-area-inset-bottom, 0px)) max(20px, env(safe-area-inset-left, 0px));
 }
 
 .nav {
@@ -66,14 +73,21 @@ a:hover { color: var(--ember); }
   left: 0;
   right: 0;
   z-index: 100;
-  height: 72px;
-  padding: 0 28px;
+  min-height: 72px;
+  padding: env(safe-area-inset-top, 0px) max(16px, env(safe-area-inset-right, 0px)) 0 max(16px, env(safe-area-inset-left, 0px));
   display: flex;
   align-items: center;
-  gap: 20px;
+  gap: 12px;
   background: rgba(3, 4, 7, 0.78);
   backdrop-filter: blur(20px) saturate(180%);
   border-bottom: 1px solid var(--rim);
+}
+.nav > .brand,
+.nav > .nav-links,
+.nav > .nav-right {
+  min-height: 72px;
+  display: flex;
+  align-items: center;
 }
 .nav::after {
   content: "";
@@ -136,8 +150,9 @@ a:hover { color: var(--ember); }
 .nav-right {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   margin-left: auto;
+  flex-shrink: 0;
 }
 
 .net-pill, #net-pill {
@@ -328,12 +343,63 @@ a:hover { color: var(--ember); }
   grid-template-columns: 1.25fr 0.85fr;
   gap: 20px;
 }
+.hit header {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 0;
+  flex-wrap: wrap;
+}
+.hit header .mono { max-width: 100%; }
+
 @media (max-width: 900px) {
-  .nav { padding: 0 14px; gap: 10px; }
   .nav-links { display: none; }
-  .wrap { padding-top: 88px; }
   .grid { grid-template-columns: 1fr; }
-  .logo-word { font-size: 22px; }
+  .logo-word { font-size: 22px; letter-spacing: 1px; }
+  .wrap {
+    padding-top: calc(84px + env(safe-area-inset-top, 0px));
+  }
+}
+
+@media (max-width: 720px) {
+  #btn-switch { display: none !important; }
+  .tabs {
+    width: 100%;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+  .tab {
+    min-height: 44px;
+    width: 100%;
+    padding: 10px 8px;
+  }
+  .card { padding: 16px; }
+  .hero h2 { font-size: clamp(1.85rem, 9vw, 2.6rem); }
+  .actions .ghost, .actions .danger, .submit, .wallet-btn {
+    min-height: 44px;
+  }
+  .stat {
+    flex-direction: column;
+    gap: 4px;
+    align-items: flex-start;
+  }
+}
+
+@media (max-width: 480px) {
+  #net-pill { display: none !important; }
+  .logo-word { display: none; }
+  .nav > .brand, .nav > .nav-right { min-height: 56px; }
+  .nav { gap: 8px; }
+  .brand img { width: 32px; height: 32px; }
+  .wallet-btn { padding: 8px 12px; font-size: 12px; }
+  .wrap {
+    padding-left: max(12px, env(safe-area-inset-left, 0px));
+    padding-right: max(12px, env(safe-area-inset-right, 0px));
+    padding-bottom: calc(40px + env(safe-area-inset-bottom, 0px));
+  }
+  .hero-eyebrow { font-size: 10px; letter-spacing: 0.8px; }
+  .pills { gap: 6px; }
+  .guide { padding: 0 14px 14px; }
 }
 
 .card {
@@ -354,12 +420,14 @@ label { display: block; font-size: 0.8rem; font-weight: 600; color: var(--mist);
 
 input, textarea {
   width: 100%;
+  max-width: 100%;
   padding: 12px 14px;
   border-radius: 12px;
   border: 1px solid var(--rim);
   background: var(--lift);
   color: var(--white);
-  font: inherit;
+  font-family: inherit;
+  font-size: 16px;
   margin-bottom: 14px;
 }
 input:focus, textarea:focus {
@@ -369,7 +437,7 @@ input:focus, textarea:focus {
 textarea {
   min-height: 88px;
   font-family: var(--mono);
-  font-size: 0.78rem;
+  font-size: 16px;
   resize: vertical;
 }
 
@@ -412,12 +480,6 @@ textarea {
   padding: 12px;
   margin-bottom: 10px;
   background: var(--lift);
-}
-.hit header {
-  display: flex;
-  justify-content: space-between;
-  gap: 8px;
-  padding: 0;
 }
 
 .actions { display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 0 14px; }
