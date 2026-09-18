@@ -23371,11 +23371,19 @@ async function pay() {
   });
   setStatus("pay-status", `Sent. transfer ${sendHash} \xB7 announce ${announceHash}`, "ok");
 }
+var LOG_CHUNK = 9000n;
+var DEFAULT_LOOKBACK = 20000n;
 async function loadAnnouncements() {
+  const client = publicClient();
+  const latest = await client.getBlockNumber();
   const fromRaw = $("scan-from").value.trim() || "0";
-  const fromBlock = fromRaw.startsWith("0x") ? BigInt(fromRaw) : BigInt(fromRaw);
+  let fromBlock = fromRaw.startsWith("0x") ? BigInt(fromRaw) : BigInt(fromRaw);
+  if (fromBlock === 0n) {
+    fromBlock = latest > DEFAULT_LOOKBACK ? latest - DEFAULT_LOOKBACK : 0n;
+  }
+  if (fromBlock > latest) fromBlock = latest;
   const gateway = settings().gateway.replace(/\/$/, "");
-  if (gateway) {
+  if (gateway && !gateway.includes("127.0.0.1") && !gateway.includes("localhost")) {
     try {
       const res = await fetch(`${gateway}/v1/announcements?fromBlock=${fromBlock.toString(10)}`);
       if (res.ok) {
@@ -23386,19 +23394,30 @@ async function loadAnnouncements() {
     }
   }
   const announcer = requireAddress("announcer", settings().announcer);
-  const logs = await publicClient().getContractEvents({
-    address: announcer,
-    abi: announcerAbi,
-    eventName: "Announcement",
-    fromBlock,
-    toBlock: "latest"
-  });
-  return logs.map((log) => ({
-    schemeId: log.args.schemeId,
-    stealthAddress: log.args.stealthAddress,
-    ephemeralPubKey: log.args.ephemeralPubKey,
-    metadata: log.args.metadata
-  }));
+  const collected = [];
+  for (let start = fromBlock; start <= latest; start += LOG_CHUNK + 1n) {
+    const end = start + LOG_CHUNK > latest ? latest : start + LOG_CHUNK;
+    setStatus(
+      "scan-status",
+      `Scanning blocks ${start.toString(10)}\u2013${end.toString(10)} of ${latest.toString(10)}\u2026`
+    );
+    const logs = await client.getContractEvents({
+      address: announcer,
+      abi: announcerAbi,
+      eventName: "Announcement",
+      fromBlock: start,
+      toBlock: end
+    });
+    for (const log of logs) {
+      collected.push({
+        schemeId: log.args.schemeId,
+        stealthAddress: log.args.stealthAddress,
+        ephemeralPubKey: log.args.ephemeralPubKey,
+        metadata: log.args.metadata
+      });
+    }
+  }
+  return collected;
 }
 function sweepEnabled() {
   return $("enable-sweep").checked;
