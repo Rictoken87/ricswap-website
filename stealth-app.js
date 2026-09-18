@@ -23253,10 +23253,23 @@ async function switchToInfinite() {
   }
   await connect();
 }
-async function deriveFromWallet() {
+async function ensureInfiniteChain() {
   await connect();
+  const want = chainIdFromSettings();
+  if (state.walletChainId !== want) {
+    await switchToInfinite();
+  }
+  if (state.walletChainId !== want) {
+    throw new Error(
+      `Wallet is on chain ${state.walletChainId?.toString(10) ?? "unknown"}, not Infinite Drive (${want.toString(10)}). In Rabby, set this website to Infinite Drive (421018), then try again.`
+    );
+  }
+  return want;
+}
+async function deriveFromWallet() {
+  const chainId = await ensureInfiniteChain();
   if (!state.account) throw new Error("Connect a wallet first");
-  const typed = stealthKeyDerivationTypedData(state.account, chainIdFromSettings());
+  const typed = stealthKeyDerivationTypedData(state.account, chainId);
   const sig = await walletClient().signTypedData({
     account: state.account,
     domain: typed.domain,
@@ -23275,6 +23288,7 @@ async function forgetKeys() {
   paintIdentity();
 }
 async function registerMeta() {
+  await ensureInfiniteChain();
   if (!state.identity) throw new Error("Unlock keys first");
   const registry = requireAddress("registry", settings().registry);
   const hash3 = await walletClient().writeContract({
@@ -23329,7 +23343,7 @@ async function refreshGasQuote() {
   }
 }
 async function pay() {
-  await connect();
+  await ensureInfiniteChain();
   const announcer = requireAddress("announcer", settings().announcer);
   const { amount, total } = payAmounts();
   const meta = await resolveRecipientMeta($("pay-recipient").value);
