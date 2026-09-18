@@ -59,7 +59,57 @@
       Sweeping to a wallet people already know is yours re-links you. Not a mixer. Not audited by a firm.
     </div>
 
-    <div class="tabs" role="tablist">
+    <section class="guide" id="how-to-use" aria-labelledby="guide-title">
+      <h3 id="guide-title">How to use</h3>
+      <p>
+        In Rabby, set <strong>this website</strong> to Infinite Drive (<strong>421018</strong>) first.
+        If the wallet asks for ETH, you are on the wrong chain. Do not send 42 to the announcer or registry.
+      </p>
+      <div class="guide-grid">
+        <div class="guide-col">
+          <h4>You — receive</h4>
+          <ol>
+            <li>Click <strong>Connect wallet</strong>.</li>
+            <li>Open the <strong>Receive</strong> tab.</li>
+            <li>Click <strong>Sign EIP-712 to unlock</strong>. The wallet must show domain <code>Infinite Drive Stealth</code>. This is not a login and not a transfer.</li>
+            <li>Copy your public string: <code>st:drive:0x…</code></li>
+            <li>Send that whole string to your friend (chat, email, etc.).</li>
+          </ol>
+        </div>
+        <div class="guide-col">
+          <h4>Friend — pay</h4>
+          <ol>
+            <li>Connect on Infinite Drive (421018).</li>
+            <li>Open the <strong>Pay</strong> tab.</li>
+            <li>Paste the full <code>st:drive:0x…</code> into Recipient.</li>
+            <li>Enter the amount of <strong>42</strong>. Leave the stipend as quoted. Leave metadata <strong>unchecked</strong>.</li>
+            <li>Click <strong>Send 42 + announce</strong>. Confirm two popups: send 42, then announce with value 0.</li>
+          </ol>
+        </div>
+        <div class="guide-col">
+          <h4>You — scan</h4>
+          <ol>
+            <li>Same wallet as Receive. Sign EIP-712 again if you closed the tab.</li>
+            <li>Open <strong>Scan &amp; sweep</strong>.</li>
+            <li><strong>From block:</strong> <code>0</code> (last ~20,000 blocks). Leave Withdraw to empty.</li>
+            <li>Click <strong>Scan (view-only)</strong>. You should see the 42 on a one-time address — not in your everyday Rabby balance.</li>
+          </ol>
+        </div>
+        <div class="guide-col">
+          <h4>You — sweep (optional)</h4>
+          <ol>
+            <li>Check <strong>Enable sweep</strong>.</li>
+            <li><strong>Withdraw to:</strong> an <code>0x</code> you control. Use a new wallet if you do not want the payment tied to your public address. The page blocks sweeping to the connected wallet.</li>
+            <li>On the row with the 42, click sweep.</li>
+          </ol>
+        </div>
+      </div>
+      <p class="guide-note">
+        42 never lands in your usual public wallet until you sweep. Sweeping to a known wallet (for example a social or RicSwap account) makes that payment traceable. Stealth means “don’t pay the public inbox,” not “untraceable cash.”
+      </p>
+    </section>
+
+    <div class="tabs" role="tablist" id="app-tabs">
       <button class="tab active" data-tab="receive" type="button">Receive</button>
       <button class="tab" data-tab="pay" type="button">Pay</button>
       <button class="tab" data-tab="scan" type="button">Scan &amp; sweep</button>

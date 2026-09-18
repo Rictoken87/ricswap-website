@@ -239,6 +239,52 @@ a:hover { color: var(--ember); }
 }
 .notice strong, .warn strong { color: var(--white); }
 
+.guide {
+  margin: 8px 0 22px;
+  padding: 22px;
+  background: var(--card);
+  border: 1px solid var(--rim);
+  border-radius: var(--radius);
+}
+.guide h3 {
+  font-family: var(--display);
+  font-size: 1.6rem;
+  letter-spacing: 1px;
+  color: var(--white);
+  margin-bottom: 6px;
+}
+.guide > p { color: var(--fog); margin-bottom: 16px; font-size: 0.92rem; }
+.guide-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+@media (max-width: 800px) { .guide-grid { grid-template-columns: 1fr; } }
+.guide-col {
+  background: var(--lift);
+  border: 1px solid var(--rim);
+  border-radius: 12px;
+  padding: 16px;
+}
+.guide-col h4 {
+  color: var(--gold);
+  font-size: 0.82rem;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  margin-bottom: 10px;
+}
+.guide-col ol { margin: 0 0 0 18px; color: var(--fog); font-size: 0.88rem; }
+.guide-col li { margin-bottom: 8px; }
+.guide-col code {
+  color: var(--gold);
+  word-break: break-all;
+}
+.guide-note {
+  margin-top: 14px;
+  font-size: 0.82rem;
+  color: var(--smoke);
+}
+
 .tabs {
   display: flex;
   gap: 6px;
