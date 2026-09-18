@@ -97,17 +97,17 @@ body::before {
 }
 
 /* ═══════════════════════════════════════════════════
-   NAV
+   NAV + DROPDOWNS
 ═══════════════════════════════════════════════════ */
 .nav {
   position: fixed;
   top: 0; left: 0; right: 0;
   z-index: 100;
-  padding: 0 48px;
+  padding: 0 28px;
   height: 72px;
   display: flex;
   align-items: center;
-  gap: 48px;
+  gap: 20px;
   background: rgba(3,4,7,0.7);
   backdrop-filter: blur(20px) saturate(180%);
   border-bottom: 1px solid var(--rim);
@@ -119,38 +119,104 @@ body::before {
   height: 1px;
   background: linear-gradient(90deg, transparent, rgba(255,77,0,0.4), transparent);
 }
-.logo {
-  font-family: var(--display);
-  font-size: 28px;
-  letter-spacing: 2px;
-  background: linear-gradient(135deg, var(--gold), var(--magma));
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  flex-shrink: 0;
-}
-.nav-links {
+.nav-menu {
   display: flex;
   align-items: center;
-  gap: 2px;
+  gap: 4px;
   flex: 1;
+  min-width: 0;
 }
-.nav-links a {
-  padding: 6px 14px;
-  border-radius: 6px;
+.nav-group {
+  position: relative;
+}
+.nav-group > button,
+.nav-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  border-radius: 8px;
   font-size: 13px;
   font-weight: 500;
   color: var(--smoke);
-  letter-spacing: 0.3px;
-  transition: all 0.2s;
-  position: relative;
+  background: transparent;
+  letter-spacing: 0.2px;
+  transition: color 0.2s, background 0.2s;
+  white-space: nowrap;
 }
-.nav-links a:hover {
+.nav-group > button::after {
+  content: '';
+  width: 0;
+  height: 0;
+  border-left: 4px solid transparent;
+  border-right: 4px solid transparent;
+  border-top: 5px solid currentColor;
+  opacity: 0.55;
+  transition: transform 0.2s;
+}
+.nav-group:hover > button,
+.nav-group:focus-within > button,
+.nav-group.open > button,
+.nav-link:hover {
   color: var(--white);
   background: var(--glass);
 }
-.nav-cta {
+.nav-group:hover > button::after,
+.nav-group.open > button::after {
+  transform: rotate(180deg);
+}
+.nav-drop {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  min-width: 260px;
+  padding: 8px;
+  background: #0c0e1c;
+  border: 1px solid var(--rim);
+  border-radius: 14px;
+  box-shadow: 0 24px 60px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,77,0,0.08);
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(8px);
+  transition: opacity 0.18s, transform 0.18s, visibility 0.18s;
+  z-index: 120;
+}
+.nav-group:hover > .nav-drop,
+.nav-group:focus-within > .nav-drop,
+.nav-group.open > .nav-drop {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+.nav-drop a {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  color: var(--white);
+}
+.nav-drop a:hover { background: rgba(255,77,0,0.1); }
+.nav-drop a strong {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--white);
+}
+.nav-drop a small {
+  font-size: 11px;
+  color: var(--smoke);
+  font-weight: 400;
+  line-height: 1.35;
+}
+.nav-end {
+  display: flex;
+  align-items: center;
+  gap: 10px;
   margin-left: auto;
-  padding: 10px 28px;
+  flex-shrink: 0;
+}
+.nav-cta {
+  padding: 10px 22px;
   border-radius: 8px;
   font-size: 13px;
   font-weight: 600;
@@ -191,6 +257,31 @@ body::before {
   animation: blink 2s ease-in-out infinite;
 }
 @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+.nav-burger {
+  display: none;
+  width: 44px;
+  height: 44px;
+  margin-left: auto;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 5px;
+  background: var(--glass);
+  border: 1px solid var(--rim);
+  border-radius: 10px;
+}
+.nav-burger span {
+  display: block;
+  width: 18px;
+  height: 2px;
+  background: var(--white);
+  border-radius: 2px;
+  transition: transform 0.2s, opacity 0.2s;
+}
+.nav.is-open .nav-burger span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+.nav.is-open .nav-burger span:nth-child(2) { opacity: 0; }
+.nav.is-open .nav-burger span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
 
 /* ═══════════════════════════════════════════════════
    HERO
@@ -918,9 +1009,45 @@ footer {
   .stats-inner { grid-template-columns: 1fr 1fr; }
   .footer-inner { grid-template-columns: 1fr 1fr; }
 }
+@media (max-width: 980px) {
+  .nav { padding: 0 16px; gap: 10px; height: auto; min-height: 64px; flex-wrap: wrap; }
+  .nav-burger { display: flex; }
+  .nav-end .net-pill { display: none; }
+  .nav-menu {
+    display: none;
+    flex-direction: column;
+    align-items: stretch;
+    width: 100%;
+    order: 5;
+    padding: 8px 0 16px;
+    gap: 4px;
+    max-height: min(70vh, 560px);
+    overflow-y: auto;
+  }
+  .nav.is-open .nav-menu { display: flex; }
+  .nav-group > button,
+  .nav-link { width: 100%; justify-content: space-between; min-height: 44px; }
+  .nav-drop {
+    position: static;
+    min-width: 0;
+    opacity: 1;
+    visibility: visible;
+    transform: none;
+    display: none;
+    box-shadow: none;
+    background: rgba(255,255,255,0.02);
+    margin: 0 0 6px;
+  }
+  .nav-group.open > .nav-drop { display: block; }
+  .nav-end { gap: 8px; }
+  .nav-cta { padding: 10px 14px; }
+  .logo-text { font-size: 22px; }
+}
+@media (max-width: 420px) {
+  .logo-text { display: none; }
+  .nav-cta { font-size: 12px; padding: 10px 12px; }
+}
 @media (max-width: 768px) {
-  .nav { padding: 0 20px; gap: 16px; }
-  .nav-links { display: none; }
   .hero { padding: 100px 20px 60px; }
   .section { padding: 80px 20px; }
   .features-grid { grid-template-columns: 1fr; }
@@ -1141,28 +1268,50 @@ footer {
 <div class="orb orb-3"></div>
 
 <!-- ═══ NAV ═══ -->
-<nav class="nav">
+<nav class="nav" aria-label="RicSwap">
   <a class="brand-link" href="index.html" aria-label="RicSwap home">
     <img class="logo-img" src="riclogo.png" alt="RicSwap logo" width="40" height="40"
          onerror="this.onerror=null;this.src='https://raw.githubusercontent.com/Rictoken87/ricswap-website/main/riclogo.png'" />
     <span class="logo-text">RICSWAP</span>
   </a>
-  <div class="nav-links">
-    <a href="swap.html">Swap</a>
-    <a href="liquidity.html">Liquidity</a>
-    <a href="lock.html">Lock</a>
-    <a href="pools.html">Pools</a>
-    <a href="launchpad.html">Launchpad</a>
-    <a href="drive.html" title="Infinite Drive launchpad (chain 421018)">Drive</a>
-    <a href="names.html">Names</a>
-    <a href="#ric">RIC</a>
-    <a href="#contracts">Contracts</a>
+  <button class="nav-burger" type="button" aria-label="Open menu" aria-expanded="false" aria-controls="nav-menu">
+    <span></span><span></span><span></span>
+  </button>
+  <div class="nav-menu" id="nav-menu">
+    <div class="nav-group">
+      <button type="button" aria-haspopup="true">Trade</button>
+      <div class="nav-drop">
+        <a href="swap.html"><strong>Swap</strong><small>Trade tokens on Shibarium</small></a>
+        <a href="liquidity.html"><strong>Liquidity</strong><small>Add LP to pools</small></a>
+        <a href="pools.html"><strong>Pools</strong><small>Browse pairs</small></a>
+        <a href="lock.html"><strong>Lock</strong><small>Lock liquidity</small></a>
+      </div>
+    </div>
+    <div class="nav-group">
+      <button type="button" aria-haspopup="true">Launch</button>
+      <div class="nav-drop">
+        <a href="launchpad.html"><strong>Launchpad</strong><small>Shibarium CleanToken launches</small></a>
+        <a href="drive.html"><strong>Drive launchpad</strong><small>Infinite Drive · chain 421018</small></a>
+      </div>
+    </div>
+    <div class="nav-group">
+      <button type="button" aria-haspopup="true">Drive</button>
+      <div class="nav-drop">
+        <a href="drive.html"><strong>Drive</strong><small>Infinite Improbability Drive app</small></a>
+        <a href="stealth.html"><strong>Stealth send</strong><small>One-time receive addresses · 42</small></a>
+        <a href="names.html"><strong>Names</strong><small>.ric names</small></a>
+      </div>
+    </div>
+    <a class="nav-link" href="#ric">RIC</a>
+    <a class="nav-link" href="#contracts">Contracts</a>
   </div>
-  <div class="net-pill">
-    <div class="net-dot"></div>
-    SHIBARIUM
+  <div class="nav-end">
+    <div class="net-pill">
+      <div class="net-dot"></div>
+      SHIBARIUM
+    </div>
+    <button class="nav-cta" type="button" onclick="location.href='swap.html'">Launch App</button>
   </div>
-  <button class="nav-cta" onclick="location.href='swap.html'">Launch App</button>
 </nav>
 
 <!-- ═══ HERO ═══ -->
@@ -1653,6 +1802,7 @@ footer {
       <a href="pools.html">Pools</a>
       <a href="launchpad.html">Launchpad (Shibarium)</a>
       <a href="drive.html">Drive (Infinite)</a>
+      <a href="stealth.html">Stealth send</a>
       <a href="names.html">Names (.ric)</a>
       <a href="#ric">RIC Tokenomics</a>
     </div>
@@ -1704,6 +1854,33 @@ window.addEventListener('scroll', () => {
   if (!nav) return;
   nav.style.background = window.scrollY > 20 ? 'rgba(3,4,7,0.95)' : 'rgba(3,4,7,0.7)';
 });
+
+(function () {
+  const nav = document.querySelector('.nav');
+  const burger = document.querySelector('.nav-burger');
+  if (!nav || !burger) return;
+  burger.addEventListener('click', () => {
+    const open = nav.classList.toggle('is-open');
+    burger.setAttribute('aria-expanded', open ? 'true' : 'false');
+  });
+  nav.querySelectorAll('.nav-group > button').forEach((btn) => {
+    btn.addEventListener('click', (e) => {
+      if (!window.matchMedia('(max-width: 980px)').matches) return;
+      e.preventDefault();
+      const group = btn.parentElement;
+      nav.querySelectorAll('.nav-group.open').forEach((g) => {
+        if (g !== group) g.classList.remove('open');
+      });
+      group.classList.toggle('open');
+    });
+  });
+  nav.querySelectorAll('.nav-menu a').forEach((a) => {
+    a.addEventListener('click', () => {
+      nav.classList.remove('is-open');
+      burger.setAttribute('aria-expanded', 'false');
+    });
+  });
+})();
 </script>
 </body>
 </html>
