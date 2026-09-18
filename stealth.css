@@ -240,20 +240,29 @@ a:hover { color: var(--ember); }
 .notice strong, .warn strong { color: var(--white); }
 
 .guide {
-  margin: 8px 0 22px;
-  padding: 22px;
+  margin: 18px 0 0;
+  padding: 0 22px 22px;
   background: var(--card);
   border: 1px solid var(--rim);
   border-radius: var(--radius);
 }
-.guide h3 {
-  font-family: var(--display);
-  font-size: 1.6rem;
-  letter-spacing: 1px;
-  color: var(--white);
-  margin-bottom: 6px;
+.guide summary {
+  list-style: none;
+  cursor: pointer;
+  padding: 16px 0 0;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--mist);
+  user-select: none;
 }
-.guide > p { color: var(--fog); margin-bottom: 16px; font-size: 0.92rem; }
+.guide summary::-webkit-details-marker { display: none; }
+.guide summary::before {
+  content: "▸ ";
+  color: var(--gold);
+}
+.guide[open] summary::before { content: "▾ "; }
+.guide[open] summary { padding-bottom: 12px; color: var(--white); }
+.guide > p { color: var(--fog); margin: 8px 0 16px; font-size: 0.92rem; }
 .guide-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
