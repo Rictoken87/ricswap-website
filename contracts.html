@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Official contracts — RicSwap</title>
+<meta name="description" content="Official RicSwap contract addresses on Shibarium (109) and Infinite Drive (421018). Always verify on the explorer before signing." />
+<meta name="theme-color" content="#030407" />
+<link rel="canonical" href="https://ricswap.com/contracts.html" />
+<link rel="icon" type="image/png" href="riclogo.png" />
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+:root {
+  --void:#030407; --well:#0b0e1a; --rim:rgba(255,255,255,.06);
+  --magma:#ff4d00; --gold:#e8b84b; --ok:#3dd68c; --warn:#ff8c00;
+  --smoke:#8385a0; --fog:#c0c2d8; --white:#eef0f8;
+  --display:"Bebas Neue",sans-serif; --body:"DM Sans",system-ui,sans-serif; --mono:"JetBrains Mono",monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--void);color:var(--fog);font-family:var(--body);line-height:1.6;padding:28px 18px 80px}
+a{color:var(--gold)}
+.wrap{max-width:860px;margin:0 auto}
+.brand{display:flex;align-items:center;gap:10px;margin-bottom:20px;text-decoration:none;color:inherit}
+.brand img{width:40px;height:40px;border-radius:10px;object-fit:cover;box-shadow:0 0 0 1px rgba(255,77,0,.25)}
+.logo-text{font-family:var(--display);font-size:26px;letter-spacing:2px;background:linear-gradient(135deg,var(--gold),var(--magma));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.nav{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:28px;font-size:13px;font-weight:600}
+.nav a{color:var(--smoke);text-decoration:none}
+.nav a:hover,.nav a.on{color:var(--gold)}
+.kicker{font-family:var(--mono);font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--magma);margin-bottom:8px}
+h1{font-family:var(--display);font-size:clamp(36px,6vw,52px);letter-spacing:2px;color:var(--white);line-height:.95;margin-bottom:12px}
+.lede{color:var(--smoke);margin-bottom:22px}
+.split{padding:14px 16px;border:1px solid rgba(255,77,0,.3);background:rgba(255,77,0,.08);border-radius:12px;margin-bottom:28px;font-size:14px}
+.split strong{color:var(--white)}
+h2{font-family:var(--display);letter-spacing:1px;color:var(--white);font-size:26px;margin:28px 0 12px}
+.row{display:flex;flex-direction:column;gap:6px;padding:14px 16px;border:1px solid var(--rim);background:var(--well);border-radius:12px;margin-bottom:10px}
+.lbl{font-family:var(--mono);font-size:10px;letter-spacing:1.4px;text-transform:uppercase;color:var(--smoke);display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.addr{font-family:var(--mono);font-size:12px;color:var(--gold);word-break:break-all}
+.badge{font-size:10px;letter-spacing:.8px;text-transform:uppercase;padding:3px 8px;border-radius:999px;border:1px solid var(--rim)}
+.badge.ok{color:var(--ok);border-color:rgba(61,214,140,.35)}
+.badge.no{color:var(--warn);border-color:rgba(255,140,0,.35)}
+.copy{align-self:flex-start;margin-top:4px;background:transparent;border:1px solid var(--rim);color:var(--fog);font-size:11px;padding:4px 10px;border-radius:8px;cursor:pointer}
+.copy:hover{border-color:var(--gold);color:var(--white)}
+.note{font-size:13px;color:var(--smoke);margin:8px 0 18px}
+.foot{margin-top:36px;padding-top:16px;border-top:1px solid var(--rim);font-size:13px;color:var(--smoke)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a class="brand" href="index.html">
+    <img src="riclogo.png" alt="RicSwap" width="40" height="40"
+         onerror="this.onerror=null;this.src='https://raw.githubusercontent.com/Rictoken87/ricswap-website/main/riclogo.png'" />
+    <span class="logo-text">RICSWAP</span>
+  </a>
+  <div class="nav">
+    <a href="index.html">Home</a>
+    <a href="swap.html">Swap</a>
+    <a href="pools.html">Pools</a>
+    <a href="x42.html">x42</a>
+    <a class="on" href="contracts.html">Contracts</a>
+    <a href="about.html">About</a>
+  </div>
+
+  <div class="kicker">Official addresses</div>
+  <h1>CONTRACTS</h1>
+  <p class="lede">Copy from this page only. Check chain ID in the wallet before you sign. Source status is from the explorer as of this page’s last update — click through to confirm.</p>
+  <div class="split">
+    <strong>Two chains.</strong> Shibarium <strong>109</strong> = BONE / RIC / swap / launch.
+    Infinite Drive <strong>421018</strong> = native 42 / x42.
+    Never send 42 on 109 or BONE on 421018.
+  </div>
+
+  <h2>Shibarium · chain 109</h2>
+  <p class="note">Explorer: <a href="https://www.shibariumscan.io" target="_blank" rel="noopener">shibariumscan.io</a></p>
+
+  <div class="row">
+    <div class="lbl">RIC token <span class="badge">ERC-20</span></div>
+    <div class="addr" data-addr="0x12C94d3A30daa09f81Ea6c037004E6e99A4A3dfc">0x12C94d3A30daa09f81Ea6c037004E6e99A4A3dfc</div>
+    <a href="https://www.shibariumscan.io/token/0x12C94d3A30daa09f81Ea6c037004E6e99A4A3dfc" target="_blank" rel="noopener">Explorer</a>
+    <button type="button" class="copy">Copy</button>
+  </div>
+  <div class="row">
+    <div class="lbl">RicSwap factory (pairs) <span class="badge no">verify in UI</span></div>
+    <div class="addr" data-addr="0xD8fFEECfDE1698a70A26a094afBE917bA58E2F70">0xD8fFEECfDE1698a70A26a094afBE917bA58E2F70</div>
+    <a href="https://www.shibariumscan.io/address/0xD8fFEECfDE1698a70A26a094afBE917bA58E2F70" target="_blank" rel="noopener">Explorer</a>
+    <button type="button" class="copy">Copy</button>
+  </div>
+  <div class="row">
+    <div class="lbl">RicSwap router <span class="badge no">verify in UI</span></div>
+    <div class="addr" data-addr="0x652875c0F607CB392C0F9E5FB957A7055c2deD2e">0x652875c0F607CB392C0F9E5FB957A7055c2deD2e</div>
+    <a href="https://www.shibariumscan.io/address/0x652875c0F607CB392C0F9E5FB957A7055c2deD2e" target="_blank" rel="noopener">Explorer</a>
+    <button type="button" class="copy">Copy</button>
+  </div>
+  <div class="row">
+    <div class="lbl">Launchpad factory V2 <span class="badge ok">source on explorer</span></div>
+    <div class="addr" data-addr="0xe0FE5314ef6b25Fb4FD1B893399801E305e7e28E">0xe0FE5314ef6b25Fb4FD1B893399801E305e7e28E</div>
+    <a href="https://www.shibariumscan.io/address/0xe0FE5314ef6b25Fb4FD1B893399801E305e7e28E" target="_blank" rel="noopener">Explorer</a>
+    <button type="button" class="copy">Copy</button>
+  </div>
+  <div class="row">
+    <div class="lbl">Liquidity locker <span class="badge ok">source on explorer</span></div>
+    <div class="addr" data-addr="0x388Ea1825bfAe6556Ad24f1FCEE9D9f53875FA6F">0x388Ea1825bfAe6556Ad24f1FCEE9D9f53875FA6F</div>
+    <a href="https://www.shibariumscan.io/address/0x388Ea1825bfAe6556Ad24f1FCEE9D9f53875FA6F" target="_blank" rel="noopener">Explorer</a>
+    <button type="button" class="copy">Copy</button>
+  </div>
+  <div class="row">
+    <div class="lbl">Token verify desk <span class="badge ok">source on explorer</span></div>
+    <div class="addr" data-addr="0xd878bd28e3b1999A3b2556059534668e657A46ae">0xd878bd28e3b1999A3b2556059534668e657A46ae</div>
+    <a href="https://www.shibariumscan.io/address/0xd878bd28e3b1999A3b2556059534668e657A46ae" target="_blank" rel="noopener">Explorer</a>
+    <button type="button" class="copy">Copy</button>
+  </div>
+  <div class="row">
+    <div class="lbl">WBONE (wrapped gas)</div>
+    <div class="addr" data-addr="0xC76F4c819D820369Fb2d7C1531aB3Bb18e6fE8d8">0xC76F4c819D820369Fb2d7C1531aB3Bb18e6fE8d8</div>
+    <a href="https://www.shibariumscan.io/token/0xC76F4c819D820369Fb2d7C1531aB3Bb18e6fE8d8" target="_blank" rel="noopener">Explorer</a>
+    <button type="button" class="copy">Copy</button>
+  </div>
+  <p class="note">Pair factory and router still need Standard JSON upload on Shibariumscan (Cloudflare blocks automated POST). File: <code>verify-factory/RicSwapFactory_standard-input.json</code> — see <code>verify-factory/README_VERIFY.md</code>.</p>
+
+  <h2>Infinite Drive · chain 421018</h2>
+  <p class="note">Explorer: <a href="https://scan.infinitedrive.xyz" target="_blank" rel="noopener">scan.infinitedrive.xyz</a>. x42 contracts are verified on Blockscout.</p>
+
+  <div class="row">
+    <div class="lbl">x42 deposit pool (send 42) <span class="badge ok">verified proxy</span></div>
+    <div class="addr" data-addr="0x985f6ECb68f308ea4C3b5Fc9c5B187F4ee1dfA23">0x985f6ECb68f308ea4C3b5Fc9c5B187F4ee1dfA23</div>
+    <a href="https://scan.infinitedrive.xyz/address/0x985f6ECb68f308ea4C3b5Fc9c5B187F4ee1dfA23" target="_blank" rel="noopener">Explorer</a>
+    <button type="button" class="copy">Copy</button>
+  </div>
+  <div class="row">
+    <div class="lbl">x42 token <span class="badge ok">verified proxy</span></div>
+    <div class="addr" data-addr="0x700879539292e2cB46b3C645278e5e272dc27154">0x700879539292e2cB46b3C645278e5e272dc27154</div>
+    <a href="https://scan.infinitedrive.xyz/address/0x700879539292e2cB46b3C645278e5e272dc27154" target="_blank" rel="noopener">Explorer</a>
+    <button type="button" class="copy">Copy</button>
+  </div>
+  <div class="row">
+    <div class="lbl">Protocol timelock <span class="badge ok">verified</span></div>
+    <div class="addr" data-addr="0xd857362B01bBa2Fb9B2A4138BE321767389547f8">0xd857362B01bBa2Fb9B2A4138BE321767389547f8</div>
+    <a href="https://scan.infinitedrive.xyz/address/0xd857362B01bBa2Fb9B2A4138BE321767389547f8" target="_blank" rel="noopener">Explorer</a>
+    <button type="button" class="copy">Copy</button>
+  </div>
+  <div class="row">
+    <div class="lbl">Infinite storage <span class="badge ok">verified</span></div>
+    <div class="addr" data-addr="0x8E2E63d8f0041B0b2c6af01816B63FF2AFEac557">0x8E2E63d8f0041B0b2c6af01816B63FF2AFEac557</div>
+    <a href="https://scan.infinitedrive.xyz/address/0x8E2E63d8f0041B0b2c6af01816B63FF2AFEac557" target="_blank" rel="noopener">Explorer</a>
+    <button type="button" class="copy">Copy</button>
+  </div>
+  <div class="row">
+    <div class="lbl">x42 factory <span class="badge ok">verified</span></div>
+    <div class="addr" data-addr="0x8965501ea6d898ef5251776C1E99Da3c5E6504eF">0x8965501ea6d898ef5251776C1E99Da3c5E6504eF</div>
+    <a href="https://scan.infinitedrive.xyz/address/0x8965501ea6d898ef5251776C1E99Da3c5E6504eF" target="_blank" rel="noopener">Explorer</a>
+    <button type="button" class="copy">Copy</button>
+  </div>
+  <div class="row">
+    <div class="lbl">Drive launchpad factory</div>
+    <div class="addr" data-addr="0x95feabdeCCa6cBC808D231895b80703905bE3b83">0x95feabdeCCa6cBC808D231895b80703905bE3b83</div>
+    <a href="https://scan.infinitedrive.xyz/address/0x95feabdeCCa6cBC808D231895b80703905bE3b83" target="_blank" rel="noopener">Explorer</a>
+    <button type="button" class="copy">Copy</button>
+  </div>
+
+  <p class="foot">
+    Swap UI pins router <span class="addr">0x652875c0F607CB392C0F9E5FB957A7055c2deD2e</span> — query-string <code>?router=</code> is ignored.
+    <br /><a href="about.html">What this is / is not</a> · <a href="x42.html">x42.html</a> · <a href="swap.html">swap.html</a>
+  </p>
+</div>
+<script>
+document.querySelectorAll(".copy").forEach(function (btn) {
+  btn.addEventListener("click", function () {
+    var el = btn.parentElement.querySelector(".addr");
+    var a = el && (el.getAttribute("data-addr") || el.textContent);
+    if (!a) return;
+    navigator.clipboard.writeText(a.trim()).then(function () { btn.textContent = "Copied"; setTimeout(function(){ btn.textContent = "Copy"; }, 1200); });
+  });
+});
+</script>
+</body>
+</html>

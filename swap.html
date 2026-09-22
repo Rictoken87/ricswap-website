@@ -2296,6 +2296,10 @@ function copyLink(){
 //  URL params 
 function initURL(){
   const p=new URLSearchParams(location.search);
+  // Ignore ?router= / ?factory= — phishing vector. Router is CFG.ROUTER only.
+  if (p.get('router') || p.get('factory') || p.get('spender')) {
+    try { history.replaceState({}, '', location.pathname + location.hash); } catch(_) {}
+  }
   const findTk=addr=>{if(!addr)return null;return TK_LIST.find(t=>t.address.toLowerCase()===addr.toLowerCase()||(addr.toUpperCase()==='NATIVE'&&t.isNative))||null;};
   const ti=findTk(p.get('tokenIn')),to=findTk(p.get('tokenOut'));
   if(ti){tks.in={...ti};updTkUI('in');}

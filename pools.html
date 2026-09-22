@@ -119,7 +119,8 @@ td{padding:16px 8px;border-bottom:1px solid rgba(255,255,255,.04);vertical-align
         <a href="lock.html">Lock</a>
         <a href="remove-liquidity.html">Remove LP</a>
         <a href="pools.html" class="active">Pools</a>
-        <a href="names.html">Names</a>
+        <a href="contracts.html">Contracts</a>
+        <a href="x42.html">x42</a>
       </div>
     </div>
     <button type="button" id="connectBtn" class="btn primary" onclick="connect()">Connect Wallet</button>
@@ -129,7 +130,8 @@ td{padding:16px 8px;border-bottom:1px solid rgba(255,255,255,.04);vertical-align
     <div class="sec-banner">
       <strong>Read-only pool browser.</strong> This page never asks you to approve or send tokens.
       Only pairs from the <strong>official RicSwap factory</strong> are listed.
-      Symbols are escaped; scan is capped for safety.
+      Reserves are on-chain. <strong>No USD TVL and no APY</strong> — we do not have a price oracle, so we do not invent numbers.
+      An empty list means there is no (or almost no) liquidity. Chain 109 only.
     </div>
 
     <div class="card-head">
@@ -153,7 +155,7 @@ td{padding:16px 8px;border-bottom:1px solid rgba(255,255,255,.04);vertical-align
       <tbody id="list"></tbody>
     </table>
 
-    <div id="empty">Pools will appear after connect or public scan.</div>
+    <div id="empty">No pairs loaded yet. Click “Scan factory”. If the scan returns nothing, the factory has no liquidity — that is not a demo dataset.</div>
 
     <div class="force-load">
       <input id="manualAddr" class="input-dark" placeholder="Paste pair address 0x… (must be on official factory)" spellcheck="false" autocomplete="off">
