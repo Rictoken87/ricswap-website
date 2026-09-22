@@ -301,12 +301,23 @@ function short(a){ return a.slice(0,6)+"…"+a.slice(-4); }
 function parseAmt(s){
   try { return ethers.parseEther((s||"").trim()||"0"); } catch { return 0n; }
 }
+function network(){
+  return ethers.Network.from(CHAIN_ID);
+}
 function readProvider(){
+  const net = network();
   return new ethers.FallbackProvider(RPCS.map((url, i) => ({
-    provider: new ethers.JsonRpcProvider(url, CHAIN_ID, { staticNetwork: true }),
+    provider: new ethers.JsonRpcProvider(url, net, { staticNetwork: net }),
     stallTimeout: 2500,
     priority: i + 1
   })), 1);
+}
+function walletProvider(){
+  return new ethers.BrowserProvider(window.ethereum, network());
+}
+function isNetworkSwitch(e){
+  const m = (e && (e.shortMessage || e.message)) || "";
+  return /network changed/i.test(m);
 }
 
 $("poolA").textContent = POOL;
@@ -501,7 +512,7 @@ function _lockUI(msg){
   const cta = $("cta"); if (cta) { cta.disabled = true; cta.textContent = "Unavailable"; }
 }
 
-async function refresh(){
+async function refresh(retried){
   try {
     const provider = readProvider();
     if (!(await verifyAddresses(provider))) return; // refuse to render form on mismatch
@@ -541,7 +552,13 @@ async function refresh(){
       state.tickets = tickets.reverse();
     }
   } catch (e) {
-    setStatus("Could not read pool: "+(e.shortMessage||e.message), "warn");
+    if (isNetworkSwitch(e) && !retried) {
+      await new Promise(r => setTimeout(r, 400));
+      return refresh(true);
+    }
+    if (!isNetworkSwitch(e)) {
+      setStatus("Could not read pool: "+(e.shortMessage||e.message), "warn");
+    }
   }
   renderStats();
   renderForm();
@@ -555,7 +572,7 @@ async function submit(){
   if (state.tab === "stake" && v < MIN) return setStatus("Minimum 0.001 42.", "warn");
   try {
     await ensureChain();
-    const signer = await new ethers.BrowserProvider(window.ethereum).getSigner();
+    const signer = await walletProvider().getSigner();
     const pool = new ethers.Contract(POOL, POOL_ABI, signer);
     $("cta").disabled = true;
     $("cta").textContent = "Confirm in wallet…";
@@ -570,7 +587,11 @@ async function submit(){
     $("amount").value = "";
     await refresh();
   } catch (e) {
-    setStatus(e.shortMessage || e.message || "Transaction failed", "bad");
+    if (isNetworkSwitch(e)) {
+      await refresh();
+    } else {
+      setStatus(e.shortMessage || e.message || "Transaction failed", "bad");
+    }
   } finally {
     $("cta").disabled = false;
     renderForm();
@@ -580,7 +601,7 @@ async function submit(){
 async function claim(id){
   try {
     await ensureChain();
-    const signer = await new ethers.BrowserProvider(window.ethereum).getSigner();
+    const signer = await walletProvider().getSigner();
     const pool = new ethers.Contract(POOL, POOL_ABI, signer);
     const tx = await pool.claim(id);
     setStatus(`Claim <a href="${EXPLORER}/tx/${tx.hash}" target="_blank" rel="noreferrer">${tx.hash.slice(0,10)}…</a>`, "ok");
@@ -613,7 +634,10 @@ $("claimsPane").addEventListener("click", (e) => {
 
 if (window.ethereum) {
   window.ethereum.on?.("accountsChanged", (a) => { state.account = a[0] || null; walletLabel(); refresh(); });
-  window.ethereum.on?.("chainChanged", () => location.reload());
+  window.ethereum.on?.("chainChanged", (id) => {
+    if (parseInt(id, 16) === CHAIN_ID) { refresh(); return; }
+    location.reload();
+  });
 }
 
 document.querySelectorAll(".tab").forEach(b => b.classList.toggle("active", b.dataset.tab === state.tab));
