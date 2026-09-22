@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>What RicSwap is / is not — RicSwap</title>
+<meta name="description" content="Plain-language description of RicSwap: Shibarium DEX and launchpad, Infinite Drive 42 staking (x42). Not investment advice." />
+<meta name="robots" content="index,follow" />
+<meta name="theme-color" content="#030407" />
+<link rel="canonical" href="https://ricswap.com/about.html" />
+<link rel="icon" type="image/png" href="riclogo.png" />
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+:root {
+  --void:#030407; --well:#0b0e1a;
+  --rim:rgba(255,255,255,.06); --magma:#ff4d00; --ember:#ff8c00; --gold:#e8b84b;
+  --smoke:#8385a0; --fog:#c0c2d8; --white:#eef0f8;
+  --display:"Bebas Neue",sans-serif; --body:"DM Sans",system-ui,sans-serif; --mono:"JetBrains Mono",monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--void);color:var(--fog);font-family:var(--body);line-height:1.65;padding:32px 20px 80px}
+a{color:var(--gold)}
+.wrap{max-width:720px;margin:0 auto}
+.brand{display:flex;align-items:center;gap:10px;margin-bottom:28px;text-decoration:none;color:inherit}
+.brand img{width:40px;height:40px;border-radius:10px;object-fit:cover;box-shadow:0 0 0 1px rgba(255,77,0,.25)}
+.logo-text{font-family:var(--display);font-size:26px;letter-spacing:2px;background:linear-gradient(135deg,var(--gold),var(--magma));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.kicker{font-family:var(--mono);font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--magma);margin-bottom:10px}
+h1{font-family:var(--display);font-size:clamp(36px,6vw,52px);letter-spacing:2px;color:var(--white);line-height:.95;margin-bottom:16px}
+.lede{color:var(--smoke);margin-bottom:28px}
+.split{padding:14px 16px;border:1px solid rgba(255,77,0,.3);background:rgba(255,77,0,.08);border-radius:12px;margin-bottom:36px;font-size:14px}
+.split strong{color:var(--white)}
+h2{font-family:var(--display);letter-spacing:1px;color:var(--white);font-size:28px;margin:28px 0 10px}
+ul{margin:0 0 0 18px}
+li{margin-bottom:8px}
+.card{background:var(--well);border:1px solid var(--rim);border-radius:14px;padding:18px 20px;margin:14px 0}
+code{font-family:var(--mono);font-size:12px;color:var(--gold);word-break:break-all}
+.foot{margin-top:40px;padding-top:18px;border-top:1px solid var(--rim);font-size:13px;color:var(--smoke)}
+.nav{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:32px;font-size:13px;font-weight:600}
+.nav a{color:var(--smoke);text-decoration:none}
+.nav a:hover{color:var(--gold)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a class="brand" href="index.html">
+    <img src="riclogo.png" alt="RicSwap" width="40" height="40"
+         onerror="this.onerror=null;this.src='https://raw.githubusercontent.com/Rictoken87/ricswap-website/main/riclogo.png'" />
+    <span class="logo-text">RICSWAP</span>
+  </a>
+  <div class="nav">
+    <a href="index.html">Home</a>
+    <a href="swap.html">Swap</a>
+    <a href="x42.html">x42 stake</a>
+    <a href="drive.html">Drive</a>
+  </div>
+
+  <div class="kicker">Read this first</div>
+  <h1>WHAT THIS IS<br>/ IS NOT</h1>
+  <p class="lede">Short facts. Not a pitch. Not investment advice. Software can fail; you can lose 42, BONE, RIC, or x42.</p>
+
+  <div class="split">
+    <strong>Two chains — do not mix.</strong>
+    Shibarium <strong>109</strong> is trade and launch (BONE / RIC).
+    Infinite Drive <strong>421018</strong> is native <strong>42</strong> and x42.
+    Never send 42 on 109. Never send BONE on 421018.
+  </div>
+
+  <h2>What RicSwap is</h2>
+  <div class="card">
+    <ul>
+      <li>A small DEX and CleanToken launchpad on <strong>Shibarium (chain 109)</strong>. Swap fee 0.3% to LPs. Launch fee in RIC.</li>
+      <li>A separate Infinite Drive app: token launch in native 42, plus <strong>x42 liquid staking</strong> at <a href="x42.html">x42.html</a>.</li>
+      <li>Non-custodial UI: your wallet signs; we do not hold keys.</li>
+      <li>CleanTokens are ownerless ERC-20s created by <em>whoever clicks launch</em> — not by RicSwap as issuer of those tokens.</li>
+    </ul>
+  </div>
+
+  <h2>What RicSwap is not</h2>
+  <div class="card">
+    <ul>
+      <li><strong>Not investment advice.</strong> Nothing here is an offer to sell securities, a promise of profit, or a recommendation to buy RIC, 42, x42, or any launched token.</li>
+      <li><strong>Not a bank or custodian.</strong> If you send tokens to the wrong chain or a fake address, they are gone.</li>
+      <li><strong>Not Uniswap-scale.</strong> Liquidity can be thin. Price impact can be large. That is not hidden TVL — it is a small venue.</li>
+      <li><strong>Not a guarantee of yield.</strong> x42 rate follows Infinite Drive consensus rewards minus fees and possible slashing. APR on dashboards can be wrong or stale.</li>
+      <li><strong>Not audited as a full stack.</strong> Infinite x42 contracts are verified on Blockscout; a professional audit of the pool is still outstanding. Shibarium factory/locker should be verified on Shibariumscan independently.</li>
+    </ul>
+  </div>
+
+  <h2>x42 (Infinite Drive only)</h2>
+  <div class="card">
+    <ul>
+      <li>Chain ID <strong>421018</strong> only. Wallet must show Infinite Drive, not Shibarium 109 and not Ethereum 1.</li>
+      <li>You send native <strong>42</strong> to the pool and receive <strong>x42</strong>. Token count does not rebase; the 42-per-x42 rate can move.</li>
+      <li><strong>First public cap is 100 42.</strong> Do not expect unlimited deposits.</li>
+      <li>Unstake is <strong>21 days</strong> (chain unbonding), 0% fee. Instant exit is match-only at 0.5% and can be empty.</li>
+      <li>Pool (send 42): <code>0x985f6ECb68f308ea4C3b5Fc9c5B187F4ee1dfA23</code></li>
+      <li>x42 token: <code>0x700879539292e2cB46b3C645278e5e272dc27154</code></li>
+      <li>Explorer: <a href="https://scan.infinitedrive.xyz/address/0x985f6ECb68f308ea4C3b5Fc9c5B187F4ee1dfA23" target="_blank" rel="noopener">scan.infinitedrive.xyz</a></li>
+    </ul>
+  </div>
+
+  <h2>CleanTokens</h2>
+  <div class="card">
+    <p>Anyone can deploy a CleanToken through the launchpad. RicSwap does not endorse those tokens, does not manage their treasuries, and does not promise a market. Locked LP reduces some rug types; it does not make a token valuable or safe.</p>
+  </div>
+
+  <p class="foot">
+    <a href="index.html">Home</a> · <a href="x42.html">x42.html</a> · <a href="swap.html">Swap</a><br /><br />
+    RicSwap © 2026 · Not financial, legal, or tax advice.
+  </p>
+</div>
+</body>
+</html>

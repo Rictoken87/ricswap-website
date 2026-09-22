@@ -260,6 +260,23 @@ body::before {
   white-space: nowrap;
 }
 .nav-x42:hover { color: var(--white); background: rgba(255,77,0,0.12); border-color: var(--magma); }
+.chain-split {
+  position: relative;
+  z-index: 90;
+  margin-top: 72px;
+  padding: 12px 28px;
+  background: rgba(255,77,0,0.08);
+  border-bottom: 1px solid rgba(255,77,0,0.28);
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--fog);
+  text-align: center;
+}
+.chain-split strong { color: var(--white); font-weight: 600; }
+.chain-split a { color: var(--gold); font-weight: 600; }
+@media (max-width: 900px) {
+  .chain-split { margin-top: 64px; padding: 12px 16px; text-align: left; }
+}
 .net-pill {
   display: flex;
   align-items: center;
@@ -314,7 +331,7 @@ body::before {
   min-height: 100vh;
   display: flex;
   align-items: center;
-  padding: 120px 48px 80px;
+  padding: 40px 48px 80px;
   overflow: hidden;
 }
 .hero-grid {
@@ -1422,6 +1439,7 @@ footer {
     <a class="nav-x42" href="x42.html">x42 Stake</a>
     <a class="nav-link" href="#ric">RIC</a>
     <a class="nav-link" href="#contracts">Contracts</a>
+    <a class="nav-link" href="about.html">About</a>
   </div>
   <div class="nav-end">
     <div class="net-pill">
@@ -1433,11 +1451,19 @@ footer {
   </div>
 </nav>
 
+<div class="chain-split" role="note">
+  <strong>Two chains, do not mix:</strong>
+  Shibarium <strong>109</strong> = trade and launch (BONE / RIC).
+  Infinite Drive <strong>421018</strong> = native <strong>42</strong> and <a href="x42.html">x42</a>.
+  Never send 42 on 109 or BONE on 421018.
+  <a href="about.html">What this is / is not</a>
+</div>
+
 <!-- ═══ HERO ═══ -->
 <section class="hero">
   <div class="hero-grid">
     <div class="hero-left">
-      <div class="hero-eyebrow">Built for Shibarium</div>
+      <div class="hero-eyebrow">Shibarium 109 · Infinite 421018</div>
       <h1>
         FAIR LAUNCH
         <span class="accent">DEX</span>
@@ -1929,11 +1955,11 @@ footer {
 <div class="cta-section reveal">
   <div class="cta-box">
     <h2 class="cta-title">READY TO<br>BUILD?</h2>
-    <p class="cta-sub">Swap on Shibarium, launch with RIC, or deploy on Infinite Drive with a native 42 service fee. Non-custodial. Not investment advice.</p>
+    <p class="cta-sub">Swap on Shibarium 109. Stake 42 on Infinite 421018. Do not mix gas tokens. Non-custodial. Not investment advice.</p>
     <div class="cta-actions">
-      <button class="btn-primary" type="button" onclick="location.href='swap.html'">Launch App →</button>
-      <button class="btn-ghost" type="button" onclick="location.href='launchpad.html'">Shibarium Launchpad</button>
-      <button class="btn-ghost" type="button" onclick="location.href='drive.html'">Infinite Drive</button>
+      <button class="btn-primary" type="button" onclick="location.href='x42.html'">Stake 42 → x42</button>
+      <button class="btn-ghost" type="button" onclick="location.href='swap.html'">Swap (Shibarium)</button>
+      <button class="btn-ghost" type="button" onclick="location.href='about.html'">What this is / is not</button>
     </div>
   </div>
 </div>
@@ -1960,9 +1986,11 @@ footer {
       <a href="stealth.html">Stealth send</a>
       <a href="names.html">Names (.ric)</a>
       <a href="#ric">RIC Tokenomics</a>
+      <a href="about.html">What this is / is not</a>
     </div>
     <div class="footer-col">
       <h4>Resources</h4>
+      <a href="about.html">About / disclaimer</a>
       <a href="#contracts">Smart Contracts</a>
       <a href="#drive">Infinite Drive</a>
       <a href="https://www.shibariumscan.io/address/0xe0FE5314ef6b25Fb4FD1B893399801E305e7e28E" target="_blank" rel="noopener">Shibarium Factory</a>

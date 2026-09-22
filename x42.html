@@ -140,12 +140,16 @@ button{cursor:pointer;border:0;background:none;color:inherit}
     </a>
     <div class="row">
       <a class="nav-link" href="index.html">Home</a>
-      <a class="nav-link" href="drive.html">Launchpad</a>
+      <a class="nav-link" href="about.html">About</a>
       <a class="nav-link on" href="x42.html">x42</a>
-      <span class="chip">Chain 421018</span>
+      <span class="chip" id="chainChip">Need chain 421018</span>
       <button class="wallet" id="walletBtn" type="button">Connect wallet</button>
     </div>
   </header>
+  <div class="banner warn" id="chainBanner" style="margin-bottom:18px">
+    This page is <strong>Infinite Drive only (chain 421018)</strong>. Shibarium is 109 — do not send BONE here. Ethereum is 1 — switch before you stake.
+    <a href="about.html">What this is / is not</a>
+  </div>
 
   <section class="hero">
     <div>
@@ -214,6 +218,10 @@ button{cursor:pointer;border:0;background:none;color:inherit}
       <p>21 days — the chain’s unbonding time. Your x42 is burned when you request; you claim native 42 when the ticket matures. Instant exit is 0.5% and only fills when someone else deposits.</p>
     </article>
     <article>
+      <h3>Is this a DEX or a bank?</h3>
+      <p>Neither. Read <a href="about.html">what RicSwap is / is not</a>. Not investment advice. First cap 100 42. Wrong chain (109 or 1) will lose funds if you send native tokens there.</p>
+    </article>
+    <article>
       <h3>What if a validator is slashed?</h3>
       <p>Remaining x42 holders socialize the NAV drop. Unstake tickets keep their face value. Withdrawals can pause if backing cannot cover the queue.</p>
     </article>
@@ -226,7 +234,7 @@ button{cursor:pointer;border:0;background:none;color:inherit}
   </div>
 
   <footer class="foot">
-    <span>x42 · Infinite Improbability Drive · not financial advice</span>
+    <span>x42 · Infinite Drive 421018 · not financial advice · <a href="about.html">disclaimer</a></span>
     <span><a href="drive.html">Drive launchpad</a> · <a href="https://scan.infinitedrive.xyz" target="_blank" rel="noreferrer">Explorer</a></span>
   </footer>
 </div>
@@ -449,10 +457,36 @@ function walletLabel(){
   btn.classList.add("connected");
 }
 
+function setChainUi(idHex){
+  const n = parseInt(idHex, 16);
+  const chip = $("chainChip");
+  const ban = $("chainBanner");
+  if (!chip || !ban) return;
+  if (n === CHAIN_ID) {
+    chip.textContent = "Infinite Drive · 421018";
+    ban.className = "banner ok";
+    ban.innerHTML = "Wallet is on <strong>Infinite Drive (421018)</strong>. Stake native 42 only. <a href=\"about.html\">What this is / is not</a>";
+    return;
+  }
+  const label = n === 109 ? "Shibarium 109 — wrong chain for x42" : (n === 1 ? "Ethereum 1 — switch to Infinite Drive" : ("chain "+n+" — switch to 421018"));
+  chip.textContent = label;
+  ban.className = "banner bad";
+  ban.innerHTML = "Wrong network. x42 is <strong>Infinite Drive 421018</strong> only. You are on <strong>"+label+"</strong>. Do not send 42 here until the wallet switches. <a href=\"about.html\">What this is / is not</a>";
+}
+
+async function watchChain(){
+  if (!window.ethereum) return;
+  try {
+    const id = await window.ethereum.request({ method: "eth_chainId" });
+    setChainUi(id);
+  } catch (_) {}
+}
+
 async function ensureChain(){
   const eth = window.ethereum;
   if (!eth) throw new Error("No injected wallet. Install MetaMask or Rabby.");
   const id = await eth.request({ method: "eth_chainId" });
+  setChainUi(id);
   if (parseInt(id,16) === CHAIN_ID) return;
   try {
     await eth.request({ method: "wallet_switchEthereumChain", params: [{ chainId: CHAIN_HEX }] });
@@ -572,6 +606,10 @@ async function submit(){
   if (state.tab === "stake" && v < MIN) return setStatus("Minimum 0.001 42.", "warn");
   try {
     await ensureChain();
+    {
+      const idHex = await window.ethereum.request({ method: "eth_chainId" });
+      if (parseInt(idHex, 16) !== CHAIN_ID) return setStatus("Switch wallet to Infinite Drive (421018). Do not stake on Shibarium 109.", "bad");
+    }
     const signer = await walletProvider().getSigner();
     const pool = new ethers.Contract(POOL, POOL_ABI, signer);
     $("cta").disabled = true;
@@ -601,6 +639,10 @@ async function submit(){
 async function claim(id){
   try {
     await ensureChain();
+    {
+      const idHex = await window.ethereum.request({ method: "eth_chainId" });
+      if (parseInt(idHex, 16) !== CHAIN_ID) return setStatus("Switch wallet to Infinite Drive (421018).", "bad");
+    }
     const signer = await walletProvider().getSigner();
     const pool = new ethers.Contract(POOL, POOL_ABI, signer);
     const tx = await pool.claim(id);
@@ -635,9 +677,10 @@ $("claimsPane").addEventListener("click", (e) => {
 if (window.ethereum) {
   window.ethereum.on?.("accountsChanged", (a) => { state.account = a[0] || null; walletLabel(); refresh(); });
   window.ethereum.on?.("chainChanged", (id) => {
+    setChainUi(id);
     if (parseInt(id, 16) === CHAIN_ID) { refresh(); return; }
-    location.reload();
   });
+  watchChain();
 }
 
 document.querySelectorAll(".tab").forEach(b => b.classList.toggle("active", b.dataset.tab === state.tab));
