@@ -237,6 +237,29 @@ body::before {
 }
 .nav-cta:hover::before { opacity: 1; }
 .nav-cta:hover { transform: translateY(-1px); box-shadow: 0 8px 24px rgba(255,77,0,0.35); }
+.nav-cta-x42 {
+  background: transparent;
+  border: 1px solid rgba(232,184,75,0.45);
+  color: var(--gold);
+  box-shadow: none;
+}
+.nav-cta-x42:hover {
+  background: rgba(232,184,75,0.1);
+  border-color: var(--gold);
+  color: var(--white);
+  box-shadow: 0 8px 24px rgba(232,184,75,0.2);
+}
+.nav-x42 {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.6px;
+  color: var(--gold);
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(232,184,75,0.25);
+  white-space: nowrap;
+}
+.nav-x42:hover { color: var(--white); background: rgba(255,77,0,0.12); border-color: var(--magma); }
 .net-pill {
   display: flex;
   align-items: center;
@@ -919,6 +942,99 @@ body::before {
   flex-wrap: wrap;
 }
 
+.x42-band {
+  position: relative;
+  z-index: 1;
+  padding: 0 48px 80px;
+}
+.x42-card {
+  position: relative;
+  max-width: 1280px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 1.2fr 0.8fr;
+  gap: 40px;
+  align-items: center;
+  background: rgba(11,14,26,0.75);
+  border: 1px solid rgba(255,77,0,0.28);
+  border-radius: 24px;
+  padding: 48px 52px;
+  overflow: hidden;
+  box-shadow: 0 0 0 1px rgba(255,255,255,0.02), 0 40px 80px rgba(255,77,0,0.08);
+}
+.x42-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--magma), var(--gold), var(--ember));
+}
+.x42-card::after {
+  content: '';
+  position: absolute;
+  width: 420px; height: 420px;
+  right: -120px; bottom: -160px;
+  background: radial-gradient(circle, rgba(255,77,0,0.16), transparent 70%);
+  pointer-events: none;
+}
+.x42-kicker {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--magma);
+  font-weight: 500;
+  margin-bottom: 12px;
+}
+.x42-card h2 {
+  font-family: var(--display);
+  font-size: clamp(40px, 5vw, 64px);
+  letter-spacing: 2px;
+  line-height: 0.95;
+  color: var(--white);
+  margin-bottom: 16px;
+}
+.x42-card h2 span {
+  background: linear-gradient(135deg, var(--magma), var(--gold));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.x42-card p {
+  color: var(--smoke);
+  font-weight: 300;
+  font-size: 16px;
+  line-height: 1.7;
+  margin-bottom: 24px;
+  max-width: 540px;
+}
+.x42-pills { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 28px; }
+.x42-aside {
+  position: relative;
+  z-index: 1;
+  background: rgba(3,4,7,0.55);
+  border: 1px solid var(--rim);
+  border-radius: 16px;
+  padding: 28px 24px;
+}
+.x42-aside .pair {
+  font-family: var(--display);
+  font-size: 42px;
+  letter-spacing: 2px;
+  color: var(--white);
+  margin-bottom: 8px;
+}
+.x42-aside .pair em {
+  font-style: normal;
+  background: linear-gradient(135deg, var(--gold), var(--magma));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.x42-aside .hint { font-size: 13px; color: var(--smoke); margin-bottom: 20px; font-weight: 300; }
+@media (max-width: 860px) {
+  .x42-band { padding: 0 20px 56px; }
+  .x42-card { grid-template-columns: 1fr; padding: 32px 22px; gap: 24px; }
+}
+
 /* ═══════════════════════════════════════════════════
    FOOTER
 ═══════════════════════════════════════════════════ */
@@ -1026,7 +1142,7 @@ footer {
   }
   .nav.is-open .nav-menu { display: flex; }
   .nav-group > button,
-  .nav-link { width: 100%; justify-content: space-between; min-height: 44px; }
+  .nav-link, .nav-x42 { width: 100%; justify-content: space-between; min-height: 44px; }
   .nav-drop {
     position: static;
     min-width: 0;
@@ -1298,10 +1414,12 @@ footer {
       <button type="button" aria-haspopup="true">Drive</button>
       <div class="nav-drop">
         <a href="drive.html"><strong>Drive</strong><small>Infinite Improbability Drive app</small></a>
+        <a href="x42.html"><strong>x42 stake</strong><small>Stake native 42 · liquid x42</small></a>
         <a href="stealth.html"><strong>Stealth send</strong><small>One-time receive addresses · 42</small></a>
         <a href="names.html"><strong>Names</strong><small>.ric names</small></a>
       </div>
     </div>
+    <a class="nav-x42" href="x42.html">x42 Stake</a>
     <a class="nav-link" href="#ric">RIC</a>
     <a class="nav-link" href="#contracts">Contracts</a>
   </div>
@@ -1310,6 +1428,7 @@ footer {
       <div class="net-dot"></div>
       SHIBARIUM
     </div>
+    <button class="nav-cta nav-cta-x42" type="button" onclick="location.href='x42.html'">Stake 42</button>
     <button class="nav-cta" type="button" onclick="location.href='swap.html'">Launch App</button>
   </div>
 </nav>
@@ -1328,18 +1447,16 @@ footer {
         locked LP and no owner powers. <strong style="color:var(--gold);font-weight:500">RIC</strong> powers launches and verification — half of every fee is burned.
       </p>
       <div class="hero-actions">
-        <button class="btn-primary" onclick="location.href='swap.html'">Start Swapping</button>
-        <button class="btn-ghost" onclick="location.href='launchpad.html'">
+        <button class="btn-primary" type="button" onclick="location.href='x42.html'">Stake 42 → x42</button>
+        <button class="btn-ghost" type="button" onclick="location.href='swap.html'">Start Swapping</button>
+        <button class="btn-ghost" type="button" onclick="location.href='launchpad.html'">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
           Create Token
         </button>
-        <button class="btn-ghost" type="button" onclick="location.href='drive.html'" title="Separate launchpad on Infinite Drive">
-          Infinite Drive
-        </button>
       </div>
-      <p class="hero-sub" style="margin-top:16px;margin-bottom:0;font-size:14px;max-width:520px">
-        Also live: <a href="drive.html" style="color:var(--gold);font-weight:500">Drive launchpad on Infinite</a>
-        (chain 421018 · service fee in <strong style="color:var(--fog)">42</strong> · no RIC required).
+      <p class="hero-sub" style="margin-top:16px;margin-bottom:0;font-size:14px;max-width:540px">
+        Liquid staking is live on Infinite Drive (421018). Deposit native <strong style="color:var(--fog)">42</strong>, receive <strong style="color:var(--gold)">x42</strong>.
+        Also: <a href="drive.html" style="color:var(--gold);font-weight:500">Drive launchpad</a>.
       </p>
       <div class="hero-badges">
         <div class="badge"><div class="badge-dot"></div> LP Locked on Launch</div>
@@ -1398,6 +1515,7 @@ footer {
 <!-- ═══ TICKER ═══ -->
 <div class="ticker-bar">
   <div class="ticker-track" id="ticker">
+    <div class="ticker-item"><span class="ticker-name">x42</span><span class="ticker-price">Liquid stake</span><span class="ticker-change-up">Infinite 421018</span></div>
     <div class="ticker-item"><span class="ticker-name">NETWORK</span><span class="ticker-price">Shibarium</span><span class="ticker-change-up">LIVE</span></div>
     <div class="ticker-item"><span class="ticker-name">RIC</span><span class="ticker-price">Utility</span><span class="ticker-change-up">Launch + Verify</span></div>
     <div class="ticker-item"><span class="ticker-name">LAUNCH FEE</span><span class="ticker-price">100 RIC</span><span class="ticker-change-up">50% burned</span></div>
@@ -1413,6 +1531,36 @@ footer {
     <div class="ticker-item"><span class="ticker-name">MIN LP LOCK</span><span class="ticker-price">30 days</span><span class="ticker-change-up">or permanent</span></div>
     <div class="ticker-item"><span class="ticker-name">MAX TEAM</span><span class="ticker-price">25%</span><span class="ticker-change-up">Fair launch</span></div>
     <div class="ticker-item"><span class="ticker-name">CLEANTOKEN</span><span class="ticker-price">No owner</span><span class="ticker-change-up">No mint / tax</span></div>
+  </div>
+</div>
+
+<!-- ═══ x42 LIQUID STAKING ═══ -->
+<div class="x42-band" id="x42">
+  <div class="x42-card reveal">
+    <div>
+      <div class="x42-kicker">New · Infinite Drive · chain 421018</div>
+      <h2>LIQUID STAKING<br><span>FOR NATIVE 42</span></h2>
+      <p>
+        Deposit native 42 and receive x42 — a value-accruing token, not a rebase.
+        Your x42 count stays still; consensus rewards raise the 42-per-x42 rate.
+        21-day unstake. First public cap 100 42. Not financial advice.
+      </p>
+      <div class="x42-pills">
+        <span class="tok-pill">0% mint fee</span>
+        <span class="tok-pill">21-day 0% exit</span>
+        <span class="tok-pill">Instant match 0.5%</span>
+        <span class="tok-pill">Non-custodial</span>
+      </div>
+      <div class="hero-actions">
+        <button class="btn-primary" type="button" onclick="location.href='x42.html'">Open x42 staking →</button>
+        <a class="btn-ghost" href="https://scan.infinitedrive.xyz/address/0x985f6ECb68f308ea4C3b5Fc9c5B187F4ee1dfA23" target="_blank" rel="noopener">View pool</a>
+      </div>
+    </div>
+    <div class="x42-aside">
+      <div class="pair">42 → <em>x42</em></div>
+      <p class="hint">Switch MetaMask / Rabby to Infinite Drive (421018), then stake on ricswap.com/x42.html</p>
+      <button class="btn-primary" type="button" style="width:100%" onclick="location.href='x42.html'">Stake 42 now</button>
+    </div>
   </div>
 </div>
 
@@ -1478,6 +1626,11 @@ footer {
       <div class="feat-icon">∞</div>
       <div class="feat-title">PERMISSIONLESS TRADE</div>
       <p class="feat-desc">Anyone can swap or provide liquidity. Launchpad enforces fair rules; the DEX remains open for any pair.</p>
+    </div>
+    <div class="feat-card reveal reveal-delay-2">
+      <div class="feat-icon">x42</div>
+      <div class="feat-title">LIQUID STAKING</div>
+      <p class="feat-desc">Stake native 42 on Infinite Drive, receive x42. Rate accrues consensus yield. Non-custodial pool, 72h timelock. <a href="x42.html" style="color:var(--gold)">Open x42.html →</a></p>
     </div>
   </div>
 </div>
@@ -1672,7 +1825,8 @@ footer {
     </div>
   </div>
   <div style="margin-top:40px;display:flex;flex-wrap:wrap;gap:12px;align-items:center" class="reveal">
-    <button class="btn-primary" type="button" onclick="location.href='drive.html'">Open Drive Launchpad →</button>
+    <button class="btn-primary" type="button" onclick="location.href='x42.html'">Stake 42 → x42</button>
+    <button class="btn-ghost" type="button" onclick="location.href='drive.html'">Open Drive Launchpad</button>
     <a class="btn-ghost" href="https://scan.infinitedrive.xyz" target="_blank" rel="noopener" style="display:inline-flex;align-items:center">Explorer</a>
   </div>
 </div>
@@ -1793,7 +1947,7 @@ footer {
              onerror="this.onerror=null;this.src='https://raw.githubusercontent.com/Rictoken87/ricswap-website/main/riclogo.png'" />
         <span class="logo-text">RICSWAP</span>
       </a>
-      <p>Fair-launch DEX on Shibarium. Drive launchpad on Infinite. Locked LP. Non-custodial.</p>
+      <p>Fair-launch DEX on Shibarium. Liquid staking and Drive launchpad on Infinite. Locked LP. Non-custodial.</p>
     </div>
     <div class="footer-col">
       <h4>Product</h4>
@@ -1802,6 +1956,7 @@ footer {
       <a href="pools.html">Pools</a>
       <a href="launchpad.html">Launchpad (Shibarium)</a>
       <a href="drive.html">Drive (Infinite)</a>
+      <a href="x42.html">x42 stake</a>
       <a href="stealth.html">Stealth send</a>
       <a href="names.html">Names (.ric)</a>
       <a href="#ric">RIC Tokenomics</a>
