@@ -1,0 +1,625 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="theme-color" content="#030407" />
+<meta name="robots" content="index,follow" />
+<meta name="description" content="Stake native 42 on Infinite Drive. Receive x42 — a value-accruing liquid staking token. Cap 100 42." />
+<title>x42 · Stake 42 on Infinite Drive — RicSwap</title>
+<link rel="canonical" href="https://ricswap.com/x42" />
+<link rel="icon" type="image/png" href="riclogo.png" />
+<link rel="apple-touch-icon" href="riclogo.png" />
+<meta property="og:type" content="website" />
+<meta property="og:url" content="https://ricswap.com/x42" />
+<meta property="og:title" content="x42 · Liquid staking for Infinite Drive" />
+<meta property="og:description" content="Deposit native 42, receive x42. Rate goes up with consensus rewards. 21-day unstake." />
+<meta property="og:image" content="https://ricswap.com/riclogo.png" />
+<meta name="color-scheme" content="dark" />
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://evm-rpc.infinitedrive.xyz https://evm-rpc-infinite.mschihuahua.org https://evm-rpc.infinitepanda.xyz https://scan.infinitedrive.xyz https://cdn.jsdelivr.net; frame-src 'none'; object-src 'none'; base-uri 'self'" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet" />
+<style>
+:root {
+  --void:#030407; --deep:#060810; --well:#0b0e1a; --card:#0b0e1a; --lift:#121628;
+  --line:rgba(255,77,0,.22); --line2:rgba(255,255,255,.06);
+  --magma:#ff4d00; --ember:#ff8c00; --gold:#e8b84b;
+  --ok:#3dd68c; --warn:#ff8c00; --bad:#ff5c6c;
+  --ash:#4a4d60; --smoke:#8385a0; --fog:#c0c2d8; --mist:#c0c2d8; --white:#eef0f8;
+  --display:"Bebas Neue",sans-serif; --body:"DM Sans",system-ui,sans-serif; --mono:"JetBrains Mono",ui-monospace,monospace;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{min-height:100%;overflow-x:hidden}
+body{background:var(--void);color:var(--fog);font-family:var(--body);font-size:16px;line-height:1.6;-webkit-font-smoothing:antialiased}
+body::before{content:"";position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");opacity:.025;pointer-events:none;z-index:9999}
+body::after{content:"";position:fixed;inset:0;background:radial-gradient(700px 500px at -10% -10%,rgba(255,77,0,.12),transparent 70%),radial-gradient(500px 400px at 110% 110%,rgba(232,184,75,.08),transparent 70%);pointer-events:none;z-index:0}
+a{color:var(--gold);text-decoration:none}
+button,input{font-family:inherit}
+button{cursor:pointer;border:0;background:none;color:inherit}
+.app{position:relative;z-index:1;max-width:1120px;margin:0 auto;padding:20px 20px 80px}
+.top{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:8px 0 28px}
+.brand{display:flex;align-items:center;gap:12px;color:inherit}
+.mark{width:40px;height:40px;border-radius:10px;object-fit:cover;background:var(--well);box-shadow:0 0 0 1px rgba(255,77,0,.25),0 8px 20px rgba(255,77,0,.15)}
+.logo-text{font-family:var(--display);font-size:26px;letter-spacing:2px;line-height:1;background:linear-gradient(135deg,var(--gold),var(--magma));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.brand h1{font-family:var(--display);font-size:22px;font-weight:400;color:var(--white);letter-spacing:2px;line-height:1}
+.brand p{font-size:12px;color:var(--smoke);letter-spacing:.08em;text-transform:uppercase}
+.row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.nav-link{color:var(--fog);font-size:13px;font-weight:600}
+.nav-link.on{color:var(--magma)}
+.chip,.wallet{border:1px solid var(--line2);background:var(--well);border-radius:999px;padding:8px 14px;font-size:13px;color:var(--fog)}
+.chip{color:var(--gold);border-color:rgba(232,184,75,.35)}
+.wallet{background:linear-gradient(180deg,#14182a,#0b0e1a);color:var(--white);font-weight:600}
+.wallet:hover{border-color:var(--magma)}
+.wallet.connected{font-family:var(--mono);font-weight:400;border-color:rgba(61,214,140,.35);color:var(--ok)}
+.hero{display:grid;grid-template-columns:1.05fr .95fr;gap:36px;align-items:start;margin-bottom:36px;width:100%}
+.hero > *{min-width:0}
+.kicker{color:var(--magma);font-size:12px;letter-spacing:.22em;text-transform:uppercase;margin-bottom:12px;font-weight:600}
+.hero h2{font-family:var(--display);font-size:clamp(48px,7vw,88px);line-height:.92;color:var(--white);font-weight:400;letter-spacing:2px;margin-bottom:14px}
+.hero h2 span{background:linear-gradient(135deg,var(--magma) 0%,var(--gold) 60%,var(--ember) 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.lede{color:var(--smoke);font-size:16px;font-weight:300;width:100%;max-width:100%;margin-bottom:22px;overflow-wrap:anywhere;word-break:break-word;line-height:1.7}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:8px}
+.stat{background:var(--well);border:1px solid var(--line2);border-radius:14px;padding:14px 16px;min-width:0}
+.stat span{display:block;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--smoke);margin-bottom:6px}
+.stat strong{display:block;font-family:var(--mono);font-size:18px;color:var(--white);font-weight:400;line-height:1.25}
+.stat em{display:block;font-style:normal;color:var(--gold);font-size:12px;margin-top:4px;line-height:1.35}
+.panel{background:linear-gradient(180deg,#101422,var(--well));border:1px solid var(--line);border-radius:22px;padding:8px;box-shadow:0 30px 80px rgba(0,0,0,.45),0 0 40px rgba(255,77,0,.06)}
+.tabs{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:6px;padding:6px}
+.gauge{margin:0 0 12px;padding:12px 14px;background:var(--deep);border:1px solid var(--line2);border-radius:14px}
+.gauge label{display:flex;justify-content:space-between;font-size:12px;color:var(--fog);margin-bottom:8px}
+.gauge .bar{height:8px;border-radius:99px;background:#1c1a24;overflow:hidden}
+.gauge .bar > i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--magma),var(--gold));border-radius:99px}
+.gauge p{margin-top:8px;font-size:12px;color:var(--fog)}
+.tab{border-radius:14px;padding:10px 8px;color:var(--fog);font-weight:600}
+.tab.active{background:var(--lift);color:var(--white);box-shadow:inset 0 0 0 1px var(--line)}
+.body{padding:18px 16px 16px}
+.field{background:var(--deep);border:1px solid var(--line2);border-radius:16px;padding:14px 16px 16px}
+.field-top{display:flex;justify-content:space-between;font-size:12px;color:var(--fog);margin-bottom:8px}
+.field-top button{color:var(--ember);font-weight:600}
+.field-row{display:flex;align-items:center;gap:10px}
+.field input{flex:1;background:transparent;border:0;outline:none;color:var(--white);font-size:28px;font-family:var(--mono);width:100%;min-width:0}
+.token{display:flex;align-items:center;gap:8px;background:var(--lift);border-radius:999px;padding:6px 10px 6px 6px;font-weight:700;color:var(--white);font-size:14px;white-space:nowrap}
+.dot{width:22px;height:22px;border-radius:50%;display:grid;place-items:center;font-size:10px;font-weight:800}
+.dot.n{background:linear-gradient(135deg,var(--magma),var(--ember));color:#fff}
+.dot.x{background:linear-gradient(135deg,var(--gold),var(--magma));color:#1a1204}
+.preview{margin:14px 2px;display:grid;gap:8px;font-size:13px;color:var(--fog)}
+.preview div{display:flex;justify-content:space-between;gap:12px}
+.preview strong{color:var(--white);font-family:var(--mono);font-weight:500;text-align:right}
+.cta{width:100%;margin-top:8px;border-radius:10px;padding:16px;font-weight:600;font-size:15px;letter-spacing:.3px;background:linear-gradient(135deg,var(--magma),var(--ember));color:#fff}
+.cta:hover{filter:brightness(1.08)}
+.cta:disabled{opacity:.45;cursor:not-allowed;filter:none}
+.cta.ghost{background:var(--lift);color:var(--white);box-shadow:inset 0 0 0 1px var(--line2)}
+.note{margin-top:12px;font-size:12px;color:var(--fog);text-align:center}
+.banner{margin:0 0 12px;padding:10px 12px;border-radius:12px;font-size:13px}
+.banner.warn{background:rgba(255,140,0,.12);color:var(--ember)}
+.banner.bad{background:rgba(255,92,108,.12);color:var(--bad)}
+.banner.ok{background:rgba(61,214,140,.1);color:var(--ok)}
+.claims{display:grid;gap:10px}
+.claim{background:var(--deep);border:1px solid var(--line2);border-radius:14px;padding:14px;display:grid;gap:8px}
+.claim header{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.claim strong{color:var(--white);font-family:var(--mono)}
+.meta{font-size:12px;color:var(--fog)}
+.empty{text-align:center;padding:28px 8px;color:var(--fog)}
+.faq{margin-top:48px;display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.faq article{background:var(--well);border:1px solid var(--line2);border-radius:16px;padding:18px 20px}
+.faq h3{color:var(--white);font-size:15px;margin-bottom:8px}
+.faq p{color:var(--fog);font-size:14px}
+.addrs{margin-top:28px;display:grid;gap:8px;font-family:var(--mono);font-size:12px;color:var(--fog);word-break:break-all}
+.addrs a{color:var(--mist)}
+.foot{margin-top:40px;padding-top:18px;border-top:1px solid var(--line2);display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;color:var(--fog);font-size:12px}
+.foot a{color:var(--mist)}
+@media (max-width:860px){
+  .hero{grid-template-columns:1fr;gap:22px}
+  .stats{grid-template-columns:1fr 1fr}
+  .faq{grid-template-columns:1fr}
+  .hero h2{font-size:34px}
+  .tab{font-size:13px;padding:10px 4px}
+  .field input{font-size:22px}
+  .app{padding:12px 14px 64px}
+  .top{flex-wrap:wrap}
+}
+@media (max-width:520px){
+  .stats{grid-template-columns:1fr}
+  .stat strong{font-size:16px}
+}
+</style>
+</head>
+<body>
+<div id="ethersFail" hidden style="background:rgba(255,77,0,.12);color:#ff8c00;border:1px solid rgba(255,77,0,.4);padding:12px 16px;text-align:center;font-family:system-ui,sans-serif;font-size:14px;position:relative;z-index:2">
+  Could not load a verified copy of the ethers library. For your safety this page will not sign transactions. Refresh, or check your network/extensions.
+</div>
+<div class="app">
+  <header class="top">
+    <a class="brand" href="index.html">
+      <img class="mark" src="riclogo.png" width="40" height="40" alt="RicSwap logo"
+           onerror="this.onerror=null;this.src='https://raw.githubusercontent.com/Rictoken87/ricswap-website/main/riclogo.png'" />
+      <div>
+        <h1><span class="logo-text">RICSWAP</span></h1>
+        <p>x42 · Infinite Drive</p>
+      </div>
+    </a>
+    <div class="row">
+      <a class="nav-link" href="index.html">Home</a>
+      <a class="nav-link" href="drive.html">Launchpad</a>
+      <a class="nav-link on" href="x42.html">x42</a>
+      <span class="chip">Chain 421018</span>
+      <button class="wallet" id="walletBtn" type="button">Connect wallet</button>
+    </div>
+  </header>
+
+  <section class="hero">
+    <div>
+      <div class="kicker">Native 42 → x42 · first cap 100 42</div>
+      <h2>Stake 42. <span>Keep it liquid.</span></h2>
+      <p class="lede">Deposit native 42 and receive x42. Your token count stays still; consensus rewards raise the 42-per-x42 rate. Unstaking takes 21 days on Infinite Drive. Not financial advice.</p>
+      <div class="stats">
+        <div class="stat"><span>Protocol TVL</span><strong id="tvl">—</strong><em>bonded + buffer + unbonding</em></div>
+        <div class="stat"><span>Exchange rate</span><strong id="rate">—</strong><em>42 per 1 x42</em></div>
+        <div class="stat"><span>Your x42</span><strong id="youX">0</strong><em id="youXVal">connect wallet</em></div>
+        <div class="stat"><span>Unbonding</span><strong>21 days</strong><em>then claim native 42</em></div>
+        <div class="stat"><span>Live cap</span><strong>100 42</strong><em>first public tranche</em></div>
+        <div class="stat"><span>Yield model</span><strong>Price-up</strong><em>not rebasing</em></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="tabs">
+        <button class="tab active" data-tab="stake" type="button">Stake</button>
+        <button class="tab" data-tab="unstake" type="button">21-day</button>
+        <button class="tab" data-tab="instant" type="button">Instant</button>
+        <button class="tab" data-tab="claims" type="button">Claims</button>
+      </div>
+      <div class="body">
+        <div class="banner warn" id="capBanner">First live cap is <strong>100 42</strong>. Minimum deposit 0.001 42. Add x42 in your wallet after the first mint.</div>
+        <div id="pauseBanner"></div>
+        <div class="gauge" id="liqGauge">
+          <label><span>Instant matching</span><span id="liqLabel">loading…</span></label>
+          <div class="bar"><i id="liqBar"></i></div>
+          <p id="liqHelp">Instant exit is match-only at 0.5%. 21-day exit is always 0%.</p>
+        </div>
+
+        <div id="formPane">
+          <div class="field">
+            <div class="field-top">
+              <span id="fieldLabel">You stake</span>
+              <button type="button" id="maxBtn">Max 0</button>
+            </div>
+            <div class="field-row">
+              <input id="amount" inputmode="decimal" placeholder="0.0" autocomplete="off" />
+              <span class="token" id="tokenChip"><span class="dot n">42</span>42</span>
+            </div>
+          </div>
+          <div class="preview" id="preview"></div>
+          <button class="cta" id="cta" type="button">Stake 42</button>
+          <p class="note" id="note">x42 is not a rebase token. Your token count stays the same; each x42 becomes worth more 42.</p>
+        </div>
+
+        <div id="claimsPane" class="claims" hidden></div>
+        <div id="status"></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="faq">
+    <article>
+      <h3>Does my x42 balance go up?</h3>
+      <p>No. x42 is price-appreciating, like rETH. Rewards raise the exchange rate, not your token count — so it works in AMMs and wallets without rebase hooks.</p>
+    </article>
+    <article>
+      <h3>Where does the 42 go?</h3>
+      <p>The pool is the only Cosmos delegator. Native 42 is routed to a curated Infinite Drive validator set. It never sits with an admin key. Admin is a 72-hour timelock.</p>
+    </article>
+    <article>
+      <h3>How long to unstake?</h3>
+      <p>21 days — the chain’s unbonding time. Your x42 is burned when you request; you claim native 42 when the ticket matures. Instant exit is 0.5% and only fills when someone else deposits.</p>
+    </article>
+    <article>
+      <h3>What if a validator is slashed?</h3>
+      <p>Remaining x42 holders socialize the NAV drop. Unstake tickets keep their face value. Withdrawals can pause if backing cannot cover the queue.</p>
+    </article>
+  </section>
+
+  <div class="addrs">
+    <div>Pool (send 42) · <a id="poolA" href="#" target="_blank" rel="noreferrer"></a></div>
+    <div>x42 token · <a id="tokA" href="#" target="_blank" rel="noreferrer"></a></div>
+    <div>Timelock · <a href="https://scan.infinitedrive.xyz/address/0xd857362B01bBa2Fb9B2A4138BE321767389547f8" target="_blank" rel="noreferrer">0xd857362B01bBa2Fb9B2A4138BE321767389547f8</a></div>
+  </div>
+
+  <footer class="foot">
+    <span>x42 · Infinite Improbability Drive · not financial advice</span>
+    <span><a href="drive.html">Drive launchpad</a> · <a href="https://scan.infinitedrive.xyz" target="_blank" rel="noreferrer">Explorer</a></span>
+  </footer>
+</div>
+
+<!-- ethers pinned + Subresource Integrity: browser refuses to run the file if
+     jsdelivr ever serves anything other than the exact audited 6.13.4 bytes.
+     Hash = sha384 of the npm-published dist/ethers.umd.min.js for 6.13.4. -->
+<script src="https://cdn.jsdelivr.net/npm/ethers@6.13.4/dist/ethers.umd.min.js"
+        integrity="sha384-6Zl0Pc8zjSz8KvmNeXRvUQgY4ryFb+BwDvKCmLYcBME0joAaru491tQgi9B7zsMM"
+        crossorigin="anonymous"
+        onerror="document.getElementById('ethersFail')?.removeAttribute('hidden')"></script>
+<script>
+const CHAIN_ID = 421018;
+const CHAIN_HEX = "0x66c9a";
+const EXPLORER = "https://scan.infinitedrive.xyz";
+const RPCS = [
+  "https://evm-rpc.infinitedrive.xyz",
+  "https://evm-rpc-infinite.mschihuahua.org",
+  "https://evm-rpc.infinitepanda.xyz"
+];
+const POOL = "0x985f6ECb68f308ea4C3b5Fc9c5B187F4ee1dfA23";
+const X42 = "0x700879539292e2cB46b3C645278e5e272dc27154";
+const DEPLOY_BLOCK = 3561205;
+const MIN = 10n ** 15n;
+const RATE_P = 10n ** 18n;
+const ZERO = "0x0000000000000000000000000000000000000000";
+
+const POOL_ABI = [
+  "function deposit() payable returns (uint256)",
+  "function requestWithdraw(uint256 shares) returns (uint256 requestId, uint256 assets)",
+  "function requestInstantExit(uint256 shares) returns (uint256 requestId, uint256 net, uint256 fee)",
+  "function claim(uint256 requestId)",
+  "function getLiquidity() view returns (uint256 buffer,uint256 bufferCap,uint256 instantPending,uint256 instantHead,uint256 instantNextId,bool instantFromBufferEnabled)",
+  "function getAccounting() view returns (uint256 bonded,uint256 buffer,uint256 unbonding,uint256 accrued,uint256 pending,uint256 donations,uint256 nav,uint256 rate)",
+  "function previewDeposit(uint256 assets) view returns (uint256)",
+  "function previewRedeem(uint256 shares) view returns (uint256)",
+  "function getWithdrawalRequest(uint256 id) view returns (tuple(address owner,uint256 x42Burned,uint256 amount42Owed,uint256 requestTime,uint256 claimableTime,bool claimed))",
+  "function depositsPaused() view returns (bool)",
+  "function withdrawalsPaused() view returns (bool)",
+  "function x42() view returns (address)",
+  "event WithdrawRequested(uint256 indexed id, address indexed owner, uint256 shares, uint256 assets, uint256 claimableTime)"
+];
+const ERC20_ABI = ["function balanceOf(address) view returns (uint256)"];
+
+const params = new URLSearchParams(location.search);
+const state = {
+  tab: ["unstake","instant","claims"].includes(params.get("tab")) ? params.get("tab") : "stake",
+  account: null,
+  rate: RATE_P,
+  tvl: 0n,
+  buffer: 0n,
+  bufferCap: 1n,
+  instantPending: 0n,
+  you42: 0n,
+  youX: 0n,
+  depositsPaused: false,
+  withdrawalsPaused: false,
+  tickets: []
+};
+
+const $ = (id) => document.getElementById(id);
+function fmt(wei, d=4){
+  const n = Number(ethers.formatEther(wei));
+  if (!Number.isFinite(n) || n===0) return "0";
+  return n.toLocaleString("en-US",{maximumFractionDigits:d,minimumFractionDigits:0});
+}
+function fmtRate(r){
+  const n = Number(r) / 1e18;
+  return n.toLocaleString("en-US",{minimumFractionDigits:4,maximumFractionDigits:6});
+}
+function short(a){ return a.slice(0,6)+"…"+a.slice(-4); }
+function parseAmt(s){
+  try { return ethers.parseEther((s||"").trim()||"0"); } catch { return 0n; }
+}
+function readProvider(){
+  return new ethers.FallbackProvider(RPCS.map((url, i) => ({
+    provider: new ethers.JsonRpcProvider(url, CHAIN_ID, { staticNetwork: true }),
+    stallTimeout: 2500,
+    priority: i + 1
+  })), 1);
+}
+
+$("poolA").textContent = POOL;
+$("poolA").href = EXPLORER + "/address/" + POOL;
+$("tokA").textContent = X42;
+$("tokA").href = EXPLORER + "/token/" + X42;
+
+function renderStats(){
+  $("tvl").textContent = fmt(state.tvl,2)+" 42";
+  $("rate").textContent = fmtRate(state.rate);
+  $("youX").textContent = fmt(state.youX,4);
+  $("youXVal").textContent = state.account
+    ? "≈ "+fmt(state.youX * state.rate / RATE_P, 4)+" 42"
+    : "connect wallet";
+  const pause = [];
+  if (state.depositsPaused) pause.push("Deposits are paused.");
+  if (state.withdrawalsPaused) pause.push("Withdrawals are paused.");
+  $("pauseBanner").innerHTML = pause.map(t=>`<div class="banner warn">${t}</div>`).join("");
+  const cap = state.bufferCap === 0n ? 1n : state.bufferCap;
+  const pct = Math.min(100, Number(state.buffer * 10000n / cap) / 100);
+  $("liqBar").style.width = pct + "%";
+  const empty = state.buffer === 0n && state.instantPending > 0n;
+  $("liqLabel").textContent = empty
+    ? "empty — no instant 42"
+    : fmt(state.buffer,2)+" 42 in buffer · cap "+fmt(state.bufferCap,2);
+  $("liqHelp").textContent = empty
+    ? "Instant matching is empty. Use the 21-day 0% exit. Your x42 is not locked."
+    : "Instant exit is match-only at 0.5%. New deposits pay you first. 21-day exit is always 0%.";
+}
+
+function renderForm(){
+  const stake = state.tab === "stake";
+  const instant = state.tab === "instant";
+  $("formPane").hidden = state.tab === "claims";
+  $("claimsPane").hidden = state.tab !== "claims";
+  if (state.tab === "claims") { renderClaims(); return; }
+  $("fieldLabel").textContent = stake ? "You stake" : (instant ? "You exit instantly" : "You unstake (21 days, 0%)");
+  const max = stake ? state.you42 : state.youX;
+  $("maxBtn").textContent = "Max "+fmt(max,4)+" "+(stake?"42":"x42");
+  $("tokenChip").innerHTML = stake
+    ? `<span class="dot n">42</span>42`
+    : `<span class="dot x">x</span>x42`;
+  $("cta").textContent = stake ? "Stake 42" : (instant ? "Queue instant (0.5%)" : "Request 21-day unstake");
+  $("note").textContent = stake
+    ? "Mint fee 0%. Cap 100 42. If the liquid buffer is already over 5% of TVL, new stake waits until keepers bond it."
+    : instant
+      ? "Burns x42 now. You are paid when the next depositor matches you, minus 0.5%. If nobody deposits, use 21-day 0%."
+      : "0% fee. Burns x42 now. Claim native 42 after 21 days.";
+  renderPreview();
+}
+
+// Local math is only a fallback for instant display while the async on-chain
+// preview resolves. The AUTHORITATIVE numbers come from the contract's own
+// previewDeposit()/previewRedeem(), which apply the protocol's exact rounding
+// (down, in the protocol's favor) and the first-deposit dead-shares branch.
+// Recomputing them in JS would show users a number the chain won't honor.
+let _previewSeq = 0;
+function renderPreview(){
+  const v = parseAmt($("amount").value);
+  const stake = state.tab === "stake";
+  // Instant fallback estimate (replaced by on-chain value below).
+  const sharesLocal = state.rate === 0n ? 0n : v * RATE_P / state.rate;
+  const assetsLocal = v * state.rate / RATE_P;
+  const feeLocal = assetsLocal * 50n / 10000n;
+  $("preview").innerHTML = stake
+    ? `<div><span>You receive (est.)</span><strong id="pvOut">${fmt(sharesLocal,6)} x42</strong></div>
+       <div><span>Mint fee</span><strong>0%</strong></div>
+       <div><span>Rate</span><strong>1 x42 = ${fmtRate(state.rate)} 42</strong></div>`
+    : state.tab === "instant"
+      ? `<div><span>Gross (est.)</span><strong id="pvGross">${fmt(assetsLocal,6)} 42</strong></div>
+         <div><span>Match fee 0.5%</span><strong id="pvFee">− ${fmt(feeLocal,6)} 42</strong></div>
+         <div><span>You receive when matched</span><strong id="pvOut">${fmt(assetsLocal-feeLocal,6)} 42</strong></div>`
+      : `<div><span>You receive after 21 days (est.)</span><strong id="pvOut">${fmt(assetsLocal,6)} 42</strong></div>
+         <div><span>Exit fee</span><strong>0%</strong></div>`;
+
+  if (v <= 0n) return;
+  const seq = ++_previewSeq;
+  refreshOnchainPreview(v, stake, seq).catch(()=>{}); // never throws into render
+}
+
+// Ask the contract exactly what it will do, and only apply the result if this
+// is still the latest keystroke (guards against out-of-order async responses).
+async function refreshOnchainPreview(v, stake, seq){
+  const provider = readProvider();
+  const pool = new ethers.Contract(POOL, POOL_ABI, provider);
+  if (stake) {
+    const shares = await pool.previewDeposit(v);
+    if (seq !== _previewSeq) return;
+    const el = $("pvOut"); if (el) el.textContent = fmt(shares,6)+" x42";
+  } else {
+    const assets = await pool.previewRedeem(v);
+    if (seq !== _previewSeq) return;
+    if (state.tab === "instant") {
+      const fee = assets * 50n / 10000n;
+      const g = $("pvGross"); if (g) g.textContent = fmt(assets,6)+" 42";
+      const f = $("pvFee");   if (f) f.textContent = "− "+fmt(fee,6)+" 42";
+      const o = $("pvOut");   if (o) o.textContent = fmt(assets-fee,6)+" 42";
+    } else {
+      const o = $("pvOut");   if (o) o.textContent = fmt(assets,6)+" 42";
+    }
+  }
+}
+
+function renderClaims(){
+  const now = Math.floor(Date.now()/1000);
+  const open = state.tickets.filter(t => !t.claimed);
+  if (!state.account) { $("claimsPane").innerHTML = `<div class="empty">Connect a wallet to see unstake tickets.</div>`; return; }
+  if (!open.length) { $("claimsPane").innerHTML = `<div class="empty">No open unstake tickets for this wallet.</div>`; return; }
+  $("claimsPane").innerHTML = open.map(t => {
+    const left = Number(t.claimableTime) - now;
+    const ready = left <= 0;
+    const days = ready ? 0 : Math.ceil(left/86400);
+    return `<article class="claim">
+      <header><strong>${fmt(t.amount42Owed,4)} 42</strong><span class="meta">ticket #${t.id}</span></header>
+      <div class="meta">Burned ${fmt(t.x42Burned,4)} x42 · ${ready ? "Ready to claim" : days+" days remaining"}</div>
+      <button class="cta ${ready?"":"ghost"}" type="button" ${ready?"":"disabled"} data-claim="${t.id}">${ready?"Claim 42":"Still unbonding"}</button>
+    </article>`;
+  }).join("");
+}
+
+function setStatus(msg, kind){
+  $("status").innerHTML = msg ? `<div class="banner ${kind||"ok"}" style="margin-top:12px">${msg}</div>` : "";
+}
+
+function walletLabel(){
+  const btn = $("walletBtn");
+  if (!state.account) { btn.textContent = "Connect wallet"; btn.classList.remove("connected"); return; }
+  btn.textContent = short(state.account);
+  btn.classList.add("connected");
+}
+
+async function ensureChain(){
+  const eth = window.ethereum;
+  if (!eth) throw new Error("No injected wallet. Install MetaMask or Rabby.");
+  const id = await eth.request({ method: "eth_chainId" });
+  if (parseInt(id,16) === CHAIN_ID) return;
+  try {
+    await eth.request({ method: "wallet_switchEthereumChain", params: [{ chainId: CHAIN_HEX }] });
+  } catch (e) {
+    if (e.code !== 4902 && e.data?.originalError?.code !== 4902) throw e;
+    await eth.request({
+      method: "wallet_addEthereumChain",
+      params: [{
+        chainId: CHAIN_HEX,
+        chainName: "Infinite Drive",
+        nativeCurrency: { name: "Improbability", symbol: "42", decimals: 18 },
+        rpcUrls: RPCS,
+        blockExplorerUrls: [EXPLORER]
+      }]
+    });
+  }
+}
+
+async function suggestToken(){
+  try {
+    await window.ethereum.request({
+      method: "wallet_watchAsset",
+      params: { type: "ERC20", options: { address: X42, symbol: "x42", decimals: 18 } }
+    });
+  } catch (_) {}
+}
+
+async function connect(){
+  try {
+    await ensureChain();
+    const accounts = await window.ethereum.request({ method: "eth_requestAccounts" });
+    state.account = accounts[0];
+    walletLabel();
+    await refresh();
+  } catch (e) {
+    setStatus(e.message || String(e), "bad");
+  }
+}
+
+// One-time check that the hardcoded POOL actually points at a pool whose x42()
+// equals the hardcoded X42. Catches a wrong/typo'd address before any funds move.
+let _addrChecked = false;
+async function verifyAddresses(provider){
+  if (_addrChecked) return true;
+  const pool = new ethers.Contract(POOL, POOL_ABI, provider);
+  const onchainX42 = await pool.x42();
+  if (onchainX42.toLowerCase() !== X42.toLowerCase()) {
+    _lockUI("Configuration error: the pool's x42 token does not match this page. "
+      + "Do not stake. (pool.x42()=" + onchainX42 + ", expected " + X42 + ")");
+    return false;
+  }
+  _addrChecked = true;
+  return true;
+}
+function _lockUI(msg){
+  setStatus(msg, "bad");
+  const cta = $("cta"); if (cta) { cta.disabled = true; cta.textContent = "Unavailable"; }
+}
+
+async function refresh(){
+  try {
+    const provider = readProvider();
+    if (!(await verifyAddresses(provider))) return; // refuse to render form on mismatch
+    const pool = new ethers.Contract(POOL, POOL_ABI, provider);
+    const acc = await pool.getAccounting();
+    state.rate = acc.rate === 0n ? RATE_P : acc.rate;
+    state.tvl = acc.bonded + acc.buffer + acc.unbonding;
+    state.depositsPaused = await pool.depositsPaused();
+    state.withdrawalsPaused = await pool.withdrawalsPaused();
+    try {
+      const liq = await pool.getLiquidity();
+      state.buffer = liq.buffer;
+      state.bufferCap = liq.bufferCap === 0n ? 1n : liq.bufferCap;
+      state.instantPending = liq.instantPending;
+    } catch (_) {}
+    if (state.account) {
+      state.you42 = await provider.getBalance(state.account);
+      const tok = new ethers.Contract(X42, ERC20_ABI, provider);
+      state.youX = await tok.balanceOf(state.account);
+      const filter = pool.filters.WithdrawRequested(null, state.account);
+      // Page the log scan in fixed block windows so we never exceed an RPC's
+      // max log-range as the pool ages (many RPCs cap eth_getLogs span).
+      const latest = await provider.getBlockNumber();
+      const STEP = 45000;
+      let logs = [];
+      for (let from = DEPLOY_BLOCK; from <= latest; from += STEP + 1) {
+        const to = Math.min(from + STEP, latest);
+        try { logs = logs.concat(await pool.queryFilter(filter, from, to)); }
+        catch (_) { /* skip a window the RPC rejects; user can refresh */ }
+      }
+      const tickets = [];
+      for (const log of logs) {
+        const id = log.args.id;
+        const req = await pool.getWithdrawalRequest(id);
+        tickets.push({ id, x42Burned: req.x42Burned, amount42Owed: req.amount42Owed, claimableTime: req.claimableTime, claimed: req.claimed });
+      }
+      state.tickets = tickets.reverse();
+    }
+  } catch (e) {
+    setStatus("Could not read pool: "+(e.shortMessage||e.message), "warn");
+  }
+  renderStats();
+  renderForm();
+}
+
+async function submit(){
+  setStatus("");
+  if (!state.account) return connect();
+  const v = parseAmt($("amount").value);
+  if (v <= 0n) return setStatus("Enter an amount.", "warn");
+  if (state.tab === "stake" && v < MIN) return setStatus("Minimum 0.001 42.", "warn");
+  try {
+    await ensureChain();
+    const signer = await new ethers.BrowserProvider(window.ethereum).getSigner();
+    const pool = new ethers.Contract(POOL, POOL_ABI, signer);
+    $("cta").disabled = true;
+    $("cta").textContent = "Confirm in wallet…";
+    const tx = state.tab === "stake"
+      ? await pool.deposit({ value: v })
+      : state.tab === "instant"
+        ? await pool.requestInstantExit(v)
+        : await pool.requestWithdraw(v);
+    setStatus(`Submitted <a href="${EXPLORER}/tx/${tx.hash}" target="_blank" rel="noreferrer">${tx.hash.slice(0,10)}…</a>`, "ok");
+    await tx.wait();
+    if (state.tab === "stake") suggestToken();
+    $("amount").value = "";
+    await refresh();
+  } catch (e) {
+    setStatus(e.shortMessage || e.message || "Transaction failed", "bad");
+  } finally {
+    $("cta").disabled = false;
+    renderForm();
+  }
+}
+
+async function claim(id){
+  try {
+    await ensureChain();
+    const signer = await new ethers.BrowserProvider(window.ethereum).getSigner();
+    const pool = new ethers.Contract(POOL, POOL_ABI, signer);
+    const tx = await pool.claim(id);
+    setStatus(`Claim <a href="${EXPLORER}/tx/${tx.hash}" target="_blank" rel="noreferrer">${tx.hash.slice(0,10)}…</a>`, "ok");
+    await tx.wait();
+    await refresh();
+  } catch (e) {
+    setStatus(e.shortMessage || e.message || "Claim failed", "bad");
+  }
+}
+
+document.querySelectorAll(".tab").forEach(btn => {
+  btn.addEventListener("click", () => {
+    state.tab = btn.dataset.tab;
+    document.querySelectorAll(".tab").forEach(b => b.classList.toggle("active", b===btn));
+    renderForm();
+  });
+});
+$("amount").addEventListener("input", renderPreview);
+$("maxBtn").addEventListener("click", () => {
+  const max = state.tab === "stake" ? state.you42 : state.youX;
+  $("amount").value = ethers.formatEther(max);
+  renderPreview();
+});
+$("cta").addEventListener("click", submit);
+$("walletBtn").addEventListener("click", () => { if (!state.account) connect(); });
+$("claimsPane").addEventListener("click", (e) => {
+  const id = e.target.dataset?.claim;
+  if (id) claim(BigInt(id));
+});
+
+if (window.ethereum) {
+  window.ethereum.on?.("accountsChanged", (a) => { state.account = a[0] || null; walletLabel(); refresh(); });
+  window.ethereum.on?.("chainChanged", () => location.reload());
+}
+
+document.querySelectorAll(".tab").forEach(b => b.classList.toggle("active", b.dataset.tab === state.tab));
+renderStats();
+renderForm();
+refresh();
+</script>
+</body>
+</html>
