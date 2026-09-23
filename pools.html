@@ -2,192 +2,181 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#030407">
-<meta name="description" content="RicSwap — hardened pool browser. Read-only. Official factory pairs only.">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://unpkg.com https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://rpc.shibarium.shib.io https://*.shibarium.shib.io https://shibariumscan.io https://www.shibariumscan.io https://cdn.jsdelivr.net https://unpkg.com https://cdnjs.cloudflare.com https://raw.githubusercontent.com; object-src 'none'; base-uri 'self'; form-action 'none'">
-<title>RicSwap | Active Pools (Hardened)</title>
+<meta name="description" content="RicSwap pools — Shibarium (109) and Infinite Drive (421018). On-chain reserves only. No fake TVL.">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://unpkg.com https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://rpc.shibarium.shib.io https://*.shibarium.shib.io https://shibariumscan.io https://www.shibariumscan.io https://evm-rpc.infinitedrive.xyz https://evm-rpc-infinite.mschihuahua.org https://evm-rpc.infinitepanda.xyz https://scan.infinitedrive.xyz https://cdn.jsdelivr.net https://unpkg.com https://cdnjs.cloudflare.com https://raw.githubusercontent.com; object-src 'none'; base-uri 'self'; form-action 'none'">
+<title>Pools · Shibarium & Infinite Drive — RicSwap</title>
 <link rel="icon" type="image/png" href="riclogo.png">
 <link rel="apple-touch-icon" href="riclogo.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
 :root {
-  --void:#030407; --card:#0e1022; --pit:#0b0c1c; --rim:rgba(255,255,255,.06);
-  --magma:#ff4d00; --ember:#ff8c00; --gold:#e8b84b; --green:#00ffb2; --red:#ff3366;
-  --ash:#383b52; --smoke:#656880; --fog:#a0a2bc; --white:#eef0f8;
+  --void:#030407; --well:#0b0e1a; --lift:#121628; --rim:rgba(255,255,255,.06);
+  --magma:#ff4d00; --ember:#ff8c00; --gold:#e8b84b; --ok:#3dd68c; --cyan:#7ec8e3;
+  --smoke:#8385a0; --fog:#c0c2d8; --white:#eef0f8;
   --mono:'JetBrains Mono',monospace; --display:'Bebas Neue',sans-serif; --body:'DM Sans',sans-serif;
 }
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-body{background:var(--void);color:var(--fog);font-family:var(--body);font-size:15px;line-height:1.5;min-height:100vh}
+html{overflow-x:hidden}
+body{background:var(--void);color:var(--fog);font-family:var(--body);font-size:15px;line-height:1.5;min-height:100vh;padding-bottom:env(safe-area-inset-bottom)}
 a{color:inherit;text-decoration:none}
 button{font-family:var(--body);cursor:pointer;border:none;outline:none}
-input{font-family:var(--mono);outline:none}
-
-.wrap{max-width:960px;margin:0 auto;padding:20px 20px 60px}
+input{font-family:var(--mono);font-size:16px;outline:none}
+.wrap{max-width:1080px;margin:0 auto;padding:18px 16px 72px}
 .nav{
   display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;
-  padding:14px 18px;background:rgba(14,16,34,.95);border:1px solid var(--rim);
-  border-radius:16px;margin-bottom:22px;backdrop-filter:blur(16px);
+  padding:12px 16px;background:rgba(11,14,26,.92);border:1px solid var(--rim);
+  border-radius:16px;margin-bottom:22px;
 }
 .brand{display:flex;align-items:center;gap:10px}
-.brand img{width:34px;height:34px;border-radius:10px;object-fit:cover;box-shadow:0 6px 16px rgba(245,166,35,.22)}
-.logo{
-  font-family:var(--display);font-size:24px;letter-spacing:2px;
-  background:linear-gradient(135deg,var(--gold),var(--magma));
-  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
-}
-.nav-links{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
-.nav-links a{color:var(--smoke);font-size:13px;font-weight:600;padding:6px 10px;border-radius:8px}
+.brand img{width:36px;height:36px;border-radius:10px;object-fit:cover;box-shadow:0 0 0 1px rgba(255,77,0,.25)}
+.logo{font-family:var(--display);font-size:24px;letter-spacing:2px;background:linear-gradient(135deg,var(--gold),var(--magma));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.nav-links{display:flex;gap:6px;flex-wrap:wrap}
+.nav-links a{color:var(--smoke);font-size:13px;font-weight:600;padding:8px 10px;border-radius:8px;min-height:40px;display:inline-flex;align-items:center}
 .nav-links a:hover,.nav-links a.active{color:var(--white);background:rgba(255,255,255,.05)}
 .btn{
-  background:var(--pit);color:var(--white);padding:9px 16px;border-radius:10px;font-size:13px;
-  font-weight:600;border:1px solid var(--rim);transition:.15s;cursor:pointer;
+  background:var(--lift);color:var(--white);padding:10px 16px;border-radius:10px;font-size:13px;
+  font-weight:600;border:1px solid var(--rim);min-height:44px;
 }
-.btn:hover{border-color:rgba(245,166,35,.4);color:var(--gold)}
-.btn.primary{background:linear-gradient(135deg,var(--magma),var(--ember));border:none;color:#111}
-.btn.primary:hover{transform:translateY(-1px);box-shadow:0 8px 20px rgba(255,77,0,.3);color:#111}
-.btn:disabled{opacity:.45;cursor:not-allowed;transform:none!important}
-
+.btn:hover{border-color:rgba(255,77,0,.4);color:var(--gold)}
+.btn.primary{background:linear-gradient(135deg,var(--magma),var(--ember));border:none;color:#fff}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.hero{margin-bottom:22px}
+.kicker{font-family:var(--mono);font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--magma);margin-bottom:8px}
+h1{font-family:var(--display);font-size:clamp(36px,8vw,56px);letter-spacing:2px;color:var(--white);line-height:.95;margin-bottom:10px}
+.lede{color:var(--smoke);max-width:640px;font-size:15px}
+.filters{display:flex;flex-wrap:wrap;gap:8px;margin:18px 0 16px}
+.pill{border:1px solid var(--rim);background:var(--well);color:var(--fog);padding:8px 14px;border-radius:999px;font-size:13px;font-weight:600;min-height:40px}
+.pill.on{border-color:var(--magma);color:var(--white);background:rgba(255,77,0,.12)}
+.pill .n{font-family:var(--mono);font-size:11px;color:var(--gold);margin-left:6px}
+.banner{padding:12px 14px;border-radius:12px;border:1px solid rgba(255,77,0,.22);background:rgba(255,77,0,.06);font-size:13px;color:var(--smoke);margin-bottom:16px;line-height:1.5}
+.banner strong{color:var(--white)}
+.status{font-family:var(--mono);font-size:11px;color:var(--smoke);margin-bottom:14px}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
 .card{
-  background:var(--card);border:1px solid var(--rim);border-radius:20px;padding:22px;
-  box-shadow:0 20px 50px rgba(0,0,0,.4);
+  background:linear-gradient(180deg,#101422,var(--well));
+  border:1px solid var(--rim);border-radius:18px;padding:18px 16px;
+  min-width:0;position:relative;overflow:hidden;
 }
-.sec-banner{
-  margin:0 0 16px;padding:12px 14px;border-radius:12px;
-  border:1px solid rgba(0,255,178,.2);background:rgba(0,255,178,.05);
-  font-size:12px;color:var(--smoke);line-height:1.5;
+.card.shib{border-color:rgba(255,140,0,.22)}
+.card.inf{border-color:rgba(255,77,0,.28)}
+.badge{
+  display:inline-flex;align-items:center;gap:6px;
+  font-family:var(--mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;
+  padding:4px 8px;border-radius:999px;margin-bottom:10px;
 }
-.sec-banner strong{color:var(--green)}
-.card-head{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap;margin-bottom:8px}
-.card-head h2{font-family:var(--display);font-size:28px;letter-spacing:1px;color:var(--white);font-weight:400}
-#status{font-family:var(--mono);font-size:11px;color:var(--ash)}
-
-table{width:100%;border-collapse:collapse;margin-top:12px}
-th{
-  text-align:left;color:var(--ash);font-family:var(--mono);font-size:10px;
-  text-transform:uppercase;letter-spacing:1px;padding:0 8px 12px;border-bottom:1px solid var(--rim);
-}
-td{padding:16px 8px;border-bottom:1px solid rgba(255,255,255,.04);vertical-align:middle}
-.pair-name{font-weight:700;font-size:15px;color:var(--white);display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-.pair-name .sep{color:var(--ash)}
-.pair-name .a{color:var(--white)}
-.pair-name .b{color:var(--gold)}
-.tag{
-  display:inline-block;background:var(--pit);color:var(--smoke);font-size:10px;
-  padding:3px 8px;border-radius:6px;font-family:var(--mono);word-break:break-all;max-width:100%;
-}
-.tag.ok{color:var(--green);border:1px solid rgba(0,255,178,.2)}
-.reserves{font-size:13px;color:var(--smoke);margin-top:3px;font-variant-numeric:tabular-nums;font-family:var(--mono)}
-.user-share{font-weight:700;color:var(--green);font-size:12px;margin-top:4px}
-.actions{display:flex;gap:8px;flex-wrap:wrap}
-.actions a.btn{display:inline-block}
-
-.force-load{
-  margin-top:20px;padding-top:18px;border-top:1px solid var(--rim);
-  display:flex;gap:10px;flex-wrap:wrap;
-}
+.badge.shib{color:var(--ember);border:1px solid rgba(255,140,0,.35);background:rgba(255,140,0,.08)}
+.badge.inf{color:var(--magma);border:1px solid rgba(255,77,0,.4);background:rgba(255,77,0,.1)}
+.pair{font-family:var(--display);font-size:28px;letter-spacing:1px;color:var(--white);line-height:1}
+.pair span{color:var(--gold)}
+.addr{font-family:var(--mono);font-size:10px;color:var(--smoke);word-break:break-all;margin:8px 0 12px}
+.res{font-family:var(--mono);font-size:13px;color:var(--fog);display:grid;gap:4px}
+.share{color:var(--ok);font-size:12px;font-weight:700;margin-top:8px}
+.actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+.actions .btn{flex:1;text-align:center;display:inline-flex;align-items:center;justify-content:center;min-width:120px}
+#empty{text-align:center;padding:40px 16px;color:var(--smoke);grid-column:1/-1}
+.force{margin-top:22px;display:flex;gap:10px;flex-wrap:wrap}
 .input-dark{
   background:#05060e;border:1px solid var(--rim);color:var(--white);
-  padding:11px 12px;border-radius:10px;flex:1;min-width:200px;font-size:12px;
+  padding:12px;border-radius:10px;flex:1;min-width:200px;
 }
-.input-dark:focus{border-color:rgba(245,166,35,.35)}
-#empty{text-align:center;padding:48px 20px;color:var(--ash);font-size:14px}
-.footer-note{
-  margin-top:18px;font-family:var(--mono);font-size:10px;color:var(--ash);
-  line-height:1.5;text-align:center;word-break:break-all;
-}
-@media(max-width:700px){
+.foot{margin-top:22px;font-family:var(--mono);font-size:10px;color:var(--smoke);line-height:1.6;text-align:center;word-break:break-all}
+@media(max-width:860px){
+  .grid{grid-template-columns:1fr}
   .nav-links{display:none}
-  th:nth-child(2),td:nth-child(2){display:none}
+}
+@media(max-width:520px){
+  .actions .btn{width:100%;flex:1 1 100%}
+  .pair{font-size:24px}
 }
 </style>
 </head>
 <body>
 <div class="wrap">
   <div class="nav">
-    <div style="display:flex;gap:16px;align-items:center;flex-wrap:wrap">
-      <a class="brand" href="index.html" aria-label="RicSwap home">
-        <img src="riclogo.png" alt="RicSwap" width="34" height="34"
-             onerror="this.onerror=null;this.src='https://raw.githubusercontent.com/Rictoken87/ricswap-website/main/riclogo.png'">
-        <span class="logo">RicSwap</span>
-      </a>
-      <div class="nav-links">
-        <a href="index.html">Home</a>
-        <a href="swap.html">Swap</a>
-        <a href="liquidity.html">Add LP</a>
-        <a href="lock.html">Lock</a>
-        <a href="remove-liquidity.html">Remove LP</a>
-        <a href="pools.html" class="active">Pools</a>
-        <a href="contracts.html">Contracts</a>
-        <a href="x42.html">x42</a>
-      </div>
+    <a class="brand" href="index.html">
+      <img src="riclogo.png" alt="RicSwap" width="36" height="36"
+           onerror="this.onerror=null;this.src='https://raw.githubusercontent.com/Rictoken87/ricswap-website/main/riclogo.png'">
+      <span class="logo">RICSWAP</span>
+    </a>
+    <div class="nav-links">
+      <a href="index.html">Home</a>
+      <a href="swap.html">Swap</a>
+      <a href="pools.html" class="active">Pools</a>
+      <a href="drive-liquidity.html">Add 42 LP</a>
+      <a href="x42.html">x42</a>
     </div>
-    <button type="button" id="connectBtn" class="btn primary" onclick="connect()">Connect Wallet</button>
+    <button type="button" id="connectBtn" class="btn primary">Connect</button>
   </div>
 
-  <div class="card">
-    <div class="sec-banner">
-      <strong>Read-only pool browser.</strong> This page never asks you to approve or send tokens.
-      Only pairs from the <strong>official RicSwap factory</strong> are listed.
-      Reserves are on-chain. <strong>No USD TVL and no APY</strong> — we do not have a price oracle, so we do not invent numbers.
-      An empty list means there is no (or almost no) liquidity. Chain 109 only.
-    </div>
-
-    <div class="card-head">
-      <div>
-        <h2>Active Pools</h2>
-        <div style="font-family:var(--mono);font-size:10px;color:var(--ash);margin-top:4px">
-          Factory verified pairs only · Shibarium
-        </div>
-      </div>
-      <span id="status">Connect wallet or load public scan…</span>
-    </div>
-
-    <table>
-      <thead>
-        <tr>
-          <th width="40%">Token pair</th>
-          <th width="35%">Reserves</th>
-          <th width="25%">Actions</th>
-        </tr>
-      </thead>
-      <tbody id="list"></tbody>
-    </table>
-
-    <div id="empty">No pairs loaded yet. Click “Scan factory”. If the scan returns nothing, the factory has no liquidity — that is not a demo dataset.</div>
-
-    <div class="force-load">
-      <input id="manualAddr" class="input-dark" placeholder="Paste pair address 0x… (must be on official factory)" spellcheck="false" autocomplete="off">
-      <button type="button" class="btn" onclick="manualLoad()">Load pair</button>
-      <button type="button" class="btn" id="scanBtn" onclick="scanOfficialFactory()">Scan factory</button>
-    </div>
-
-    <p class="footer-note">
-      Official factory: <span id="ftFactory">—</span><br>
-      This page cannot move funds. Manage LP only via liquidity / remove-liquidity pages.
-    </p>
+  <div class="hero">
+    <div class="kicker">On-chain · two networks</div>
+    <h1>LIQUIDITY POOLS</h1>
+    <p class="lede">Shibarium RicSwap pairs and Infinite Drive DontPanic pairs. Reserves from the chain. No USD TVL, no APY. Empty means empty.</p>
   </div>
+
+  <div class="filters" role="tablist">
+    <button type="button" class="pill on" data-filter="all">All <span class="n" id="nAll">0</span></button>
+    <button type="button" class="pill" data-filter="shib">Shibarium 109 <span class="n" id="nShib">0</span></button>
+    <button type="button" class="pill" data-filter="inf">Infinite Drive 421018 <span class="n" id="nInf">0</span></button>
+  </div>
+
+  <div class="banner"><strong>Read-only.</strong> Official factories only. Connect wallet to see your LP share. Add LP on the matching chain page — never mix 42 and BONE.</div>
+  <div class="status" id="status">Scanning factories…</div>
+  <div class="grid" id="grid"></div>
+  <div id="empty" hidden>No pairs yet. If this stays empty after scan, liquidity is actually empty.</div>
+
+  <div class="force">
+    <input id="manualAddr" class="input-dark" placeholder="Paste pair 0x… (must belong to one official factory)" spellcheck="false">
+    <button type="button" class="btn" id="manualBtn">Load pair</button>
+    <button type="button" class="btn" id="scanBtn">Scan both</button>
+  </div>
+  <p class="foot">
+    Shibarium factory 0xD8fFEECfDE1698a70A26a094afBE917bA58E2F70 · Infinite DontPanic 0x3157C6AcA800D507af95Ab1466adBA3A6F11eE1a
+  </p>
 </div>
-
 <script>
 (function () {
   "use strict";
-
-  const CFG = Object.freeze({
-    // Official RicSwap factory only (legacy factory intentionally excluded)
-    FACTORY: "0xD8fFEECfDE1698a70A26a094afBE917bA58E2F70",
-    ROUTER:  "0x652875c0F607CB392C0F9E5FB957A7055c2deD2e",
-    WBONE:   "0xC76F4c819D820369Fb2d7C1531aB3Bb18e6fE8d8",
-    RIC:     "0x12C94d3A30daa09f81Ea6c037004E6e99A4A3dfc",
-    CHAIN_ID: 109,
-    CHAIN_HEX: "0x6d",
-    RPC: "https://rpc.shibarium.shib.io",
-    EXPLORER: "https://www.shibariumscan.io",
-    MAX_PAIRS: 80,          // scan newest N pairs only
-    ZERO: "0x0000000000000000000000000000000000000000"
-  });
-
+  const ZERO = "0x0000000000000000000000000000000000000000";
+  const WEEE = "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE";
+  const CHAINS = {
+    shib: {
+      id: "shib", chainId: 109, label: "Shibarium",
+      factory: "0xD8fFEECfDE1698a70A26a094afBE917bA58E2F70",
+      router: "0x652875c0F607CB392C0F9E5FB957A7055c2deD2e",
+      wnative: "0xC76F4c819D820369Fb2d7C1531aB3Bb18e6fE8d8",
+      nativeSym: "BONE",
+      known: { "0x12c94d3a30daa09f81ea6c037004e6e99a4a3dfc": "RIC" },
+      rpcs: ["https://rpc.shibarium.shib.io"],
+      explorer: "https://www.shibariumscan.io",
+      addLp: "liquidity.html",
+      removeLp: "remove-liquidity.html",
+      max: 80
+    },
+    inf: {
+      id: "inf", chainId: 421018, label: "Infinite Drive",
+      factory: "0x3157C6AcA800D507af95Ab1466adBA3A6F11eE1a",
+      router: "0xBF07dFE35746894bAe373f63f4Bf2379F9BaFEc0",
+      wnative: WEEE,
+      nativeSym: "42",
+      known: {
+        "0x700879539292e2cb46b3c645278e5e272dc27154": "x42",
+        "0xfaa842c8871f7f99c183f77871f79ce07dd056cd": "PANIC"
+      },
+      rpcs: [
+        "https://evm-rpc-infinite.mschihuahua.org",
+        "https://evm-rpc.infinitepanda.xyz",
+        "https://evm-rpc.infinitedrive.xyz"
+      ],
+      explorer: "https://scan.infinitedrive.xyz",
+      addLp: "drive-liquidity.html",
+      removeLp: "drive-liquidity.html",
+      max: 80
+    }
+  };
   const ABIS = {
     FACTORY: [
       "function allPairsLength() view returns (uint256)",
@@ -202,340 +191,53 @@ td{padding:16px 8px;border-bottom:1px solid rgba(255,255,255,.04);vertical-align
       "function totalSupply() view returns (uint256)",
       "function factory() view returns (address)"
     ],
-    ERC20: [
-      "function symbol() view returns (string)",
-      "function decimals() view returns (uint8)",
-      "function name() view returns (string)"
-    ],
-    ROUTER: [
-      "function factory() view returns (address)",
-      "function WETH() view returns (address)"
-    ]
+    ERC20: ["function symbol() view returns (string)", "function decimals() view returns (uint8)"]
   };
 
-  let ethersLib = null;
-  let provider = null;
-  let userAddr = null;
-  const loaded = new Set(); // pair addresses lowercased
-  let scanning = false;
+  let ethersLib = null, userAddr = null, filter = "all", scanning = false;
+  const rows = []; // {chain, pair, html, mine}
 
   function esc(s) {
     return String(s == null ? "" : s)
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;")
-      .replace(/"/g, "&quot;")
-      .replace(/'/g, "&#39;");
+      .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
   }
-
-  function setStatus(msg) {
-    document.getElementById("status").textContent = msg;
-  }
-
-  function loadEthersScript(src) {
+  function setStatus(m) { document.getElementById("status").textContent = m; }
+  function loadScript(src) {
     return new Promise(function (resolve, reject) {
       var s = document.createElement("script");
-      s.src = src;
-      s.async = true;
-      s.onload = function () {
-        if (typeof window.ethers !== "undefined") resolve(window.ethers);
-        else reject(new Error("ethers missing"));
-      };
-      s.onerror = function () { reject(new Error("fail " + src)); };
+      s.src = src; s.async = true;
+      s.onload = function () { window.ethers ? resolve(window.ethers) : reject(new Error("no ethers")); };
+      s.onerror = function () { reject(new Error(src)); };
       document.head.appendChild(s);
     });
   }
-
   async function getEthers() {
     if (ethersLib) return ethersLib;
-    if (typeof window.ethers !== "undefined") {
-      ethersLib = window.ethers;
-      return ethersLib;
-    }
+    if (window.ethers) { ethersLib = window.ethers; return ethersLib; }
     var cdns = [
-      "https://cdn.jsdelivr.net/npm/ethers@6.13.5/dist/ethers.umd.min.js",
-      "https://unpkg.com/ethers@6.13.5/dist/ethers.umd.min.js",
-      "https://cdnjs.cloudflare.com/ajax/libs/ethers/6.13.5/ethers.umd.min.js"
+      "https://cdn.jsdelivr.net/npm/ethers@6.13.4/dist/ethers.umd.min.js",
+      "https://unpkg.com/ethers@6.13.4/dist/ethers.umd.min.js"
     ];
     var last;
     for (var i = 0; i < cdns.length; i++) {
+      try { ethersLib = await loadScript(cdns[i]); return ethersLib; } catch (e) { last = e; }
+    }
+    throw last;
+  }
+  async function providerFor(chain) {
+    await getEthers();
+    var n = ethersLib.Network.from(chain.chainId);
+    var last;
+    for (var i = 0; i < chain.rpcs.length; i++) {
       try {
-        ethersLib = await loadEthersScript(cdns[i]);
-        return ethersLib;
+        var p = new ethersLib.JsonRpcProvider(chain.rpcs[i], n, { staticNetwork: n });
+        await p.getBlockNumber();
+        return p;
       } catch (e) { last = e; }
     }
-    throw last || new Error("Could not load ethers.js");
+    throw last || new Error("RPC failed " + chain.label);
   }
-
-  function getEthereum() {
-    var eth = window.ethereum;
-    if (!eth) return null;
-    if (eth.providers && eth.providers.length) {
-      for (var i = 0; i < eth.providers.length; i++) {
-        if (eth.providers[i].isMetaMask) return eth.providers[i];
-      }
-      return eth.providers[0];
-    }
-    return eth;
-  }
-
-  async function getProvider() {
-    await getEthers();
-    if (provider) return provider;
-    // Prefer wallet provider when available; else public RPC (read-only)
-    var eth = getEthereum();
-    if (eth) {
-      try {
-        provider = new ethersLib.BrowserProvider(eth, "any");
-        return provider;
-      } catch (_) {}
-    }
-    provider = new ethersLib.JsonRpcProvider(CFG.RPC, CFG.CHAIN_ID, { staticNetwork: true });
-    return provider;
-  }
-
-  async function ensureShibarium(eth) {
-    var chainId = await eth.request({ method: "eth_chainId" });
-    if (parseInt(chainId, 16) === CFG.CHAIN_ID) return;
-    try {
-      await eth.request({
-        method: "wallet_switchEthereumChain",
-        params: [{ chainId: CFG.CHAIN_HEX }]
-      });
-    } catch (e) {
-      var code = e && e.code;
-      if (code === 4902 || /Unrecognized chain|not been added/i.test(String(e.message || ""))) {
-        await eth.request({
-          method: "wallet_addEthereumChain",
-          params: [{
-            chainId: CFG.CHAIN_HEX,
-            chainName: "Shibarium",
-            nativeCurrency: { name: "BONE", symbol: "BONE", decimals: 18 },
-            rpcUrls: [CFG.RPC],
-            blockExplorerUrls: [CFG.EXPLORER]
-          }]
-        });
-      } else {
-        throw e;
-      }
-    }
-  }
-
-  async function connect() {
-    var eth = getEthereum();
-    if (!eth) return alert("Install MetaMask or another Web3 wallet.");
-    var btn = document.getElementById("connectBtn");
-    btn.disabled = true;
-    try {
-      await getEthers();
-      setStatus("Connecting…");
-      await eth.request({ method: "eth_requestAccounts" });
-      await ensureShibarium(eth);
-      provider = new ethersLib.BrowserProvider(eth, "any");
-      var signer = await provider.getSigner();
-      userAddr = await signer.getAddress();
-
-      // Soft-verify router/factory linkage (read-only safety signal)
-      try {
-        var rtr = new ethersLib.Contract(CFG.ROUTER, ABIS.ROUTER, provider);
-        var fac = await rtr.factory();
-        if (fac.toLowerCase() !== CFG.FACTORY.toLowerCase()) {
-          throw new Error("Router.factory() does not match official factory.");
-        }
-      } catch (ve) {
-        if (String(ve.message || "").includes("official")) throw ve;
-        console.warn(ve);
-      }
-
-      btn.textContent = userAddr.slice(0, 6) + "…" + userAddr.slice(-4);
-      btn.classList.remove("primary");
-      document.getElementById("list").innerHTML = "";
-      loaded.clear();
-      document.getElementById("empty").style.display = "none";
-      eth.removeAllListeners && eth.removeAllListeners("accountsChanged");
-      eth.removeAllListeners && eth.removeAllListeners("chainChanged");
-      eth.on && eth.on("accountsChanged", function () { location.reload(); });
-      eth.on && eth.on("chainChanged", function () { location.reload(); });
-      await scanOfficialFactory();
-    } catch (e) {
-      setStatus("Connect failed");
-      alert((e && (e.shortMessage || e.message)) || String(e));
-    } finally {
-      btn.disabled = false;
-    }
-  }
-  window.connect = connect;
-
-  async function scanOfficialFactory() {
-    if (scanning) return;
-    scanning = true;
-    var btn = document.getElementById("scanBtn");
-    if (btn) btn.disabled = true;
-    try {
-      var prov = await getProvider();
-      setStatus("Scanning official factory…");
-      document.getElementById("empty").style.display = "none";
-
-      var factory = new ethersLib.Contract(CFG.FACTORY, ABIS.FACTORY, prov);
-      var lenBn = await factory.allPairsLength();
-      var len = Number(lenBn);
-      if (!Number.isFinite(len) || len < 0) len = 0;
-
-      // Newest first, capped
-      var start = Math.max(0, len - CFG.MAX_PAIRS);
-      var count = 0;
-      for (var j = len - 1; j >= start; j--) {
-        var pairAddr = await factory.allPairs(j);
-        await loadPair(pairAddr, true);
-        count++;
-        if (count % 5 === 0) setStatus("Loaded " + count + " / up to " + CFG.MAX_PAIRS + " pairs…");
-      }
-
-      if (loaded.size === 0) {
-        document.getElementById("empty").style.display = "block";
-        document.getElementById("empty").textContent = "No pairs found on official factory.";
-      }
-      setStatus(
-        "Scan complete · " + loaded.size + " pair(s)" +
-        (len > CFG.MAX_PAIRS ? " (newest " + CFG.MAX_PAIRS + " of " + len + ")" : "")
-      );
-    } catch (e) {
-      console.error(e);
-      setStatus("Scan error: " + ((e && (e.shortMessage || e.message)) || String(e)).slice(0, 80));
-    } finally {
-      scanning = false;
-      if (btn) btn.disabled = false;
-    }
-  }
-  window.scanOfficialFactory = scanOfficialFactory;
-
-  async function isOfficialPair(pairAddr, token0, token1, pairContract, factoryContract) {
-    // Must match factory.getPair(token0, token1)
-    try {
-      var gp = await factoryContract.getPair(token0, token1);
-      if (!gp || gp.toLowerCase() === CFG.ZERO.toLowerCase()) return false;
-      if (gp.toLowerCase() !== pairAddr.toLowerCase()) return false;
-    } catch (_) {
-      return false;
-    }
-    // Optional pair.factory() if present
-    try {
-      var pf = await pairContract.factory();
-      if (pf && pf.toLowerCase() !== CFG.FACTORY.toLowerCase()) return false;
-    } catch (_) { /* some pairs may not expose factory() */ }
-    return true;
-  }
-
-  async function safeTokenData(contract) {
-    try {
-      var sym = await contract.symbol();
-      var dec = await contract.decimals();
-      // Sanitize / cap — never inject raw chain strings into HTML
-      sym = String(sym || "???").replace(/[^\w.\-$]/g, "").slice(0, 16) || "???";
-      dec = Number(dec);
-      if (!Number.isFinite(dec) || dec < 0 || dec > 36) dec = 18;
-      return [sym, dec];
-    } catch (_) {
-      return ["???", 18];
-    }
-  }
-
-  async function loadPair(pairAddr, skipManualAlert) {
-    try {
-      await getEthers();
-      if (!ethersLib.isAddress(pairAddr)) {
-        if (!skipManualAlert) alert("Invalid address");
-        return;
-      }
-      pairAddr = ethersLib.getAddress(pairAddr);
-      var key = pairAddr.toLowerCase();
-      if (loaded.has(key)) {
-        setStatus("Pair already listed.");
-        return;
-      }
-
-      var prov = await getProvider();
-      var factory = new ethersLib.Contract(CFG.FACTORY, ABIS.FACTORY, prov);
-      var pair = new ethersLib.Contract(pairAddr, ABIS.PAIR, prov);
-
-      var t0 = await pair.token0();
-      var t1 = await pair.token1();
-      var reserves = await pair.getReserves();
-      var totalSupply = await pair.totalSupply();
-
-      // SECURITY: only show official factory pairs
-      var ok = await isOfficialPair(pairAddr, t0, t1, pair, factory);
-      if (!ok) {
-        if (!skipManualAlert) alert("Rejected: not a pair on the official RicSwap factory.");
-        setStatus("Rejected unofficial pair.");
-        return;
-      }
-
-      var bal = 0n;
-      if (userAddr) {
-        try { bal = await pair.balanceOf(userAddr); } catch (_) { bal = 0n; }
-      }
-
-      var c0 = new ethersLib.Contract(t0, ABIS.ERC20, prov);
-      var c1 = new ethersLib.Contract(t1, ABIS.ERC20, prov);
-      var d0 = await safeTokenData(c0);
-      var d1 = await safeTokenData(c1);
-      var sym0 = d0[0], dec0 = d0[1], sym1 = d1[0], dec1 = d1[1];
-
-      // Friendly names for known tokens
-      if (t0.toLowerCase() === CFG.WBONE.toLowerCase()) sym0 = "WBONE";
-      if (t1.toLowerCase() === CFG.WBONE.toLowerCase()) sym1 = "WBONE";
-      if (t0.toLowerCase() === CFG.RIC.toLowerCase()) sym0 = "RIC";
-      if (t1.toLowerCase() === CFG.RIC.toLowerCase()) sym1 = "RIC";
-
-      var val0 = formatAmt(reserves[0], dec0);
-      var val1 = formatAmt(reserves[1], dec1);
-      var userBal = formatAmt(bal, 18);
-      var share = "";
-      if (userAddr && bal > 0n && totalSupply > 0n) {
-        var pct = Number(bal * 10000n / totalSupply) / 100;
-        share = pct < 0.0001 ? "< 0.0001%" : pct.toFixed(4) + "%";
-      }
-
-      var manageHref = bal > 0n
-        ? "remove-liquidity.html"
-        : "liquidity.html";
-
-      var tr = document.createElement("tr");
-      tr.innerHTML =
-        "<td>" +
-          "<div class=\"pair-name\">" +
-            "<span class=\"a\">" + esc(sym0) + "</span>" +
-            "<span class=\"sep\">/</span>" +
-            "<span class=\"b\">" + esc(sym1) + "</span>" +
-          "</div>" +
-          "<div style=\"margin-top:6px\"><span class=\"tag ok\">factory ✓</span> " +
-          "<span class=\"tag\">" + esc(pairAddr) + "</span></div>" +
-        "</td>" +
-        "<td>" +
-          "<div class=\"reserves\">" + esc(val0) + " " + esc(sym0) + "</div>" +
-          "<div class=\"reserves\">" + esc(val1) + " " + esc(sym1) + "</div>" +
-          (bal > 0n
-            ? "<div class=\"user-share\">Your LP: " + esc(userBal) +
-              (share ? " · " + esc(share) + " of pool" : "") + "</div>"
-            : "") +
-        "</td>" +
-        "<td><div class=\"actions\">" +
-          "<a class=\"btn\" href=\"" + manageHref + "\">" + (bal > 0n ? "Remove LP" : "Add LP") + "</a>" +
-          "<a class=\"btn\" href=\"" + esc(CFG.EXPLORER) + "/address/" + esc(pairAddr) + "\" target=\"_blank\" rel=\"noopener\">Explorer ↗</a>" +
-        "</div></td>";
-
-      document.getElementById("list").appendChild(tr);
-      document.getElementById("empty").style.display = "none";
-      loaded.add(key);
-    } catch (e) {
-      console.error("Pair Load Error", pairAddr, e);
-      if (!skipManualAlert) {
-        alert("Could not load pair: " + ((e && (e.shortMessage || e.message)) || String(e)).slice(0, 120));
-      }
-    }
-  }
-
   function formatAmt(val, dec) {
     try {
       var n = parseFloat(ethersLib.formatUnits(val, dec));
@@ -544,33 +246,181 @@ td{padding:16px 8px;border-bottom:1px solid rgba(255,255,255,.04);vertical-align
       if (n < 1) return n.toFixed(6);
       if (n < 10000) return n.toLocaleString(undefined, { maximumFractionDigits: 4 });
       return n.toLocaleString(undefined, { maximumFractionDigits: 2 });
+    } catch (_) { return "—"; }
+  }
+  function tokenLabel(addr, chain, fallback) {
+    var a = addr.toLowerCase();
+    if (a === chain.wnative.toLowerCase() || a === WEEE.toLowerCase()) return chain.nativeSym;
+    if (chain.known[a]) return chain.known[a];
+    return fallback;
+  }
+  function isNativeTok(addr, chain) {
+    var a = addr.toLowerCase();
+    return a === chain.wnative.toLowerCase() || a === WEEE.toLowerCase();
+  }
+
+  async function tokenMeta(addr, chain, prov) {
+    if (isNativeTok(addr, chain)) return [chain.nativeSym, 18];
+    try {
+      var c = new ethersLib.Contract(addr, ABIS.ERC20, prov);
+      var sym = String(await c.symbol() || "???").replace(/[^\w.\-$]/g, "").slice(0, 16) || "???";
+      var dec = Number(await c.decimals());
+      if (!Number.isFinite(dec) || dec < 0 || dec > 36) dec = 18;
+      return [tokenLabel(addr, chain, sym), dec];
     } catch (_) {
-      return "—";
+      return [tokenLabel(addr, chain, "???"), 18];
     }
   }
 
-  async function manualLoad() {
-    var raw = document.getElementById("manualAddr").value.trim();
-    if (!raw) return;
-    setStatus("Verifying pair on official factory…");
-    await loadPair(raw, false);
-    if (loaded.size) setStatus("Listed " + loaded.size + " official pair(s).");
+  function paint() {
+    var grid = document.getElementById("grid");
+    grid.innerHTML = "";
+    var vis = rows.filter(function (r) { return filter === "all" || r.chain === filter; });
+    vis.sort(function (a, b) { return (b.mine ? 1 : 0) - (a.mine ? 1 : 0); });
+    document.getElementById("nAll").textContent = String(rows.length);
+    document.getElementById("nShib").textContent = String(rows.filter(function (r) { return r.chain === "shib"; }).length);
+    document.getElementById("nInf").textContent = String(rows.filter(function (r) { return r.chain === "inf"; }).length);
+    if (!vis.length) {
+      document.getElementById("empty").hidden = false;
+      return;
+    }
+    document.getElementById("empty").hidden = true;
+    vis.forEach(function (r) { grid.insertAdjacentHTML("beforeend", r.html); });
   }
-  window.manualLoad = manualLoad;
 
-  // Init
-  document.getElementById("ftFactory").textContent = CFG.FACTORY;
-  (async function init() {
+  async function loadPair(chain, pairAddr, skipAlert) {
+    await getEthers();
+    if (!ethersLib.isAddress(pairAddr)) {
+      if (!skipAlert) alert("Invalid address");
+      return;
+    }
+    pairAddr = ethersLib.getAddress(pairAddr);
+    var key = chain.id + ":" + pairAddr.toLowerCase();
+    if (rows.some(function (r) { return r.key === key; })) return;
+
+    var prov = await providerFor(chain);
+    var factory = new ethersLib.Contract(chain.factory, ABIS.FACTORY, prov);
+    var pair = new ethersLib.Contract(pairAddr, ABIS.PAIR, prov);
+    var t0 = await pair.token0();
+    var t1 = await pair.token1();
+    var gp = await factory.getPair(t0, t1);
+    if (!gp || gp.toLowerCase() !== pairAddr.toLowerCase()) {
+      if (!skipAlert) alert("Not a pair on the official " + chain.label + " factory.");
+      return;
+    }
+    try {
+      var pf = await pair.factory();
+      if (pf && pf.toLowerCase() !== chain.factory.toLowerCase()) {
+        if (!skipAlert) alert("Pair.factory mismatch.");
+        return;
+      }
+    } catch (_) {}
+
+    var reserves = await pair.getReserves();
+    var supply = await pair.totalSupply();
+    var bal = 0n;
+    if (userAddr) {
+      try { bal = await pair.balanceOf(userAddr); } catch (_) { bal = 0n; }
+    }
+    var m0 = await tokenMeta(t0, chain, prov);
+    var m1 = await tokenMeta(t1, chain, prov);
+    var share = "";
+    if (userAddr && bal > 0n && supply > 0n) {
+      var pct = Number(bal * 10000n / supply) / 100;
+      share = pct < 0.0001 ? "< 0.0001%" : pct.toFixed(4) + "%";
+    }
+    var addHref = chain.addLp;
+    var html =
+      '<article class="card ' + chain.id + '">' +
+        '<div class="badge ' + chain.id + '">' + esc(chain.label) + ' · ' + chain.chainId + '</div>' +
+        '<div class="pair">' + esc(m0[0]) + ' <span>/ ' + esc(m1[0]) + '</span></div>' +
+        '<div class="addr">' + esc(pairAddr) + '</div>' +
+        '<div class="res">' +
+          '<div>' + esc(formatAmt(reserves[0], m0[1])) + ' ' + esc(m0[0]) + '</div>' +
+          '<div>' + esc(formatAmt(reserves[1], m1[1])) + ' ' + esc(m1[0]) + '</div>' +
+        '</div>' +
+        (bal > 0n ? '<div class="share">Your LP · ' + esc(share) + '</div>' : '') +
+        '<div class="actions">' +
+          '<a class="btn primary" href="' + addHref + '">Add LP</a>' +
+          '<a class="btn" href="' + esc(chain.explorer) + '/address/' + esc(pairAddr) + '" target="_blank" rel="noopener">Explorer</a>' +
+        '</div>' +
+      '</article>';
+    rows.push({ key: key, chain: chain.id, pair: pairAddr, html: html, mine: bal > 0n });
+    paint();
+  }
+
+  async function scanChain(chain) {
+    var prov = await providerFor(chain);
+    var factory = new ethersLib.Contract(chain.factory, ABIS.FACTORY, prov);
+    var len = Number(await factory.allPairsLength());
+    if (!Number.isFinite(len) || len < 0) len = 0;
+    var start = Math.max(0, len - chain.max);
+    var n = 0;
+    for (var j = len - 1; j >= start; j--) {
+      var addr = await factory.allPairs(j);
+      await loadPair(chain, addr, true);
+      n++;
+      if (n % 4 === 0) setStatus(chain.label + " · loaded " + n + "…");
+    }
+    return { len: len, shown: n };
+  }
+
+  async function scanBoth() {
+    if (scanning) return;
+    scanning = true;
+    document.getElementById("scanBtn").disabled = true;
     try {
       await getEthers();
-      // Public scan without wallet (read-only RPC)
-      setStatus("Loading public scan…");
-      await scanOfficialFactory();
+      setStatus("Scanning Shibarium…");
+      var a = await scanChain(CHAINS.shib);
+      setStatus("Scanning Infinite Drive…");
+      var b = await scanChain(CHAINS.inf);
+      setStatus("Shibarium " + a.shown + " · Infinite Drive " + b.shown + " · no USD TVL");
+      if (!rows.length) document.getElementById("empty").hidden = false;
     } catch (e) {
-      setStatus("Connect wallet to load pools.");
-      console.warn(e);
+      setStatus("Scan error: " + ((e && (e.shortMessage || e.message)) || String(e)).slice(0, 100));
+    } finally {
+      scanning = false;
+      document.getElementById("scanBtn").disabled = false;
     }
-  })();
+  }
+
+  document.getElementById("connectBtn").addEventListener("click", async function () {
+    var eth = window.ethereum;
+    if (!eth) return alert("Install MetaMask or Rabby.");
+    try {
+      var acc = await eth.request({ method: "eth_requestAccounts" });
+      userAddr = acc[0];
+      document.getElementById("connectBtn").textContent = userAddr.slice(0, 6) + "…" + userAddr.slice(-4);
+      rows.length = 0;
+      paint();
+      await scanBoth();
+    } catch (e) {
+      alert((e && e.message) || String(e));
+    }
+  });
+  document.querySelectorAll(".pill").forEach(function (p) {
+    p.addEventListener("click", function () {
+      filter = p.getAttribute("data-filter");
+      document.querySelectorAll(".pill").forEach(function (x) { x.classList.toggle("on", x === p); });
+      paint();
+    });
+  });
+  document.getElementById("scanBtn").addEventListener("click", scanBoth);
+  document.getElementById("manualBtn").addEventListener("click", async function () {
+    var raw = document.getElementById("manualAddr").value.trim();
+    if (!raw) return;
+    try {
+      await loadPair(CHAINS.inf, raw, true);
+      await loadPair(CHAINS.shib, raw, true);
+      if (!rows.some(function (r) { return r.pair.toLowerCase() === raw.toLowerCase(); })) {
+        alert("Not an official RicSwap or DontPanic pair.");
+      }
+    } catch (e) {
+      alert((e && (e.shortMessage || e.message)) || String(e));
+    }
+  });
+  scanBoth();
 })();
 </script>
 </body>
