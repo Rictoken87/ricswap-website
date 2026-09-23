@@ -114,16 +114,17 @@ h1{font-family:var(--display);font-size:clamp(36px,8vw,56px);letter-spacing:2px;
   <div class="hero">
     <div class="kicker">On-chain · two networks</div>
     <h1>LIQUIDITY POOLS</h1>
-    <p class="lede">Shibarium RicSwap pairs and Infinite Drive DontPanic pairs. Reserves from the chain. No USD TVL, no APY. Empty means empty.</p>
+    <p class="lede">Public scan needs no wallet. Connect to see <strong>only your LP</strong> on both chains. No USD TVL, no APY.</p>
   </div>
 
   <div class="filters" role="tablist">
-    <button type="button" class="pill on" data-filter="all">All <span class="n" id="nAll">0</span></button>
+    <button type="button" class="pill on" data-filter="all">All public <span class="n" id="nAll">0</span></button>
     <button type="button" class="pill" data-filter="shib">Shibarium 109 <span class="n" id="nShib">0</span></button>
     <button type="button" class="pill" data-filter="inf">Infinite Drive 421018 <span class="n" id="nInf">0</span></button>
+    <button type="button" class="pill" data-filter="mine">My LP <span class="n" id="nMine">0</span></button>
   </div>
 
-  <div class="banner"><strong>Read-only.</strong> Official factories only. Connect wallet to see your LP share. Add LP on the matching chain page — never mix 42 and BONE.</div>
+  <div class="banner"><strong>Read-only.</strong> Without a wallet: all official pools. With a wallet: your LP positions only (both chains). Add LP on the matching chain — never mix 42 and BONE.</div>
   <div class="status" id="status">Scanning factories…</div>
   <div class="grid" id="grid"></div>
   <div id="empty" hidden>No pairs yet. If this stays empty after scan, liquidity is actually empty.</div>
@@ -275,13 +276,22 @@ h1{font-family:var(--display);font-size:clamp(36px,8vw,56px);letter-spacing:2px;
   function paint() {
     var grid = document.getElementById("grid");
     grid.innerHTML = "";
-    var vis = rows.filter(function (r) { return filter === "all" || r.chain === filter; });
+    var vis = rows.filter(function (r) {
+      if (filter === "mine") return r.mine;
+      if (filter === "all") return true;
+      return r.chain === filter;
+    });
     vis.sort(function (a, b) { return (b.mine ? 1 : 0) - (a.mine ? 1 : 0); });
     document.getElementById("nAll").textContent = String(rows.length);
     document.getElementById("nShib").textContent = String(rows.filter(function (r) { return r.chain === "shib"; }).length);
     document.getElementById("nInf").textContent = String(rows.filter(function (r) { return r.chain === "inf"; }).length);
+    document.getElementById("nMine").textContent = String(rows.filter(function (r) { return r.mine; }).length);
+    var empty = document.getElementById("empty");
     if (!vis.length) {
-      document.getElementById("empty").hidden = false;
+      empty.hidden = false;
+      empty.textContent = filter === "mine"
+        ? (userAddr ? "No LP tokens for this wallet on RicSwap (109) or DontPanic (421018)." : "Connect a wallet to load your LP.")
+        : "No pairs yet. If this stays empty after scan, liquidity is actually empty.";
       return;
     }
     document.getElementById("empty").hidden = true;
@@ -392,9 +402,17 @@ h1{font-family:var(--display);font-size:clamp(36px,8vw,56px);letter-spacing:2px;
       var acc = await eth.request({ method: "eth_requestAccounts" });
       userAddr = acc[0];
       document.getElementById("connectBtn").textContent = userAddr.slice(0, 6) + "…" + userAddr.slice(-4);
+      filter = "mine";
+      document.querySelectorAll(".pill").forEach(function (x) {
+        x.classList.toggle("on", x.getAttribute("data-filter") === "mine");
+      });
       rows.length = 0;
       paint();
+      setStatus("Loading your LP on Shibarium and Infinite Drive…");
       await scanBoth();
+      setStatus(rows.filter(function (r) { return r.mine; }).length
+        ? "Showing your LP only. Use All public to browse every pool."
+        : "No LP for this wallet. Use All public to browse pools.");
     } catch (e) {
       alert((e && e.message) || String(e));
     }
