@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <title>Official contracts — RicSwap</title>
 <meta name="description" content="Official RicSwap contract addresses on Shibarium (109) and Infinite Drive (421018). Always verify on the explorer before signing." />
 <meta name="theme-color" content="#030407" />
@@ -17,7 +17,8 @@
   --display:"Bebas Neue",sans-serif; --body:"DM Sans",system-ui,sans-serif; --mono:"JetBrains Mono",monospace;
 }
 *{box-sizing:border-box;margin:0;padding:0}
-body{background:var(--void);color:var(--fog);font-family:var(--body);line-height:1.6;padding:28px 18px 80px}
+html{overflow-x:hidden}
+body{background:var(--void);color:var(--fog);font-family:var(--body);line-height:1.6;padding:28px 18px calc(80px + env(safe-area-inset-bottom))}
 a{color:var(--gold)}
 .wrap{max-width:860px;margin:0 auto}
 .brand{display:flex;align-items:center;gap:10px;margin-bottom:20px;text-decoration:none;color:inherit}
@@ -38,7 +39,7 @@ h2{font-family:var(--display);letter-spacing:1px;color:var(--white);font-size:26
 .badge{font-size:10px;letter-spacing:.8px;text-transform:uppercase;padding:3px 8px;border-radius:999px;border:1px solid var(--rim)}
 .badge.ok{color:var(--ok);border-color:rgba(61,214,140,.35)}
 .badge.no{color:var(--warn);border-color:rgba(255,140,0,.35)}
-.copy{align-self:flex-start;margin-top:4px;background:transparent;border:1px solid var(--rim);color:var(--fog);font-size:11px;padding:4px 10px;border-radius:8px;cursor:pointer}
+.copy{align-self:flex-start;margin-top:4px;background:transparent;border:1px solid var(--rim);color:var(--fog);font-size:14px;padding:10px 14px;border-radius:8px;cursor:pointer;min-height:44px}
 .copy:hover{border-color:var(--gold);color:var(--white)}
 .note{font-size:13px;color:var(--smoke);margin:8px 0 18px}
 .foot{margin-top:36px;padding-top:16px;border-top:1px solid var(--rim);font-size:13px;color:var(--smoke)}
@@ -55,6 +56,7 @@ h2{font-family:var(--display);letter-spacing:1px;color:var(--white);font-size:26
     <a href="index.html">Home</a>
     <a href="swap.html">Swap</a>
     <a href="pools.html">Pools</a>
+    <a href="drive-liquidity.html">Add 42 LP</a>
     <a href="x42.html">x42</a>
     <a class="on" href="contracts.html">Contracts</a>
     <a href="about.html">About</a>
@@ -117,7 +119,20 @@ h2{font-family:var(--display);letter-spacing:1px;color:var(--white);font-size:26
   <p class="note">Pair factory and router still need Standard JSON upload on Shibariumscan (Cloudflare blocks automated POST). File: <code>verify-factory/RicSwapFactory_standard-input.json</code> — see <code>verify-factory/README_VERIFY.md</code>.</p>
 
   <h2>Infinite Drive · chain 421018</h2>
-  <p class="note">Explorer: <a href="https://scan.infinitedrive.xyz" target="_blank" rel="noopener">scan.infinitedrive.xyz</a>. x42 contracts are verified on Blockscout.</p>
+  <p class="note">Explorer: <a href="https://scan.infinitedrive.xyz" target="_blank" rel="noopener">scan.infinitedrive.xyz</a>. x42 contracts are verified on Blockscout. Add LP uses DontPanic AMM — <a href="drive-liquidity.html">drive-liquidity.html</a>.</p>
+
+  <div class="row">
+    <div class="lbl">DontPanic factory (pairs)</div>
+    <div class="addr" data-addr="0x3157C6AcA800D507af95Ab1466adBA3A6F11eE1a">0x3157C6AcA800D507af95Ab1466adBA3A6F11eE1a</div>
+    <a href="https://scan.infinitedrive.xyz/address/0x3157C6AcA800D507af95Ab1466adBA3A6F11eE1a" target="_blank" rel="noopener">Explorer</a>
+    <button type="button" class="copy">Copy</button>
+  </div>
+  <div class="row">
+    <div class="lbl">DontPanic router</div>
+    <div class="addr" data-addr="0xBF07dFE35746894bAe373f63f4Bf2379F9BaFEc0">0xBF07dFE35746894bAe373f63f4Bf2379F9BaFEc0</div>
+    <a href="https://scan.infinitedrive.xyz/address/0xBF07dFE35746894bAe373f63f4Bf2379F9BaFEc0" target="_blank" rel="noopener">Explorer</a>
+    <button type="button" class="copy">Copy</button>
+  </div>
 
   <div class="row">
     <div class="lbl">x42 deposit pool (send 42) <span class="badge ok">verified proxy</span></div>

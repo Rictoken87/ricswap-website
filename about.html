@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <title>What RicSwap is / is not — RicSwap</title>
 <meta name="description" content="Plain-language description of RicSwap: Shibarium DEX and launchpad, Infinite Drive 42 staking (x42). Not investment advice." />
 <meta name="robots" content="index,follow" />
@@ -18,7 +18,9 @@
   --display:"Bebas Neue",sans-serif; --body:"DM Sans",system-ui,sans-serif; --mono:"JetBrains Mono",monospace;
 }
 *{box-sizing:border-box;margin:0;padding:0}
-body{background:var(--void);color:var(--fog);font-family:var(--body);line-height:1.65;padding:32px 20px 80px}
+html{overflow-x:hidden}
+body{background:var(--void);color:var(--fog);font-family:var(--body);line-height:1.65;padding:32px 20px calc(80px + env(safe-area-inset-bottom))}
+code{overflow-wrap:anywhere}
 a{color:var(--gold)}
 .wrap{max-width:720px;margin:0 auto}
 .brand{display:flex;align-items:center;gap:10px;margin-bottom:28px;text-decoration:none;color:inherit}
@@ -51,6 +53,7 @@ code{font-family:var(--mono);font-size:12px;color:var(--gold);word-break:break-a
     <a href="index.html">Home</a>
     <a href="swap.html">Swap</a>
     <a href="x42.html">x42 stake</a>
+    <a href="drive-liquidity.html">Add 42 LP</a>
     <a href="contracts.html">Contracts</a>
     <a href="drive.html">Drive</a>
   </div>

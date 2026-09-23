@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <meta name="theme-color" content="#030407" />
 <meta name="robots" content="noindex" />
 <title>x42 ops · bond buffer — RicSwap</title>
@@ -19,14 +19,16 @@
   --display:"Bebas Neue",sans-serif; --body:"DM Sans",system-ui,sans-serif; --mono:"JetBrains Mono",monospace;
 }
 *{box-sizing:border-box;margin:0;padding:0}
-body{background:var(--void);color:var(--fog);font-family:var(--body);line-height:1.5;padding:20px 16px 64px}
+html{overflow-x:hidden}
+body{background:var(--void);color:var(--fog);font-family:var(--body);line-height:1.5;padding:20px 16px calc(64px + env(safe-area-inset-bottom))}
 a{color:var(--gold)}
-.wrap{max-width:720px;margin:0 auto}
+.wrap{max-width:720px;margin:0 auto;min-width:0}
 .top{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:18px}
 .brand{display:flex;align-items:center;gap:10px;text-decoration:none;color:inherit}
 .brand img{width:36px;height:36px;border-radius:10px}
 .logo-text{font-family:var(--display);letter-spacing:2px;font-size:22px;background:linear-gradient(135deg,var(--gold),var(--magma));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
-.nav a{margin-left:10px;font-size:13px;font-weight:600;color:var(--smoke);text-decoration:none}
+.nav{display:flex;flex-wrap:wrap;gap:8px}
+.nav a{font-size:13px;font-weight:600;color:var(--smoke);text-decoration:none;min-height:44px;display:inline-flex;align-items:center}
 h1{font-family:var(--display);font-size:36px;letter-spacing:2px;color:var(--white);margin-bottom:8px}
 .lede{color:var(--smoke);font-size:14px;margin-bottom:16px}
 .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px}
@@ -39,14 +41,23 @@ h1{font-family:var(--display);font-size:36px;letter-spacing:2px;color:var(--whit
 .banner.warn{background:rgba(255,140,0,.12);color:var(--ember)}
 .banner.ok{background:rgba(61,214,140,.1);color:var(--ok)}
 .banner.bad{background:rgba(255,92,108,.12);color:var(--bad)}
-.cta{border:0;border-radius:10px;padding:12px 16px;font-weight:600;background:linear-gradient(135deg,var(--magma),var(--ember));color:#fff;cursor:pointer;margin-right:8px;margin-bottom:8px}
+.cta{border:0;border-radius:10px;padding:12px 16px;font-weight:600;background:linear-gradient(135deg,var(--magma),var(--ember));color:#fff;cursor:pointer;margin-right:8px;margin-bottom:8px;min-height:48px;font-size:16px}
 .cta:disabled{opacity:.45;cursor:not-allowed}
 .ghost{background:var(--lift);color:var(--white);box-shadow:inset 0 0 0 1px var(--line2)}
-table{width:100%;border-collapse:collapse;font-size:13px;margin-top:8px}
+.table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;margin:0 -4px}
+table{width:100%;min-width:480px;border-collapse:collapse;font-size:13px;margin-top:8px}
 th{text-align:left;color:var(--smoke);font-size:11px;letter-spacing:.08em;text-transform:uppercase;padding:8px 6px;border-bottom:1px solid var(--line2)}
 td{padding:8px 6px;border-bottom:1px solid var(--line2);font-family:var(--mono);color:var(--white)}
 .foot{margin-top:20px;font-size:12px;color:var(--smoke)}
-@media(max-width:640px){.grid{grid-template-columns:1fr 1fr}}
+@media(max-width:860px){
+  .grid{grid-template-columns:1fr 1fr}
+  h1{font-size:30px}
+}
+@media(max-width:520px){
+  .grid{grid-template-columns:1fr}
+  .cta{width:100%;margin-right:0}
+  .stat strong{font-size:15px;overflow-wrap:anywhere}
+}
 </style>
 </head>
 <body>
@@ -82,10 +93,12 @@ td{padding:8px 6px;border-bottom:1px solid var(--line2);font-family:var(--mono);
   <div id="status"></div>
   <h2 style="color:var(--white);font-size:16px;margin:20px 0 0">Recent deposits</h2>
   <p class="lede" style="margin-bottom:0">Inflow of native 42 (mint). Bonding is a separate tx until the pool is upgraded.</p>
+  <div class="table-wrap">
   <table>
     <thead><tr><th>When</th><th>42 in</th><th>From</th><th>Tx</th></tr></thead>
     <tbody id="rows"><tr><td colspan="4">Loading…</td></tr></tbody>
   </table>
+  </div>
   <p class="foot">Pool <a href="https://scan.infinitedrive.xyz/address/0x985f6ECb68f308ea4C3b5Fc9c5B187F4ee1dfA23" target="_blank" rel="noreferrer">0x985f6ECb…</a> · valoper infinitevaloper1eeczu702nt3clwqwarhg7krtyx23gr7tmjgryu</p>
 </div>
 <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.4/dist/ethers.umd.min.js"

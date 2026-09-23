@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <meta name="theme-color" content="#030407" />
 <title>Add LP · Infinite Drive — RicSwap</title>
 <meta name="description" content="Uniswap-style TOKEN A + TOKEN B liquidity on Infinite Drive (DontPanic). Chain 421018." />
@@ -20,14 +20,17 @@
   --display:"Bebas Neue",sans-serif; --body:"DM Sans",system-ui,sans-serif; --mono:"JetBrains Mono",monospace;
 }
 *{box-sizing:border-box;margin:0;padding:0}
-body{background:var(--void);color:var(--fog);font-family:var(--body);line-height:1.55;padding:20px 16px 72px}
+html{overflow-x:hidden}
+body{background:var(--void);color:var(--fog);font-family:var(--body);line-height:1.55;padding:20px 16px calc(72px + env(safe-area-inset-bottom))}
+input,select{font-size:16px}
 a{color:var(--gold)}
 .wrap{max-width:480px;margin:0 auto}
 .top{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap}
 .brand{display:flex;align-items:center;gap:10px;text-decoration:none;color:inherit}
 .brand img{width:40px;height:40px;border-radius:10px;object-fit:cover;box-shadow:0 0 0 1px rgba(255,77,0,.25)}
 .logo-text{font-family:var(--display);letter-spacing:2px;font-size:24px;background:linear-gradient(135deg,var(--gold),var(--magma));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
-.nav a{margin-left:10px;font-size:13px;font-weight:600;color:var(--smoke);text-decoration:none}
+.nav{display:flex;flex-wrap:wrap;gap:8px}
+.nav a{font-size:13px;font-weight:600;color:var(--smoke);text-decoration:none;min-height:44px;display:inline-flex;align-items:center}
 .nav a.on{color:var(--magma)}
 .chip{font-size:12px;border:1px solid rgba(232,184,75,.35);border-radius:999px;padding:6px 12px;color:var(--gold);display:inline-block;margin-bottom:10px}
 h1{font-family:var(--display);font-size:40px;letter-spacing:2px;color:var(--white);line-height:.95;margin:4px 0 10px}
@@ -39,23 +42,29 @@ h1{font-family:var(--display);font-size:40px;letter-spacing:2px;color:var(--whit
 .panel{background:var(--well);border:1px solid var(--line);border-radius:18px;padding:16px}
 .leg{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--smoke);margin-bottom:6px}
 .box{background:#060810;border:1px solid var(--line2);border-radius:14px;padding:12px;margin-bottom:10px}
-.box input.amt{width:100%;background:transparent;border:0;color:var(--white);font-family:var(--mono);font-size:26px;outline:none}
-.box input.addr{width:100%;background:transparent;border:0;color:var(--gold);font-family:var(--mono);font-size:12px;outline:none;margin-top:8px}
+.box input.amt{width:100%;background:transparent;border:0;color:var(--white);font-family:var(--mono);font-size:24px;outline:none}
+.box input.addr{width:100%;background:transparent;border:0;color:var(--gold);font-family:var(--mono);font-size:16px;outline:none;margin-top:8px}
 .chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
-.chips button{background:var(--lift);border:1px solid var(--line2);color:var(--fog);border-radius:999px;padding:4px 10px;font-size:12px;cursor:pointer}
+.chips button{background:var(--lift);border:1px solid var(--line2);color:var(--fog);border-radius:999px;padding:8px 12px;font-size:13px;cursor:pointer;min-height:40px}
 .swapmid{text-align:center;margin:-4px 0 8px;color:var(--smoke);font-size:12px}
 .preview{margin:10px 0;font-size:13px;color:var(--smoke);display:grid;gap:6px}
 .preview div{display:flex;justify-content:space-between;gap:10px}
-.preview strong{color:var(--white);font-family:var(--mono);font-weight:500;text-align:right}
+.preview strong{color:var(--white);font-family:var(--mono);font-weight:500;text-align:right;overflow-wrap:anywhere}
 label{display:block;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--smoke);margin:10px 0 6px}
 input.slip,select{width:100%;background:#060810;border:1px solid var(--line2);border-radius:10px;color:var(--white);padding:10px;font-family:var(--mono);font-size:14px}
-.cta{width:100%;margin-top:12px;border:0;border-radius:10px;padding:14px;font-weight:600;font-size:15px;background:linear-gradient(135deg,var(--magma),var(--ember));color:#fff;cursor:pointer}
+.cta{width:100%;margin-top:12px;border:0;border-radius:10px;padding:14px;font-weight:600;font-size:16px;background:linear-gradient(135deg,var(--magma),var(--ember));color:#fff;cursor:pointer;min-height:48px}
 .cta:disabled{opacity:.45;cursor:not-allowed}
 .cta.ghost{background:var(--lift);color:var(--white);box-shadow:inset 0 0 0 1px var(--line2);margin-top:8px}
 .lockrow{display:flex;align-items:center;gap:8px;margin-top:10px;font-size:13px;color:var(--fog)}
 .addrs{margin-top:18px;font-family:var(--mono);font-size:11px;color:var(--smoke);word-break:break-all;display:grid;gap:4px}
 .foot{margin-top:20px;font-size:12px;color:var(--smoke)}
 #ethersFail{display:none;background:rgba(255,77,0,.12);color:#ff8c00;padding:12px;text-align:center}
+@media(max-width:520px){
+  h1{font-size:32px}
+  .box input.amt{font-size:22px}
+  .preview div{flex-direction:column;gap:2px}
+  .preview strong{text-align:left}
+}
 </style>
 </head>
 <body>
