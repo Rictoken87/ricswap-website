@@ -207,6 +207,9 @@ window.addEventListener("error", function (e) {
   });
 
   function net() { return ethers.Network.from(CHAIN_ID); }
+  function isNetworkSwitch(e) {
+    return /network changed/i.test((e && (e.shortMessage || e.message)) || "");
+  }
   function readProvider() {
     const n = net();
     return new ethers.FallbackProvider(RPCS.map((url, i) => ({
@@ -214,7 +217,18 @@ window.addEventListener("error", function (e) {
       stallTimeout: 2500, priority: i + 1
     })), 1);
   }
-  function walletProvider() { return new ethers.BrowserProvider(window.ethereum, net()); }
+  function walletProvider() {
+    return new ethers.BrowserProvider(window.ethereum);
+  }
+  async function waitForChain() {
+    for (let i = 0; i < 20; i++) {
+      const id = await window.ethereum.request({ method: "eth_chainId" });
+      setChainUi(id);
+      if (parseInt(id, 16) === CHAIN_ID) return;
+      await new Promise((r) => setTimeout(r, 150));
+    }
+    throw new Error("Switch wallet to Infinite Drive (421018).");
+  }
   function parseAmt(s, d) {
     try { return ethers.parseUnits((s || "").trim() || "0", d); } catch { return 0n; }
   }
@@ -257,6 +271,7 @@ window.addEventListener("error", function (e) {
         }]
       });
     }
+    await waitForChain();
   }
 
   function renderMode() {
@@ -290,7 +305,7 @@ window.addEventListener("error", function (e) {
     else $("cta").textContent = "Resolve pair";
   }
 
-  async function refreshPair() {
+  async function refreshPair(retried) {
     setStatus("");
     state.pendingLp = 0n;
     $("lockCta").hidden = true;
@@ -330,16 +345,20 @@ window.addEventListener("error", function (e) {
         }
       }
     } catch (e) {
-      setStatus(e.shortMessage || e.message, "warn");
+      if (isNetworkSwitch(e) && !retried) {
+        await new Promise((r) => setTimeout(r, 400));
+        return refreshPair(true);
+      }
+      if (!isNetworkSwitch(e)) setStatus(e.shortMessage || e.message, "warn");
     }
     renderMode();
   }
 
   async function connect() {
     await ensureChain();
+    await waitForChain();
     const acc = await window.ethereum.request({ method: "eth_requestAccounts" });
     state.account = acc[0];
-    $("cta").textContent = "Add liquidity";
     await refreshPair();
   }
 
@@ -347,8 +366,8 @@ window.addEventListener("error", function (e) {
     setStatus("");
     if (!state.account) return connect();
     await ensureChain();
-    const idHex = await window.ethereum.request({ method: "eth_chainId" });
-    if (parseInt(idHex, 16) !== CHAIN_ID) return setStatus("Switch to Infinite Drive 421018.", "bad");
+    await waitForChain();
+    if (state.mode !== "A" && state.mode !== "B") await refreshPair();
     if (state.mode !== "A" && state.mode !== "B") return setStatus("Enter a token address.", "warn");
     const tokAmt = parseAmt($("amtTok").value, state.decimals);
     let amt42 = parseAmt($("amt42").value, 18);
@@ -405,7 +424,12 @@ window.addEventListener("error", function (e) {
       }
       await refreshPair();
     } catch (e) {
-      setStatus(e.shortMessage || e.message || "Failed", "bad");
+      if (isNetworkSwitch(e)) {
+        await waitForChain();
+        setStatus("Network switched to Infinite Drive. Click Add liquidity again.", "warn");
+      } else {
+        setStatus(e.shortMessage || e.message || "Failed", "bad");
+      }
     } finally {
       $("cta").disabled = false;
       renderMode();
@@ -445,8 +469,16 @@ window.addEventListener("error", function (e) {
     }
   }
 
+  let pairTimer = null;
+  function schedulePair() {
+    clearTimeout(pairTimer);
+    pairTimer = setTimeout(refreshPair, 250);
+  }
   $("token").addEventListener("change", refreshPair);
   $("token").addEventListener("blur", refreshPair);
+  $("token").addEventListener("input", schedulePair);
+  $("token").addEventListener("paste", () => setTimeout(refreshPair, 50));
+  if (($("token").value || "").trim()) refreshPair();
   $("amtTok").addEventListener("input", () => { delete $("amt42").dataset.manual; refreshPair(); });
   $("amt42").addEventListener("input", () => { $("amt42").dataset.manual = "1"; renderMode(); });
   $("cta").addEventListener("click", add);
