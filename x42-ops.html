@@ -63,7 +63,7 @@ td{padding:8px 6px;border-bottom:1px solid var(--line2);font-family:var(--mono);
     </div>
   </header>
   <h1>X42 OPS</h1>
-  <p class="lede">Operator view. Bond buffer above the ~5% cap to the validator. Anyone can call <code>allocateBuffer</code>; this is not the public stake page. Auto-refresh 20s.</p>
+  <p class="lede">Operator view. Bond excess buffer, then harvest rewards so the x42 rate can rise. Anyone can call these. Not the public stake page. Auto-refresh 20s.</p>
   <div class="banner warn" id="chainBanner">Infinite Drive 421018. Leave the cap in buffer.</div>
   <div class="grid">
     <div class="stat"><span>Bonded</span><strong id="bonded">—</strong></div>
@@ -75,6 +75,7 @@ td{padding:8px 6px;border-bottom:1px solid var(--line2);font-family:var(--mono);
   </div>
   <button class="cta" type="button" id="connect">Connect</button>
   <button class="cta" type="button" id="bond" disabled>Bond excess</button>
+  <button class="cta" type="button" id="harvest">Harvest rewards</button>
   <button class="cta ghost" type="button" id="refresh">Refresh</button>
   <div id="status"></div>
   <h2 style="color:var(--white);font-size:16px;margin:20px 0 0">Recent deposits</h2>
@@ -92,6 +93,7 @@ td{padding:8px 6px;border-bottom:1px solid var(--line2);font-family:var(--mono);
 (function () {
   const CHAIN_ID = 421018, CHAIN_HEX = "0x66c9a";
   const POOL = "0x985f6ECb68f308ea4C3b5Fc9c5B187F4ee1dfA23";
+  const VALOPER = "infinitevaloper1eeczu702nt3clwqwarhg7krtyx23gr7tmjgryu";
   const EXPLORER = "https://scan.infinitedrive.xyz";
   const DEPLOY_BLOCK = 3561205;
   const RPCS = [
@@ -103,6 +105,7 @@ td{padding:8px 6px;border-bottom:1px solid var(--line2);font-family:var(--mono);
     "function getAccounting() view returns (uint256 bonded,uint256 buffer,uint256 unbonding,uint256 accrued,uint256 pending,uint256 donations,uint256 nav,uint256 rate)",
     "function getLiquidity() view returns (uint256 buffer,uint256 bufferCap,uint256 instantPending,uint256 instantHead,uint256 instantNextId,bool instantFromBufferEnabled)",
     "function allocateBuffer(uint256 amount)",
+    "function harvest(string[] valopers) returns (uint256)",
     "event Deposited(address indexed caller, address indexed receiver, uint256 assets, uint256 shares, uint256 rate)"
   ];
   const $ = (id) => document.getElementById(id);
@@ -214,6 +217,24 @@ td{padding:8px 6px;border-bottom:1px solid var(--line2);font-family:var(--mono);
     } catch (e) {
       setStatus(e.shortMessage || e.message, "bad");
       $("bond").disabled = excess === 0n;
+    }
+  });
+  $("harvest").addEventListener("click", async () => {
+    if (!account) return $("connect").click();
+    try {
+      await ensureChain();
+      const signer = await new ethers.BrowserProvider(window.ethereum).getSigner();
+      const pool = new ethers.Contract(POOL, ABI, signer);
+      $("harvest").disabled = true;
+      const tx = await pool.harvest([VALOPER], { gasPrice: 8_000_000_000, gasLimit: 2000000 });
+      setStatus(`Harvest <a href="${EXPLORER}/tx/${tx.hash}" target="_blank" rel="noreferrer">${tx.hash.slice(0,10)}…</a> — 95% to NAV (x42 rate), 5% fee. If buffer goes over cap, click Bond excess.`, "ok");
+      await tx.wait();
+      await load();
+    } catch (e) {
+      const m = e.shortMessage || e.message || "";
+      setStatus(/NothingToHarvest/i.test(m) ? "Nothing to harvest yet. Wait for more blocks, then try again." : m, "warn");
+    } finally {
+      $("harvest").disabled = false;
     }
   });
   $("refresh").addEventListener("click", load);
