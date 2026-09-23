@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="theme-color" content="#030407" />
+<title>Add 42 LP · Infinite Drive — RicSwap</title>
+<meta name="description" content="Add or create TOKEN/42 liquidity on Infinite Drive via DontPanic. Chain 421018 only. No fake TVL." />
+<link rel="canonical" href="https://ricswap.com/drive-liquidity.html" />
+<link rel="icon" type="image/png" href="riclogo.png" />
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://evm-rpc.infinitedrive.xyz https://evm-rpc-infinite.mschihuahua.org https://evm-rpc.infinitepanda.xyz https://scan.infinitedrive.xyz https://cdn.jsdelivr.net; frame-src 'none'; object-src 'none'; base-uri 'self'" />
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+:root {
+  --void:#030407; --well:#0b0e1a; --lift:#121628;
+  --line:rgba(255,77,0,.22); --line2:rgba(255,255,255,.06);
+  --magma:#ff4d00; --ember:#ff8c00; --gold:#e8b84b;
+  --ok:#3dd68c; --warn:#ff8c00; --bad:#ff5c6c;
+  --smoke:#8385a0; --fog:#c0c2d8; --white:#eef0f8;
+  --display:"Bebas Neue",sans-serif; --body:"DM Sans",system-ui,sans-serif; --mono:"JetBrains Mono",monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--void);color:var(--fog);font-family:var(--body);line-height:1.55;padding:20px 16px 72px}
+a{color:var(--gold)}
+.wrap{max-width:560px;margin:0 auto}
+.top{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:18px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:10px;text-decoration:none;color:inherit}
+.brand img{width:40px;height:40px;border-radius:10px;object-fit:cover;box-shadow:0 0 0 1px rgba(255,77,0,.25)}
+.logo-text{font-family:var(--display);letter-spacing:2px;font-size:24px;background:linear-gradient(135deg,var(--gold),var(--magma));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.nav a{margin-left:10px;font-size:13px;font-weight:600;color:var(--smoke);text-decoration:none}
+.nav a.on{color:var(--magma)}
+.chip{font-size:12px;border:1px solid rgba(232,184,75,.35);border-radius:999px;padding:6px 12px;color:var(--gold)}
+h1{font-family:var(--display);font-size:42px;letter-spacing:2px;color:var(--white);line-height:.95;margin:8px 0 10px}
+.lede{color:var(--smoke);font-size:14px;margin-bottom:16px}
+.banner{padding:10px 12px;border-radius:12px;font-size:13px;margin-bottom:12px}
+.banner.warn{background:rgba(255,140,0,.12);color:var(--ember)}
+.banner.bad{background:rgba(255,92,108,.12);color:var(--bad)}
+.banner.ok{background:rgba(61,214,140,.1);color:var(--ok)}
+.mode{display:flex;gap:8px;margin-bottom:12px}
+.mode span{flex:1;text-align:center;padding:8px;border-radius:10px;border:1px solid var(--line2);font-size:12px;font-weight:700;letter-spacing:.4px;text-transform:uppercase}
+.mode .onA{border-color:rgba(61,214,140,.4);color:var(--ok)}
+.mode .onB{border-color:var(--magma);color:var(--magma)}
+.panel{background:var(--well);border:1px solid var(--line);border-radius:18px;padding:18px}
+label{display:block;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--smoke);margin:10px 0 6px}
+input,select{width:100%;background:#060810;border:1px solid var(--line2);border-radius:10px;color:var(--white);padding:12px;font-family:var(--mono);font-size:14px}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.preview{margin-top:12px;font-size:13px;color:var(--smoke);display:grid;gap:6px}
+.preview div{display:flex;justify-content:space-between;gap:10px}
+.preview strong{color:var(--white);font-family:var(--mono);font-weight:500;text-align:right}
+.cta{width:100%;margin-top:14px;border:0;border-radius:10px;padding:14px;font-weight:600;font-size:15px;background:linear-gradient(135deg,var(--magma),var(--ember));color:#fff;cursor:pointer}
+.cta:disabled{opacity:.45;cursor:not-allowed}
+.cta.ghost{background:var(--lift);color:var(--white);box-shadow:inset 0 0 0 1px var(--line2)}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}
+.chips button{background:var(--lift);border:1px solid var(--line2);color:var(--fog);border-radius:999px;padding:5px 10px;font-size:12px;cursor:pointer}
+.addrs{margin-top:20px;font-family:var(--mono);font-size:11px;color:var(--smoke);word-break:break-all;display:grid;gap:4px}
+.foot{margin-top:24px;font-size:12px;color:var(--smoke)}
+#ethersFail{display:none;background:rgba(255,77,0,.12);color:#ff8c00;padding:12px;text-align:center}
+</style>
+</head>
+<body>
+<div id="ethersFail">Could not load a verified ethers library. This page will not sign transactions.</div>
+<div class="wrap">
+  <header class="top">
+    <a class="brand" href="index.html">
+      <img src="riclogo.png" width="40" height="40" alt="RicSwap"
+           onerror="this.onerror=null;this.src='https://raw.githubusercontent.com/Rictoken87/ricswap-website/main/riclogo.png'" />
+      <span class="logo-text">RICSWAP</span>
+    </a>
+    <div class="nav">
+      <a href="drive.html">Launch</a>
+      <a class="on" href="drive-liquidity.html">Add LP</a>
+      <a href="x42.html">x42</a>
+      <a href="about.html">About</a>
+    </div>
+  </header>
+  <div class="chip" id="chainChip">Need chain 421018</div>
+  <h1>42 LIQUIDITY</h1>
+  <p class="lede">Uniswap V2-style add on <strong>DontPanic</strong> (Infinite Drive). Existing pair = add. No pair = you create it and must lock LP. No USD TVL. Not financial advice.</p>
+  <div class="banner warn" id="chainBanner">Infinite Drive <strong>421018</strong> only. Do not send BONE here.</div>
+  <div class="mode"><span id="modeA">A · add to pool</span><span id="modeB">B · create pair</span></div>
+  <div class="panel">
+    <label>Token (ERC-20)</label>
+    <input id="token" placeholder="0x…" spellcheck="false" autocomplete="off" />
+    <div class="chips" id="presets"></div>
+    <div class="row2">
+      <div>
+        <label>Token amount</label>
+        <input id="amtTok" inputmode="decimal" placeholder="0.0" />
+      </div>
+      <div>
+        <label>42 amount</label>
+        <input id="amt42" inputmode="decimal" placeholder="0.0" />
+      </div>
+    </div>
+    <label>Slippage %</label>
+    <input id="slip" value="1" inputmode="decimal" />
+    <div class="preview" id="preview"></div>
+    <div id="createBox" hidden>
+      <label>Type CREATE to confirm you set the starting price</label>
+      <input id="createWord" placeholder="CREATE" autocomplete="off" />
+      <label>Lock LP for (required on create)</label>
+      <select id="lockDays">
+        <option value="30">30 days</option>
+        <option value="180" selected>180 days</option>
+        <option value="365">1 year</option>
+        <option value="forever">Forever</option>
+      </select>
+    </div>
+    <button class="cta" type="button" id="cta">Connect wallet</button>
+    <button class="cta ghost" type="button" id="lockCta" hidden>Lock LP (required)</button>
+    <div id="status"></div>
+  </div>
+  <div class="addrs">
+    <div>Factory <a id="facA" href="#" target="_blank" rel="noreferrer"></a></div>
+    <div>Router <a id="rotA" href="#" target="_blank" rel="noreferrer"></a></div>
+    <div>Locker <a id="locA" href="#" target="_blank" rel="noreferrer"></a></div>
+    <div>Pair <span id="pairA">—</span></div>
+  </div>
+  <p class="foot">Pins DontPanic factory/router. Query-string router is ignored. Extra LP on an existing pair goes to your wallet (unlocked). Creating a pair requires locking LP on the Drive locker. <a href="about.html">What this is / is not</a></p>
+</div>
+<script>
+window.addEventListener("error", function (e) {
+  if (String(e.message||"").indexOf("ethers") >= 0) document.getElementById("ethersFail").style.display = "block";
+});
+</script>
+<script src="https://cdn.jsdelivr.net/npm/ethers@6.13.4/dist/ethers.umd.min.js"
+  integrity="sha384-6Zl0Pc8zjSz8KvmNeXRvUQgY4ryFb+BwDvKCmLYcBME0joAaru491tQgi9B7zsMM"
+  crossorigin="anonymous"
+  onerror="document.getElementById('ethersFail').style.display='block'"></script>
+<script>
+(function () {
+  const CHAIN_ID = 421018;
+  const CHAIN_HEX = "0x66c9a";
+  const ZERO = "0x0000000000000000000000000000000000000000";
+  const EXPLORER = "https://scan.infinitedrive.xyz";
+  const RPCS = [
+    "https://evm-rpc.infinitedrive.xyz",
+    "https://evm-rpc-infinite.mschihuahua.org",
+    "https://evm-rpc.infinitepanda.xyz"
+  ];
+  const FACTORY = "0x3157C6AcA800D507af95Ab1466adBA3A6F11eE1a";
+  const ROUTER = "0xBF07dFE35746894bAe373f63f4Bf2379F9BaFEc0";
+  const WNATIVE = "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE";
+  const LOCKER = "0x24D0aBB2A08037fEf3Da0dA85D23ed35C1B1B980";
+  const FOREVER = 2n ** 256n - 1n;
+  const PRESETS = [
+    { s: "PANIC", a: "0xfAA842c8871f7F99c183F77871f79ce07DD056Cd" },
+    { s: "USDC", a: "0xea5b7fD59b7ec0F34663835A3a361F469C2D4c5C" },
+    { s: "USDT", a: "0xC2684966e5c95B2bc636FB4a1f3Da9Ad23d94753" }
+  ];
+  const FAC_ABI = [
+    "function getPair(address,address) view returns (address)",
+    "function factory() view returns (address)"
+  ];
+  const ROT_ABI = [
+    "function factory() view returns (address)",
+    "function WETH() view returns (address)",
+    "function addLiquidityETH(address,uint256,uint256,uint256,address,uint256) payable returns (uint256,uint256,uint256)"
+  ];
+  const PAIR_ABI = [
+    "function token0() view returns (address)",
+    "function token1() view returns (address)",
+    "function getReserves() view returns (uint112,uint112,uint32)",
+    "function totalSupply() view returns (uint256)"
+  ];
+  const ERC = [
+    "function symbol() view returns (string)",
+    "function decimals() view returns (uint8)",
+    "function balanceOf(address) view returns (uint256)",
+    "function allowance(address,address) view returns (uint256)",
+    "function approve(address,uint256) returns (bool)"
+  ];
+  const LOCK_ABI = [
+    "function createLock(address token,uint256 amount,uint256 unlockTime,address owner) returns (uint256)"
+  ];
+
+  const $ = (id) => document.getElementById(id);
+  const state = {
+    account: null,
+    mode: "?",
+    pair: ZERO,
+    token: ZERO,
+    symbol: "TOKEN",
+    decimals: 18,
+    rTok: 0n,
+    r42: 0n,
+    supply: 0n,
+    pendingLp: 0n
+  };
+
+  if (new URLSearchParams(location.search).get("router")) {
+    try { history.replaceState({}, "", location.pathname); } catch (_) {}
+  }
+
+  $("facA").textContent = FACTORY;
+  $("facA").href = EXPLORER + "/address/" + FACTORY;
+  $("rotA").textContent = ROUTER;
+  $("rotA").href = EXPLORER + "/address/" + ROUTER;
+  $("locA").textContent = LOCKER;
+  $("locA").href = EXPLORER + "/address/" + LOCKER;
+  PRESETS.forEach((p) => {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.textContent = p.s;
+    b.addEventListener("click", () => { $("token").value = p.a; refreshPair(); });
+    $("presets").appendChild(b);
+  });
+
+  function net() { return ethers.Network.from(CHAIN_ID); }
+  function readProvider() {
+    const n = net();
+    return new ethers.FallbackProvider(RPCS.map((url, i) => ({
+      provider: new ethers.JsonRpcProvider(url, n, { staticNetwork: n }),
+      stallTimeout: 2500, priority: i + 1
+    })), 1);
+  }
+  function walletProvider() { return new ethers.BrowserProvider(window.ethereum, net()); }
+  function parseAmt(s, d) {
+    try { return ethers.parseUnits((s || "").trim() || "0", d); } catch { return 0n; }
+  }
+  function fmt(wei, d) {
+    try { return ethers.formatUnits(wei, d); } catch { return "0"; }
+  }
+  function setStatus(msg, kind) {
+    $("status").innerHTML = msg ? `<div class="banner ${kind || "ok"}" style="margin-top:12px">${msg}</div>` : "";
+  }
+  function setChainUi(idHex) {
+    const n = parseInt(idHex, 16);
+    if (n === CHAIN_ID) {
+      $("chainChip").textContent = "Infinite Drive · 421018";
+      $("chainBanner").className = "banner ok";
+      $("chainBanner").innerHTML = "Wallet on <strong>421018</strong>. Native 42 only. DontPanic router pinned.";
+      return;
+    }
+    const label = n === 109 ? "Shibarium 109" : (n === 1 ? "Ethereum 1" : "chain " + n);
+    $("chainChip").textContent = "Wrong: " + label;
+    $("chainBanner").className = "banner bad";
+    $("chainBanner").innerHTML = "Wrong network (<strong>" + label + "</strong>). Switch to Infinite Drive 421018. Do not send BONE here.";
+  }
+  async function ensureChain() {
+    if (!window.ethereum) throw new Error("Install MetaMask or Rabby.");
+    const id = await window.ethereum.request({ method: "eth_chainId" });
+    setChainUi(id);
+    if (parseInt(id, 16) === CHAIN_ID) return;
+    try {
+      await window.ethereum.request({ method: "wallet_switchEthereumChain", params: [{ chainId: CHAIN_HEX }] });
+    } catch (e) {
+      if (e.code !== 4902 && e.data?.originalError?.code !== 4902) throw e;
+      await window.ethereum.request({
+        method: "wallet_addEthereumChain",
+        params: [{
+          chainId: CHAIN_HEX,
+          chainName: "Infinite Drive",
+          nativeCurrency: { name: "Improbability", symbol: "42", decimals: 18 },
+          rpcUrls: RPCS,
+          blockExplorerUrls: [EXPLORER]
+        }]
+      });
+    }
+  }
+
+  function renderMode() {
+    const create = state.mode === "B";
+    $("modeA").className = create ? "" : "onA";
+    $("modeB").className = create ? "onB" : "";
+    $("createBox").hidden = !create;
+    $("pairA").textContent = state.pair && state.pair !== ZERO ? state.pair : "none (will create)";
+    const tok = parseAmt($("amtTok").value, state.decimals);
+    const n42 = parseAmt($("amt42").value, 18);
+    let html = "";
+    if (state.mode === "A" && state.rTok > 0n) {
+      html += `<div><span>Pool reserves</span><strong>${fmt(state.rTok, state.decimals)} ${state.symbol} · ${fmt(state.r42, 18)} 42</strong></div>`;
+      if (tok > 0n) {
+        const need42 = tok * state.r42 / state.rTok;
+        html += `<div><span>42 for this add (est.)</span><strong>${fmt(need42, 18)} 42</strong></div>`;
+      }
+      html += `<div><span>LP recipient</span><strong>your wallet (unlocked)</strong></div>`;
+    } else if (state.mode === "B") {
+      html += `<div><span>Starting price</span><strong>1 ${state.symbol} = ${tok > 0n && n42 > 0n ? fmt(n42 * 10n ** BigInt(state.decimals) / tok, 18) : "—"} 42</strong></div>`;
+      html += `<div><span>You set the market</span><strong>type CREATE below</strong></div>`;
+      html += `<div><span>LP</span><strong>must lock on Drive locker</strong></div>`;
+    } else {
+      html += `<div><span>Pair</span><strong>enter a token</strong></div>`;
+    }
+    html += `<div><span>USD TVL / APY</span><strong>not shown (no oracle)</strong></div>`;
+    $("preview").innerHTML = html;
+    if (!state.account) $("cta").textContent = "Connect wallet";
+    else if (state.mode === "B") $("cta").textContent = "Create pool + add LP";
+    else if (state.mode === "A") $("cta").textContent = "Add liquidity";
+    else $("cta").textContent = "Resolve pair";
+  }
+
+  async function refreshPair() {
+    setStatus("");
+    state.pendingLp = 0n;
+    $("lockCta").hidden = true;
+    const raw = ($("token").value || "").trim();
+    if (!ethers.isAddress(raw) || raw === ZERO) {
+      state.mode = "?"; state.pair = ZERO; renderMode(); return;
+    }
+    try {
+      const p = readProvider();
+      const rot = new ethers.Contract(ROUTER, ROT_ABI, p);
+      const facAddr = await rot.factory();
+      const weth = await rot.WETH();
+      if (facAddr.toLowerCase() !== FACTORY.toLowerCase()) throw new Error("Router factory mismatch");
+      if (weth.toLowerCase() !== WNATIVE.toLowerCase()) throw new Error("Router WETH is not native 42 sentinel");
+      const token = ethers.getAddress(raw);
+      state.token = token;
+      const erc = new ethers.Contract(token, ERC, p);
+      try { state.symbol = await erc.symbol(); } catch { state.symbol = "TOKEN"; }
+      try { state.decimals = Number(await erc.decimals()); } catch { state.decimals = 18; }
+      const fac = new ethers.Contract(FACTORY, FAC_ABI, p);
+      const pair = await fac.getPair(token, WNATIVE);
+      state.pair = pair;
+      if (!pair || pair === ZERO) {
+        state.mode = "B"; state.rTok = 0n; state.r42 = 0n; state.supply = 0n;
+      } else {
+        state.mode = "A";
+        const pr = new ethers.Contract(pair, PAIR_ABI, p);
+        const t0 = await pr.token0();
+        const rs = await pr.getReserves();
+        const nativeIs0 = t0.toLowerCase() === WNATIVE.toLowerCase();
+        state.r42 = nativeIs0 ? rs[0] : rs[1];
+        state.rTok = nativeIs0 ? rs[1] : rs[0];
+        state.supply = await pr.totalSupply();
+        if ($("amtTok").value && !$("amt42").dataset.manual) {
+          const tok = parseAmt($("amtTok").value, state.decimals);
+          if (tok > 0n && state.rTok > 0n) $("amt42").value = fmt(tok * state.r42 / state.rTok, 18);
+        }
+      }
+    } catch (e) {
+      setStatus(e.shortMessage || e.message, "warn");
+    }
+    renderMode();
+  }
+
+  async function connect() {
+    await ensureChain();
+    const acc = await window.ethereum.request({ method: "eth_requestAccounts" });
+    state.account = acc[0];
+    $("cta").textContent = "Add liquidity";
+    await refreshPair();
+  }
+
+  async function add() {
+    setStatus("");
+    if (!state.account) return connect();
+    await ensureChain();
+    const idHex = await window.ethereum.request({ method: "eth_chainId" });
+    if (parseInt(idHex, 16) !== CHAIN_ID) return setStatus("Switch to Infinite Drive 421018.", "bad");
+    if (state.mode !== "A" && state.mode !== "B") return setStatus("Enter a token address.", "warn");
+    const tokAmt = parseAmt($("amtTok").value, state.decimals);
+    let amt42 = parseAmt($("amt42").value, 18);
+    if (tokAmt <= 0n || amt42 <= 0n) return setStatus("Enter both amounts.", "warn");
+    if (state.mode === "B") {
+      if (($("createWord").value || "").trim() !== "CREATE") return setStatus("Type CREATE to confirm you set the starting price.", "bad");
+    }
+    const slip = Number($("slip").value);
+    const bps = BigInt(Math.max(0, Math.min(50, Number.isFinite(slip) ? slip : 1)) * 100);
+    const minTok = tokAmt * (10000n - bps) / 10000n;
+    const min42 = amt42 * (10000n - bps) / 10000n;
+    const deadline = BigInt(Math.floor(Date.now() / 1000) + 1200);
+    try {
+      const signer = await walletProvider().getSigner();
+      const me = await signer.getAddress();
+      const erc = new ethers.Contract(state.token, ERC, signer);
+      const rot = new ethers.Contract(ROUTER, ROT_ABI, signer);
+      const fac = await rot.factory();
+      if (fac.toLowerCase() !== FACTORY.toLowerCase()) throw new Error("Router not DontPanic factory");
+      $("cta").disabled = true;
+      $("cta").textContent = "Confirm in wallet…";
+      const allow = await erc.allowance(me, ROUTER);
+      if (allow < tokAmt) {
+        const txA = await erc.approve(ROUTER, tokAmt);
+        setStatus("Approve token…", "ok");
+        await txA.wait();
+      }
+      await rot.addLiquidityETH.staticCall(state.token, tokAmt, minTok, min42, me, deadline, { value: amt42 });
+      const tx = await rot.addLiquidityETH(state.token, tokAmt, minTok, min42, me, deadline, {
+        value: amt42,
+        gasPrice: 8_000_000_000,
+        gasLimit: 900000
+      });
+      setStatus(`Submitted <a href="${EXPLORER}/tx/${tx.hash}" target="_blank" rel="noreferrer">${tx.hash.slice(0, 10)}…</a>`, "ok");
+      const rec = await tx.wait();
+      let lp = 0n, lpAddr = state.pair;
+      const topic = ethers.id("Transfer(address,address,uint256)");
+      for (const log of rec.logs) {
+        if (log.topics[0] === topic && log.topics.length === 3) {
+          const from = ethers.getAddress("0x" + log.topics[1].slice(26));
+          const to = ethers.getAddress("0x" + log.topics[2].slice(26));
+          if (from === ZERO && to.toLowerCase() === me.toLowerCase()) {
+            lp = BigInt(log.data); lpAddr = log.address; break;
+          }
+        }
+      }
+      state.pendingLp = lp;
+      state.pair = lpAddr;
+      if (state.mode === "B") {
+        $("lockCta").hidden = false;
+        setStatus("Pair created. LP is in your wallet until you lock. Lock is required for create.", "warn");
+      } else {
+        setStatus("LP minted to your wallet (unlocked). " + (lp > 0n ? fmt(lp, 18) + " LP" : ""), "ok");
+      }
+      await refreshPair();
+    } catch (e) {
+      setStatus(e.shortMessage || e.message || "Failed", "bad");
+    } finally {
+      $("cta").disabled = false;
+      renderMode();
+    }
+  }
+
+  async function lockLp() {
+    if (!state.account) return connect();
+    await ensureChain();
+    try {
+      const signer = await walletProvider().getSigner();
+      const me = await signer.getAddress();
+      const pair = state.pair;
+      if (!pair || pair === ZERO) throw new Error("No pair");
+      const lpTok = new ethers.Contract(pair, ERC, signer);
+      let amt = state.pendingLp;
+      if (amt === 0n) amt = await lpTok.balanceOf(me);
+      if (amt === 0n) throw new Error("No LP to lock");
+      const days = $("lockDays").value;
+      const unlock = days === "forever" ? FOREVER : BigInt(Math.floor(Date.now() / 1000) + Number(days) * 86400);
+      $("lockCta").disabled = true;
+      const allow = await lpTok.allowance(me, LOCKER);
+      if (allow < amt) {
+        const txA = await lpTok.approve(LOCKER, amt);
+        await txA.wait();
+      }
+      const locker = new ethers.Contract(LOCKER, LOCK_ABI, signer);
+      const tx = await locker.createLock(pair, amt, unlock, me, { gasPrice: 8_000_000_000, gasLimit: 400000 });
+      setStatus(`Lock submitted <a href="${EXPLORER}/tx/${tx.hash}" target="_blank" rel="noreferrer">${tx.hash.slice(0, 10)}…</a>`, "ok");
+      await tx.wait();
+      $("lockCta").hidden = true;
+      setStatus("LP locked on Drive locker. Unlock only after the chosen time.", "ok");
+    } catch (e) {
+      setStatus(e.shortMessage || e.message || "Lock failed", "bad");
+    } finally {
+      $("lockCta").disabled = false;
+    }
+  }
+
+  $("token").addEventListener("change", refreshPair);
+  $("token").addEventListener("blur", refreshPair);
+  $("amtTok").addEventListener("input", () => { delete $("amt42").dataset.manual; refreshPair(); });
+  $("amt42").addEventListener("input", () => { $("amt42").dataset.manual = "1"; renderMode(); });
+  $("cta").addEventListener("click", add);
+  $("lockCta").addEventListener("click", lockLp);
+  if (window.ethereum) {
+    window.ethereum.on?.("accountsChanged", (a) => { state.account = a[0] || null; renderMode(); });
+    window.ethereum.on?.("chainChanged", (id) => setChainUi(id));
+    window.ethereum.request({ method: "eth_chainId" }).then(setChainUi).catch(() => {});
+  }
+  renderMode();
+})();
+</script>
+</body>
+</html>
