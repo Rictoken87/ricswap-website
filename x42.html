@@ -64,6 +64,19 @@ button{cursor:pointer;border:0;background:none;color:inherit}
 .stat span{display:block;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--smoke);margin-bottom:6px}
 .stat strong{display:block;font-family:var(--mono);font-size:18px;color:var(--white);font-weight:400;line-height:1.25}
 .stat em{display:block;font-style:normal;color:var(--gold);font-size:12px;margin-top:4px;line-height:1.35}
+.live-strip{margin:0 0 28px;padding:16px 18px 18px;background:linear-gradient(180deg,#101422,var(--well));border:1px solid var(--line);border-radius:18px;box-shadow:0 16px 40px rgba(0,0,0,.35)}
+.live-strip.full{border-color:rgba(255,140,0,.45)}
+.live-head{display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--smoke);margin-bottom:12px}
+.live-head b{color:var(--gold);font-weight:600;letter-spacing:.08em}
+.live-dot{width:8px;height:8px;border-radius:50%;background:var(--ok);box-shadow:0 0 10px var(--ok);animation:pulse 1.8s ease-in-out infinite}
+.live-strip.full .live-dot{background:var(--warn);box-shadow:0 0 10px var(--warn)}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.45}}
+.live-updated{margin-left:auto;letter-spacing:0;text-transform:none;font-family:var(--mono);color:var(--ash);font-size:11px}
+.live-gauge{margin:0 0 12px}
+.live-gauge label{display:flex;justify-content:space-between;gap:12px;font-size:12px;color:var(--fog);margin-bottom:8px}
+.live-grid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:10px}
+.live-note{margin-top:12px;font-size:12px;color:var(--fog);line-height:1.5}
+.live-note a{color:var(--gold)}
 .panel{background:linear-gradient(180deg,#101422,var(--well));border:1px solid var(--line);border-radius:22px;padding:8px;box-shadow:0 30px 80px rgba(0,0,0,.45),0 0 40px rgba(255,77,0,.06)}
 .tabs{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:6px;padding:6px}
 .gauge{margin:0 0 12px;padding:12px 14px;background:var(--deep);border:1px solid var(--line2);border-radius:14px}
@@ -105,16 +118,19 @@ button{cursor:pointer;border:0;background:none;color:inherit}
 .faq article{background:var(--well);border:1px solid var(--line2);border-radius:16px;padding:18px 20px}
 .faq h3{color:var(--white);font-size:15px;margin-bottom:8px}
 .faq p{color:var(--fog);font-size:14px}
+.faq code,.banner code{font-family:var(--mono);font-size:12px;color:var(--gold)}
 .addrs{margin-top:28px;display:grid;gap:8px;font-family:var(--mono);font-size:12px;color:var(--fog);word-break:break-all}
 .addrs a{color:var(--mist)}
 .foot{margin-top:40px;padding-top:18px;border-top:1px solid var(--line2);display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;color:var(--fog);font-size:12px}
 .foot a{color:var(--mist)}
 @media (max-width:1024px){
   .hero{gap:24px}
+  .live-grid{grid-template-columns:repeat(3,1fr)}
 }
 @media (max-width:860px){
   .hero{grid-template-columns:1fr;gap:22px}
   .stats{grid-template-columns:1fr 1fr}
+  .live-grid{grid-template-columns:1fr 1fr}
   .faq{grid-template-columns:1fr}
   .hero h2{font-size:clamp(32px,10vw,44px);letter-spacing:1px}
   .tabs{grid-template-columns:1fr 1fr}
@@ -127,6 +143,7 @@ button{cursor:pointer;border:0;background:none;color:inherit}
 }
 @media (max-width:520px){
   .stats{grid-template-columns:1fr}
+  .live-grid{grid-template-columns:1fr}
   .stat strong{font-size:16px}
   .logo-text{font-size:22px}
   .nav-link{font-size:12px}
@@ -162,17 +179,39 @@ button{cursor:pointer;border:0;background:none;color:inherit}
     <a href="about.html">What this is / is not</a>
   </div>
 
+  <section class="live-strip" id="liveStrip" aria-label="Live on-chain pool status">
+    <div class="live-head">
+      <span class="live-dot" aria-hidden="true"></span>
+      <b>Live on-chain</b>
+      <span>Infinite Drive 421018 · no APR</span>
+      <span class="live-updated" id="liveUpdated">reading…</span>
+    </div>
+    <div class="gauge live-gauge">
+      <label><span>TVL vs cap</span><span id="liveTvlLabel">loading…</span></label>
+      <div class="bar"><i id="liveTvlBar"></i></div>
+    </div>
+    <div class="live-grid">
+      <div class="stat"><span>TVL</span><strong id="liveTvl">—</strong><em id="liveRoom">room —</em></div>
+      <div class="stat"><span>Cap</span><strong id="liveCap">—</strong><em>on-chain maxTvl</em></div>
+      <div class="stat"><span>Bonded</span><strong id="liveBonded">—</strong><em>delegated to validator</em></div>
+      <div class="stat"><span>Buffer</span><strong id="liveBuffer">—</strong><em>instant matching</em></div>
+      <div class="stat"><span>Rate</span><strong id="liveRate">—</strong><em>42 per 1 x42</em></div>
+      <div class="stat"><span>Unharvested</span><strong id="liveClaim">—</strong><em><a href="x42-ops.html">harvest to raise rate</a></em></div>
+    </div>
+    <p class="live-note" id="liveNote">Numbers come from the pool and the 0x0801 distribution precompile. Rate only moves after harvest. This page does not show APR.</p>
+  </section>
+
   <section class="hero">
     <div>
-      <div class="kicker">Native 42 → x42 · first cap 100 42</div>
+      <div class="kicker" id="kicker">Native 42 → x42 · live cap loading…</div>
       <h2>Stake 42. <span>Keep it liquid.</span></h2>
       <p class="lede">Deposit native 42 and receive x42. Your token count stays still; consensus rewards raise the 42-per-x42 rate. Unstaking takes 21 days on Infinite Drive. Not financial advice.</p>
       <div class="stats">
-        <div class="stat"><span>Protocol TVL</span><strong id="tvl">—</strong><em>bonded + buffer + unbonding</em></div>
-        <div class="stat"><span>Exchange rate</span><strong id="rate">—</strong><em>42 per 1 x42</em></div>
+        <div class="stat"><span>Protocol TVL</span><strong id="tvl">—</strong><em id="tvlEm">bonded + buffer + unbonding</em></div>
+        <div class="stat"><span>Exchange rate</span><strong id="rate">—</strong><em>42 per 1 x42 · not APR</em></div>
         <div class="stat"><span>Your x42</span><strong id="youX">0</strong><em id="youXVal">connect wallet</em></div>
         <div class="stat"><span>Unbonding</span><strong>21 days</strong><em>then claim native 42</em></div>
-        <div class="stat"><span>Live cap</span><strong>100 42</strong><em>first public tranche</em></div>
+        <div class="stat"><span>Live cap</span><strong id="cap">—</strong><em id="capEm">on-chain maxTvl</em></div>
         <div class="stat"><span>Yield model</span><strong>Price-up</strong><em>not rebasing</em></div>
       </div>
     </div>
@@ -185,7 +224,7 @@ button{cursor:pointer;border:0;background:none;color:inherit}
         <button class="tab" data-tab="claims" type="button">Claims</button>
       </div>
       <div class="body">
-        <div class="banner warn" id="capBanner">First live cap is <strong>100 42</strong>. Minimum deposit 0.001 42. Add x42 in your wallet after the first mint.</div>
+        <div class="banner warn" id="capBanner">Live cap is on-chain. Minimum deposit 0.001 42. Add x42 in your wallet after the first mint.</div>
         <div id="pauseBanner"></div>
         <div class="gauge" id="liqGauge">
           <label><span>Instant matching</span><span id="liqLabel">loading…</span></label>
@@ -230,7 +269,7 @@ button{cursor:pointer;border:0;background:none;color:inherit}
     </article>
     <article>
       <h3>Is this a DEX or a bank?</h3>
-      <p>Neither. Read <a href="about.html">what RicSwap is / is not</a>. Not investment advice. First cap 100 42. Wrong chain (109 or 1) will lose funds if you send native tokens there.</p>
+      <p>Neither. Read <a href="about.html">what RicSwap is / is not</a>. Not investment advice. The live cap is on-chain <code>maxTvl</code> (first tranche started at 100 42). Raising it is a 72-hour timelock, not a user click. Wrong chain (109 or 1) will lose funds if you send native tokens there.</p>
     </article>
     <article>
       <h3>What if a validator is slashed?</h3>
@@ -268,6 +307,10 @@ const RPCS = [
 ];
 const POOL = "0x985f6ECb68f308ea4C3b5Fc9c5B187F4ee1dfA23";
 const X42 = "0x700879539292e2cB46b3C645278e5e272dc27154";
+const STORE_FALLBACK = "0x8E2E63d8f0041B0b2c6af01816B63FF2AFEac557";
+const KEY_MAX_TVL = "0x36a1fa10df3735f6ab0731cd9e0ece8eef651239937273569ec4059133ef6322";
+const DIST = "0x0000000000000000000000000000000000000801";
+const VALOPER = "infinitevaloper1eeczu702nt3clwqwarhg7krtyx23gr7tmjgryu";
 const DEPLOY_BLOCK = 3561205;
 const MIN = 10n ** 15n;
 const RATE_P = 10n ** 18n;
@@ -287,9 +330,14 @@ const POOL_ABI = [
   "function depositsPaused() view returns (bool)",
   "function withdrawalsPaused() view returns (bool)",
   "function x42() view returns (address)",
+  "function STORE() view returns (address)",
   "event WithdrawRequested(uint256 indexed id, address indexed owner, uint256 shares, uint256 assets, uint256 claimableTime)"
 ];
 const ERC20_ABI = ["function balanceOf(address) view returns (uint256)"];
+const STORE_ABI = ["function getUint(bytes32) view returns (uint256)"];
+const DIST_ABI = [
+  "function delegationRewards(address delegator, string validator) view returns (tuple(string denom, uint256 amount, uint8 precision)[])"
+];
 
 const params = new URLSearchParams(location.search);
 const state = {
@@ -297,14 +345,20 @@ const state = {
   account: null,
   rate: RATE_P,
   tvl: 0n,
+  bonded: 0n,
+  unbonding: 0n,
   buffer: 0n,
   bufferCap: 1n,
+  maxTvl: 0n,
+  claimable: 0n,
+  claimableOk: false,
   instantPending: 0n,
   you42: 0n,
   youX: 0n,
   depositsPaused: false,
   withdrawalsPaused: false,
-  tickets: []
+  tickets: [],
+  busy: false
 };
 
 const $ = (id) => document.getElementById(id);
@@ -324,13 +378,26 @@ function parseAmt(s){
 function network(){
   return ethers.Network.from(CHAIN_ID);
 }
-function readProvider(){
+let _read = null;
+let _readAt = 0;
+async function readProvider(){
+  const now = Date.now();
+  if (_read && now - _readAt < 45000) return _read;
   const net = network();
-  return new ethers.FallbackProvider(RPCS.map((url, i) => ({
-    provider: new ethers.JsonRpcProvider(url, net, { staticNetwork: net }),
-    stallTimeout: 2500,
-    priority: i + 1
-  })), 1);
+  let last;
+  for (const url of RPCS) {
+    try {
+      const p = new ethers.JsonRpcProvider(url, net, { staticNetwork: net });
+      await p.getBlockNumber();
+      _read = p;
+      _readAt = now;
+      return p;
+    } catch (e) { last = e; }
+  }
+  throw last || new Error("All Infinite Drive RPCs failed.");
+}
+function room(){
+  return state.maxTvl > state.tvl ? state.maxTvl - state.tvl : 0n;
 }
 function walletProvider(){
   return new ethers.BrowserProvider(window.ethereum, network());
@@ -346,12 +413,30 @@ $("tokA").textContent = X42;
 $("tokA").href = EXPLORER + "/token/" + X42;
 
 function renderStats(){
+  const left = room();
+  const full = state.maxTvl > 0n && left === 0n;
   $("tvl").textContent = fmt(state.tvl,2)+" 42";
+  $("tvlEm").textContent = state.maxTvl > 0n
+    ? fmt(state.tvl,2)+" / "+fmt(state.maxTvl,2)+" cap"
+    : "bonded + buffer + unbonding";
   $("rate").textContent = fmtRate(state.rate);
   $("youX").textContent = fmt(state.youX,4);
   $("youXVal").textContent = state.account
     ? "≈ "+fmt(state.youX * state.rate / RATE_P, 4)+" 42"
     : "connect wallet";
+  $("cap").textContent = state.maxTvl > 0n ? fmt(state.maxTvl,2)+" 42" : "—";
+  $("capEm").textContent = full ? "tranche full" : (left > 0n ? fmt(left,2)+" 42 remaining" : "on-chain maxTvl");
+  $("kicker").textContent = state.maxTvl > 0n
+    ? "Native 42 → x42 · live cap "+fmt(state.maxTvl,2)+" 42"
+    : "Native 42 → x42 · live cap loading…";
+  const capBan = $("capBanner");
+  if (full) {
+    capBan.className = "banner warn";
+    capBan.innerHTML = "Cap is <strong>full</strong> ("+fmt(state.tvl,2)+" / "+fmt(state.maxTvl,2)+" 42). New deposits revert until the 72-hour timelock raises <code>maxTvl</code>. Unstake still works.";
+  } else if (state.maxTvl > 0n) {
+    capBan.className = "banner warn";
+    capBan.innerHTML = "Live cap <strong>"+fmt(state.maxTvl,2)+" 42</strong> · room <strong>"+fmt(left,2)+" 42</strong>. Minimum 0.001 42. Add x42 in your wallet after the first mint.";
+  }
   const pause = [];
   if (state.depositsPaused) pause.push("Deposits are paused.");
   if (state.withdrawalsPaused) pause.push("Withdrawals are paused.");
@@ -366,6 +451,26 @@ function renderStats(){
   $("liqHelp").textContent = empty
     ? "Instant matching is empty. Use the 21-day 0% exit. Your x42 is not locked."
     : "Instant exit is match-only at 0.5%. New deposits pay you first. 21-day exit is always 0%.";
+
+  const strip = $("liveStrip");
+  if (strip) strip.classList.toggle("full", full);
+  $("liveTvl").textContent = fmt(state.tvl,2)+" 42";
+  $("liveCap").textContent = state.maxTvl > 0n ? fmt(state.maxTvl,2)+" 42" : "—";
+  $("liveBonded").textContent = fmt(state.bonded,2)+" 42";
+  $("liveBuffer").textContent = fmt(state.buffer,2)+" 42";
+  $("liveRate").textContent = fmtRate(state.rate);
+  $("liveClaim").textContent = state.claimableOk ? fmt(state.claimable,4)+" 42" : "couldn't read";
+  $("liveRoom").textContent = full ? "0 room — cap full" : (state.maxTvl > 0n ? fmt(left,2)+" 42 remaining" : "room —");
+  const tvlDen = state.maxTvl > 0n ? state.maxTvl : 1n;
+  const tvlPct = Math.min(100, Number(state.tvl * 10000n / tvlDen) / 100);
+  $("liveTvlBar").style.width = tvlPct + "%";
+  $("liveTvlLabel").textContent = state.maxTvl > 0n
+    ? fmt(state.tvl,2)+" / "+fmt(state.maxTvl,2)+" 42 · "+tvlPct.toFixed(1)+"%"
+    : "loading…";
+  $("liveNote").innerHTML = full
+    ? "Cap full. Deposits revert until a 72-hour timelock raises maxTvl. Unharvested rewards do <strong>not</strong> raise the rate until someone <a href=\"x42-ops.html\">harvests</a>. No APR on this page."
+    : "Unharvested rewards sit at the validator until harvest (95% to NAV / 5% fee). Rate only moves after harvest. This page does not show APR. <a href=\"x42-ops.html\">Ops / harvest</a>";
+  $("liveUpdated").textContent = "updated "+new Date().toLocaleTimeString();
 }
 
 function renderForm(){
@@ -380,9 +485,17 @@ function renderForm(){
   $("tokenChip").innerHTML = stake
     ? `<span class="dot n">42</span>42`
     : `<span class="dot x">x</span>x42`;
-  $("cta").textContent = stake ? "Stake 42" : (instant ? "Queue instant (0.5%)" : "Request 21-day unstake");
-  $("note").textContent = stake
-    ? "Mint fee 0%. Cap 100 42. If the liquid buffer is already over 5% of TVL, new stake waits until keepers bond it."
+  const full = stake && state.maxTvl > 0n && room() === 0n;
+  $("cta").textContent = full
+    ? "Cap full"
+    : stake ? "Stake 42" : (instant ? "Queue instant (0.5%)" : "Request 21-day unstake");
+  $("cta").disabled = full;
+  $("note").textContent = full
+    ? "TVL is at the live on-chain cap. New deposits revert until the 72-hour timelock raises maxTvl."
+    : stake
+    ? (state.maxTvl > 0n
+        ? "Mint fee 0%. Live cap "+fmt(state.maxTvl,2)+" 42 ("+fmt(room(),2)+" remaining). If the liquid buffer is already over 5% of TVL, new stake waits until keepers bond it."
+        : "Mint fee 0%. Reading live cap from chain…")
     : instant
       ? "Burns x42 now. You are paid when the next depositor matches you, minus 0.5%. If nobody deposits, use 21-day 0%."
       : "0% fee. Burns x42 now. Claim native 42 after 21 days.";
@@ -402,10 +515,14 @@ function renderPreview(){
   const sharesLocal = state.rate === 0n ? 0n : v * RATE_P / state.rate;
   const assetsLocal = v * state.rate / RATE_P;
   const feeLocal = assetsLocal * 50n / 10000n;
+  const left = room();
+  const overCap = stake && state.maxTvl > 0n && v > left;
   $("preview").innerHTML = stake
     ? `<div><span>You receive (est.)</span><strong id="pvOut">${fmt(sharesLocal,6)} x42</strong></div>
        <div><span>Mint fee</span><strong>0%</strong></div>
-       <div><span>Rate</span><strong>1 x42 = ${fmtRate(state.rate)} 42</strong></div>`
+       <div><span>Rate</span><strong>1 x42 = ${fmtRate(state.rate)} 42</strong></div>
+       <div><span>Room under cap</span><strong>${state.maxTvl > 0n ? fmt(left,4)+" 42" : "—"}</strong></div>
+       ${overCap ? `<div><span>Over cap</span><strong>deposit would revert</strong></div>` : ""}`
     : state.tab === "instant"
       ? `<div><span>Gross (est.)</span><strong id="pvGross">${fmt(assetsLocal,6)} 42</strong></div>
          <div><span>Match fee 0.5%</span><strong id="pvFee">− ${fmt(feeLocal,6)} 42</strong></div>
@@ -421,7 +538,7 @@ function renderPreview(){
 // Ask the contract exactly what it will do, and only apply the result if this
 // is still the latest keystroke (guards against out-of-order async responses).
 async function refreshOnchainPreview(v, stake, seq){
-  const provider = readProvider();
+  const provider = await readProvider();
   const pool = new ethers.Contract(POOL, POOL_ABI, provider);
   if (stake) {
     const shares = await pool.previewDeposit(v);
@@ -558,22 +675,69 @@ function _lockUI(msg){
   const cta = $("cta"); if (cta) { cta.disabled = true; cta.textContent = "Unavailable"; }
 }
 
+async function readMaxTvl(provider, pool){
+  try {
+    let storeAddr = STORE_FALLBACK;
+    try { storeAddr = await pool.STORE(); } catch (_) {}
+    if (!storeAddr || storeAddr === ZERO) storeAddr = STORE_FALLBACK;
+    const store = new ethers.Contract(storeAddr, STORE_ABI, provider);
+    const cap = await store.getUint(KEY_MAX_TVL);
+    return cap > 0n ? cap : 0n;
+  } catch (_) { return 0n; }
+}
+
+async function readClaimable(provider){
+  const dist = new ethers.Contract(DIST, DIST_ABI, provider);
+  const coins = await dist.delegationRewards(POOL, VALOPER);
+  let claimable = 0n;
+  for (const c of coins) {
+    const denom = (c.denom || c[0] || "").toLowerCase();
+    if (denom && denom !== "drop") continue;
+    const amt = BigInt(c.amount != null ? c.amount : c[1]);
+    const prec = Number(c.precision != null ? c.precision : c[2] || 18);
+    if (prec === 18 || prec === 0) claimable += amt;
+    else if (prec < 18) claimable += amt * (10n ** BigInt(18 - prec));
+    else claimable += amt / (10n ** BigInt(prec - 18));
+  }
+  return claimable;
+}
+
+async function loadLive(provider, pool){
+  const acc = await pool.getAccounting();
+  const bonded = acc.bonded != null ? acc.bonded : acc[0];
+  const bufferAcc = acc.buffer != null ? acc.buffer : acc[1];
+  const unbonding = acc.unbonding != null ? acc.unbonding : acc[2];
+  const rate = acc.rate != null ? acc.rate : acc[7];
+  state.bonded = bonded;
+  state.unbonding = unbonding;
+  state.rate = rate === 0n ? RATE_P : rate;
+  state.tvl = bonded + bufferAcc + unbonding;
+  state.depositsPaused = await pool.depositsPaused();
+  state.withdrawalsPaused = await pool.withdrawalsPaused();
+  try {
+    const liq = await pool.getLiquidity();
+    state.buffer = liq.buffer != null ? liq.buffer : liq[0];
+    const bcap = liq.bufferCap != null ? liq.bufferCap : liq[1];
+    state.bufferCap = bcap === 0n ? 1n : bcap;
+    state.instantPending = liq.instantPending != null ? liq.instantPending : liq[2];
+  } catch (_) {
+    state.buffer = bufferAcc;
+  }
+  state.maxTvl = await readMaxTvl(provider, pool);
+  try {
+    state.claimable = await readClaimable(provider);
+    state.claimableOk = true;
+  } catch (_) {
+    state.claimableOk = false;
+  }
+}
+
 async function refresh(retried){
   try {
-    const provider = readProvider();
+    const provider = await readProvider();
     if (!(await verifyAddresses(provider))) return; // refuse to render form on mismatch
     const pool = new ethers.Contract(POOL, POOL_ABI, provider);
-    const acc = await pool.getAccounting();
-    state.rate = acc.rate === 0n ? RATE_P : acc.rate;
-    state.tvl = acc.bonded + acc.buffer + acc.unbonding;
-    state.depositsPaused = await pool.depositsPaused();
-    state.withdrawalsPaused = await pool.withdrawalsPaused();
-    try {
-      const liq = await pool.getLiquidity();
-      state.buffer = liq.buffer;
-      state.bufferCap = liq.bufferCap === 0n ? 1n : liq.bufferCap;
-      state.instantPending = liq.instantPending;
-    } catch (_) {}
+    await loadLive(provider, pool);
     if (state.account) {
       state.you42 = await provider.getBalance(state.account);
       const tok = new ethers.Contract(X42, ERC20_ABI, provider);
@@ -607,7 +771,22 @@ async function refresh(retried){
     }
   }
   renderStats();
-  renderForm();
+  if (!state.busy) renderForm();
+}
+
+async function refreshLive(){
+  try {
+    const provider = await readProvider();
+    const pool = new ethers.Contract(POOL, POOL_ABI, provider);
+    await loadLive(provider, pool);
+    if (state.account) {
+      state.you42 = await provider.getBalance(state.account);
+      const tok = new ethers.Contract(X42, ERC20_ABI, provider);
+      state.youX = await tok.balanceOf(state.account);
+    }
+  } catch (_) {}
+  renderStats();
+  if (!state.busy) renderForm();
 }
 
 async function submit(){
@@ -616,6 +795,9 @@ async function submit(){
   const v = parseAmt($("amount").value);
   if (v <= 0n) return setStatus("Enter an amount.", "warn");
   if (state.tab === "stake" && v < MIN) return setStatus("Minimum 0.001 42.", "warn");
+  if (state.tab === "stake" && state.maxTvl > 0n && v > room()) {
+    return setStatus("Only "+fmt(room(),4)+" 42 remaining under the live cap. Deposits over the cap revert.", "warn");
+  }
   try {
     await ensureChain();
     {
@@ -624,6 +806,7 @@ async function submit(){
     }
     const signer = await walletProvider().getSigner();
     const pool = new ethers.Contract(POOL, POOL_ABI, signer);
+    state.busy = true;
     $("cta").disabled = true;
     $("cta").textContent = "Confirm in wallet…";
     const tx = state.tab === "stake"
@@ -658,6 +841,7 @@ async function submit(){
       setStatus(e.shortMessage || e.message || "Transaction failed", "bad");
     }
   } finally {
+    state.busy = false;
     $("cta").disabled = false;
     renderForm();
   }
@@ -714,6 +898,7 @@ document.querySelectorAll(".tab").forEach(b => b.classList.toggle("active", b.da
 renderStats();
 renderForm();
 refresh();
+setInterval(() => { refreshLive().catch(()=>{}); }, 30000);
 </script>
 </body>
 </html>
