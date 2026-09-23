@@ -97,9 +97,9 @@ td{padding:8px 6px;border-bottom:1px solid var(--line2);font-family:var(--mono);
   const EXPLORER = "https://scan.infinitedrive.xyz";
   const DEPLOY_BLOCK = 3561205;
   const RPCS = [
-    "https://evm-rpc.infinitedrive.xyz",
     "https://evm-rpc-infinite.mschihuahua.org",
-    "https://evm-rpc.infinitepanda.xyz"
+    "https://evm-rpc.infinitepanda.xyz",
+    "https://evm-rpc.infinitedrive.xyz"
   ];
   const ABI = [
     "function getAccounting() view returns (uint256 bonded,uint256 buffer,uint256 unbonding,uint256 accrued,uint256 pending,uint256 donations,uint256 nav,uint256 rate)",
@@ -112,12 +112,17 @@ td{padding:8px 6px;border-bottom:1px solid var(--line2);font-family:var(--mono);
   let account = null, excess = 0n;
 
   function net() { return ethers.Network.from(CHAIN_ID); }
-  function readProvider() {
+  async function readProvider() {
     const n = net();
-    return new ethers.FallbackProvider(RPCS.map((url, i) => ({
-      provider: new ethers.JsonRpcProvider(url, n, { staticNetwork: n }),
-      stallTimeout: 2500, priority: i + 1
-    })), 1);
+    let last;
+    for (const url of RPCS) {
+      try {
+        const p = new ethers.JsonRpcProvider(url, n, { staticNetwork: n });
+        await p.getBlockNumber();
+        return p;
+      } catch (e) { last = e; }
+    }
+    throw last || new Error("All Infinite Drive RPCs failed (CORS or timeout).");
   }
   function fmt(w) {
     const n = Number(ethers.formatEther(w));
@@ -130,49 +135,51 @@ td{padding:8px 6px;border-bottom:1px solid var(--line2);font-family:var(--mono);
 
   async function load() {
     try {
-      const p = readProvider();
+      const p = await readProvider();
       const pool = new ethers.Contract(POOL, ABI, p);
       const acc = await pool.getAccounting();
       const liq = await pool.getLiquidity();
-      excess = liq.buffer > liq.bufferCap ? liq.buffer - liq.bufferCap : 0n;
-      $("bonded").textContent = fmt(acc.bonded) + " 42";
-      $("buffer").textContent = fmt(liq.buffer) + " 42";
-      $("cap").textContent = fmt(liq.bufferCap) + " 42";
+      const bonded = acc.bonded != null ? acc.bonded : acc[0];
+      const nav = acc.nav != null ? acc.nav : acc[6];
+      const rate = acc.rate != null ? acc.rate : acc[7];
+      const buf = liq.buffer != null ? liq.buffer : liq[0];
+      const cap = liq.bufferCap != null ? liq.bufferCap : liq[1];
+      excess = buf > cap ? buf - cap : 0n;
+      $("bonded").textContent = fmt(bonded) + " 42";
+      $("buffer").textContent = fmt(buf) + " 42";
+      $("cap").textContent = fmt(cap) + " 42";
       $("excess").textContent = fmt(excess) + " 42";
-      $("nav").textContent = fmt(acc.nav) + " 42";
-      $("rate").textContent = (Number(acc.rate) / 1e18).toFixed(6);
+      $("nav").textContent = fmt(nav) + " 42";
+      $("rate").textContent = (Number(rate) / 1e18).toFixed(6);
       $("bond").disabled = excess === 0n;
       $("chainBanner").className = excess > 0n ? "banner warn" : "banner ok";
       $("chainBanner").textContent = excess > 0n
-        ? ("Bond " + fmt(excess) + " 42 now. Leave " + fmt(liq.bufferCap) + " 42 in buffer.")
-        : "Buffer at or under cap. Nothing to delegate.";
-
-      const latest = await p.getBlockNumber();
-      const filter = pool.filters.Deposited();
-      const logs = [];
-      const step = 45000n;
-      let from = BigInt(DEPLOY_BLOCK);
-      const to = BigInt(latest);
-      while (from <= to) {
-        const end = from + step > to ? to : from + step;
-        try { logs.push(...await pool.queryFilter(filter, from, end)); } catch (_) {}
-        from = end + 1n;
-      }
-      logs.reverse();
-      const slice = logs.slice(0, 25);
-      if (!slice.length) {
-        $("rows").innerHTML = "<tr><td colspan='4'>No deposit events indexed yet.</td></tr>";
-      } else {
-        $("rows").innerHTML = slice.map((lg) => {
-          const when = lg.blockNumber;
-          const amt = fmt(lg.args.assets);
-          const fromA = short(lg.args.caller);
-          const h = lg.transactionHash;
-          return `<tr><td>#${when}</td><td>${amt}</td><td>${fromA}</td><td><a href="${EXPLORER}/tx/${h}" target="_blank" rel="noreferrer">${h.slice(0,10)}…</a></td></tr>`;
-        }).join("");
+        ? ("Bond " + fmt(excess) + " 42 now. Leave " + fmt(cap) + " 42 in buffer.")
+        : "Buffer at or under cap. 95 42 is already bonded. Nothing extra to delegate.";
+      setStatus("");
+      $("rows").innerHTML = "<tr><td colspan='4'>Loading deposits…</td></tr>";
+      try {
+        const latest = await p.getBlockNumber();
+        const filter = pool.filters.Deposited();
+        const from = BigInt(latest) > 80000n ? BigInt(latest) - 80000n : BigInt(DEPLOY_BLOCK);
+        const logs = await pool.queryFilter(filter, from, BigInt(latest));
+        logs.reverse();
+        const slice = logs.slice(0, 25);
+        if (!slice.length) {
+          $("rows").innerHTML = "<tr><td colspan='4'>No deposits in the last ~80k blocks. Stats above are live.</td></tr>";
+        } else {
+          $("rows").innerHTML = slice.map((lg) => {
+            const amt = fmt(lg.args.assets != null ? lg.args.assets : lg.args[2]);
+            const fromA = short(lg.args.caller || lg.args.user || lg.args[0]);
+            const h = lg.transactionHash;
+            return `<tr><td>#${lg.blockNumber}</td><td>${amt}</td><td>${fromA}</td><td><a href="${EXPLORER}/tx/${h}" target="_blank" rel="noreferrer">${h.slice(0,10)}…</a></td></tr>`;
+          }).join("");
+        }
+      } catch (_) {
+        $("rows").innerHTML = "<tr><td colspan='4'>Could not load deposit logs. Bonded/buffer above are still live.</td></tr>";
       }
     } catch (e) {
-      setStatus(e.shortMessage || e.message, "bad");
+      setStatus((e.shortMessage || e.message || String(e)) + " — hard-refresh after re-uploading x42-ops.html", "bad");
     }
   }
 
