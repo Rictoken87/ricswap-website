@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="theme-color" content="#030407" />
+<meta name="robots" content="noindex" />
+<title>x42 ops · bond buffer — RicSwap</title>
+<link rel="icon" type="image/png" href="riclogo.png" />
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://evm-rpc.infinitedrive.xyz https://evm-rpc-infinite.mschihuahua.org https://evm-rpc.infinitepanda.xyz https://scan.infinitedrive.xyz https://cdn.jsdelivr.net; frame-src 'none'; object-src 'none'; base-uri 'self'" />
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+:root {
+  --void:#030407; --well:#0b0e1a; --lift:#121628;
+  --line:rgba(255,77,0,.22); --line2:rgba(255,255,255,.06);
+  --magma:#ff4d00; --ember:#ff8c00; --gold:#e8b84b;
+  --ok:#3dd68c; --warn:#ff8c00; --bad:#ff5c6c;
+  --smoke:#8385a0; --fog:#c0c2d8; --white:#eef0f8;
+  --display:"Bebas Neue",sans-serif; --body:"DM Sans",system-ui,sans-serif; --mono:"JetBrains Mono",monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--void);color:var(--fog);font-family:var(--body);line-height:1.5;padding:20px 16px 64px}
+a{color:var(--gold)}
+.wrap{max-width:720px;margin:0 auto}
+.top{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:18px}
+.brand{display:flex;align-items:center;gap:10px;text-decoration:none;color:inherit}
+.brand img{width:36px;height:36px;border-radius:10px}
+.logo-text{font-family:var(--display);letter-spacing:2px;font-size:22px;background:linear-gradient(135deg,var(--gold),var(--magma));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.nav a{margin-left:10px;font-size:13px;font-weight:600;color:var(--smoke);text-decoration:none}
+h1{font-family:var(--display);font-size:36px;letter-spacing:2px;color:var(--white);margin-bottom:8px}
+.lede{color:var(--smoke);font-size:14px;margin-bottom:16px}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px}
+.stat{background:var(--well);border:1px solid var(--line2);border-radius:12px;padding:12px}
+.stat span{display:block;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--smoke);margin-bottom:4px}
+.stat strong{font-family:var(--mono);font-size:16px;color:var(--white);font-weight:500}
+.stat.hot{border-color:var(--magma)}
+.stat.hot strong{color:var(--magma)}
+.banner{padding:10px 12px;border-radius:12px;font-size:13px;margin-bottom:12px}
+.banner.warn{background:rgba(255,140,0,.12);color:var(--ember)}
+.banner.ok{background:rgba(61,214,140,.1);color:var(--ok)}
+.banner.bad{background:rgba(255,92,108,.12);color:var(--bad)}
+.cta{border:0;border-radius:10px;padding:12px 16px;font-weight:600;background:linear-gradient(135deg,var(--magma),var(--ember));color:#fff;cursor:pointer;margin-right:8px;margin-bottom:8px}
+.cta:disabled{opacity:.45;cursor:not-allowed}
+.ghost{background:var(--lift);color:var(--white);box-shadow:inset 0 0 0 1px var(--line2)}
+table{width:100%;border-collapse:collapse;font-size:13px;margin-top:8px}
+th{text-align:left;color:var(--smoke);font-size:11px;letter-spacing:.08em;text-transform:uppercase;padding:8px 6px;border-bottom:1px solid var(--line2)}
+td{padding:8px 6px;border-bottom:1px solid var(--line2);font-family:var(--mono);color:var(--white)}
+.foot{margin-top:20px;font-size:12px;color:var(--smoke)}
+@media(max-width:640px){.grid{grid-template-columns:1fr 1fr}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <a class="brand" href="index.html">
+      <img src="riclogo.png" width="36" height="36" alt=""
+           onerror="this.onerror=null;this.src='https://raw.githubusercontent.com/Rictoken87/ricswap-website/main/riclogo.png'" />
+      <span class="logo-text">RICSWAP</span>
+    </a>
+    <div class="nav">
+      <a href="x42.html">Public stake</a>
+      <a href="about.html">About</a>
+    </div>
+  </header>
+  <h1>X42 OPS</h1>
+  <p class="lede">Operator view. Bond buffer above the ~5% cap to the validator. Anyone can call <code>allocateBuffer</code>; this is not the public stake page. Auto-refresh 20s.</p>
+  <div class="banner warn" id="chainBanner">Infinite Drive 421018. Leave the cap in buffer.</div>
+  <div class="grid">
+    <div class="stat"><span>Bonded</span><strong id="bonded">—</strong></div>
+    <div class="stat"><span>Buffer</span><strong id="buffer">—</strong></div>
+    <div class="stat"><span>Buffer cap</span><strong id="cap">—</strong></div>
+    <div class="stat hot"><span>Excess to bond</span><strong id="excess">—</strong></div>
+    <div class="stat"><span>NAV</span><strong id="nav">—</strong></div>
+    <div class="stat"><span>Rate (42 / x42)</span><strong id="rate">—</strong></div>
+  </div>
+  <button class="cta" type="button" id="connect">Connect</button>
+  <button class="cta" type="button" id="bond" disabled>Bond excess</button>
+  <button class="cta ghost" type="button" id="refresh">Refresh</button>
+  <div id="status"></div>
+  <h2 style="color:var(--white);font-size:16px;margin:20px 0 0">Recent deposits</h2>
+  <p class="lede" style="margin-bottom:0">Inflow of native 42 (mint). Bonding is a separate tx until the pool is upgraded.</p>
+  <table>
+    <thead><tr><th>When</th><th>42 in</th><th>From</th><th>Tx</th></tr></thead>
+    <tbody id="rows"><tr><td colspan="4">Loading…</td></tr></tbody>
+  </table>
+  <p class="foot">Pool <a href="https://scan.infinitedrive.xyz/address/0x985f6ECb68f308ea4C3b5Fc9c5B187F4ee1dfA23" target="_blank" rel="noreferrer">0x985f6ECb…</a> · valoper infinitevaloper1eeczu702nt3clwqwarhg7krtyx23gr7tmjgryu</p>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/ethers@6.13.4/dist/ethers.umd.min.js"
+  integrity="sha384-6Zl0Pc8zjSz8KvmNeXRvUQgY4ryFb+BwDvKCmLYcBME0joAaru491tQgi9B7zsMM"
+  crossorigin="anonymous"></script>
+<script>
+(function () {
+  const CHAIN_ID = 421018, CHAIN_HEX = "0x66c9a";
+  const POOL = "0x985f6ECb68f308ea4C3b5Fc9c5B187F4ee1dfA23";
+  const EXPLORER = "https://scan.infinitedrive.xyz";
+  const DEPLOY_BLOCK = 3561205;
+  const RPCS = [
+    "https://evm-rpc.infinitedrive.xyz",
+    "https://evm-rpc-infinite.mschihuahua.org",
+    "https://evm-rpc.infinitepanda.xyz"
+  ];
+  const ABI = [
+    "function getAccounting() view returns (uint256 bonded,uint256 buffer,uint256 unbonding,uint256 accrued,uint256 pending,uint256 donations,uint256 nav,uint256 rate)",
+    "function getLiquidity() view returns (uint256 buffer,uint256 bufferCap,uint256 instantPending,uint256 instantHead,uint256 instantNextId,bool instantFromBufferEnabled)",
+    "function allocateBuffer(uint256 amount)",
+    "event Deposited(address indexed caller, address indexed receiver, uint256 assets, uint256 shares, uint256 rate)"
+  ];
+  const $ = (id) => document.getElementById(id);
+  let account = null, excess = 0n;
+
+  function net() { return ethers.Network.from(CHAIN_ID); }
+  function readProvider() {
+    const n = net();
+    return new ethers.FallbackProvider(RPCS.map((url, i) => ({
+      provider: new ethers.JsonRpcProvider(url, n, { staticNetwork: n }),
+      stallTimeout: 2500, priority: i + 1
+    })), 1);
+  }
+  function fmt(w) {
+    const n = Number(ethers.formatEther(w));
+    return n.toLocaleString("en-US", { maximumFractionDigits: 4 });
+  }
+  function short(a) { return a.slice(0, 6) + "…" + a.slice(-4); }
+  function setStatus(msg, kind) {
+    $("status").innerHTML = msg ? `<div class="banner ${kind || "ok"}" style="margin-top:12px">${msg}</div>` : "";
+  }
+
+  async function load() {
+    try {
+      const p = readProvider();
+      const pool = new ethers.Contract(POOL, ABI, p);
+      const acc = await pool.getAccounting();
+      const liq = await pool.getLiquidity();
+      excess = liq.buffer > liq.bufferCap ? liq.buffer - liq.bufferCap : 0n;
+      $("bonded").textContent = fmt(acc.bonded) + " 42";
+      $("buffer").textContent = fmt(liq.buffer) + " 42";
+      $("cap").textContent = fmt(liq.bufferCap) + " 42";
+      $("excess").textContent = fmt(excess) + " 42";
+      $("nav").textContent = fmt(acc.nav) + " 42";
+      $("rate").textContent = (Number(acc.rate) / 1e18).toFixed(6);
+      $("bond").disabled = excess === 0n;
+      $("chainBanner").className = excess > 0n ? "banner warn" : "banner ok";
+      $("chainBanner").textContent = excess > 0n
+        ? ("Bond " + fmt(excess) + " 42 now. Leave " + fmt(liq.bufferCap) + " 42 in buffer.")
+        : "Buffer at or under cap. Nothing to delegate.";
+
+      const latest = await p.getBlockNumber();
+      const filter = pool.filters.Deposited();
+      const logs = [];
+      const step = 45000n;
+      let from = BigInt(DEPLOY_BLOCK);
+      const to = BigInt(latest);
+      while (from <= to) {
+        const end = from + step > to ? to : from + step;
+        try { logs.push(...await pool.queryFilter(filter, from, end)); } catch (_) {}
+        from = end + 1n;
+      }
+      logs.reverse();
+      const slice = logs.slice(0, 25);
+      if (!slice.length) {
+        $("rows").innerHTML = "<tr><td colspan='4'>No deposit events indexed yet.</td></tr>";
+      } else {
+        $("rows").innerHTML = slice.map((lg) => {
+          const when = lg.blockNumber;
+          const amt = fmt(lg.args.assets);
+          const fromA = short(lg.args.caller);
+          const h = lg.transactionHash;
+          return `<tr><td>#${when}</td><td>${amt}</td><td>${fromA}</td><td><a href="${EXPLORER}/tx/${h}" target="_blank" rel="noreferrer">${h.slice(0,10)}…</a></td></tr>`;
+        }).join("");
+      }
+    } catch (e) {
+      setStatus(e.shortMessage || e.message, "bad");
+    }
+  }
+
+  async function ensureChain() {
+    const id = await window.ethereum.request({ method: "eth_chainId" });
+    if (parseInt(id, 16) === CHAIN_ID) return;
+    try {
+      await window.ethereum.request({ method: "wallet_switchEthereumChain", params: [{ chainId: CHAIN_HEX }] });
+    } catch (e) {
+      if (e.code !== 4902 && e.data?.originalError?.code !== 4902) throw e;
+      await window.ethereum.request({
+        method: "wallet_addEthereumChain",
+        params: [{
+          chainId: CHAIN_HEX, chainName: "Infinite Drive",
+          nativeCurrency: { name: "Improbability", symbol: "42", decimals: 18 },
+          rpcUrls: RPCS, blockExplorerUrls: [EXPLORER]
+        }]
+      });
+    }
+  }
+
+  $("connect").addEventListener("click", async () => {
+    try {
+      await ensureChain();
+      const a = await window.ethereum.request({ method: "eth_requestAccounts" });
+      account = a[0];
+      $("connect").textContent = short(account);
+    } catch (e) { setStatus(e.message, "bad"); }
+  });
+  $("bond").addEventListener("click", async () => {
+    if (!account) return $("connect").click();
+    if (excess === 0n) return;
+    try {
+      await ensureChain();
+      const signer = await new ethers.BrowserProvider(window.ethereum).getSigner();
+      const pool = new ethers.Contract(POOL, ABI, signer);
+      $("bond").disabled = true;
+      const tx = await pool.allocateBuffer(excess, { gasPrice: 8_000_000_000, gasLimit: 3000000 });
+      setStatus(`Bonding <a href="${EXPLORER}/tx/${tx.hash}" target="_blank" rel="noreferrer">${tx.hash.slice(0,10)}…</a>`, "ok");
+      await tx.wait();
+      await load();
+    } catch (e) {
+      setStatus(e.shortMessage || e.message, "bad");
+      $("bond").disabled = excess === 0n;
+    }
+  });
+  $("refresh").addEventListener("click", load);
+  load();
+  setInterval(load, 20000);
+})();
+</script>
+</body>
+</html>
