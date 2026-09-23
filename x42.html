@@ -272,6 +272,7 @@ const POOL_ABI = [
   "function previewDeposit(uint256 assets) view returns (uint256)",
   "function previewRedeem(uint256 shares) view returns (uint256)",
   "function getWithdrawalRequest(uint256 id) view returns (tuple(address owner,uint256 x42Burned,uint256 amount42Owed,uint256 requestTime,uint256 claimableTime,bool claimed))",
+  "function allocateBuffer(uint256 amount)",
   "function depositsPaused() view returns (bool)",
   "function withdrawalsPaused() view returns (bool)",
   "function x42() view returns (address)",
@@ -621,7 +622,22 @@ async function submit(){
         : await pool.requestWithdraw(v);
     setStatus(`Submitted <a href="${EXPLORER}/tx/${tx.hash}" target="_blank" rel="noreferrer">${tx.hash.slice(0,10)}…</a>`, "ok");
     await tx.wait();
-    if (state.tab === "stake") suggestToken();
+    if (state.tab === "stake") {
+      suggestToken();
+      try {
+        const liq = await pool.getLiquidity();
+        if (liq.buffer > liq.bufferCap) {
+          setStatus("Confirm a second tx: bond excess 42 to the validator…", "warn");
+          const txBond = await pool.allocateBuffer(liq.buffer - liq.bufferCap);
+          setStatus(`Bonding <a href="${EXPLORER}/tx/${txBond.hash}" target="_blank" rel="noreferrer">${txBond.hash.slice(0,10)}…</a>`, "ok");
+          await txBond.wait();
+        }
+      } catch (bondErr) {
+        if (!isNetworkSwitch(bondErr)) {
+          setStatus("Staked, but bonding failed — call allocateBuffer or wait for keeper. " + (bondErr.shortMessage || bondErr.message || ""), "warn");
+        }
+      }
+    }
     $("amount").value = "";
     await refresh();
   } catch (e) {
