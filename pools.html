@@ -74,6 +74,9 @@ h1{font-family:var(--display);font-size:clamp(36px,8vw,56px);letter-spacing:2px;
 .addr{font-family:var(--mono);font-size:10px;color:var(--smoke);word-break:break-all;margin:8px 0 12px}
 .res{font-family:var(--mono);font-size:13px;color:var(--fog);display:grid;gap:4px}
 .share{color:var(--ok);font-size:12px;font-weight:700;margin-top:8px}
+.lock-line{margin-top:10px;padding:8px 10px;border-radius:10px;font-size:12px;line-height:1.4;border:1px solid rgba(61,214,140,.35);background:rgba(61,214,140,.08);color:var(--ok)}
+.lock-line.warn{border-color:rgba(255,140,0,.4);background:rgba(255,140,0,.1);color:var(--ember)}
+.lock-line.bad{border-color:rgba(255,92,108,.35);background:rgba(255,92,108,.08);color:#ff8a9a}
 .actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
 .actions .btn{flex:1;text-align:center;display:inline-flex;align-items:center;justify-content:center;min-width:120px}
 #empty{text-align:center;padding:40px 16px;color:var(--smoke);grid-column:1/-1}
@@ -153,6 +156,7 @@ h1{font-family:var(--display);font-size:clamp(36px,8vw,56px);letter-spacing:2px;
       known: { "0x12c94d3a30daa09f81ea6c037004e6e99a4a3dfc": "RIC" },
       rpcs: ["https://rpc.shibarium.shib.io"],
       explorer: "https://www.shibariumscan.io",
+      locker: "0x388Ea1825bfAe6556Ad24f1FCEE9D9f53875FA6F",
       addLp: "liquidity.html",
       removeLp: "remove-liquidity.html",
       max: 80
@@ -173,6 +177,7 @@ h1{font-family:var(--display);font-size:clamp(36px,8vw,56px);letter-spacing:2px;
         "https://evm-rpc.infinitedrive.xyz"
       ],
       explorer: "https://scan.infinitedrive.xyz",
+      locker: "0x24D0aBB2A08037fEf3Da0dA85D23ed35C1B1B980",
       addLp: "drive-liquidity.html",
       removeLp: "drive-liquidity.html",
       max: 80
@@ -192,7 +197,13 @@ h1{font-family:var(--display);font-size:clamp(36px,8vw,56px);letter-spacing:2px;
       "function totalSupply() view returns (uint256)",
       "function factory() view returns (address)"
     ],
-    ERC20: ["function symbol() view returns (string)", "function decimals() view returns (uint8)"]
+    ERC20: ["function symbol() view returns (string)", "function decimals() view returns (uint8)"],
+    LOCKER: [
+      "function getLocksByOwner(address) view returns (uint256[])",
+      "function getLocksByToken(address) view returns (uint256[])",
+      "function locks(uint256) view returns (address token,address owner,uint256 amount,uint256 unlockTime,bool withdrawn)",
+      "function totalLocked(address) view returns (uint256)"
+    ]
   };
 
   let ethersLib = null, userAddr = null, filter = "all", scanning = false;
@@ -255,6 +266,44 @@ h1{font-family:var(--display);font-size:clamp(36px,8vw,56px);letter-spacing:2px;
     if (chain.known[a]) return chain.known[a];
     return fallback;
   }
+  function lockCaption(unlockTime) {
+    var u = BigInt(unlockTime);
+    if (u > 10n ** 18n) return "Forever (cannot unlock)";
+    var sec = Number(u);
+    if (!Number.isFinite(sec) || sec <= 0) return "Locked";
+    var now = Date.now() / 1000;
+    if (now >= sec) return "Unlock time reached";
+    var d = new Date(sec * 1000);
+    var days = Math.ceil((sec - now) / 86400);
+    return "Locked until " + d.toISOString().slice(0, 10) + " · " + days + "d left";
+  }
+  async function pairLockInfo(chain, pairAddr, prov) {
+    var out = { total: 0n, lines: [], mineAmt: 0n, mineUnlock: 0n };
+    try {
+      var locker = new ethersLib.Contract(chain.locker, ABIS.LOCKER, prov);
+      try { out.total = await locker.totalLocked(pairAddr); } catch (_) {}
+      var ids = [];
+      try { ids = await locker.getLocksByToken(pairAddr); } catch (_) {}
+      var now = Math.floor(Date.now() / 1000);
+      for (var i = 0; i < ids.length && i < 12; i++) {
+        var lk = await locker.locks(ids[i]);
+        var tok = lk.token || lk[0];
+        var own = lk.owner || lk[1];
+        var amt = lk.amount != null ? lk.amount : lk[2];
+        var unl = lk.unlockTime != null ? lk.unlockTime : lk[3];
+        var wd = lk.withdrawn != null ? lk.withdrawn : lk[4];
+        if (wd) continue;
+        if (String(tok).toLowerCase() !== pairAddr.toLowerCase()) continue;
+        out.lines.push({ amount: amt, unlock: unl, owner: own });
+        if (userAddr && String(own).toLowerCase() === userAddr.toLowerCase()) {
+          out.mineAmt += BigInt(amt);
+          var u = BigInt(unl);
+          if (out.mineUnlock === 0n || u < out.mineUnlock) out.mineUnlock = u;
+        }
+      }
+    } catch (_) {}
+    return out;
+  }
   function isNativeTok(addr, chain) {
     var a = addr.toLowerCase();
     return a === chain.wnative.toLowerCase() || a === WEEE.toLowerCase();
@@ -306,7 +355,11 @@ h1{font-family:var(--display);font-size:clamp(36px,8vw,56px);letter-spacing:2px;
     }
     pairAddr = ethersLib.getAddress(pairAddr);
     var key = chain.id + ":" + pairAddr.toLowerCase();
-    if (rows.some(function (r) { return r.key === key; })) return;
+    var existing = rows.findIndex(function (r) { return r.key === key; });
+    if (existing >= 0) {
+      if (rows[existing].mine || !userAddr) return;
+      rows.splice(existing, 1);
+    }
 
     var prov = await providerFor(chain);
     var factory = new ethersLib.Contract(chain.factory, ABIS.FACTORY, prov);
@@ -339,6 +392,25 @@ h1{font-family:var(--display);font-size:clamp(36px,8vw,56px);letter-spacing:2px;
       var pct = Number(bal * 10000n / supply) / 100;
       share = pct < 0.0001 ? "< 0.0001%" : pct.toFixed(4) + "%";
     }
+    var lock = await pairLockInfo(chain, pairAddr, prov);
+    var lockHtml = "";
+    if (lock.total > 0n || lock.lines.length) {
+      var soon = null;
+      var forever = false;
+      for (var li = 0; li < lock.lines.length; li++) {
+        var uu = BigInt(lock.lines[li].unlock);
+        if (uu > 10n ** 18n) forever = true;
+        else if (soon === null || uu < soon) soon = uu;
+      }
+      var cap = forever && soon === null ? "Forever (cannot unlock)" : (soon != null ? lockCaption(soon) : "Locked in official locker");
+      lockHtml = '<div class="lock-line">Locked in locker · ' + esc(formatAmt(lock.total > 0n ? lock.total : lock.mineAmt, 18)) + ' LP · ' + esc(cap) + '</div>';
+    } else {
+      lockHtml = '<div class="lock-line warn">No LP in the official locker — if LP sits in a wallet it can be pulled.</div>';
+    }
+    if (lock.mineAmt > 0n) {
+      lockHtml += '<div class="share">Your locked LP · ' + esc(lockCaption(lock.mineUnlock)) + '</div>';
+    }
+    var mine = bal > 0n || lock.mineAmt > 0n;
     var addHref = chain.addLp;
     var html =
       '<article class="card ' + chain.id + '">' +
@@ -349,13 +421,14 @@ h1{font-family:var(--display);font-size:clamp(36px,8vw,56px);letter-spacing:2px;
           '<div>' + esc(formatAmt(reserves[0], m0[1])) + ' ' + esc(m0[0]) + '</div>' +
           '<div>' + esc(formatAmt(reserves[1], m1[1])) + ' ' + esc(m1[0]) + '</div>' +
         '</div>' +
-        (bal > 0n ? '<div class="share">Your LP · ' + esc(share) + '</div>' : '') +
+        (bal > 0n ? '<div class="share">Your unlocked LP · ' + esc(share) + '</div>' : '') +
+        lockHtml +
         '<div class="actions">' +
           '<a class="btn primary" href="' + addHref + '">Add LP</a>' +
           '<a class="btn" href="' + esc(chain.explorer) + '/address/' + esc(pairAddr) + '" target="_blank" rel="noopener">Explorer</a>' +
         '</div>' +
       '</article>';
-    rows.push({ key: key, chain: chain.id, pair: pairAddr, html: html, mine: bal > 0n });
+    rows.push({ key: key, chain: chain.id, pair: pairAddr, html: html, mine: mine });
     paint();
   }
 
@@ -375,17 +448,41 @@ h1{font-family:var(--display);font-size:clamp(36px,8vw,56px);letter-spacing:2px;
     return { len: len, shown: n };
   }
 
+  async function loadOwnerLocks(chain) {
+    if (!userAddr) return 0;
+    var n = 0;
+    try {
+      var prov = await providerFor(chain);
+      var locker = new ethersLib.Contract(chain.locker, ABIS.LOCKER, prov);
+      var ids = await locker.getLocksByOwner(userAddr);
+      for (var i = 0; i < ids.length; i++) {
+        var lk = await locker.locks(ids[i]);
+        var tok = lk.token || lk[0];
+        var wd = lk.withdrawn != null ? lk.withdrawn : lk[4];
+        if (wd) continue;
+        await loadPair(chain, tok, true);
+        n++;
+      }
+    } catch (e) {
+      console.warn("locker", chain.id, e);
+    }
+    return n;
+  }
+
   async function scanBoth() {
     if (scanning) return;
     scanning = true;
     document.getElementById("scanBtn").disabled = true;
+    var a = { shown: 0 }, b = { shown: 0 }, lockN = 0;
     try {
       await getEthers();
       setStatus("Scanning Shibarium…");
-      var a = await scanChain(CHAINS.shib);
+      try { a = await scanChain(CHAINS.shib); } catch (e) { setStatus("Shibarium scan failed: " + ((e && e.message) || e).toString().slice(0, 60)); }
+      try { lockN += await loadOwnerLocks(CHAINS.shib); } catch (_) {}
       setStatus("Scanning Infinite Drive…");
-      var b = await scanChain(CHAINS.inf);
-      setStatus("Shibarium " + a.shown + " · Infinite Drive " + b.shown + " · no USD TVL");
+      try { b = await scanChain(CHAINS.inf); } catch (e) { console.warn(e); setStatus("Infinite scan issue — still loading locker LP…"); }
+      try { lockN += await loadOwnerLocks(CHAINS.inf); } catch (_) {}
+      setStatus("Shibarium " + a.shown + " · Infinite Drive " + b.shown + (lockN ? " · locker positions loaded" : "") + " · no USD TVL");
       if (!rows.length) document.getElementById("empty").hidden = false;
     } catch (e) {
       setStatus("Scan error: " + ((e && (e.shortMessage || e.message)) || String(e)).slice(0, 100));
