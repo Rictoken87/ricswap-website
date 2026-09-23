@@ -43,7 +43,11 @@ h1{font-family:var(--display);font-size:40px;letter-spacing:2px;color:var(--whit
 .leg{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--smoke);margin-bottom:6px}
 .box{background:#060810;border:1px solid var(--line2);border-radius:14px;padding:12px;margin-bottom:10px}
 .box input.amt{width:100%;background:transparent;border:0;color:var(--white);font-family:var(--mono);font-size:24px;outline:none}
-.box input.addr{width:100%;background:transparent;border:0;color:var(--gold);font-family:var(--mono);font-size:16px;outline:none;margin-top:8px}
+.box input.addr{width:100%;background:transparent;border:0;color:var(--gold);font-family:var(--mono);font-size:16px;outline:none;margin-bottom:6px}
+.meta-line{font-size:12px;color:var(--smoke);margin-bottom:8px;overflow-wrap:anywhere}
+.meta-line.ok{color:var(--ok)}
+.meta-line.bad{color:var(--bad)}
+.meta-line.warn{color:var(--ember)}
 .chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
 .chips button{background:var(--lift);border:1px solid var(--line2);color:var(--fog);border-radius:999px;padding:8px 12px;font-size:13px;cursor:pointer;min-height:40px}
 .swapmid{text-align:center;margin:-4px 0 8px;color:var(--smoke);font-size:12px}
@@ -84,22 +88,29 @@ input.slip,select{width:100%;background:#060810;border:1px solid var(--line2);bo
   </header>
   <div class="chip" id="chainChip">Need chain 421018</div>
   <h1>ADD LIQUIDITY</h1>
-  <p class="lede">Token A + Token B + amounts. Same as Uniswap V2. Infinite Drive only. DontPanic pools. No fake USD TVL.</p>
+  <p class="lede">Paste any Infinite Drive <strong>token contract</strong> (0x…). We load name, decimals, and Blockscout verification from chain 421018. Shortcuts below are optional. Amounts = the pair ratio.</p>
   <div class="banner warn" id="chainBanner">Infinite Drive <strong>421018</strong> only. Not Shibarium.</div>
   <div class="panel">
-    <div class="leg">Token A</div>
+    <div class="leg">Token A · contract address</div>
     <div class="box">
+      <input class="addr" id="tokA" placeholder="Paste 0x… contract or type 42" spellcheck="false" autocomplete="off" />
+      <div class="meta-line" id="metaALine">Paste a contract on Infinite Drive.</div>
       <input class="amt" id="amtA" inputmode="decimal" placeholder="0.0" />
-      <input class="addr" id="tokA" placeholder="0x… or pick 42" spellcheck="false" autocomplete="off" />
       <div class="chips" id="chipsA"></div>
     </div>
     <div class="swapmid">+</div>
-    <div class="leg">Token B</div>
+    <div class="leg">Token B · contract address</div>
     <div class="box">
+      <input class="addr" id="tokB" placeholder="Paste 0x… contract or type 42" spellcheck="false" autocomplete="off" />
+      <div class="meta-line" id="metaBLine">Paste a contract on Infinite Drive.</div>
       <input class="amt" id="amtB" inputmode="decimal" placeholder="0.0" />
-      <input class="addr" id="tokB" placeholder="0x… or pick 42" spellcheck="false" autocomplete="off" />
       <div class="chips" id="chipsB"></div>
     </div>
+    <div class="banner bad" id="unvAlert" hidden></div>
+    <label class="lockrow" id="unvRow" hidden>
+      <input type="checkbox" id="unvOk" />
+      I understand one or both tokens are <strong>not verified</strong> on Blockscout. I may be pairing a fake or malicious contract.
+    </label>
     <label>Slippage %</label>
     <input class="slip" id="slip" value="1" inputmode="decimal" />
     <div class="preview" id="preview"></div>
@@ -166,6 +177,7 @@ input.slip,select{width:100%;background:#060810;border:1px solid var(--line2);bo
     "function getReserves() view returns (uint112,uint112,uint32)"
   ];
   const ERC = [
+    "function name() view returns (string)",
     "function symbol() view returns (string)",
     "function decimals() view returns (uint8)",
     "function allowance(address,address) view returns (uint256)",
@@ -177,7 +189,8 @@ input.slip,select{width:100%;background:#060810;border:1px solid var(--line2);bo
   const $ = (id) => document.getElementById(id);
   const state = {
     account: null, pair: ZERO, isNew: false,
-    metaA: { dec: 18, sym: "A" }, metaB: { dec: 18, sym: "B" },
+    metaA: { dec: 18, sym: "A", name: "", verified: null, hasCode: false },
+    metaB: { dec: 18, sym: "B", name: "", verified: null, hasCode: false },
     rA: 0n, rB: 0n, pendingLp: 0n, quoteFrom: null
   };
 
@@ -204,12 +217,17 @@ input.slip,select{width:100%;background:#060810;border:1px solid var(--line2);bo
 
   function net() { return ethers.Network.from(CHAIN_ID); }
   function isNetErr(e) { return /network changed/i.test((e && (e.shortMessage || e.message)) || ""); }
-  function readProvider() {
+  async function readProvider() {
     const n = net();
-    return new ethers.FallbackProvider(RPCS.map((url, i) => ({
-      provider: new ethers.JsonRpcProvider(url, n, { staticNetwork: n }),
-      stallTimeout: 2500, priority: i + 1
-    })), 1);
+    let last;
+    for (const url of RPCS) {
+      try {
+        const p = new ethers.JsonRpcProvider(url, n, { staticNetwork: n });
+        await p.getBlockNumber();
+        return p;
+      } catch (e) { last = e; }
+    }
+    throw last || new Error("All Infinite Drive RPCs failed.");
   }
   function walletProvider() { return new ethers.BrowserProvider(window.ethereum); }
   function parseAmt(s, d) { try { return ethers.parseUnits((s || "").trim() || "0", d); } catch { return 0n; } }
@@ -269,13 +287,55 @@ input.slip,select{width:100%;background:#060810;border:1px solid var(--line2);bo
     await waitForChain();
   }
 
+  async function checkVerified(addr) {
+    try {
+      const u = EXPLORER + "/api?module=contract&action=getsourcecode&address=" + addr;
+      const res = await fetch(u, { headers: { Accept: "application/json" } });
+      const d = await res.json();
+      const row = Array.isArray(d.result) ? d.result[0] : d.result;
+      const src = (row && (row.SourceCode || row.sourceCode)) || "";
+      const name = (row && (row.ContractName || row.contractName)) || "";
+      return !!(String(src).length > 2 || name);
+    } catch (_) {
+      return null;
+    }
+  }
   async function meta(addr, p) {
-    if (isNative(addr)) return { dec: 18, sym: "42" };
+    if (isNative(addr)) return { dec: 18, sym: "42", name: "Improbability", verified: true, hasCode: true };
+    const code = await p.getCode(addr);
+    if (!code || code === "0x") {
+      return { dec: 18, sym: "?", name: "", verified: false, hasCode: false };
+    }
     const c = new ethers.Contract(addr, ERC, p);
-    let dec = 18, sym = "TKN";
+    let dec = 18, sym = "TKN", name = "";
     try { dec = Number(await c.decimals()); } catch (_) {}
     try { sym = await c.symbol(); } catch (_) {}
-    return { dec, sym };
+    try { name = await c.name(); } catch (_) {}
+    const verified = await checkVerified(addr);
+    return { dec, sym, name, verified, hasCode: true };
+  }
+  function paintMeta(el, m, addr) {
+    if (isNative(addr)) {
+      el.className = "meta-line ok";
+      el.innerHTML = "Native <strong>42</strong> (Improbability) · 18 decimals · chain gas token";
+      return;
+    }
+    if (!m.hasCode) {
+      el.className = "meta-line bad";
+      el.textContent = "No contract at this address on Infinite Drive. Check the 0x hash.";
+      return;
+    }
+    const title = (m.name ? m.name + " " : "") + "(" + m.sym + ") · " + m.dec + " decimals";
+    if (m.verified === true) {
+      el.className = "meta-line ok";
+      el.innerHTML = title + ' · <strong>verified</strong> on <a href="' + EXPLORER + "/address/" + addr + '" target="_blank" rel="noreferrer">Blockscout</a>';
+    } else if (m.verified === false) {
+      el.className = "meta-line bad";
+      el.innerHTML = title + ' · <strong>NOT verified</strong> on Blockscout. <a href="' + EXPLORER + "/address/" + addr + '" target="_blank" rel="noreferrer">Check source</a> before you LP.';
+    } else {
+      el.className = "meta-line warn";
+      el.innerHTML = title + " · could not check verification (explorer timeout).";
+    }
   }
 
   function render() {
@@ -296,7 +356,19 @@ input.slip,select{width:100%;background:#060810;border:1px solid var(--line2);bo
     $("pairA").textContent = state.pair && state.pair !== ZERO ? state.pair : "— (will create)";
     $("lockRow").hidden = !state.isNew;
     $("lockOpts").hidden = !state.isNew || !$("lockOn").checked;
+    const unv = (state.metaA.verified === false && state.metaA.hasCode) || (state.metaB.verified === false && state.metaB.hasCode);
+    const noCode = (canon($("tokA").value) && !isNative(canon($("tokA").value)) && !state.metaA.hasCode)
+      || (canon($("tokB").value) && !isNative(canon($("tokB").value)) && !state.metaB.hasCode);
+    $("unvAlert").hidden = !unv;
+    if (unv) {
+      const bits = [];
+      if (state.metaA.verified === false && state.metaA.hasCode) bits.push("Token A (" + state.metaA.sym + ")");
+      if (state.metaB.verified === false && state.metaB.hasCode) bits.push("Token B (" + state.metaB.sym + ")");
+      $("unvAlert").innerHTML = bits.join(" and ") + " <strong>not verified</strong> on scan.infinitedrive.xyz. Unverified tokens can be scams. Do not LP unless you trust the contract.";
+    }
+    $("unvRow").hidden = !unv;
     if (!state.account) $("cta").textContent = "Connect wallet";
+    else if (noCode) $("cta").textContent = "Invalid token address";
     else $("cta").textContent = state.isNew ? "Supply (create pool)" : "Supply";
   }
 
@@ -307,12 +379,17 @@ input.slip,select{width:100%;background:#060810;border:1px solid var(--line2);bo
       setStatus("Pick two different tokens.", "warn"); state.pair = ZERO; render(); return;
     }
     try {
-      const p = readProvider();
+      const p = await readProvider();
       const rot = new ethers.Contract(ROUTER, ROT_ABI, p);
       if ((await rot.factory()).toLowerCase() !== FACTORY.toLowerCase()) throw new Error("Router factory mismatch");
       if ((await rot.WETH()).toLowerCase() !== WNATIVE.toLowerCase()) throw new Error("Router is not native-42 DontPanic");
       state.metaA = await meta(ca, p);
       state.metaB = await meta(cb, p);
+      paintMeta($("metaALine"), state.metaA, ca);
+      paintMeta($("metaBLine"), state.metaB, cb);
+      if (!state.metaA.hasCode || !state.metaB.hasCode) {
+        state.pair = ZERO; state.isNew = false; render(); return;
+      }
       const fac = new ethers.Contract(FACTORY, FAC_ABI, p);
       const pair = await fac.getPair(pairKey(ca), pairKey(cb));
       state.pair = pair && pair !== ZERO ? pair : ZERO;
@@ -363,6 +440,9 @@ input.slip,select{width:100%;background:#060810;border:1px solid var(--line2);bo
     const amtA = parseAmt($("amtA").value, state.metaA.dec);
     const amtB = parseAmt($("amtB").value, state.metaB.dec);
     if (amtA <= 0n || amtB <= 0n) return setStatus("Enter both amounts. That is the pair ratio.", "warn");
+    if (!state.metaA.hasCode || !state.metaB.hasCode) return setStatus("One address is not a contract on Infinite Drive.", "bad");
+    const unv = (state.metaA.verified === false) || (state.metaB.verified === false);
+    if (unv && !$("unvOk").checked) return setStatus("Unverified token. Tick the warning box if you still want to LP.", "bad");
     const slip = Number($("slip").value);
     const bps = BigInt(Math.max(0, Math.min(50, Number.isFinite(slip) ? slip : 1)) * 100);
     const minA = amtA * (10000n - bps) / 10000n;
