@@ -72,6 +72,8 @@ td{padding:8px 6px;border-bottom:1px solid var(--line2);font-family:var(--mono);
     <div class="stat hot"><span>Excess to bond</span><strong id="excess">—</strong></div>
     <div class="stat"><span>NAV</span><strong id="nav">—</strong></div>
     <div class="stat"><span>Rate (42 / x42)</span><strong id="rate">—</strong></div>
+    <div class="stat hot"><span>Claimable rewards</span><strong id="claimable">—</strong></div>
+    <div class="stat"><span>Last harvest</span><strong id="lastHarvest">—</strong></div>
   </div>
   <button class="cta" type="button" id="connect">Connect</button>
   <button class="cta" type="button" id="bond" disabled>Bond excess</button>
@@ -106,10 +108,16 @@ td{padding:8px 6px;border-bottom:1px solid var(--line2);font-family:var(--mono);
     "function getLiquidity() view returns (uint256 buffer,uint256 bufferCap,uint256 instantPending,uint256 instantHead,uint256 instantNextId,bool instantFromBufferEnabled)",
     "function allocateBuffer(uint256 amount)",
     "function harvest(string[] valopers) returns (uint256)",
-    "event Deposited(address indexed caller, address indexed receiver, uint256 assets, uint256 shares, uint256 rate)"
+    "event Deposited(address indexed caller, address indexed receiver, uint256 assets, uint256 shares, uint256 rate)",
+    "event Harvested(string valoper, uint256 amount)",
+    "event RewardFeeTaken(string valoper, uint256 gross, uint256 operatorShare, uint256 treasuryShare)"
+  ];
+  const DIST = "0x0000000000000000000000000000000000000801";
+  const DIST_ABI = [
+    "function delegationRewards(address delegator, string validator) view returns (tuple(string denom, uint256 amount, uint8 precision)[])"
   ];
   const $ = (id) => document.getElementById(id);
-  let account = null, excess = 0n;
+  let account = null, excess = 0n, claimable = 0n;
 
   function net() { return ethers.Network.from(CHAIN_ID); }
   async function readProvider() {
@@ -151,6 +159,22 @@ td{padding:8px 6px;border-bottom:1px solid var(--line2);font-family:var(--mono);
       $("excess").textContent = fmt(excess) + " 42";
       $("nav").textContent = fmt(nav) + " 42";
       $("rate").textContent = (Number(rate) / 1e18).toFixed(6);
+      claimable = 0n;
+      try {
+        const dist = new ethers.Contract(DIST, DIST_ABI, p);
+        const coins = await dist.delegationRewards(POOL, VALOPER);
+        for (const c of coins) {
+          const denom = (c.denom || c[0] || "").toLowerCase();
+          if (denom && denom !== "drop") continue;
+          const amt = BigInt(c.amount != null ? c.amount : c[1]);
+          const prec = Number(c.precision != null ? c.precision : c[2] || 18);
+          if (prec === 18 || prec === 0) claimable += amt;
+          else if (prec < 18) claimable += amt * (10n ** BigInt(18 - prec));
+          else claimable += amt / (10n ** BigInt(prec - 18));
+        }
+      } catch (_) {}
+      $("claimable").textContent = fmt(claimable) + " 42";
+      $("harvest").textContent = claimable > 0n ? ("Harvest " + fmt(claimable) + " 42") : "Harvest rewards";
       $("bond").disabled = excess === 0n;
       $("chainBanner").className = excess > 0n ? "banner warn" : "banner ok";
       $("chainBanner").textContent = excess > 0n
@@ -234,8 +258,32 @@ td{padding:8px 6px;border-bottom:1px solid var(--line2);font-family:var(--mono);
       const pool = new ethers.Contract(POOL, ABI, signer);
       $("harvest").disabled = true;
       const tx = await pool.harvest([VALOPER], { gasPrice: 8_000_000_000, gasLimit: 2000000 });
-      setStatus(`Harvest <a href="${EXPLORER}/tx/${tx.hash}" target="_blank" rel="noreferrer">${tx.hash.slice(0,10)}…</a> — 95% to NAV (x42 rate), 5% fee. If buffer goes over cap, click Bond excess.`, "ok");
-      await tx.wait();
+      setStatus(`Harvest submitted <a href="${EXPLORER}/tx/${tx.hash}" target="_blank" rel="noreferrer">${tx.hash.slice(0,10)}…</a>`, "ok");
+      const rec = await tx.wait();
+      let net = 0n, gross = 0n, feeOp = 0n, feeTr = 0n;
+      const ih = ethers.id("Harvested(string,uint256)");
+      const iff = ethers.id("RewardFeeTaken(string,uint256,uint256,uint256)");
+      for (const log of rec.logs) {
+        if (log.address.toLowerCase() !== POOL.toLowerCase()) continue;
+        try {
+          const p = pool.interface.parseLog(log);
+          if (p && p.name === "Harvested") net += BigInt(p.args.amount);
+          if (p && p.name === "RewardFeeTaken") {
+            gross += BigInt(p.args.gross);
+            feeOp += BigInt(p.args.operatorShare);
+            feeTr += BigInt(p.args.treasuryShare);
+          }
+        } catch (_) {
+          if (log.topics[0] === ih && log.data && log.data.length >= 130) {
+            net += BigInt("0x" + log.data.slice(66, 130));
+          }
+        }
+      }
+      if (gross === 0n && net > 0n) gross = net + feeOp + feeTr;
+      const fee = feeOp + feeTr;
+      const line = "Harvested <strong>" + fmt(gross || net) + " 42</strong> gross → <strong>" + fmt(net) + " 42</strong> to x42 holders (NAV) · fee " + fmt(fee) + " 42 (5%).";
+      $("lastHarvest").innerHTML = fmt(net) + " 42 to holders";
+      setStatus(line + ' <a href="' + EXPLORER + "/tx/" + tx.hash + '" target="_blank" rel="noreferrer">tx</a>', "ok");
       await load();
     } catch (e) {
       const m = e.shortMessage || e.message || "";
