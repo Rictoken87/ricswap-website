@@ -6,9 +6,19 @@
 <title>Official contracts — RicSwap</title>
 <meta name="description" content="Official RicSwap contract addresses on Shibarium (109) and Infinite Drive (421018). Always verify on the explorer before signing." />
 <meta name="theme-color" content="#030407" />
-<link rel="canonical" href="https://ricswap.com/contracts.html" />
+<link rel="canonical" href="https://www.ricswap.com/contracts.html" />
+<meta property="og:type" content="website" />
+<meta property="og:url" content="https://www.ricswap.com/contracts.html" />
+<meta property="og:title" content="Official contracts — RicSwap" />
+<meta property="og:description" content="Official RicSwap contract addresses on Shibarium (109) and Infinite Drive (421018). Always verify on the explorer before signing." />
+<meta property="og:image" content="https://www.ricswap.com/riclogo.png" />
+<meta name="twitter:card" content="summary" />
+<meta name="twitter:title" content="Official contracts — RicSwap" />
+<meta name="twitter:description" content="Official RicSwap contract addresses on Shibarium (109) and Infinite Drive (421018). Always verify on the explorer before signing." />
+<meta name="twitter:image" content="https://www.ricswap.com/riclogo.png" />
 <link rel="icon" type="image/png" href="riclogo.png" />
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="/shell.css" />
 <style>
 :root {
   --void:#030407; --well:#0b0e1a; --rim:rgba(255,255,255,.06);
@@ -18,9 +28,9 @@
 }
 *{box-sizing:border-box;margin:0;padding:0}
 html{overflow-x:hidden}
-body{background:var(--void);color:var(--fog);font-family:var(--body);line-height:1.6;padding:28px 18px calc(80px + env(safe-area-inset-bottom))}
+body{background:var(--void);color:var(--fog);font-family:var(--body);line-height:1.6}
 a{color:var(--gold)}
-.wrap{max-width:860px;margin:0 auto}
+.wrap{max-width:860px;margin:0 auto;padding:28px 18px calc(80px + env(safe-area-inset-bottom))}
 .brand{display:flex;align-items:center;gap:10px;margin-bottom:20px;text-decoration:none;color:inherit}
 .brand img{width:40px;height:40px;border-radius:10px;object-fit:cover;box-shadow:0 0 0 1px rgba(255,77,0,.25)}
 .logo-text{font-family:var(--display);font-size:26px;letter-spacing:2px;background:linear-gradient(135deg,var(--gold),var(--magma));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
@@ -46,22 +56,9 @@ h2{font-family:var(--display);letter-spacing:1px;color:var(--white);font-size:26
 </style>
 </head>
 <body>
+<div id="ric-shell" data-page="contracts"></div>
+<script src="/shell.js"></script>
 <div class="wrap">
-  <a class="brand" href="index.html">
-    <img src="riclogo.png" alt="RicSwap" width="40" height="40"
-         onerror="this.onerror=null;this.src='https://raw.githubusercontent.com/Rictoken87/ricswap-website/main/riclogo.png'" />
-    <span class="logo-text">RICSWAP</span>
-  </a>
-  <div class="nav">
-    <a href="index.html">Home</a>
-    <a href="swap.html">Swap</a>
-    <a href="drive-swap.html">Swap 42</a>
-    <a href="pools.html">Pools</a>
-    <a href="drive-liquidity.html">Add 42 LP</a>
-    <a href="x42.html">x42</a>
-    <a class="on" href="contracts.html">Contracts</a>
-    <a href="about.html">About</a>
-  </div>
 
   <div class="kicker">Official addresses</div>
   <h1>CONTRACTS</h1>

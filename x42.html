@@ -7,19 +7,24 @@
 <meta name="robots" content="index,follow" />
 <meta name="description" content="Stake native 42 on Infinite Drive. Receive x42 — a value-accruing liquid staking token. Cap 100 42." />
 <title>x42 · Stake 42 on Infinite Drive — RicSwap</title>
-<link rel="canonical" href="https://ricswap.com/x42" />
+<link rel="canonical" href="https://www.ricswap.com/x42" />
 <link rel="icon" type="image/png" href="riclogo.png" />
 <link rel="apple-touch-icon" href="riclogo.png" />
 <meta property="og:type" content="website" />
-<meta property="og:url" content="https://ricswap.com/x42" />
-<meta property="og:title" content="x42 · Liquid staking for Infinite Drive" />
-<meta property="og:description" content="Deposit native 42, receive x42. Rate goes up with consensus rewards. 21-day unstake." />
-<meta property="og:image" content="https://ricswap.com/riclogo.png" />
+<meta property="og:url" content="https://www.ricswap.com/x42" />
+<meta property="og:title" content="x42 · Stake 42 on Infinite Drive — RicSwap" />
+<meta property="og:description" content="Stake native 42 on Infinite Drive. Receive x42 — a value-accruing liquid staking token. Cap 100 42." />
+<meta property="og:image" content="https://www.ricswap.com/riclogo.png" />
+<meta name="twitter:card" content="summary" />
+<meta name="twitter:title" content="x42 · Stake 42 on Infinite Drive — RicSwap" />
+<meta name="twitter:description" content="Stake native 42 on Infinite Drive. Receive x42 — a value-accruing liquid staking token. Cap 100 42." />
+<meta name="twitter:image" content="https://www.ricswap.com/riclogo.png" />
 <meta name="color-scheme" content="dark" />
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://evm-rpc.infinitedrive.xyz https://evm-rpc-infinite.mschihuahua.org https://evm-rpc.infinitepanda.xyz https://scan.infinitedrive.xyz https://cdn.jsdelivr.net; frame-src 'none'; object-src 'none'; base-uri 'self'" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="/shell.css" />
 <style>
 :root {
   --void:#030407; --deep:#060810; --well:#0b0e1a; --card:#0b0e1a; --lift:#121628;
@@ -153,28 +158,16 @@ button{cursor:pointer;border:0;background:none;color:inherit}
 </style>
 </head>
 <body>
+<div id="ric-shell" data-page="x42" data-chain="421018"></div>
+<script src="/shell.js"></script>
 <div id="ethersFail" hidden style="background:rgba(255,77,0,.12);color:#ff8c00;border:1px solid rgba(255,77,0,.4);padding:12px 16px;text-align:center;font-family:system-ui,sans-serif;font-size:14px;position:relative;z-index:2">
   Could not load a verified copy of the ethers library. For your safety this page will not sign transactions. Refresh, or check your network/extensions.
 </div>
 <div class="app">
-  <header class="top">
-    <a class="brand" href="index.html">
-      <img class="mark" src="riclogo.png" width="40" height="40" alt="RicSwap logo"
-           onerror="this.onerror=null;this.src='https://raw.githubusercontent.com/Rictoken87/ricswap-website/main/riclogo.png'" />
-      <div>
-        <h1><span class="logo-text">RICSWAP</span></h1>
-        <p>x42 · Infinite Drive</p>
-      </div>
-    </a>
-    <div class="row">
-      <a class="nav-link" href="index.html">Home</a>
-      <a class="nav-link" href="drive-swap.html">Swap 42</a>
-      <a class="nav-link" href="about.html">About</a>
-      <a class="nav-link on" href="x42.html">x42</a>
-      <span class="chip" id="chainChip">Need chain 421018</span>
-      <button class="wallet" id="walletBtn" type="button">Connect wallet</button>
-    </div>
-  </header>
+  <div class="row" style="justify-content:flex-end;padding:0 0 16px">
+    <span class="chip" id="chainChip">Need chain 421018</span>
+    <button class="wallet" id="walletBtn" type="button">Connect wallet</button>
+  </div>
   <div class="banner warn" id="chainBanner" style="margin-bottom:18px">
     This page is <strong>Infinite Drive only (chain 421018)</strong>. Shibarium is 109 — do not send BONE here. Ethereum is 1 — switch before you stake.
     <a href="about.html">What this is / is not</a>
@@ -805,7 +798,7 @@ async function submit(){
       const idHex = await window.ethereum.request({ method: "eth_chainId" });
       if (parseInt(idHex, 16) !== CHAIN_ID) return setStatus("Switch wallet to Infinite Drive (421018). Do not stake on Shibarium 109.", "bad");
     }
-    const signer = await walletProvider().getSigner();
+    const signer = window.ricGuardSigner(await walletProvider().getSigner(), 421018);
     const pool = new ethers.Contract(POOL, POOL_ABI, signer);
     state.busy = true;
     $("cta").disabled = true;
@@ -855,7 +848,7 @@ async function claim(id){
       const idHex = await window.ethereum.request({ method: "eth_chainId" });
       if (parseInt(idHex, 16) !== CHAIN_ID) return setStatus("Switch wallet to Infinite Drive (421018).", "bad");
     }
-    const signer = await walletProvider().getSigner();
+    const signer = window.ricGuardSigner(await walletProvider().getSigner(), 421018);
     const pool = new ethers.Contract(POOL, POOL_ABI, signer);
     const tx = await pool.claim(id);
     setStatus(`Claim <a href="${EXPLORER}/tx/${tx.hash}" target="_blank" rel="noreferrer">${tx.hash.slice(0,10)}…</a>`, "ok");

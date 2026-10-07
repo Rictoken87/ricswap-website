@@ -7,10 +7,21 @@
 <meta name="description" content="RicSwap — hardened add liquidity on Shibarium. LP always to your wallet. Exact approve only to RicSwap router.">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://unpkg.com https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://rpc.shibarium.shib.io https://*.shibarium.shib.io https://shibariumscan.io https://www.shibariumscan.io https://cdn.jsdelivr.net https://unpkg.com https://cdnjs.cloudflare.com; object-src 'none'; base-uri 'self'; form-action 'none'; frame-ancestors 'none'">
 <title>RicSwap | Add Liquidity (Hardened)</title>
+<link rel="canonical" href="https://www.ricswap.com/liquidity.html" />
+<meta property="og:type" content="website" />
+<meta property="og:url" content="https://www.ricswap.com/liquidity.html" />
+<meta property="og:title" content="RicSwap | Add Liquidity (Hardened)" />
+<meta property="og:description" content="RicSwap — hardened add liquidity on Shibarium. LP always to your wallet. Exact approve only to RicSwap router." />
+<meta property="og:image" content="https://www.ricswap.com/riclogo.png" />
+<meta name="twitter:card" content="summary" />
+<meta name="twitter:title" content="RicSwap | Add Liquidity (Hardened)" />
+<meta name="twitter:description" content="RicSwap — hardened add liquidity on Shibarium. LP always to your wallet. Exact approve only to RicSwap router." />
+<meta name="twitter:image" content="https://www.ricswap.com/riclogo.png" />
 <link rel="icon" type="image/png" href="riclogo.png">
 <link rel="apple-touch-icon" href="riclogo.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/shell.css">
 <style>
 :root{
   --void:#030407;--deep:#05060e;--well:#080918;--pit:#0b0c1c;--card:#0e1022;--lift:#12142c;
@@ -146,27 +157,24 @@ body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(
 .btn-go{background:linear-gradient(135deg,var(--magma),var(--ember));border:none;color:#fff}
 .btn-danger{background:linear-gradient(135deg,#ff1a1a,#ff4466);border:none;color:#fff}
 @media (max-width:900px){.audit-side{max-width:520px}}
-@media (max-width:600px){.header-nav{display:none}.header{padding:0 14px}.main{padding:20px 14px 60px}.net-badge{display:none}.card-body{padding:14px}}
+@media (max-width:600px){
+  .header-nav{display:none}
+  .header{padding:0 14px}
+  .main{padding:20px 14px 60px}
+  .net-badge{display:none}
+  .card-body{padding:14px}
+  .addr-row{flex-direction:column;align-items:stretch}
+  .addr-input{flex:none;width:100%;min-width:0;font-size:10px;letter-spacing:0}
+}
 </style>
 </head>
 <body>
+<div id="ric-shell" data-page="liquidity" data-chain="109"></div>
+<script src="/shell.js"></script>
 <div class="bg-glow"></div>
 
-<div class="header">
-  <a class="brand" href="index.html" aria-label="RicSwap home">
-    <img src="riclogo.png" alt="RicSwap" width="36" height="36"
-         onerror="this.onerror=null;this.src='https://raw.githubusercontent.com/Rictoken87/ricswap-website/main/riclogo.png'">
-    <span class="logo">RicSwap</span>
-  </a>
-  <nav class="header-nav">
-    <a class="nav-link" href="index.html">Home</a>
-    <a class="nav-link" href="swap.html">Swap</a>
-    <a class="nav-link active" href="liquidity.html">Liquidity</a>
-    <a class="nav-link" href="lock.html">Lock</a>
-    <a class="nav-link" href="pools.html">Pools</a>
-    <a class="nav-link" href="names.html">Names</a>
-  </nav>
-  <div class="header-right">
+<div class="header ric-tools">
+  <div class="header-right" style="margin-left:auto">
     <div class="net-badge"><div class="pulse"></div><span>Shibarium</span></div>
     <button type="button" class="connect-btn" id="connectBtn" onclick="connectWallet()">
       <svg viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 3H8a2 2 0 00-2 2v2h12V5a2 2 0 00-2-2z"/></svg>
@@ -709,7 +717,7 @@ body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(
         }
         provider = new ethers.BrowserProvider(eth, "any");
       }
-      signer = await provider.getSigner();
+      signer = window.ricGuardSigner(await provider.getSigner(), 109);
       userAddress = await signer.getAddress();
 
       // Verify router points at our factory (anti-fake-router if someone edits HTML poorly)
@@ -1235,7 +1243,6 @@ body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(
       }
 
       var link = CONFIG.EXPLORER + "/tx/" + tx.hash;
-      setSt("success", 'Done. LP to your wallet. <a href="' + link + '" target="_blank" rel="noopener">Explorer ↗</a>');
       setSt("success", 'Done. LP to your wallet. <a href="' + link + '" target="_blank" rel="noopener">Explorer ↗</a> · <a href="lock.html" style="color:var(--gold);font-weight:700">Lock LP to prove commitment →</a>');
       manualRatioTouch = false;
       await loadToken("A");

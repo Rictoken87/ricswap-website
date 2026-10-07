@@ -7,10 +7,21 @@
 <meta name="description" content="RicSwap — hardened remove liquidity. Exact LP approve to Router only. Tokens always to your wallet.">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://unpkg.com https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://rpc.shibarium.shib.io https://*.shibarium.shib.io https://shibariumscan.io https://www.shibariumscan.io https://cdn.jsdelivr.net https://unpkg.com https://cdnjs.cloudflare.com https://raw.githubusercontent.com; object-src 'none'; base-uri 'self'; form-action 'none'">
 <title>RicSwap | Remove Liquidity (Hardened)</title>
+<link rel="canonical" href="https://www.ricswap.com/remove-liquidity.html" />
+<meta property="og:type" content="website" />
+<meta property="og:url" content="https://www.ricswap.com/remove-liquidity.html" />
+<meta property="og:title" content="RicSwap | Remove Liquidity (Hardened)" />
+<meta property="og:description" content="RicSwap — hardened remove liquidity. Exact LP approve to Router only. Tokens always to your wallet." />
+<meta property="og:image" content="https://www.ricswap.com/riclogo.png" />
+<meta name="twitter:card" content="summary" />
+<meta name="twitter:title" content="RicSwap | Remove Liquidity (Hardened)" />
+<meta name="twitter:description" content="RicSwap — hardened remove liquidity. Exact LP approve to Router only. Tokens always to your wallet." />
+<meta name="twitter:image" content="https://www.ricswap.com/riclogo.png" />
 <link rel="icon" type="image/png" href="riclogo.png">
 <link rel="apple-touch-icon" href="riclogo.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/shell.css">
 <style>
 /* ============================================================
    DESIGN SYSTEM -- identical to swap.html + liquidity.html
@@ -289,23 +300,12 @@ body::after{content:'';position:fixed;inset:0;
 </style>
 </head>
 <body>
+<div id="ric-shell" data-page="remove-liquidity" data-chain="109"></div>
+<script src="/shell.js"></script>
 <div class="bg-glow"></div>
 
-<!-- HEADER -->
-<div class="header">
-  <a class="brand" href="index.html" aria-label="RicSwap home">
-    <img src="riclogo.png" alt="RicSwap" width="34" height="34"
-         onerror="this.onerror=null;this.src='https://raw.githubusercontent.com/Rictoken87/ricswap-website/main/riclogo.png'">
-    <span class="logo">RicSwap</span>
-  </a>
-  <nav class="header-nav">
-    <a class="nav-link" href="index.html">Home</a>
-    <a class="nav-link" href="swap.html">Swap</a>
-    <a class="nav-link" href="liquidity.html">Add LP</a>
-    <a class="nav-link active" href="remove-liquidity.html">Remove LP</a>
-    <a class="nav-link" href="names.html">Names</a>
-  </nav>
-  <div class="header-right">
+<div class="header ric-tools">
+  <div class="header-right" style="margin-left:auto">
     <div class="net-badge"><div class="pulse"></div><span>Shibarium</span></div>
     <button type="button" class="connect-btn" id="connectBtn" onclick="connWallet()">
       <svg viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 3H8a2 2 0 00-2 2v2h12V5a2 2 0 00-2-2z"/></svg>
@@ -558,7 +558,7 @@ async function connWallet() {
     await getEthers();
     await eth.request({ method: 'eth_requestAccounts' });
     prov  = new ethers.BrowserProvider(eth, 'any');
-    sign  = await prov.getSigner();
+    sign  = window.ricGuardSigner(await prov.getSigner(), 109);
     uAddr = await sign.getAddress();
 
     const net = await prov.getNetwork();
@@ -579,7 +579,7 @@ async function connWallet() {
         }
       }
       prov  = new ethers.BrowserProvider(eth, 'any');
-      sign  = await prov.getSigner();
+      sign  = window.ricGuardSigner(await prov.getSigner(), 109);
       uAddr = await sign.getAddress();
     }
 

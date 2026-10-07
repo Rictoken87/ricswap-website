@@ -6,10 +6,20 @@
 <meta name="theme-color" content="#030407" />
 <title>Add LP · Infinite Drive — RicSwap</title>
 <meta name="description" content="Uniswap-style TOKEN A + TOKEN B liquidity on Infinite Drive (DontPanic). Chain 421018." />
-<link rel="canonical" href="https://ricswap.com/drive-liquidity.html" />
+<link rel="canonical" href="https://www.ricswap.com/drive-liquidity.html" />
+<meta property="og:type" content="website" />
+<meta property="og:url" content="https://www.ricswap.com/drive-liquidity.html" />
+<meta property="og:title" content="Add LP · Infinite Drive — RicSwap" />
+<meta property="og:description" content="Uniswap-style TOKEN A + TOKEN B liquidity on Infinite Drive (DontPanic). Chain 421018." />
+<meta property="og:image" content="https://www.ricswap.com/riclogo.png" />
+<meta name="twitter:card" content="summary" />
+<meta name="twitter:title" content="Add LP · Infinite Drive — RicSwap" />
+<meta name="twitter:description" content="Uniswap-style TOKEN A + TOKEN B liquidity on Infinite Drive (DontPanic). Chain 421018." />
+<meta name="twitter:image" content="https://www.ricswap.com/riclogo.png" />
 <link rel="icon" type="image/png" href="riclogo.png" />
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://evm-rpc.infinitedrive.xyz https://evm-rpc-infinite.mschihuahua.org https://evm-rpc.infinitepanda.xyz https://scan.infinitedrive.xyz https://cdn.jsdelivr.net; frame-src 'none'; object-src 'none'; base-uri 'self'" />
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="/shell.css" />
 <style>
 :root {
   --void:#030407; --well:#0b0e1a; --lift:#121628;
@@ -21,10 +31,10 @@
 }
 *{box-sizing:border-box;margin:0;padding:0}
 html{overflow-x:hidden}
-body{background:var(--void);color:var(--fog);font-family:var(--body);line-height:1.55;padding:20px 16px calc(72px + env(safe-area-inset-bottom))}
+body{background:var(--void);color:var(--fog);font-family:var(--body);line-height:1.55;padding:0 0 calc(72px + env(safe-area-inset-bottom))}
 input,select{font-size:16px}
 a{color:var(--gold)}
-.wrap{max-width:480px;margin:0 auto}
+.wrap{max-width:480px;margin:0 auto;padding:16px 16px 0}
 .top{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap}
 .brand{display:flex;align-items:center;gap:10px;text-decoration:none;color:inherit}
 .brand img{width:40px;height:40px;border-radius:10px;object-fit:cover;box-shadow:0 0 0 1px rgba(255,77,0,.25)}
@@ -72,21 +82,10 @@ input.slip,select{width:100%;background:#060810;border:1px solid var(--line2);bo
 </style>
 </head>
 <body>
+<div id="ric-shell" data-page="drive-liquidity" data-chain="421018"></div>
+<script src="/shell.js"></script>
 <div id="ethersFail">Could not load a verified ethers library. This page will not sign transactions.</div>
 <div class="wrap">
-  <header class="top">
-    <a class="brand" href="index.html">
-      <img src="riclogo.png" width="40" height="40" alt="RicSwap"
-           onerror="this.onerror=null;this.src='https://raw.githubusercontent.com/Rictoken87/ricswap-website/main/riclogo.png'" />
-      <span class="logo-text">RICSWAP</span>
-    </a>
-    <div class="nav">
-      <a href="drive.html">Launch</a>
-      <a href="drive-swap.html">Swap 42</a>
-      <a class="on" href="drive-liquidity.html">Add LP</a>
-      <a href="x42.html">x42</a>
-    </div>
-  </header>
   <div class="chip" id="chainChip">Need chain 421018</div>
   <h1>ADD LIQUIDITY</h1>
   <p class="lede">Paste any Infinite Drive <strong>token contract</strong> (0x…). We load name, decimals, and Blockscout verification from chain 421018. Shortcuts below are optional. Amounts = the pair ratio.</p>
@@ -452,7 +451,7 @@ input.slip,select{width:100%;background:#060810;border:1px solid var(--line2);bo
     const nA = isNative(ca), nB = isNative(cb);
     if (nA && nB) return setStatus("42 cannot pair with 42.", "warn");
     try {
-      const signer = await walletProvider().getSigner();
+      const signer = window.ricGuardSigner(await walletProvider().getSigner(), 421018);
       const me = await signer.getAddress();
       const rot = new ethers.Contract(ROUTER, ROT_ABI, signer);
       $("cta").disabled = true; $("cta").textContent = "Confirm in wallet…";
@@ -511,7 +510,7 @@ input.slip,select{width:100%;background:#060810;border:1px solid var(--line2);bo
   async function lockLp() {
     await ensureChain();
     try {
-      const signer = await walletProvider().getSigner();
+      const signer = window.ricGuardSigner(await walletProvider().getSigner(), 421018);
       const me = await signer.getAddress();
       if (!state.pair || state.pair === ZERO) throw new Error("No pair");
       const lp = new ethers.Contract(state.pair, ERC, signer);

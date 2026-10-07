@@ -7,10 +7,21 @@
 <meta name="description" content="RicSwap trustless locker — lock LP liquidity or team tokens on Shibarium. No admin. No early unlock. Hall of Commitment for long & forever locks.">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://unpkg.com https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://rpc.shibarium.shib.io https://*.shibarium.shib.io https://shibariumscan.io https://www.shibariumscan.io https://cdn.jsdelivr.net https://unpkg.com https://cdnjs.cloudflare.com https://raw.githubusercontent.com; object-src 'none'; base-uri 'self'; form-action 'none'">
 <title>RicSwap | Lock LP & Team Tokens — Prove You're Not a Rug</title>
+<link rel="canonical" href="https://www.ricswap.com/lock.html" />
+<meta property="og:type" content="website" />
+<meta property="og:url" content="https://www.ricswap.com/lock.html" />
+<meta property="og:title" content="RicSwap | Lock LP &amp; Team Tokens — Prove You're Not a Rug" />
+<meta property="og:description" content="RicSwap trustless locker — lock LP liquidity or team tokens on Shibarium. No admin. No early unlock. Hall of Commitment for long &amp; forever locks." />
+<meta property="og:image" content="https://www.ricswap.com/riclogo.png" />
+<meta name="twitter:card" content="summary" />
+<meta name="twitter:title" content="RicSwap | Lock LP &amp; Team Tokens — Prove You're Not a Rug" />
+<meta name="twitter:description" content="RicSwap trustless locker — lock LP liquidity or team tokens on Shibarium. No admin. No early unlock. Hall of Commitment for long &amp; forever locks." />
+<meta name="twitter:image" content="https://www.ricswap.com/riclogo.png" />
 <link rel="icon" type="image/png" href="riclogo.png">
 <link rel="apple-touch-icon" href="riclogo.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/shell.css">
 <style>
 :root{
   --void:#030407;--deep:#05060e;--well:#080918;--pit:#0b0c1c;--card:#0e1022;
@@ -260,24 +271,12 @@ input{font-family:var(--mono);outline:none;border:none;background:transparent;co
 </style>
 </head>
 <body>
+<div id="ric-shell" data-page="lock" data-chain="109"></div>
+<script src="/shell.js"></script>
 <div class="wrap">
-  <nav class="nav">
-    <div class="brand">
-      <img src="riclogo.png" alt="RicSwap" width="36" height="36"
-           onerror="this.onerror=null;this.src='https://raw.githubusercontent.com/Rictoken87/ricswap-website/main/riclogo.png'">
-      <a class="logo" href="index.html">RicSwap</a>
-    </div>
-    <div class="nav-links">
-      <a href="index.html">Home</a>
-      <a href="swap.html">Swap</a>
-      <a href="liquidity.html">Add LP</a>
-      <a href="remove-liquidity.html">Remove</a>
-      <a class="active" href="lock.html">Lock</a>
-      <a href="pools.html">Pools</a>
-      <a href="names.html">Names</a>
-    </div>
-    <button type="button" class="wallet-btn" id="connectBtn" onclick="connect()">Connect Wallet</button>
-  </nav>
+  <div class="nav ric-tools">
+    <button type="button" class="wallet-btn" id="connectBtn" onclick="connect()" style="margin-left:auto">Connect Wallet</button>
+  </div>
 
   <section class="hero">
     <div class="hero-badge">✦ Trustless Locker · LP + Team tokens · No Admin · No Early Exit</div>
@@ -717,7 +716,7 @@ input{font-family:var(--mono);outline:none;border:none;background:transparent;co
         }
       }
       provider = new ethers.BrowserProvider(eth, "any");
-      signer = await provider.getSigner();
+      signer = window.ricGuardSigner(await provider.getSigner(), 109);
       account = await signer.getAddress();
       btn.textContent = short(account);
       btn.classList.add("connected");

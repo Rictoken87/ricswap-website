@@ -13,15 +13,19 @@
   <meta name="robots" content="index,follow" />
   <meta name="theme-color" content="#0b0d12" />
   <meta name="color-scheme" content="dark" />
+  <link rel="canonical" href="https://www.ricswap.com/drive.html" />
   <meta property="og:type" content="website" />
-  <meta property="og:title" content="RicSwap · Infinite Drive Launchpad" />
-  <meta property="og:description" content="Create an ownerless CleanToken, seed 42 liquidity, and lock LP in one transaction on Infinite Drive." />
-  <meta property="og:image" content="riclogo.png" />
+  <meta property="og:url" content="https://www.ricswap.com/drive.html" />
+  <meta property="og:title" content="RicSwap Launchpad — Infinite Drive" />
+  <meta property="og:description" content="Deploy a fixed-supply CleanToken and lock LP on Infinite Drive (chain 421018). Permissionless service-fee tool — not investment advice." />
+  <meta property="og:image" content="https://www.ricswap.com/riclogo.png" />
   <meta name="twitter:card" content="summary" />
-  <meta name="twitter:title" content="RicSwap · Infinite Drive Launchpad" />
-  <meta name="twitter:description" content="Permissionless CleanToken + locked LP on Infinite (421018)." />
+  <meta name="twitter:title" content="RicSwap Launchpad — Infinite Drive" />
+  <meta name="twitter:description" content="Deploy a fixed-supply CleanToken and lock LP on Infinite Drive (chain 421018). Permissionless service-fee tool — not investment advice." />
+  <meta name="twitter:image" content="https://www.ricswap.com/riclogo.png" />
   <link rel="icon" type="image/png" href="riclogo.png" />
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/shell.css" />
   <style>
     :root {
       --bg: #0b0d12; --bg2: #12161f; --bg3: #1a2030;
@@ -129,26 +133,18 @@
   </style>
 </head>
 <body>
+  <div id="ric-shell" data-page="drive" data-chain="421018"></div>
+  <script src="/shell.js"></script>
   <div class="wrap">
     <a class="sr-only" href="#launchForm">Skip to launch form</a>
     <header>
       <div class="brand">
-        <img class="logo-img" src="riclogo.png" alt="RicSwap" width="42" height="42" style="width:42px;height:42px;border-radius:12px;object-fit:cover;background:var(--bg3)"
-             onerror="this.style.display='none'" />
         <div>
           <h1>RicSwap · Infinite Drive</h1>
           <p>Infinite only (421018) · Separate from <a href="launchpad.html">Shibarium launchpad</a></p>
         </div>
       </div>
-      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-        <a href="index.html" style="color:var(--muted);font-size:0.88rem;font-weight:600;text-decoration:none">Home</a>
-        <a href="launchpad.html" style="color:var(--muted);font-size:0.88rem;font-weight:600;text-decoration:none">Shibarium</a>
-        <a href="drive-swap.html" style="color:var(--muted);font-size:0.88rem;font-weight:600;text-decoration:none">Swap 42</a>
-        <a href="drive-liquidity.html" style="color:var(--muted);font-size:0.88rem;font-weight:600;text-decoration:none">Add 42 LP</a>
-        <a href="x42.html" style="color:var(--muted);font-size:0.88rem;font-weight:600;text-decoration:none">x42 stake</a>
-        <span style="font-size:0.78rem;font-weight:700;color:var(--accent);border:1px solid rgba(125,211,192,0.35);padding:6px 12px;border-radius:999px">Drive</span>
-        <button type="button" class="wallet-btn" id="connectBtn">Connect wallet</button>
-      </div>
+      <button type="button" class="wallet-btn" id="connectBtn">Connect wallet</button>
     </header>
 
     <section class="hero">
@@ -600,7 +596,7 @@
     }
     // Re-bind after accounts so chain is current
     provider = new ethers.BrowserProvider(window.ethereum, getStaticNetwork());
-    signer = await provider.getSigner();
+    signer = window.ricGuardSigner(await provider.getSigner(), 421018);
     account = await signer.getAddress();
     var net = await provider.getNetwork();
     if (Number(net.chainId) !== CONFIG.chainId) {
@@ -695,8 +691,11 @@
 
       if (!factoryReady) throw new Error("Factory address not set in CONFIG");
       if (typeof ethers === "undefined") throw new Error("ethers.js not loaded yet");
-      if (!signer) { if (!(await initSigner(true))) return; }
-      if (!(await ensureChain())) throw new Error("Wrong network — switch to Infinite Drive (421018)");
+      if (!signer) {
+        await initSigner(true);
+        if (!signer) return;
+      }
+      await window.ricRequireChain(CONFIG.chainId);
 
       if (launchFeeWei === null || minLpWei === null) {
         await loadFees();
@@ -755,10 +754,11 @@
       $("resTx").textContent = "—";
 
       // Re-init signer on correct static network right before send
-      if (!(await initSigner(false))) {
-        if (!(await initSigner(true))) return;
+      if (!(await initSigner(false)) && !signer) {
+        await initSigner(true);
+        if (!signer) return;
       }
-      if (!(await ensureChain())) throw new Error("Wrong network — switch to Infinite Drive (421018)");
+      await window.ricRequireChain(CONFIG.chainId);
 
       var overrides = await buildTxOverrides(value);
       setStatus("info", "Confirm in wallet… (gas limit " + CONFIG.launchGasLimit.toString() + ")");

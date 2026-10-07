@@ -4,10 +4,22 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>RicSwap — The Obsidian Tier DEX</title>
+<meta name="description" content="Non-custodial. Your wallet signs. Liquidity can be thin, so check the price impact before you sign." />
+<link rel="canonical" href="https://www.ricswap.com/" />
+<meta property="og:type" content="website" />
+<meta property="og:url" content="https://www.ricswap.com/" />
+<meta property="og:title" content="RicSwap — The Obsidian Tier DEX" />
+<meta property="og:description" content="Non-custodial. Your wallet signs. Liquidity can be thin, so check the price impact before you sign." />
+<meta property="og:image" content="https://www.ricswap.com/riclogo.png" />
+<meta name="twitter:card" content="summary" />
+<meta name="twitter:title" content="RicSwap — The Obsidian Tier DEX" />
+<meta name="twitter:description" content="Non-custodial. Your wallet signs. Liquidity can be thin, so check the price impact before you sign." />
+<meta name="twitter:image" content="https://www.ricswap.com/riclogo.png" />
 <link rel="icon" type="image/png" href="riclogo.png" />
 <link rel="apple-touch-icon" href="riclogo.png" />
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&family=JetBrains+Mono:wght@300;400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="shell.css">
 <style>
 /* ═══════════════════════════════════════════════════
    TOKENS
@@ -328,11 +340,74 @@ body::before {
 ═══════════════════════════════════════════════════ */
 .hero {
   position: relative;
-  min-height: 100vh;
   display: flex;
   align-items: center;
-  padding: 40px 48px 80px;
+  padding: 36px 48px 72px;
   overflow: hidden;
+}
+.door-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  max-width: 980px;
+}
+.door {
+  background: rgba(11, 14, 26, 0.92);
+  border: 1px solid var(--rim);
+  border-radius: 20px;
+  padding: 22px 22px 18px;
+}
+.door-eye {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 1.4px;
+  text-transform: uppercase;
+  color: var(--magma);
+}
+.door h2 {
+  font-family: var(--display);
+  font-size: 36px;
+  letter-spacing: 1px;
+  color: var(--white);
+  line-height: 1;
+  margin: 8px 0 14px;
+}
+.door-quote {
+  font-family: var(--mono);
+  font-size: 16px;
+  color: var(--gold);
+  line-height: 1.45;
+  min-height: 1.45em;
+}
+.door-reserve {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--smoke);
+  line-height: 1.5;
+  margin: 8px 0 18px;
+  min-height: 1.5em;
+}
+.door-reserve a { color: var(--gold); }
+.door-actions { display: flex; flex-wrap: wrap; gap: 10px; }
+.door-actions .btn-primary,
+.door-actions .btn-ghost {
+  padding: 12px 18px;
+  font-size: 14px;
+}
+a.btn-primary, a.btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+}
+.door-actions a:focus-visible {
+  outline: 2px solid var(--magma);
+  outline-offset: 2px;
+}
+@media (max-width: 800px) {
+  .hero { padding: 28px 16px 48px; }
+  .door-grid { grid-template-columns: 1fr; }
+  .hero-sub { max-width: none; }
 }
 .hero-grid {
   display: grid;
@@ -379,9 +454,9 @@ body::before {
   font-size: 18px;
   font-weight: 300;
   color: var(--smoke);
-  max-width: 480px;
+  max-width: 640px;
   line-height: 1.7;
-  margin-bottom: 44px;
+  margin-bottom: 28px;
 }
 .hero-actions {
   display: flex;
@@ -1408,144 +1483,40 @@ footer {
 <div class="orb orb-2"></div>
 <div class="orb orb-3"></div>
 
-<!-- ═══ NAV ═══ -->
-<nav class="nav" aria-label="RicSwap">
-  <a class="brand-link" href="index.html" aria-label="RicSwap home">
-    <img class="logo-img" src="riclogo.png" alt="RicSwap logo" width="40" height="40"
-         onerror="this.onerror=null;this.src='https://raw.githubusercontent.com/Rictoken87/ricswap-website/main/riclogo.png'" />
-    <span class="logo-text">RICSWAP</span>
-  </a>
-  <button class="nav-burger" type="button" aria-label="Open menu" aria-expanded="false" aria-controls="nav-menu">
-    <span></span><span></span><span></span>
-  </button>
-  <div class="nav-menu" id="nav-menu">
-    <div class="nav-group">
-      <button type="button" aria-haspopup="true">Trade</button>
-      <div class="nav-drop">
-        <a href="swap.html"><strong>Swap</strong><small>Trade tokens on Shibarium</small></a>
-        <a href="liquidity.html"><strong>Liquidity</strong><small>Add LP to pools</small></a>
-        <a href="pools.html"><strong>Pools</strong><small>Browse pairs</small></a>
-        <a href="lock.html"><strong>Lock</strong><small>Lock liquidity</small></a>
-      </div>
-    </div>
-    <div class="nav-group">
-      <button type="button" aria-haspopup="true">Launch</button>
-      <div class="nav-drop">
-        <a href="launchpad.html"><strong>Launchpad</strong><small>Shibarium CleanToken launches</small></a>
-        <a href="drive.html"><strong>Drive launchpad</strong><small>Infinite Drive · chain 421018</small></a>
-      </div>
-    </div>
-    <div class="nav-group">
-      <button type="button" aria-haspopup="true">Drive</button>
-      <div class="nav-drop">
-        <a href="drive.html"><strong>Drive</strong><small>Infinite Improbability Drive app</small></a>
-        <a href="drive-swap.html"><strong>Swap 42</strong><small>DontPanic · Infinite 421018</small></a>
-        <a href="drive-liquidity.html"><strong>Add 42 LP</strong><small>DontPanic · create or add</small></a>
-        <a href="x42.html"><strong>x42 stake</strong><small>Stake native 42 · liquid x42</small></a>
-        <a href="x42-ops.html"><strong>x42 ops</strong><small>Buffer / bond to validator</small></a>
-        <a href="https://bridge.zaphod.one/" target="_blank" rel="noopener noreferrer"><strong>Bridge</strong><small>Zaphod · move 42 / Infinite</small></a>
-        <a href="stealth.html"><strong>Stealth send</strong><small>One-time receive addresses · 42</small></a>
-        <a href="names.html"><strong>Names</strong><small>.ric names</small></a>
-      </div>
-    </div>
-    <a class="nav-x42" href="x42.html">x42 Stake</a>
-    <a class="nav-link" href="#ric">RIC</a>
-    <a class="nav-link" href="contracts.html">Contracts</a>
-    <a class="nav-link" href="about.html">About</a>
-  </div>
-  <div class="nav-end">
-    <div class="net-pill">
-      <div class="net-dot"></div>
-      SHIBARIUM
-    </div>
-    <button class="nav-cta nav-cta-x42" type="button" onclick="location.href='x42.html'">Stake 42</button>
-    <button class="nav-cta" type="button" onclick="location.href='swap.html'">Launch App</button>
-  </div>
-</nav>
-
-<div class="chain-split" role="note">
-  <strong>Two chains, do not mix:</strong>
-  Shibarium <strong>109</strong> = trade and launch (BONE / RIC).
-  Infinite Drive <strong>421018</strong> = native <strong>42</strong> and <a href="x42.html">x42</a>.
-  Never send 42 on 109 or BONE on 421018.
-  <a href="about.html">What this is / is not</a>
-</div>
+<div id="ric-shell" data-page="home"></div>
 
 <!-- ═══ HERO ═══ -->
 <section class="hero">
-  <div class="hero-grid">
-    <div class="hero-left">
-      <div class="hero-eyebrow">Shibarium 109 · Infinite 421018</div>
-      <h1>
-        FAIR LAUNCH
-        <span class="accent">DEX</span>
-      </h1>
-      <p class="hero-sub">
-        Trade with confidence. Launch <strong style="color:var(--fog);font-weight:500">CleanTokens</strong> with
-        locked LP and no owner powers. <strong style="color:var(--gold);font-weight:500">RIC</strong> powers launches and verification — half of every fee is burned.
-      </p>
-      <div class="hero-actions">
-        <button class="btn-primary" type="button" onclick="location.href='x42.html'">Stake 42 → x42</button>
-        <button class="btn-ghost" type="button" onclick="location.href='swap.html'">Start Swapping</button>
-        <button class="btn-ghost" type="button" onclick="location.href='launchpad.html'">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
-          Create Token
-        </button>
-      </div>
-      <p class="hero-sub" style="margin-top:16px;margin-bottom:0;font-size:14px;max-width:540px">
-        Liquid staking is live on Infinite Drive (421018). Deposit native <strong style="color:var(--fog)">42</strong>, receive <strong style="color:var(--gold)">x42</strong>.
-        Also: <a href="drive.html" style="color:var(--gold);font-weight:500">Drive launchpad</a>.
-      </p>
-      <div class="hero-badges">
-        <div class="badge"><div class="badge-dot"></div> LP Locked on Launch</div>
-        <div class="badge"><div class="badge-dot"></div> Ownerless CleanTokens</div>
-        <div class="badge"><div class="badge-dot"></div> RIC Utility Fees</div>
-        <div class="badge"><div class="badge-dot"></div> Non-Custodial</div>
-      </div>
-    </div>
-    <div class="hero-right">
-      <div class="swap-card">
-        <div class="card-header">
-          <span class="card-title">Quick Swap</span>
-          <span class="card-badge">SHIBARIUM</span>
+  <div>
+    <div class="hero-eyebrow">Shibarium 109 · Infinite 421018</div>
+    <h1>
+      FAIR LAUNCH
+      <span class="accent">DEX</span>
+    </h1>
+    <p class="hero-sub">
+      Non-custodial. Your wallet signs. Liquidity can be thin, so check the price impact before you sign.
+    </p>
+    <div class="door-grid">
+      <article class="door">
+        <p class="door-eye">Shibarium 109</p>
+        <h2>TRADE AND LAUNCH</h2>
+        <p class="door-quote" id="shibQuote">Reading the BONE / RIC pool…</p>
+        <p class="door-reserve" id="shibReserve"></p>
+        <div class="door-actions">
+          <a class="btn-primary" href="swap.html">Swap</a>
+          <a class="btn-ghost" href="launchpad.html">Create token</a>
         </div>
-        <div class="token-box">
-          <div class="token-label">You Pay</div>
-          <div class="token-row">
-            <input class="token-amount" type="number" placeholder="0.0" value="1" id="heroIn">
-            <div class="token-pill">
-              <div class="token-icon bone-icon">B</div>
-              <span class="token-sym">BONE</span>
-            </div>
-          </div>
-          <div class="token-usd">Native gas token on Shibarium</div>
+      </article>
+      <article class="door">
+        <p class="door-eye">Infinite Drive 421018</p>
+        <h2>STAKE NATIVE 42</h2>
+        <p class="door-quote" id="x42Rate">Reading the x42 pool…</p>
+        <p class="door-reserve" id="x42Tvl"></p>
+        <div class="door-actions">
+          <a class="btn-primary" id="x42Stake" href="x42.html">Stake</a>
+          <a class="btn-ghost" href="drive-swap.html">Swap 42</a>
         </div>
-        <div class="swap-arrow">
-          <button class="swap-arrow-btn" type="button" aria-label="Flip">⇅</button>
-        </div>
-        <div class="token-box">
-          <div class="token-label">You Receive</div>
-          <div class="token-row">
-            <input class="token-amount" type="text" placeholder="0.0" value="—" id="heroOut" readonly style="color:#e8b84b">
-            <div class="token-pill">
-              <div class="token-icon ric-icon">R</div>
-              <span class="token-sym">RIC</span>
-            </div>
-          </div>
-          <div class="token-usd">Utility token · launch &amp; verify fees</div>
-        </div>
-        <div class="swap-info">
-          <div>
-            <div class="info-item">Network</div>
-            <div class="info-val">Shibarium · 109</div>
-          </div>
-          <div style="text-align:right">
-            <div class="info-item">Pool fee</div>
-            <div class="info-val" style="color:#00ffb2">0.3%</div>
-          </div>
-        </div>
-        <button class="swap-btn" type="button" onclick="location.href='swap.html'">OPEN SWAP · BUY RIC</button>
-      </div>
+      </article>
     </div>
   </div>
 </section>
@@ -1556,16 +1527,13 @@ footer {
     <div class="ticker-item"><span class="ticker-name">x42</span><span class="ticker-price">Liquid stake</span><span class="ticker-change-up">Infinite 421018</span></div>
     <div class="ticker-item"><span class="ticker-name">NETWORK</span><span class="ticker-price">Shibarium</span><span class="ticker-change-up">LIVE</span></div>
     <div class="ticker-item"><span class="ticker-name">RIC</span><span class="ticker-price">Utility</span><span class="ticker-change-up">Launch + Verify</span></div>
-    <div class="ticker-item"><span class="ticker-name">LAUNCH FEE</span><span class="ticker-price">100 RIC</span><span class="ticker-change-up">50% burned</span></div>
-    <div class="ticker-item"><span class="ticker-name">VERIFY FEE</span><span class="ticker-price">100 RIC</span><span class="ticker-change-up">Manual verify</span></div>
     <div class="ticker-item"><span class="ticker-name">MIN LP LOCK</span><span class="ticker-price">30 days</span><span class="ticker-change-up">or permanent</span></div>
     <div class="ticker-item"><span class="ticker-name">MAX TEAM</span><span class="ticker-price">25%</span><span class="ticker-change-up">Fair launch</span></div>
     <div class="ticker-item"><span class="ticker-name">CLEANTOKEN</span><span class="ticker-price">No owner</span><span class="ticker-change-up">No mint / tax</span></div>
     <!-- duplicate for loop -->
+    <div class="ticker-item"><span class="ticker-name">x42</span><span class="ticker-price">Liquid stake</span><span class="ticker-change-up">Infinite 421018</span></div>
     <div class="ticker-item"><span class="ticker-name">NETWORK</span><span class="ticker-price">Shibarium</span><span class="ticker-change-up">LIVE</span></div>
     <div class="ticker-item"><span class="ticker-name">RIC</span><span class="ticker-price">Utility</span><span class="ticker-change-up">Launch + Verify</span></div>
-    <div class="ticker-item"><span class="ticker-name">LAUNCH FEE</span><span class="ticker-price">100 RIC</span><span class="ticker-change-up">50% burned</span></div>
-    <div class="ticker-item"><span class="ticker-name">VERIFY FEE</span><span class="ticker-price">100 RIC</span><span class="ticker-change-up">Manual verify</span></div>
     <div class="ticker-item"><span class="ticker-name">MIN LP LOCK</span><span class="ticker-price">30 days</span><span class="ticker-change-up">or permanent</span></div>
     <div class="ticker-item"><span class="ticker-name">MAX TEAM</span><span class="ticker-price">25%</span><span class="ticker-change-up">Fair launch</span></div>
     <div class="ticker-item"><span class="ticker-name">CLEANTOKEN</span><span class="ticker-price">No owner</span><span class="ticker-change-up">No mint / tax</span></div>
@@ -1598,28 +1566,6 @@ footer {
       <div class="pair">42 → <em>x42</em></div>
       <p class="hint">Switch MetaMask / Rabby to Infinite Drive (421018), then stake on ricswap.com/x42.html</p>
       <button class="btn-primary" type="button" style="width:100%" onclick="location.href='x42.html'">Stake 42 now</button>
-    </div>
-  </div>
-</div>
-
-<!-- ═══ STATS ═══ -->
-<div class="stats-section reveal">
-  <div class="stats-inner">
-    <div class="stat-item">
-      <div class="stat-val">25,000,000</div>
-      <div class="stat-label-txt">RIC Max Supply</div>
-    </div>
-    <div class="stat-item">
-      <div class="stat-val fire">4,000,000</div>
-      <div class="stat-label-txt">RIC Burned</div>
-    </div>
-    <div class="stat-item">
-      <div class="stat-val">21,000,000</div>
-      <div class="stat-label-txt">RIC Circulating</div>
-    </div>
-    <div class="stat-item">
-      <div class="stat-val fire">50%</div>
-      <div class="stat-label-txt">Of Fees Burned</div>
     </div>
   </div>
 </div>
@@ -1696,7 +1642,7 @@ footer {
     <div class="supply-card">
       <div class="num">21,000,000</div>
       <div class="lbl">Effective circulating</div>
-      <div class="sub">25,000,000 − 4,000,000 burned</div>
+      <div class="sub">Original supply minus the burn</div>
     </div>
   </div>
   <p class="burn-note reveal">
@@ -1709,35 +1655,7 @@ footer {
 
   <div class="tok-grid reveal">
     <div class="tok-card">
-      <h3>SUPPLY BREAKDOWN</h3>
-      <table class="tok-table">
-        <thead>
-          <tr><th>Metric</th><th>Amount</th></tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td><strong>Max / total supply</strong></td>
-            <td><strong>25,000,000 RIC</strong></td>
-          </tr>
-          <tr>
-            <td><strong>Burned (dead address)</strong></td>
-            <td><strong style="color:var(--magma)">4,000,000 RIC</strong></td>
-          </tr>
-          <tr>
-            <td><strong>Effective circulating</strong></td>
-            <td><strong>21,000,000 RIC</strong></td>
-          </tr>
-          <tr>
-            <td><strong>Decimals</strong></td>
-            <td>18</td>
-          </tr>
-          <tr>
-            <td><strong>Network</strong></td>
-            <td>Shibarium (109)</td>
-          </tr>
-        </tbody>
-      </table>
-      <h3 style="margin-top:28px">UTILITY &amp; FEES</h3>
+      <h3>UTILITY &amp; FEES</h3>
       <table class="tok-table">
         <thead>
           <tr><th>Action</th><th>Fee</th><th>Split</th></tr>
@@ -1760,33 +1678,21 @@ footer {
           </tr>
         </tbody>
       </table>
-      <div class="tok-pill-row">
-        <span class="tok-pill">25,000,000 max supply</span>
-        <span class="tok-pill">4,000,000 burned</span>
-        <span class="tok-pill">21,000,000 circulating</span>
-      </div>
       <div style="margin-top:24px;display:flex;gap:12px;flex-wrap:wrap">
         <button class="btn-primary" type="button" onclick="location.href='swap.html'">Buy RIC</button>
         <button class="btn-ghost" type="button" onclick="location.href='launchpad.html'">Launch with RIC</button>
       </div>
     </div>
     <div class="tok-card">
-      <h3>WHY HOLD RIC?</h3>
-      <p class="feat-desc" style="margin-bottom:16px">
-        Max supply is fixed at <strong style="color:var(--white)">25,000,000</strong>.
-        <strong style="color:var(--gold)">4,000,000</strong> are already permanently burned, leaving
-        <strong style="color:var(--white)">21,000,000</strong> in effective circulation.
-        Product fees keep removing more RIC from the market.
-      </p>
+      <h3>WHERE RIC IS USED</h3>
       <ul class="guarantees" style="list-style:none;padding:0;margin:0">
-        <li style="padding:10px 0;border-bottom:1px solid var(--rim);color:var(--smoke);font-size:14px;font-weight:300">✓ <strong style="color:var(--white)">Launch access</strong> — 100 RIC to create a fair token</li>
-        <li style="padding:10px 0;border-bottom:1px solid var(--rim);color:var(--smoke);font-size:14px;font-weight:300">✓ <strong style="color:var(--white)">Verify access</strong> — 100 RIC for explorer source verify</li>
-        <li style="padding:10px 0;border-bottom:1px solid var(--rim);color:var(--smoke);font-size:14px;font-weight:300">✓ <strong style="color:var(--white)">Team burn</strong> — 4,000,000 RIC to 0x…dEaD</li>
-        <li style="padding:10px 0;border-bottom:1px solid var(--rim);color:var(--smoke);font-size:14px;font-weight:300">✓ <strong style="color:var(--white)">Fee burns</strong> — 50% of every launch &amp; verify fee</li>
-        <li style="padding:10px 0;color:var(--smoke);font-size:14px;font-weight:300">✓ <strong style="color:var(--white)">Treasury</strong> — 50% of fees for ecosystem</li>
+        <li style="padding:10px 0;border-bottom:1px solid var(--rim);color:var(--smoke);font-size:14px;font-weight:300">✓ <strong style="color:var(--white)">Launch access</strong> — fee in the table, paid to Factory V2</li>
+        <li style="padding:10px 0;border-bottom:1px solid var(--rim);color:var(--smoke);font-size:14px;font-weight:300">✓ <strong style="color:var(--white)">Verify access</strong> — same fee, for explorer source verification</li>
+        <li style="padding:10px 0;border-bottom:1px solid var(--rim);color:var(--smoke);font-size:14px;font-weight:300">✓ <strong style="color:var(--white)">Team burn</strong> — the 4,000,000 already sent to 0x…dEaD</li>
+        <li style="padding:10px 0;color:var(--smoke);font-size:14px;font-weight:300">✓ <strong style="color:var(--white)">Treasury</strong> — the half of each fee that is not burned</li>
       </ul>
       <p class="feat-desc" style="margin-top:18px;font-size:12px;color:var(--ash)">
-        Note: on-chain <code>totalSupply()</code> may still read 25,000,000; burned RIC sits at the dead address and cannot move. Circulating = 21,000,000 after the 4,000,000 burn (before other locks).
+        On-chain <code>totalSupply()</code> can still read the original supply. Burned RIC sits at the dead address and cannot move.
       </p>
     </div>
   </div>
@@ -1896,7 +1802,7 @@ footer {
       <div class="step-connector"></div>
       <div class="step-num">03</div>
       <div class="step-title">PAY IN RIC</div>
-      <p class="step-desc">Launch costs 100 RIC. Optional explorer verification is another 100 RIC. Half of each fee is burned.</p>
+      <p class="step-desc">Launch and verification fees are paid in RIC. Half of each fee is burned. The amounts are in the RIC section.</p>
     </div>
     <div class="step-card reveal reveal-delay-4">
       <div class="step-num">04</div>
@@ -2033,8 +1939,11 @@ footer {
   </div>
 </footer>
 
+<script src="shell.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/ethers@6.13.4/dist/ethers.umd.min.js"
+        integrity="sha384-6Zl0Pc8zjSz8KvmNeXRvUQgY4ryFb+BwDvKCmLYcBME0joAaru491tQgi9B7zsMM"
+        crossorigin="anonymous"></script>
 <script>
-// Scroll reveal
 const observer = new IntersectionObserver((entries) => {
   entries.forEach(e => {
     if (e.isIntersecting) e.target.classList.add('visible');
@@ -2042,46 +1951,132 @@ const observer = new IntersectionObserver((entries) => {
 }, { threshold: 0.1 });
 document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
 
-// Swap card decoration
-const swapBtn = document.querySelector('.swap-arrow-btn');
-if (swapBtn) {
-  swapBtn.addEventListener('click', () => {
-    swapBtn.style.transform = 'rotate(180deg)';
-    setTimeout(() => swapBtn.style.transform = '', 300);
-  });
-}
-
-// Nav scroll effect
-window.addEventListener('scroll', () => {
-  const nav = document.querySelector('.nav');
-  if (!nav) return;
-  nav.style.background = window.scrollY > 20 ? 'rgba(3,4,7,0.95)' : 'rgba(3,4,7,0.7)';
-});
-
 (function () {
-  const nav = document.querySelector('.nav');
-  const burger = document.querySelector('.nav-burger');
-  if (!nav || !burger) return;
-  burger.addEventListener('click', () => {
-    const open = nav.classList.toggle('is-open');
-    burger.setAttribute('aria-expanded', open ? 'true' : 'false');
+  const SHIB_RPC = "https://rpc.shibarium.shib.io";
+  const ROUTER = "0x652875c0F607CB392C0F9E5FB957A7055c2deD2e";
+  const FACTORY = "0xD8fFEECfDE1698a70A26a094afBE917bA58E2F70";
+  const WBONE = "0xC76F4c819D820369Fb2d7C1531aB3Bb18e6fE8d8";
+  const RIC = "0x12C94d3A30daa09f81Ea6c037004E6e99A4A3dfc";
+  const INF_RPCS = [
+    "https://evm-rpc.infinitedrive.xyz",
+    "https://evm-rpc-infinite.mschihuahua.org",
+    "https://evm-rpc.infinitepanda.xyz"
+  ];
+  const POOL = "0x985f6ECb68f308ea4C3b5Fc9c5B187F4ee1dfA23";
+  const STORE_FALLBACK = "0x8E2E63d8f0041B0b2c6af01816B63FF2AFEac557";
+  const KEY_MAX_TVL = "0x36a1fa10df3735f6ab0731cd9e0ece8eef651239937273569ec4059133ef6322";
+  const ZERO = "0x0000000000000000000000000000000000000000";
+
+  const quote = document.getElementById("shibQuote");
+  const reserve = document.getElementById("shibReserve");
+  const rateEl = document.getElementById("x42Rate");
+  const tvlEl = document.getElementById("x42Tvl");
+  const stakeBtn = document.getElementById("x42Stake");
+
+  function fmt(wei, digits) {
+    const n = Number(ethers.formatEther(wei));
+    if (!Number.isFinite(n)) return "0";
+    return n.toLocaleString("en-US", { maximumFractionDigits: digits, minimumFractionDigits: 0 });
+  }
+
+  function shibProvider() {
+    return new ethers.JsonRpcProvider(SHIB_RPC, 109, { staticNetwork: true });
+  }
+
+  async function infProvider() {
+    let last;
+    for (const url of INF_RPCS) {
+      try {
+        const p = new ethers.JsonRpcProvider(url, 421018, { staticNetwork: true });
+        await p.getBlockNumber();
+        return p;
+      } catch (err) { last = err; }
+    }
+    throw last || new Error("Infinite RPC unavailable");
+  }
+
+  async function loadShib() {
+    if (!window.ethers) throw new Error("no ethers");
+    const provider = shibProvider();
+    const router = new ethers.Contract(ROUTER, [
+      "function getAmountsOut(uint256,address[]) view returns (uint256[])"
+    ], provider);
+    const factory = new ethers.Contract(FACTORY, [
+      "function getPair(address,address) view returns (address)"
+    ], provider);
+    const out = await router.getAmountsOut(ethers.parseEther("1"), [WBONE, RIC]);
+    quote.textContent = "1 BONE → " + fmt(out[1], out[1] > ethers.parseEther("1000") ? 2 : 4) + " RIC";
+    const pair = await factory.getPair(WBONE, RIC);
+    if (!pair || pair === ZERO) {
+      reserve.textContent = "No RIC pool on this factory.";
+      return;
+    }
+    const pool = new ethers.Contract(pair, [
+      "function token0() view returns (address)",
+      "function getReserves() view returns (uint112,uint112,uint32)"
+    ], provider);
+    const [token0, reserves] = await Promise.all([pool.token0(), pool.getReserves()]);
+    const boneIs0 = token0.toLowerCase() === WBONE.toLowerCase();
+    const bone = boneIs0 ? reserves[0] : reserves[1];
+    const ric = boneIs0 ? reserves[1] : reserves[0];
+    reserve.textContent = "";
+    reserve.appendChild(document.createTextNode(
+      "Pool " + fmt(bone, 2) + " BONE · " + fmt(ric, 2) + " RIC · "
+    ));
+    const a = document.createElement("a");
+    a.href = "https://www.shibariumscan.io/address/" + pair;
+    a.target = "_blank";
+    a.rel = "noopener noreferrer";
+    a.textContent = "View pair";
+    reserve.appendChild(a);
+  }
+
+  async function loadX42() {
+    if (!window.ethers) throw new Error("no ethers");
+    const provider = await infProvider();
+    const pool = new ethers.Contract(POOL, [
+      "function getAccounting() view returns (uint256 bonded,uint256 buffer,uint256 unbonding,uint256 accrued,uint256 pending,uint256 donations,uint256 nav,uint256 rate)",
+      "function STORE() view returns (address)",
+      "function depositsPaused() view returns (bool)"
+    ], provider);
+    const acc = await pool.getAccounting();
+    const bonded = acc.bonded != null ? acc.bonded : acc[0];
+    const buffer = acc.buffer != null ? acc.buffer : acc[1];
+    const unbonding = acc.unbonding != null ? acc.unbonding : acc[2];
+    const rate = acc.rate != null ? acc.rate : acc[7];
+    const tvl = bonded + buffer + unbonding;
+    const shown = rate === 0n ? 10n ** 18n : rate;
+    rateEl.textContent = "1 x42 = " + fmt(shown, 6) + " 42";
+    let storeAddr = STORE_FALLBACK;
+    try {
+      const onchain = await pool.STORE();
+      if (onchain && onchain !== ZERO) storeAddr = onchain;
+    } catch (e) {}
+    const store = new ethers.Contract(storeAddr, [
+      "function getUint(bytes32) view returns (uint256)"
+    ], provider);
+    const cap = await store.getUint(KEY_MAX_TVL);
+    let paused = false;
+    try { paused = await pool.depositsPaused(); } catch (e) {}
+    tvlEl.textContent = cap > 0n
+      ? ("TVL " + fmt(tvl, 2) + " / " + fmt(cap, 2) + " 42")
+      : ("TVL " + fmt(tvl, 2) + " 42");
+    const full = cap > 0n && tvl >= cap;
+    if (paused) {
+      stakeBtn.textContent = "Deposits paused";
+    } else if (full) {
+      stakeBtn.textContent = "Cap full";
+    }
+    stakeBtn.setAttribute("aria-label", stakeBtn.textContent + ". Opens x42 staking.");
+  }
+
+  loadShib().catch(function () {
+    quote.textContent = "Rate unavailable";
+    reserve.textContent = "";
   });
-  nav.querySelectorAll('.nav-group > button').forEach((btn) => {
-    btn.addEventListener('click', (e) => {
-      if (!window.matchMedia('(max-width: 980px)').matches) return;
-      e.preventDefault();
-      const group = btn.parentElement;
-      nav.querySelectorAll('.nav-group.open').forEach((g) => {
-        if (g !== group) g.classList.remove('open');
-      });
-      group.classList.toggle('open');
-    });
-  });
-  nav.querySelectorAll('.nav-menu a').forEach((a) => {
-    a.addEventListener('click', () => {
-      nav.classList.remove('is-open');
-      burger.setAttribute('aria-expanded', 'false');
-    });
+  loadX42().catch(function () {
+    rateEl.textContent = "Rate unavailable";
+    tvlEl.textContent = "";
   });
 })();
 </script>

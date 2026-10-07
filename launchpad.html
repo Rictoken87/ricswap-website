@@ -5,11 +5,22 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>RicSwap Launchpad — Fair Token Launch on Shibarium</title>
   <meta name="description" content="Launch a CleanToken with locked BONE liquidity on RicSwap. Atomic deploy + LP + lock." />
+  <link rel="canonical" href="https://www.ricswap.com/launchpad.html" />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://www.ricswap.com/launchpad.html" />
+  <meta property="og:title" content="RicSwap Launchpad — Fair Token Launch on Shibarium" />
+  <meta property="og:description" content="Launch a CleanToken with locked BONE liquidity on RicSwap. Atomic deploy + LP + lock." />
+  <meta property="og:image" content="https://www.ricswap.com/riclogo.png" />
+  <meta name="twitter:card" content="summary" />
+  <meta name="twitter:title" content="RicSwap Launchpad — Fair Token Launch on Shibarium" />
+  <meta name="twitter:description" content="Launch a CleanToken with locked BONE liquidity on RicSwap. Atomic deploy + LP + lock." />
+  <meta name="twitter:image" content="https://www.ricswap.com/riclogo.png" />
   <link rel="icon" type="image/png" href="riclogo.png" />
   <link rel="apple-touch-icon" href="riclogo.png" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/shell.css" />
   <style>
 
     :root {
@@ -554,23 +565,17 @@
   </style>
 </head>
 <body>
+  <div id="ric-shell" data-page="launch" data-chain="109"></div>
+  <script src="/shell.js"></script>
   <div class="wrap">
     <header>
       <div class="brand">
-        <img class="logo-img" src="riclogo.png" alt="RicSwap logo" width="42" height="42"
-             onerror="this.onerror=null;this.src='https://raw.githubusercontent.com/Rictoken87/ricswap-website/main/riclogo.png'" />
         <div>
           <h1>RicSwap Launchpad</h1>
           <p>Shibarium only (chain 109) · CleanToken + locked LP</p>
         </div>
       </div>
-      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-        <a href="index.html" style="color:var(--muted);font-size:0.88rem;font-weight:600;text-decoration:none">Home</a>
-        <a href="names.html" style="color:var(--muted);font-size:0.88rem;font-weight:600;text-decoration:none">Names</a>
-        <span style="font-size:0.78rem;font-weight:700;color:var(--accent);border:1px solid rgba(245,166,35,0.35);padding:6px 12px;border-radius:999px">Shibarium</span>
-        <a href="drive.html" style="font-size:0.78rem;font-weight:700;color:#a8c4ff;border:1px solid rgba(91,140,255,0.4);padding:6px 12px;border-radius:999px;text-decoration:none" title="Separate launchpad for Infinite Drive">Drive</a>
-        <button type="button" class="wallet-btn" id="connectBtn" onclick="window.ricConnect && window.ricConnect(); return false;">Connect wallet</button>
-      </div>
+      <button type="button" class="wallet-btn" id="connectBtn" onclick="window.ricConnect && window.ricConnect(); return false;">Connect wallet</button>
     </header>
 
     <div class="drive-banner" role="note">
@@ -950,41 +955,19 @@
   }
 
   async function switchToShibarium(eth) {
-    var chainId = await eth.request({ method: "eth_chainId" });
-    var num = parseInt(chainId, 16);
-    if (num === CONFIG.chainId || String(chainId).toLowerCase() === CONFIG.chainIdHex) {
-      $("netWarn").classList.remove("show");
-      return true;
-    }
-    $("netWarn").classList.add("show");
     try {
-      await eth.request({
-        method: "wallet_switchEthereumChain",
-        params: [{ chainId: CONFIG.chainIdHex }]
-      });
+      await window.ricRequireChain(CONFIG.chainId, eth);
       $("netWarn").classList.remove("show");
       return true;
     } catch (err) {
-      var code = err && (err.code || (err.data && err.data.originalError && err.data.originalError.code));
-      if (code === 4902 || /Unrecognized chain|not been added|wallet_addEthereumChain/i.test(String(err.message || err))) {
-        await eth.request({
-          method: "wallet_addEthereumChain",
-          params: [{
-            chainId: CONFIG.chainIdHex,
-            chainName: CONFIG.chainName,
-            nativeCurrency: CONFIG.nativeCurrency,
-            rpcUrls: CONFIG.rpcUrls,
-            blockExplorerUrls: [CONFIG.blockExplorer]
-          }]
-        });
-        $("netWarn").classList.remove("show");
-        return true;
-      }
-      if (code === 4001) {
+      $("netWarn").classList.add("show");
+      var msg = (err && (err.shortMessage || err.message)) || String(err);
+      if (/user rejected|denied|4001/i.test(msg)) {
         walletStatus("err", "Network switch rejected. Please select <strong>Shibarium</strong> in MetaMask, then try again.");
-        return false;
+      } else {
+        walletStatus("err", "Wrong network. Switch to <strong>Shibarium</strong> before you sign.");
       }
-      throw err;
+      return false;
     }
   }
 
@@ -1042,7 +1025,7 @@
       }
 
       provider = new ethers.BrowserProvider(ethProvider, "any");
-      signer = await provider.getSigner();
+      signer = window.ricGuardSigner(await provider.getSigner(), 109);
       account = await signer.getAddress();
 
       if (btn) {
@@ -1152,9 +1135,9 @@
         return;
       }
       ethProvider = getEthereum();
-      await switchToShibarium(ethProvider);
+      if (!(await switchToShibarium(ethProvider))) return;
       provider = new ethers.BrowserProvider(ethProvider, "any");
-      signer = await provider.getSigner();
+      signer = window.ricGuardSigner(await provider.getSigner(), 109);
       var ric = new ethers.Contract(CONFIG.ric, ERC20_ABI, signer);
       if (!launchFeeWei || launchFeeWei === BigInt(0)) {
         try { ricDecimals = Number(await ric.decimals()); } catch (e) {}
@@ -1291,9 +1274,12 @@
       if (!account) await connectWallet();
       if (!account) return;
       ethProvider = getEthereum();
-      await switchToShibarium(ethProvider);
+      if (!(await switchToShibarium(ethProvider))) {
+        setVerifyStatus("err", "Wrong network. Switch to Shibarium before you sign.");
+        return;
+      }
       provider = new ethers.BrowserProvider(ethProvider, "any");
-      signer = await provider.getSigner();
+      signer = window.ricGuardSigner(await provider.getSigner(), 109);
       var ric = new ethers.Contract(CONFIG.ric, ERC20_ABI, signer);
       var desk = new ethers.Contract(CONFIG.verifyDesk, DESK_ABI, provider);
       if (!verifyFeeWei) {
@@ -1333,7 +1319,7 @@
       var okNet = await switchToShibarium(ethProvider);
       if (!okNet) return;
       provider = new ethers.BrowserProvider(ethProvider, "any");
-      signer = await provider.getSigner();
+      signer = window.ricGuardSigner(await provider.getSigner(), 109);
       account = await signer.getAddress();
       await refreshVerifyDeskUi();
 
@@ -1401,7 +1387,7 @@
       if (!okNet) return;
 
       provider = new ethers.BrowserProvider(ethProvider, "any");
-      signer = await provider.getSigner();
+      signer = window.ricGuardSigner(await provider.getSigner(), 109);
       account = await signer.getAddress();
       await refreshFeeUi();
 

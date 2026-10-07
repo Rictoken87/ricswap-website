@@ -7,10 +7,21 @@
 <meta name="description" content="RicSwap — hardened swap on Shibarium. Exact approve to Router only. LP/swaps always to your wallet.">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://unpkg.com https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://rpc.shibarium.shib.io https://*.shibarium.shib.io https://shibariumscan.io https://www.shibariumscan.io https://api.dexscreener.com https://api.ricswap.com https://cdn.jsdelivr.net https://unpkg.com https://cdnjs.cloudflare.com https://raw.githubusercontent.com; object-src 'none'; base-uri 'self'; form-action 'none'">
 <title>RicSwap | Swap (Hardened)</title>
+<link rel="canonical" href="https://www.ricswap.com/swap.html" />
+<meta property="og:type" content="website" />
+<meta property="og:url" content="https://www.ricswap.com/swap.html" />
+<meta property="og:title" content="RicSwap | Swap (Hardened)" />
+<meta property="og:description" content="RicSwap — hardened swap on Shibarium. Exact approve to Router only. LP/swaps always to your wallet." />
+<meta property="og:image" content="https://www.ricswap.com/riclogo.png" />
+<meta name="twitter:card" content="summary" />
+<meta name="twitter:title" content="RicSwap | Swap (Hardened)" />
+<meta name="twitter:description" content="RicSwap — hardened swap on Shibarium. Exact approve to Router only. LP/swaps always to your wallet." />
+<meta name="twitter:image" content="https://www.ricswap.com/riclogo.png" />
 <link rel="icon" type="image/png" href="riclogo.png">
 <link rel="apple-touch-icon" href="riclogo.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/shell.css">
 <style>
 /* ============================================================
    DESIGN SYSTEM -- OBSIDIAN FORGE
@@ -630,30 +641,13 @@ body::after {
 </style>
 </head>
 <body>
+<div id="ric-shell" data-page="swap" data-chain="109"></div>
+<script src="/shell.js"></script>
 
 <div class="bg-glow"></div>
 
-<!-- ============================================================
-     HEADER
-     ============================================================ -->
-<div class="header">
-  <a class="brand" href="index.html" aria-label="RicSwap home">
-    <img src="riclogo.png" alt="RicSwap" width="34" height="34"
-         onerror="this.onerror=null;this.src='https://raw.githubusercontent.com/Rictoken87/ricswap-website/main/riclogo.png'">
-    <span class="logo">RicSwap</span>
-  </a>
-
-  <nav class="header-nav">
-    <a class="nav-link" id="nav-home" href="index.html">Home</a>
-    <a class="nav-link active" id="nav-swap" href="swap.html">Swap</a>
-    <a class="nav-link" id="nav-liquidity" href="liquidity.html">Liquidity</a>
-    <a class="nav-link" id="nav-lock" href="lock.html">Lock</a>
-    <a class="nav-link" id="nav-pools" href="pools.html">Pools</a>
-    <a class="nav-link" id="nav-names" href="names.html">Names</a>
-    <a class="nav-link" id="nav-create" href="launchpad.html">Create Token</a>
-  </nav>
-
-  <div class="header-right">
+<div class="header ric-tools">
+  <div class="header-right" style="margin-left:auto">
     <div class="net-badge">
       <div class="pulse"></div>
       <span>Shibarium</span>
@@ -1430,7 +1424,7 @@ async function connectWallet() {
     await getEthers();
     await window.ethereum.request({ method:'eth_requestAccounts' });
     provider = new ethers.BrowserProvider(window.ethereum);
-    signer   = await provider.getSigner();
+    signer   = window.ricGuardSigner(await provider.getSigner(), 109);
     userAddr = await signer.getAddress();
 
     const net = await provider.getNetwork();
@@ -1448,7 +1442,7 @@ async function connectWallet() {
         } else throw e;
       }
       provider = new ethers.BrowserProvider(window.ethereum);
-      signer   = await provider.getSigner();
+      signer   = window.ricGuardSigner(await provider.getSigner(), 109);
       userAddr = await signer.getAddress();
     }
 
